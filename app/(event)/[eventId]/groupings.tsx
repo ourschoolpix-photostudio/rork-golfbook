@@ -1,0 +1,1376 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Alert,
+  Modal,
+  TextInput,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { authService } from '@/utils/auth';
+import { Member, User, Grouping, Event } from '@/types';
+import { registrationService } from '@/utils/registrationService';
+import { calculateTournamentFlight, getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
+import GroupCard from '@/components/GroupCard';
+import { TeeHoleIndicator } from '@/components/TeeHoleIndicator';
+import { DaySelector } from '@/components/DaySelector';
+import { type LabelOverride } from '@/utils/groupingsHelper';
+import { generateGroupLabel } from '@/utils/groupLabelHelper';
+import { generateGroupingsPDF } from '@/utils/pdfGenerator';
+import { EventFooter } from '@/components/EventFooter';
+import { trpc } from '@/lib/trpc';
+import { truncateToTwoDecimals } from '@/utils/numberUtils';
+
+interface Group {
+  hole: number;
+  slots: (Member | null)[];
+}
+
+export default function GroupingsScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { eventId } = useLocalSearchParams<{ eventId: string }>();
+  const id = eventId || '';
+
+  const [user, setUser] = useState<User | null>(null);
+  const [event, setEvent] = useState<Event | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [activeDay, setActiveDay] = useState<number>(1);
+  const [doubleMode, setDoubleMode] = useState<boolean>(false);
+  const [initialGroups, setInitialGroups] = useState<Group[]>([]);
+
+  const handleDoubleModeToggle = async (enabled: boolean) => {
+    setDoubleMode(enabled);
+    if (event) {
+      const doubleModeKey = `doubleMode_${event.id}_day${activeDay}`;
+      await AsyncStorage.setItem(doubleModeKey, enabled.toString());
+      console.log('[groupings] Double mode', enabled ? 'enabled' : 'disabled', 'for day', activeDay);
+    }
+  };
+
+  const [showUnassigned] = useState<boolean>(true);
+  const [selectedUngroupedIds, setSelectedUngroupedIds] = useState<Set<string>>(new Set());
+  const [labelOverride, setLabelOverride] = useState<LabelOverride>('none');
+  const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
+
+  const [checkedPlayers, setCheckedPlayers] = useState<{ groupIdx: number; slotIdx: number; player: Member }[]>([]);
+  const [checkedGroups, setCheckedGroups] = useState<Set<number>>(new Set());
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [showPinModal, setShowPinModal] = useState<boolean>(false);
+  const [pinInput, setPinInput] = useState<string>('');
+  const [registrations, setRegistrations] = useState<Record<string, any>>({});
+  
+  const triggerGroupRefresh = () => {
+    console.log('[groupings] 🔄 Triggering group refresh to re-enrich scores...');
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const { data: eventData, isLoading: eventLoading } = trpc.events.get.useQuery({ eventId: id || '' }, { enabled: !!id });
+  const { data: allMembers = [], isLoading: membersLoading } = trpc.members.getAll.useQuery();
+  const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings } = trpc.sync.groupings.get.useQuery(
+    { eventId: id || '' },
+    { enabled: !!id }
+  );
+  const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores } = trpc.sync.scores.getAll.useQuery(
+    { eventId: id || '' },
+    { enabled: !!id }
+  );
+  const { data: backendRegistrations = [], refetch: refetchRegistrations } = trpc.registrations.getAll.useQuery(
+    { eventId: id || '' },
+    { enabled: !!id }
+  );
+  const syncGroupingsMutation = trpc.sync.groupings.sync.useMutation();
+  const deleteScoresMutation = trpc.sync.scores.deleteAll.useMutation();
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser);
+        console.log('[groupings] User loaded:', currentUser?.username, 'isAdmin:', currentUser?.isAdmin);
+      } catch (error) {
+        console.error('[groupings] Error loading user:', error);
+      }
+    };
+    loadUser();
+  }, []);
+
+  useEffect(() => {
+    if (eventData) {
+      setEvent(eventData as Event);
+      console.log('[groupings] Event loaded from backend:', eventData.name);
+    }
+  }, [eventData]);
+
+  useEffect(() => {
+    if (allMembers.length > 0) {
+      setMembers(allMembers as Member[]);
+      console.log('[groupings] Members loaded from backend:', allMembers.length);
+    }
+  }, [allMembers]);
+
+  useEffect(() => {
+    if (!event || !allMembers || backendRegistrations.length === 0) return;
+    
+    console.log('[groupings] 🔄 Loading registrations from backend...');
+    const regMap: Record<string, any> = {};
+    
+    backendRegistrations.forEach((reg: any) => {
+      const member = allMembers.find((m: any) => m.id === reg.memberId);
+      if (member) {
+        regMap[member.name] = {
+          id: reg.id,
+          eventId: reg.eventId,
+          playerName: member.name,
+          playerPhone: reg.playerPhone,
+          paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
+          paymentMethod: 'zelle',
+          adjustedHandicap: reg.adjustedHandicap,
+          numberOfGuests: reg.numberOfGuests || 0,
+        };
+      }
+    });
+    
+    setRegistrations(regMap);
+    console.log('[groupings] ✅ Loaded registrations from backend:', Object.keys(regMap).length);
+    console.log('[groupings] 📊 Sample registrations:', Object.entries(regMap).slice(0, 3).map(([name, reg]: [string, any]) => ({
+      name,
+      adjustedHandicap: reg.adjustedHandicap,
+    })));
+  }, [event, allMembers, backendRegistrations]);
+
+  useEffect(() => {
+    const loadCourseHandicapSetting = async () => {
+      if (event) {
+        try {
+          const key = `useCourseHandicap_${event.id}`;
+          const value = await AsyncStorage.getItem(key);
+          if (value !== null) {
+            setUseCourseHandicap(value === 'true');
+            console.log('[groupings] Loaded course handicap setting:', value === 'true');
+          }
+        } catch (error) {
+          console.error('[groupings] Error loading course handicap setting:', error);
+        }
+      }
+    };
+    loadCourseHandicapSetting();
+    
+    const interval = setInterval(loadCourseHandicapSetting, 500);
+    return () => clearInterval(interval);
+  }, [event]);
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[groupings] 🔄 Screen focused - triggering score refresh');
+      if (event) {
+        triggerGroupRefresh();
+      }
+    }, [event])
+  );
+
+  const enrichSlotsWithScores = (slots: (Member | null)[]) => {
+    if (!eventScores || eventScores.length === 0) return slots;
+    
+    return slots.map(player => {
+      if (!player) return null;
+      
+      const playerScores = eventScores.filter((s: any) => s.memberId === player.id);
+      const totalScore = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
+      
+      if (totalScore > 0) {
+        return { ...player, scoreTotal: totalScore };
+      }
+      return player;
+    });
+  };
+
+  const loadGroupsFromStorage = useCallback(async () => {
+    if (!event || members.length === 0 || groupingsLoading) {
+      console.log('[groupings] ⚠️ Cannot load groups - event, members, or groupings not ready');
+      return;
+    }
+
+    console.log('[groupings] 🔄 loadGroupsFromStorage triggered for day', activeDay);
+    
+    const doubleModeKey = `doubleMode_${event.id}_day${activeDay}`;
+    const savedDoubleMode = await AsyncStorage.getItem(doubleModeKey);
+    const isDoubleMode = savedDoubleMode === 'true';
+    setDoubleMode(isDoubleMode);
+    console.log('[groupings] Loaded double mode for day', activeDay, ':', isDoubleMode);
+    
+    const dayGroupings = eventGroupings.filter((g: any) => g.day === activeDay);
+    console.log(`[groupings] Found ${dayGroupings.length} groupings from backend for day ${activeDay}`);
+    
+    let newGroups: Group[] = [];
+
+    if (dayGroupings.length > 0) {
+      console.log(`[groupings] 📥 Loading saved groupings from backend for day ${activeDay}`);
+      const maxHole = Math.max(...dayGroupings.map((g: Grouping) => g.hole));
+      
+      const registeredPlayerIds = new Set(event.registeredPlayers || []);
+      console.log(`[groupings] 🔍 Current registered players:`, registeredPlayerIds.size);
+      
+      for (let i = 1; i <= maxHole; i++) {
+        const grouping = dayGroupings.find((g: Grouping) => g.hole === i);
+        if (grouping) {
+          const slots = grouping.slots.map(memberId => {
+            if (!memberId) return null;
+            
+            // Only include player if they're still registered
+            if (!registeredPlayerIds.has(memberId)) {
+              console.log(`[groupings] ⚠️ Player ${memberId} is in groupings but not registered - removing from group`);
+              return null;
+            }
+            
+            const member = members.find(m => m.id === memberId);
+            return member || null;
+          });
+          newGroups.push({
+            hole: i,
+            slots: slots as (Member | null)[],
+          });
+        } else {
+          newGroups.push({
+            hole: i,
+            slots: [null, null, null, null],
+          });
+        }
+      }
+      console.log(`[groupings] ✅ Loaded ${newGroups.length} groups from backend (filtered by registered players)`);
+    } else {
+      console.log('[groupings] 📝 No saved groupings found, creating initial groups based on registrations');
+      const numGroups = Math.ceil((event.registeredPlayers || []).length / 4);
+      for (let i = 0; i < numGroups; i++) {
+        newGroups.push({
+          hole: i + 1,
+          slots: [null, null, null, null],
+        });
+      }
+      console.log(`[groupings] Created ${numGroups} empty groups`);
+    }
+
+    console.log('[groupings] 📊 BEFORE enrichment - groups:', newGroups.map((g: any) => g.slots.map((s: any) => s ? { name: s.name, score: s.scoreTotal } : null)));
+    
+    const enrichedGroups = newGroups.map(group => ({
+      ...group,
+      slots: enrichSlotsWithScores(group.slots),
+    }));
+    
+    console.log('[groupings] 📊 AFTER enrichment - checking if any scores loaded:', enrichedGroups.map((g: any) => g.slots.map((s: any) => s ? { name: s.name, score: s.scoreTotal } : null)));
+    
+    setGroups(enrichedGroups);
+    setInitialGroups(JSON.parse(JSON.stringify(enrichedGroups)));
+    setCheckedPlayers([]);
+    setIsInitialized(true);
+  }, [event, members, activeDay, eventGroupings, eventScores, groupingsLoading]);
+
+  useEffect(() => {
+    console.log('[groupings] 📍 Initial load effect triggered');
+    loadGroupsFromStorage();
+  }, [loadGroupsFromStorage]);
+
+  const [enrichedUngroupedPlayers, setEnrichedUngroupedPlayers] = useState<Member[]>([]);
+
+  useEffect(() => {
+    if (!isInitialized || refreshTrigger === 0) {
+      console.log('[groupings] ⏭️ Skipping refresh - not initialized yet or refreshTrigger is 0');
+      return;
+    }
+
+    console.log('[groupings] 🔄 Refresh triggered (count:', refreshTrigger, ') - reloading from storage');
+    loadGroupsFromStorage();
+  }, [refreshTrigger, isInitialized, loadGroupsFromStorage]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const enrichUngrouped = () => {
+        if (!event || members.length === 0) return;
+
+        const assignedIds = new Set<string>();
+        groups.forEach(group => {
+          group.slots.forEach(slot => {
+            if (slot) assignedIds.add(slot.id);
+          });
+        });
+
+        const unassignedMembers = (event.registeredPlayers || [])
+          .map(playerId => members.find(m => m.id === playerId))
+          .filter((m): m is Member => m !== null && m !== undefined && !assignedIds.has(m.id))
+          .sort((a, b) => (a?.name || '').localeCompare(b?.name || ''));
+
+        try {
+          const enriched = unassignedMembers.map(player => {
+            const playerReg = registrations[player.name];
+            const effectiveHandicap = getDisplayHandicap(player, playerReg, event || undefined, useCourseHandicap, activeDay);
+            const playerScores = eventScores.filter((s: any) => s.memberId === player.id);
+            const grandTotal = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
+            
+            if (grandTotal > 0) {
+              return { ...player, scoreTotal: grandTotal, effectiveHandicap };
+            }
+            return { ...player, effectiveHandicap };
+          });
+
+          setEnrichedUngroupedPlayers(enriched);
+        } catch (error) {
+          console.error('[groupings] Error enriching ungrouped players:', error);
+          setEnrichedUngroupedPlayers(unassignedMembers);
+        }
+      };
+
+      enrichUngrouped();
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [event, members, groups, eventScores]);
+
+  const ungroupedPlayers = enrichedUngroupedPlayers;
+
+  const hasGroupChanges = useMemo(() => {
+    if (groups.length !== initialGroups.length) return true;
+    return groups.some((group, idx) => {
+      const initial = initialGroups[idx];
+      if (group.hole !== initial.hole) return true;
+      return group.slots.some((slot, slotIdx) => {
+        const initialSlot = initial.slots[slotIdx];
+        if (!slot && !initialSlot) return false;
+        if (!slot || !initialSlot) return true;
+        return slot.id !== initialSlot.id;
+      });
+    });
+  }, [groups, initialGroups]);
+
+  const handleSave = async () => {
+    if (!event || !user) return;
+    try {
+      const groupingsToSave = groups.map(group => ({
+        day: activeDay,
+        hole: group.hole,
+        slots: group.slots.map(slot => slot?.id || null),
+      }));
+
+      await syncGroupingsMutation.mutateAsync({
+        eventId: event.id,
+        groupings: groupingsToSave,
+        syncedBy: user.id,
+      });
+      
+      await refetchGroupings();
+      
+      setInitialGroups(JSON.parse(JSON.stringify(groups)));
+
+      console.log('[groupings] ✅ Groupings saved for day', activeDay, 'to backend');
+    } catch (error) {
+      console.error('[groupings] Error saving:', error);
+      Alert.alert('Error', 'Failed to save groupings. Please try again.');
+    }
+  };
+
+  const handleAddPlayersToGroup = (groupIndex: number) => {
+    if (selectedUngroupedIds.size === 0) return;
+
+    const playersToAdd = Array.from(selectedUngroupedIds)
+      .map(id => enrichedUngroupedPlayers.find(p => p.id === id))
+      .filter(Boolean) as Member[];
+
+    console.log(`[groupings] Adding ${playersToAdd.length} players to group ${groupIndex + 1}:`, playersToAdd.map(p => ({ name: p.name, score: p.scoreTotal })));
+
+    setGroups(prevGroups => {
+      const newGroups = [...prevGroups];
+      const group = newGroups[groupIndex];
+      let slotIdx = 0;
+
+      for (let i = 0; i < group.slots.length && slotIdx < playersToAdd.length; i++) {
+        if (!group.slots[i]) {
+          group.slots[i] = playersToAdd[slotIdx];
+          slotIdx++;
+        }
+      }
+
+      return newGroups;
+    });
+    
+    setSelectedUngroupedIds(new Set());
+  };
+
+  const handleRemovePlayer = (groupIndex: number, slotIndex: number) => {
+    setGroups(prevGroups => {
+      const newGroups = [...prevGroups];
+      const removedPlayer = newGroups[groupIndex].slots[slotIndex];
+      newGroups[groupIndex].slots[slotIndex] = null;
+      
+      if (removedPlayer) {
+        console.log(`[groupings] ✅ Player removed from group: ${removedPlayer.name}`);
+        console.log(`[groupings] 💾 Score PERSISTED in AsyncStorage: ${removedPlayer.scoreTotal} (will reappear in Ungrouped section)`);
+      }
+      
+      return newGroups;
+    });
+
+    setCheckedPlayers(prev =>
+      prev.filter(
+        cp => !(cp.groupIdx === groupIndex && cp.slotIdx === slotIndex)
+      )
+    );
+  };
+
+  const handleUnassignAll = () => {
+    const newGroups = groups.map(group => ({
+      ...group,
+      slots: [null, null, null, null] as (Member | null)[],
+    }));
+    setGroups(newGroups);
+    setCheckedPlayers([]);
+  };
+
+  const handleSortByNetScore = () => {
+    if (ungroupedPlayers.length === 0) {
+      console.log('[groupings] ⚠️ No unassigned players!');
+      return;
+    }
+
+    console.log('[groupings] 📊 NET SCORE button tapped! Active day:', activeDay);
+    console.log('[groupings] Unassigned event players:', ungroupedPlayers.map(p => p.name));
+
+    const sortedPlayers = [...ungroupedPlayers].sort((a, b) => {
+      const playerRegA = registrations[a.name];
+      const playerRegB = registrations[b.name];
+      const handicapA = getDisplayHandicap(a, playerRegA, event || undefined, useCourseHandicap, activeDay);
+      const handicapB = getDisplayHandicap(b, playerRegB, event || undefined, useCourseHandicap, activeDay);
+      const netScoreA = (a.scoreTotal ?? 0) - handicapA;
+      const netScoreB = (b.scoreTotal ?? 0) - handicapB;
+      return netScoreA - netScoreB;
+    });
+
+    console.log('[groupings] 🔄 Sorted by net score:', sortedPlayers.map(p => {
+      const playerReg = registrations[p.name];
+      const handicap = getDisplayHandicap(p, playerReg, event || undefined, useCourseHandicap, activeDay);
+      return { name: p.name, gross: p.scoreTotal || 0, handicap, net: (p.scoreTotal ?? 0) - handicap };
+    }));
+
+    const newGroups = JSON.parse(JSON.stringify(groups)) as Group[];
+    let playerIdx = 0;
+
+    for (let groupIdx = 0; groupIdx < newGroups.length && playerIdx < sortedPlayers.length; groupIdx++) {
+      for (let slotIdx = 0; slotIdx < 4 && playerIdx < sortedPlayers.length; slotIdx++) {
+        if (!newGroups[groupIdx].slots[slotIdx]) {
+          newGroups[groupIdx].slots[slotIdx] = sortedPlayers[playerIdx];
+          console.log(`[groupings] Assigning ${sortedPlayers[playerIdx].name} to Group ${groupIdx + 1}, Slot ${slotIdx + 1}`);
+          playerIdx++;
+        }
+      }
+    }
+
+    setGroups(newGroups);
+    console.log('[groupings] ✅ Unassigned event players auto-grouped by net score');
+  };
+
+  const updateMemberMutation = trpc.members.update.useMutation();
+
+  const handleUpdateMember = async (updatedMember: Member) => {
+    try {
+      if (!event) return;
+
+      await updateMemberMutation.mutateAsync(updatedMember);
+      console.log('[groupings] ✅ Member updated and saved to backend:', updatedMember.name, { 
+        adjustedHandicap: updatedMember.adjustedHandicap,
+        handicap: updatedMember.handicap 
+      });
+    } catch (error) {
+      console.error('[groupings] Error saving member:', error);
+    }
+  };
+
+  const handlePlayerCheckboxChange = (groupIdx: number, slotIdx: number, checked: boolean) => {
+    if (checked) {
+      const player = groups[groupIdx]?.slots[slotIdx];
+      if (player) {
+        setCheckedPlayers([...checkedPlayers, { groupIdx, slotIdx, player }]);
+      }
+    } else {
+      setCheckedPlayers(checkedPlayers.filter(cp => !(cp.groupIdx === groupIdx && cp.slotIdx === slotIdx)));
+    }
+  };
+
+  const handleGroupCheckboxChange = (groupIdx: number, checked: boolean) => {
+    const newCheckedGroups = new Set(checkedGroups);
+    if (checked) {
+      newCheckedGroups.add(groupIdx);
+    } else {
+      newCheckedGroups.delete(groupIdx);
+    }
+    setCheckedGroups(newCheckedGroups);
+  };
+
+  const handleSwitchGroups = () => {
+    const checkedGroupsArray = Array.from(checkedGroups).sort();
+    if (checkedGroupsArray.length !== 2) return;
+
+    const [groupIdx1, groupIdx2] = checkedGroupsArray;
+    const newGroups = [...groups];
+
+    const tempSlots = newGroups[groupIdx1].slots;
+    newGroups[groupIdx1].slots = newGroups[groupIdx2].slots;
+    newGroups[groupIdx2].slots = tempSlots;
+
+    setGroups(newGroups);
+    setCheckedGroups(new Set());
+    console.log(`[groupings] Switched groups ${groupIdx1} and ${groupIdx2}`);
+  };
+
+  const handleGeneratePDF = async () => {
+    try {
+      console.log('[groupings] Generating PDF...');
+      if (!event) return;
+      const groupingsForPDF: Grouping[] = groups.map(group => ({
+        day: activeDay,
+        hole: group.hole,
+        slots: group.slots.map(slot => slot?.id || null),
+      }));
+      await generateGroupingsPDF({
+        groups: groupingsForPDF,
+        event,
+        activeDay,
+        eventName: event.eventName || event.name || 'Event',
+        labelOverride,
+        members,
+      });
+      console.log('[groupings] ✅ PDF generated successfully');
+    } catch (error) {
+      console.error('[groupings] Error generating PDF:', error);
+    }
+  };
+
+  const handleAddCheckedPlayerToGroup = (groupIdx: number, slotIdx: number) => {
+    if (checkedPlayers.length === 0) return;
+
+    const checkedPlayer = checkedPlayers[0];
+    const playerBeingMoved = checkedPlayer.player;
+
+    console.log(`[groupings] ADD: Moving ${playerBeingMoved.name} (score: ${playerBeingMoved.scoreTotal}) from Group ${checkedPlayer.groupIdx + 1} Slot ${checkedPlayer.slotIdx} to Group ${groupIdx + 1} Slot ${slotIdx}`);
+
+    setGroups(prevGroups => {
+      const newGroups = [...prevGroups];
+      newGroups[checkedPlayer.groupIdx].slots[checkedPlayer.slotIdx] = null;
+      newGroups[groupIdx].slots[slotIdx] = playerBeingMoved;
+      return newGroups;
+    });
+    
+    setCheckedPlayers([]);
+  };
+
+  const handleSwitchCheckedPlayers = () => {
+    if (checkedPlayers.length !== 2) return;
+
+    const newGroups = [...groups];
+    const player1 = checkedPlayers[0];
+    const player2 = checkedPlayers[1];
+
+    const p1Name = newGroups[player1.groupIdx].slots[player1.slotIdx]?.name;
+    const p2Name = newGroups[player2.groupIdx].slots[player2.slotIdx]?.name;
+    const p1Score = newGroups[player1.groupIdx].slots[player1.slotIdx]?.scoreTotal;
+    const p2Score = newGroups[player2.groupIdx].slots[player2.slotIdx]?.scoreTotal;
+
+    console.log(`[groupings] SWITCH: ${p1Name} (score: ${p1Score}) <-> ${p2Name} (score: ${p2Score})`);
+
+    const temp = newGroups[player1.groupIdx].slots[player1.slotIdx];
+    newGroups[player1.groupIdx].slots[player1.slotIdx] = newGroups[player2.groupIdx].slots[player2.slotIdx];
+    newGroups[player2.groupIdx].slots[player2.slotIdx] = temp;
+
+    setGroups(newGroups);
+    setCheckedPlayers([]);
+  };
+
+  const handleResetScores = async () => {
+    if (!event || !user) return;
+    
+    const adminMember = allMembers.find((m: any) => m.id === user.id && m.isAdmin);
+    
+    if (!adminMember || adminMember.pin !== pinInput) {
+      Alert.alert('Error', 'Invalid admin PIN. Please try again.');
+      return;
+    }
+    
+    setShowPinModal(false);
+    setPinInput('');
+    
+    try {
+      console.log('[groupings] 🗑️ Resetting all scores for event:', event.id);
+      
+      await deleteScoresMutation.mutateAsync({ eventId: event.id });
+      console.log('[groupings] ✅ Backend scores deleted');
+      
+      const numberOfDays = event.numberOfDays || 1;
+      for (let day = 1; day <= numberOfDays; day++) {
+        const adminScoreKey = `adminScores_${event.id}_day${day}`;
+        const playerScoreKey = `scores_${event.id}_day${day}`;
+        
+        await AsyncStorage.removeItem(adminScoreKey);
+        await AsyncStorage.removeItem(playerScoreKey);
+        console.log(`[groupings] 🧹 Cleared AsyncStorage for day ${day}`);
+      }
+      
+      await refetchScores();
+      await refetchRegistrations();
+      
+      triggerGroupRefresh();
+      
+      Alert.alert('Success', 'All scores have been reset successfully.');
+    } catch (error) {
+      console.error('[groupings] Error resetting scores:', error);
+      Alert.alert('Error', 'Failed to reset scores. Please try again.');
+    }
+  };
+
+  if (eventLoading || membersLoading || groupingsLoading || scoresLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.titleText}>GROUPINGS</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16, color: '#666' }}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!event) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.titleText}>GROUPINGS</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16, color: '#666' }}>Event not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <>
+      <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.titleText}>GROUPINGS</Text>
+        {user?.isAdmin && (
+          <TouchableOpacity 
+            style={styles.pdfBtn}
+            onPress={handleGeneratePDF}
+          >
+            <Ionicons name="document-text" size={14} color="#fff" />
+            <Text style={styles.pdfBtnText}>PDF</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {event && event.photoUrl && (
+        <View style={styles.eventPhotoContainer}>
+          <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
+          <Text style={styles.eventNameOverlay}>{event.name}</Text>
+          <View style={styles.bottomInfoOverlay}>
+            <Text style={styles.eventLocationOverlay}>{event.location}</Text>
+            <Text style={styles.eventDateOverlay}>
+              {event.date}
+              {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {user?.isAdmin && (
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[styles.filterBtn, labelOverride === 'teeTime' && styles.filterBtnActive]}
+            onPress={() => setLabelOverride('teeTime')}
+          >
+            <Text style={[styles.filterBtnText, labelOverride === 'teeTime' && styles.filterBtnTextActive]}>
+              TEE TIME
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterBtn, labelOverride === 'shotgun' && styles.filterBtnActive]}
+            onPress={() => setLabelOverride('shotgun')}
+          >
+            <Text style={[styles.filterBtnText, labelOverride === 'shotgun' && styles.filterBtnTextActive]}>
+              SHOTGUN
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterBtn, labelOverride === 'none' && styles.filterBtnActive]}
+            onPress={() => setLabelOverride('none')}
+          >
+            <Text style={[styles.filterBtnText, labelOverride === 'none' && styles.filterBtnTextActive]}>
+              NO OVERRIDE
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.netScoreBtn}
+            onPress={handleSortByNetScore}
+          >
+            <Text style={styles.netScoreBtnText}>
+              NET SCORE
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <DaySelector
+        numberOfDays={event.numberOfDays ?? 1}
+        selectedDay={activeDay}
+        onDaySelect={setActiveDay}
+        doubleMode={doubleMode}
+        onDoubleModeToggle={handleDoubleModeToggle}
+        isAdmin={user?.isAdmin ?? false}
+      />
+
+      {user?.isAdmin && (
+        <View style={styles.unassignAllBtnContainer}>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.unassignAllBtnAdmin}
+              onPress={handleUnassignAll}
+            >
+              <Ionicons name="trash" size={16} color="#fff" />
+              <Text style={styles.unassignAllBtnText}>UNASSIGN</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.resetScoresBtn}
+              onPress={() => {
+                setShowPinModal(true);
+              }}
+            >
+              <Ionicons name="refresh-circle" size={16} color="#fff" />
+              <Text style={styles.resetScoresBtnText}>RESET</Text>
+            </TouchableOpacity>
+          </View>
+
+          {checkedGroups.size === 2 && (
+            <TouchableOpacity
+              style={styles.switchGroupsBtn}
+              onPress={handleSwitchGroups}
+            >
+              <Text style={styles.switchGroupsBtnText}>SWITCH</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {checkedPlayers.length === 2 && (
+        <View style={styles.switchContainer}>
+          <TouchableOpacity
+            style={styles.switchBtn}
+            onPress={handleSwitchCheckedPlayers}
+          >
+            <Text style={styles.switchBtnText}>SWITCH</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {hasGroupChanges && (
+        <View style={styles.saveGroupingsContainer}>
+          <TouchableOpacity
+            style={styles.saveGroupingsBtn}
+            onPress={handleSave}
+          >
+            <Text style={styles.saveGroupingsBtnText}>SAVE GROUPINGS</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <View style={styles.contentWrapper}>
+        {user?.isAdmin && showUnassigned && ungroupedPlayers.length > 0 && (
+          <View style={styles.ungroupedSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionCount}>{ungroupedPlayers.length}</Text>
+              <Text style={styles.sectionTitle}>Ungrouped</Text>
+            </View>
+
+            <ScrollView style={styles.ungroupedList} showsVerticalScrollIndicator={false}>
+              {ungroupedPlayers.map(player => {
+                const isSelected = selectedUngroupedIds.has(player.id);
+                const playerReg = registrations[player.name];
+                const handicap = getDisplayHandicap(player, playerReg, event || undefined, useCourseHandicap, activeDay);
+                const scoreNet = (player.scoreTotal ?? 0) - handicap;
+                const flight = calculateTournamentFlight(player, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, playerReg, event || undefined, useCourseHandicap, activeDay);
+                return (
+                  <TouchableOpacity
+                    key={player.id}
+                    style={[styles.playerCard, isSelected && styles.playerCardSelected]}
+                    onPress={() => {
+                      const newSelected = new Set(selectedUngroupedIds);
+                      if (isSelected) {
+                        newSelected.delete(player.id);
+                      } else {
+                        newSelected.add(player.id);
+                      }
+                      setSelectedUngroupedIds(newSelected);
+                    }}
+                  >
+                    <Text style={[styles.playerName, isSelected && styles.playerNameSelected]}>{player.name}</Text>
+                    <Text style={[styles.playerHdc, isSelected && styles.playerTextSelected]}>{getHandicapLabel(player, playerReg, useCourseHandicap, event || undefined, activeDay)} {handicap}</Text>
+                    {flight && flight !== '—' && <Text style={[styles.playerFlight, isSelected && styles.playerTextSelected]}>Flight: {flight}</Text>}
+                    <Text style={[styles.playerNetScore, isSelected && styles.playerNetScoreSelected]}>NET: {player.scoreTotal === undefined || player.scoreTotal === null ? '0.00' : truncateToTwoDecimals(scoreNet)}</Text>
+                    {player.scoreTotal !== undefined && player.scoreTotal !== null && (
+                      <Text style={[styles.playerScore, isSelected && styles.playerScoreSelected]}>Total: {player.scoreTotal}</Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        <View style={styles.groupsSection}>
+          {!user?.isAdmin && groups.every(g => g.slots.every(s => s === null)) ? (
+            <View style={styles.noGroupingsContainer}>
+              <Ionicons name="people" size={64} color="#ccc" />
+              <Text style={styles.noGroupingsTitle}>Groupings Not Formed</Text>
+              <Text style={styles.noGroupingsSubtitle}>Come Back Later</Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {groups.map((group, idx) => (
+                <View key={group.hole} style={[styles.groupContainer, checkedGroups.has(idx) && styles.groupContainerSelected]}>
+                  <GroupCard
+                    key={group.hole}
+                    groupNumber={group.hole}
+                    label={event ? generateGroupLabel(idx, event, activeDay, labelOverride, doubleMode) : `Group ${group.hole}`}
+                    playerCount={group.slots.filter(s => s).length}
+                    slots={group.slots}
+                    selectedCount={selectedUngroupedIds.size}
+                    onAddPlayers={() => handleAddPlayersToGroup(idx)}
+                    onRemovePlayer={(slotIdx) => handleRemovePlayer(idx, slotIdx)}
+                    onUpdateScores={(updatedSlots) => {
+                      const newGroups = [...groups];
+                      newGroups[idx].slots = updatedSlots;
+                      setGroups(newGroups);
+                    }}
+                    onUpdateMember={handleUpdateMember}
+                    eventId={event.id}
+                    numberOfDays={event.numberOfDays ?? 1}
+                    checkedPlayers={checkedPlayers}
+                    onPlayerCheckboxChange={handlePlayerCheckboxChange}
+                    onAddCheckedPlayerToSlot={handleAddCheckedPlayerToGroup}
+                    groupIdx={idx}
+                    isAdmin={user?.isAdmin ?? false}
+                    checkedGroups={checkedGroups}
+                    onGroupCheckboxChange={handleGroupCheckboxChange}
+                    triggerGroupRefresh={triggerGroupRefresh}
+                    activeDay={activeDay}
+                    event={event}
+                    registrations={registrations}
+                    useCourseHandicap={useCourseHandicap}
+                  />
+                </View>
+              ))}
+              <View style={{ height: 20 }} />
+            </ScrollView>
+          )}
+        </View>
+      </View>
+
+      </SafeAreaView>
+
+      <Modal
+        visible={showPinModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowPinModal(false);
+          setPinInput('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pinModalContainer}>
+            <Text style={styles.pinModalTitle}>Reset All Scores</Text>
+            <Text style={styles.pinModalSubtitle}>Enter your admin PIN to confirm this action. This cannot be undone.</Text>
+            
+            <TextInput
+              style={styles.pinInput}
+              placeholder="Admin PIN"
+              value={pinInput}
+              onChangeText={setPinInput}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={4}
+              autoFocus
+            />
+            
+            <View style={styles.pinModalButtons}>
+              <TouchableOpacity
+                style={[styles.pinModalBtn, styles.pinModalCancelBtn]}
+                onPress={() => {
+                  setShowPinModal(false);
+                  setPinInput('');
+                }}
+              >
+                <Text style={styles.pinModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.pinModalBtn, styles.pinModalConfirmBtn]}
+                onPress={handleResetScores}
+              >
+                <Text style={styles.pinModalConfirmText}>Reset</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <EventFooter />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1B5E20',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    position: 'relative',
+  },
+  titleText: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#fff',
+    textAlign: 'center',
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 16,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  filterBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#ccc',
+    alignItems: 'center',
+  },
+  filterBtnActive: {
+    backgroundColor: '#1B5E20',
+    borderColor: '#1B5E20',
+  },
+  filterBtnText: {
+    fontSize: 9,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  filterBtnTextActive: {
+    color: '#fff',
+  },
+  netScoreBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    backgroundColor: '#7C3AED',
+    borderColor: '#7C3AED',
+    alignItems: 'center',
+  },
+  netScoreBtnText: {
+    fontSize: 9,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  groupContainer: {
+    borderWidth: 1,
+    borderColor: '#999999',
+    marginHorizontal: 16,
+    marginVertical: 6,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
+  groupContainerSelected: {
+    backgroundColor: '#FFE0B2',
+  },
+  saveGroupingsContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  saveGroupingsBtn: {
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+  },
+  saveGroupingsBtnText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  contentWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  ungroupedSection: {
+    width: '35%',
+    borderRightWidth: 1,
+    borderRightColor: '#e0e0e0',
+    backgroundColor: '#fff',
+  },
+  sectionHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  sectionCount: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1B5E20',
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#999',
+    marginTop: 4,
+  },
+  ungroupedList: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  playerCard: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    marginBottom: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f9f9f9',
+  },
+  playerCardSelected: {
+    backgroundColor: '#1B5E20',
+    borderColor: '#1B5E20',
+  },
+  playerName: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  playerHdc: {
+    fontSize: 11,
+    color: '#333',
+    marginTop: 2,
+  },
+  playerFlight: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 4,
+    fontWeight: '600' as const,
+  },
+  playerNetScore: {
+    fontSize: 11,
+    color: '#dc2626',
+    fontWeight: '700' as const,
+    marginTop: 4,
+  },
+  playerNameSelected: {
+    color: '#fff',
+  },
+  playerTextSelected: {
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  playerNetScoreSelected: {
+    color: '#fff',
+  },
+  playerScore: {
+    fontSize: 11,
+    color: '#1B5E20',
+    fontWeight: '700' as const,
+    marginTop: 4,
+  },
+  playerScoreSelected: {
+    color: '#FFE082',
+  },
+  groupsSection: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  firstGroupHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#f5f5f5',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  pdfBtn: {
+    flexDirection: 'row',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    position: 'absolute',
+    right: 16,
+  },
+  pdfBtnText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  unassignAllBtnContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  unassignAllBtnAdmin: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#d32f2f',
+    gap: 8,
+  },
+  unassignAllBtnText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  switchGroupsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#FFA500',
+    marginTop: 8,
+  },
+  switchGroupsBtnText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  resetScoresBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#E91E63',
+    gap: 8,
+  },
+  resetScoresBtnText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  saveBtn: {
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: '#1B5E20',
+    alignItems: 'center',
+  },
+  saveBtnDisabled: {
+    backgroundColor: '#ccc',
+  },
+  saveBtnText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  switchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  switchBtn: {
+    paddingVertical: 14,
+    borderRadius: 8,
+    backgroundColor: '#FF9800',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  switchBtnText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  eventPhotoContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 100,
+  },
+  eventPhoto: {
+    width: '100%',
+    height: 100,
+    resizeMode: 'cover',
+  },
+  eventNameOverlay: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    right: 0,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#fff',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  bottomInfoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    gap: 2,
+  },
+  eventLocationOverlay: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  eventDateOverlay: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pinModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+  },
+  pinModalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  pinModalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  pinInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  pinModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  pinModalBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pinModalCancelBtn: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  pinModalCancelText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  pinModalConfirmBtn: {
+    backgroundColor: '#E91E63',
+  },
+  pinModalConfirmText: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  noGroupingsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 64,
+  },
+  noGroupingsTitle: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: '#666',
+    marginTop: 24,
+    textAlign: 'center',
+  },
+  noGroupingsSubtitle: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+});

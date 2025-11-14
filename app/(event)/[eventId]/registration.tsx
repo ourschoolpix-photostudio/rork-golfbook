@@ -1,0 +1,2071 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Alert,
+  TextInput,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationsContext';
+import { registrationService } from '@/utils/registrationService';
+import { Member, User, Event } from '@/types';
+import { EventPlayerModal } from '@/components/EventPlayerModal';
+import { ZelleInvoiceModal } from '@/components/ZelleInvoiceModal';
+import { PayPalInvoiceModal } from '@/components/PayPalInvoiceModal';
+import { EventDetailsModal } from '@/components/EventDetailsModal';
+import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
+import { EventFooter } from '@/components/EventFooter';
+import {
+  getDisplayHandicap,
+  hasAdjustedHandicap,
+  calculateTournamentFlight,
+  isUsingCourseHandicap,
+} from '@/utils/handicapHelper';
+
+export default function EventRegistrationScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { eventId } = useLocalSearchParams<{ eventId: string }>();
+  const { currentUser, members: allMembers } = useAuth();
+  const { addNotification } = useNotifications();
+  const [event, setEvent] = useState<Event | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<Member[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedPlayerForEvent, setSelectedPlayerForEvent] = useState<Member | null>(null);
+  const [eventPlayerModalVisible, setEventPlayerModalVisible] = useState(false);
+  const [addCustomGuestModalVisible, setAddCustomGuestModalVisible] = useState(false);
+  const [activeSort, setActiveSort] = useState<'all' | 'abc' | 'A' | 'B' | 'C' | 'L'>('all');
+  const [registrations, setRegistrations] = useState<Record<string, any>>({});
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
+  const [eventDetailsModalVisible, setEventDetailsModalVisible] = useState(false);
+  const [selectedForBulkAdd, setSelectedForBulkAdd] = useState<Set<string>>(new Set());
+  const [addCustomGuestName, setAddCustomGuestName] = useState('');
+  const [addCustomGuestCount, setAddCustomGuestCount] = useState('');
+  const [playerGuestCounts, setPlayerGuestCounts] = useState<Record<string, string>>({});
+  const [paymentMethodModalVisible, setPaymentMethodModalVisible] = useState(false);
+  const [zelleInvoiceModalVisible, setZelleInvoiceModalVisible] = useState(false);
+  const [paypalInvoiceModalVisible, setPaypalInvoiceModalVisible] = useState(false);
+  const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
+
+  const eventsQuery = trpc.events.getAll.useQuery();
+  const eventQuery = trpc.events.get.useQuery({ eventId: eventId! }, { enabled: !!eventId });
+  const registrationsQuery = trpc.registrations.getAll.useQuery(
+    { eventId: eventId! },
+    { enabled: !!eventId }
+  );
+  const createMemberMutation = trpc.members.create.useMutation({
+    onSuccess: () => {
+      eventsQuery.refetch();
+    },
+  });
+  const updateMemberMutation = trpc.members.update.useMutation();
+  const deleteMemberMutation = trpc.members.delete.useMutation();
+  const updateEventMutation = trpc.events.update.useMutation({
+    onSuccess: () => {
+      eventsQuery.refetch();
+      eventQuery.refetch();
+    },
+  });
+  const registerMutation = trpc.events.register.useMutation({
+    onSuccess: () => {
+      eventQuery.refetch();
+      registrationsQuery.refetch();
+    },
+  });
+  const unregisterMutation = trpc.events.unregister.useMutation({
+    onSuccess: () => {
+      eventQuery.refetch();
+      registrationsQuery.refetch();
+    },
+  });
+  const updateRegistrationMutation = trpc.registrations.update.useMutation({
+    onSuccess: () => {
+      eventQuery.refetch();
+      registrationsQuery.refetch();
+    },
+  });
+
+  const refreshEventData = async () => {
+    await eventQuery.refetch();
+  };
+
+  useEffect(() => {
+    if (eventQuery.data) {
+      const foundEvent = eventQuery.data;
+      setEvent(foundEvent);
+      
+      if (foundEvent.type === 'social') {
+        setActiveSort('abc');
+      }
+      
+      const registeredPlayerIds = Array.from(new Set(foundEvent.registeredPlayers || []));
+      const registered = allMembers.filter(m => registeredPlayerIds.includes(m.id));
+      setSelectedPlayers(registered);
+
+      const loadRegs = async () => {
+        const regs = registrationsQuery.data || [];
+        console.log('[registration] Loaded regs from backend:', regs);
+        const regMap: Record<string, any> = {};
+        regs.forEach(reg => {
+          const memberName = allMembers.find(m => m.id === reg.memberId)?.name;
+          if (memberName) {
+            regMap[memberName] = {
+              id: reg.id,
+              eventId: reg.eventId,
+              playerName: memberName,
+              playerPhone: reg.playerPhone,
+              paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
+              paymentMethod: 'zelle',
+              adjustedHandicap: reg.adjustedHandicap,
+              numberOfGuests: reg.numberOfGuests || 0,
+            };
+          }
+        });
+        console.log('[registration] Built regMap:', regMap);
+        setRegistrations(regMap);
+      };
+      
+      if (registrationsQuery.data) {
+        loadRegs();
+      }
+    }
+  }, [eventQuery.data, allMembers, registrationsQuery.data]);
+
+  useEffect(() => {
+    setMembers(allMembers);
+    console.log('[registration] ⚠️ Total members loaded:', allMembers.length);
+    console.log('[registration] First 5 members:', allMembers.slice(0, 5).map(m => ({ name: m.name, id: m.id, type: m.membershipType })));
+    console.log('[registration] Active members:', allMembers.filter(m => m.membershipType === 'active').length);
+    console.log('[registration] Inactive members:', allMembers.filter(m => m.membershipType === 'in-active').length);
+    console.log('[registration] Guests:', allMembers.filter(m => m.membershipType === 'guest').length);
+  }, [allMembers]);
+
+  useEffect(() => {
+    if (eventDetailsModalVisible) {
+      refreshEventData();
+    }
+  }, [eventDetailsModalVisible]);
+
+  useEffect(() => {
+    const loadCourseHandicapSetting = async () => {
+      if (eventId) {
+        try {
+          const key = `useCourseHandicap_${eventId}`;
+          const value = await AsyncStorage.getItem(key);
+          if (value !== null) {
+            setUseCourseHandicap(value === 'true');
+          }
+        } catch (error) {
+          console.error('[registration] Error loading course handicap setting:', error);
+        }
+      }
+    };
+    loadCourseHandicapSetting();
+    
+    const interval = setInterval(loadCourseHandicapSetting, 500);
+    return () => clearInterval(interval);
+  }, [eventId]);
+
+  const handleHomePress = () => {
+    router.push('/(tabs)');
+  };
+
+  const handleAddPlayer = async (player: Member) => {
+    if (!selectedPlayers.find((p) => p.id === player.id)) {
+      if (!event) return;
+
+      try {
+        await registerMutation.mutateAsync({
+          eventId: event.id,
+          memberId: player.id,
+        });
+
+        const updated = [...selectedPlayers, player];
+        setSelectedPlayers(updated);
+      } catch (error) {
+        console.error('Error creating registration record:', error);
+        Alert.alert('Error', 'Failed to add player. Please try again.');
+        return;
+      }
+    }
+  };
+
+  const handleBulkAddPlayers = async () => {
+    console.log('=== handleBulkAddPlayers started ===');
+    console.log('selectedForBulkAdd size:', selectedForBulkAdd.size);
+    if (selectedForBulkAdd.size === 0) {
+      Alert.alert('No Players Selected', 'Please select at least one player to add.');
+      return;
+    }
+
+    if (!event) {
+      console.error('No event found');
+      Alert.alert('Error', 'No event found');
+      return;
+    }
+
+    try {
+      const playersToAdd = members.filter((m) => selectedForBulkAdd.has(m.id));
+      console.log('Players to add:', playersToAdd.length, playersToAdd.map(p => p.name));
+
+      let updated = [...selectedPlayers];
+      let newRegs: Record<string, any> = { ...registrations };
+      let addedCount = 0;
+      let failedPlayers: string[] = [];
+
+      for (const player of playersToAdd) {
+        if (updated.find((p) => p.id === player.id)) {
+          console.log('Player already registered:', player.name);
+          continue;
+        }
+
+        try {
+          console.log('Creating registration for:', player.name);
+          const guestCount = event.type === 'social' ? parseInt(playerGuestCounts[player.id] || '0', 10) : undefined;
+          
+          await registerMutation.mutateAsync({
+            eventId: event.id,
+            memberId: player.id,
+          });
+          
+          if (guestCount && guestCount > 0) {
+            const backendRegs = await registrationsQuery.refetch();
+            const playerReg = backendRegs.data?.find((r: any) => r.memberId === player.id);
+            if (playerReg) {
+              await updateRegistrationMutation.mutateAsync({
+                registrationId: playerReg.id,
+                updates: { numberOfGuests: guestCount },
+              });
+            }
+          }
+          
+          await addNotification({
+            eventId: event.id,
+            eventName: event.name,
+            playerName: player.name,
+            playerPhone: player.phone || null,
+            paymentMethod: 'zelle',
+          });
+          
+          console.log('✓ Registration created:', player.name, 'with guest count:', guestCount);
+
+          updated = [...updated, player];
+          addedCount++;
+        } catch (regError) {
+          console.error('✗ Failed to create registration for', player.name, ':', regError);
+          failedPlayers.push(player.name);
+        }
+      }
+
+      console.log(`Total successfully added: ${addedCount}, failed: ${failedPlayers.length}`);
+
+      if (addedCount > 0) {
+        console.log('✓ Registrations updated');
+        setSelectedPlayers(updated);
+        await registrationsQuery.refetch();
+      }
+      setSelectedForBulkAdd(new Set());
+      setPlayerGuestCounts({});
+      setModalVisible(false);
+
+      if (failedPlayers.length > 0) {
+        Alert.alert(
+          'Warning',
+          `Failed to add: ${failedPlayers.join(', ')}`
+        );
+      }
+
+      console.log('=== handleBulkAddPlayers completed ===');
+    } catch (error) {
+      console.error('Fatal error in handleBulkAddPlayers:', error);
+      Alert.alert('Error', 'Failed to add players. Please check console.');
+    }
+  };
+
+  const groupingsQuery = trpc.sync.groupings.get.useQuery(
+    { eventId: eventId! },
+    { enabled: !!eventId }
+  );
+  const syncGroupingsMutation = trpc.sync.groupings.sync.useMutation();
+
+  const handleRemovePlayer = async (playerId: string) => {
+    console.log('[registration] 🗑️ REMOVE PLAYER STARTED - playerId:', playerId);
+    const playerToRemove = selectedPlayers.find((p) => p.id === playerId);
+    console.log('[registration] Player to remove:', playerToRemove?.name);
+    const isCustomGuest = playerToRemove?.membershipType === 'guest' && playerToRemove?.id.startsWith('guest_');
+    console.log('[registration] Is custom guest:', isCustomGuest);
+    
+    if (event && currentUser) {
+      const eventGroupings = groupingsQuery.data || [];
+      const playerInGroupings = eventGroupings.filter((g: any) => g.slots.includes(playerId));
+      
+      if (playerInGroupings.length > 0) {
+        console.log(`[registration] 🔍 Player found in ${playerInGroupings.length} groupings. Removing from groups first...`);
+        
+        const updatedGroupings = eventGroupings.map((g: any) => {
+          if (g.slots.includes(playerId)) {
+            return {
+              ...g,
+              slots: g.slots.map((id: string | null) => id === playerId ? null : id),
+            };
+          }
+          return g;
+        });
+        
+        try {
+          await syncGroupingsMutation.mutateAsync({
+            eventId: event.id,
+            groupings: updatedGroupings,
+            syncedBy: currentUser.id,
+          });
+          console.log('[registration] ✅ Player removed from groupings successfully');
+        } catch (error) {
+          console.error('[registration] ❌ Error removing player from groupings:', error);
+          Alert.alert('Warning', 'Failed to remove player from groupings, but will continue with unregistration.');
+        }
+      } else {
+        console.log('[registration] ℹ️ Player not found in any groupings');
+      }
+    }
+    
+    const updated = selectedPlayers.filter((p) => p.id !== playerId);
+    console.log('[registration] Updated players list:', updated.map(p => p.name));
+    setSelectedPlayers(updated);
+    
+    if (event) {
+      console.log('[registration] Unregistering player from event');
+      await unregisterMutation.mutateAsync({
+        eventId: event.id,
+        memberId: playerId,
+      });
+      console.log('[registration] ✓ Player unregistered');
+    }
+
+    if (playerToRemove) {
+      const backendReg = registrationsQuery.data?.find((r: any) => r.memberId === playerId);
+      console.log('[registration] Backend registration found:', !!backendReg);
+      
+      if (backendReg) {
+        console.log('[registration] Backend registration will be handled by unregister mutation');
+      }
+      
+      if (isCustomGuest) {
+        try {
+          console.log('[registration] Deleting custom guest member record:', playerId);
+          await deleteMemberMutation.mutateAsync({ memberId: playerId });
+          console.log('[registration] ✓ Custom guest member record deleted from database');
+          
+          const updatedMembers = members.filter(m => m.id !== playerId);
+          setMembers(updatedMembers);
+          console.log('[registration] ✓ Custom guest removed from members state');
+        } catch (error) {
+          console.error('[registration] ❌ Error deleting custom guest member:', error);
+        }
+      }
+      
+      const newRegistrations = { ...registrations };
+      delete newRegistrations[playerToRemove.name];
+      setRegistrations(newRegistrations);
+      console.log('[registration] ✓ Player removed from registrations map');
+    }
+    console.log('[registration] 🗑️ REMOVE PLAYER COMPLETED - All data cleaned up');
+  };
+
+  const handleRemoveAllPlayers = async () => {
+    if (event) {
+      try {
+        for (const player of selectedPlayers) {
+          await unregisterMutation.mutateAsync({
+            eventId: event.id,
+            memberId: player.id,
+          });
+        }
+        setSelectedPlayers([]);
+        await registrationsQuery.refetch();
+        setRegistrations({});
+      } catch (error) {
+        console.error('Error removing all players:', error);
+      }
+    }
+  };
+
+  const handlePaymentToggle = async (playerName: string, playerReg: any) => {
+    if (!playerReg) return;
+    const currentStatus = playerReg.paymentStatus;
+    const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+    const backendStatus = newStatus === 'unpaid' ? 'pending' : newStatus;
+    try {
+      await updateRegistrationMutation.mutateAsync({
+        registrationId: playerReg.id,
+        updates: { paymentStatus: backendStatus },
+      });
+      await registrationsQuery.refetch();
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      Alert.alert('Error', 'Failed to update payment status.');
+    }
+  };
+
+  const handleAddCustomGuest = async () => {
+    if (!addCustomGuestName.trim() || !event) {
+      Alert.alert('Error', 'Please enter guest name');
+      return;
+    }
+
+    const guestCount = parseInt(addCustomGuestCount, 10) || 1;
+
+    try {
+      const customGuest: Member = {
+        id: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: addCustomGuestName.trim(),
+        pin: '',
+        isAdmin: false,
+        handicap: 0,
+        rolexPoints: 0,
+        createdAt: new Date().toISOString(),
+        membershipType: 'guest',
+      };
+
+      await createMemberMutation.mutateAsync(customGuest);
+
+      await registerMutation.mutateAsync({
+        eventId: event.id,
+        memberId: customGuest.id,
+      });
+      
+      if (guestCount > 0) {
+        const backendRegs = await registrationsQuery.refetch();
+        const guestReg = backendRegs.data?.find((r: any) => r.memberId === customGuest.id);
+        if (guestReg) {
+          await updateRegistrationMutation.mutateAsync({
+            registrationId: guestReg.id,
+            updates: { numberOfGuests: guestCount },
+          });
+        }
+      }
+      
+      await addNotification({
+        eventId: event.id,
+        eventName: event.name,
+        playerName: customGuest.name,
+        playerPhone: null,
+        paymentMethod: 'zelle',
+      });
+
+      const updated = [...selectedPlayers, customGuest];
+      setSelectedPlayers(updated);
+      setMembers([...members, customGuest]);
+      setAddCustomGuestName('');
+      setAddCustomGuestCount('');
+      setAddCustomGuestModalVisible(false);
+    } catch (error) {
+      console.error('Error adding custom guest:', error);
+      Alert.alert('Error', 'Failed to add guest. Please try again.');
+    }
+  };
+
+  const handleRegisterCurrentUser = () => {
+    if (!currentUser || !event) return;
+    setPaymentMethodModalVisible(true);
+  };
+
+  const handleZelleRegistration = async (ghin: string, email: string, phone: string) => {
+    if (!currentUser || !event) return;
+
+    const currentUserMember = members.find(
+      (m) => m.id === currentUser.id && m.pin === currentUser.pin
+    );
+
+    if (!currentUserMember) {
+      throw new Error('Member profile not found');
+    }
+
+    try {
+      await updateMemberMutation.mutateAsync({
+        memberId: currentUserMember.id,
+        updates: {
+          ghin,
+          email,
+          phone,
+        },
+      });
+
+      await registerMutation.mutateAsync({
+        eventId: event.id,
+        memberId: currentUserMember.id,
+      });
+      
+      await addNotification({
+        eventId: event.id,
+        eventName: event.name,
+        playerName: currentUserMember.name,
+        playerPhone: phone || currentUserMember.phone || null,
+        paymentMethod: 'zelle',
+      });
+
+      const updated = [...selectedPlayers, currentUserMember];
+      setSelectedPlayers(updated);
+      await registrationsQuery.refetch();
+
+      setZelleInvoiceModalVisible(false);
+    } catch (error) {
+      console.error('Error during Zelle registration:', error);
+      throw error;
+    }
+  };
+
+  const handlePaymentMethodSelected = async (paymentMethod: 'zelle' | 'paypal') => {
+    setPaymentMethodModalVisible(false);
+    
+    if (paymentMethod === 'zelle') {
+      setZelleInvoiceModalVisible(true);
+    } else if (paymentMethod === 'paypal') {
+      setPaypalInvoiceModalVisible(true);
+    }
+  };
+  const isCurrentUserRegistered = () => {
+    if (!currentUser) return false;
+    return selectedPlayers.some((p) => p.id === currentUser.id && p.pin === currentUser.pin);
+  };
+
+  const handlePlayerCardPress = async (player: Member) => {
+    console.log('[registration] handlePlayerCardPress - currentUser:', currentUser ? { id: currentUser.id, name: currentUser.name, isAdmin: currentUser.isAdmin } : 'NULL');
+    if (currentUser?.isAdmin) {
+      const freshPlayer = allMembers.find(m => m.id === player.id);
+      if (freshPlayer) {
+        setSelectedPlayerForEvent(freshPlayer);
+      } else {
+        setSelectedPlayerForEvent(player);
+      }
+      setEventPlayerModalVisible(true);
+    }
+  };
+
+  const handleSavePlayerChanges = async (updatedPlayer: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number) => {
+    try {
+      console.log('[registration] 💾 Saving player changes:', {
+        player: updatedPlayer.name,
+        adjustedHandicap,
+        numberOfGuests,
+      });
+      
+      await updateMemberMutation.mutateAsync({
+        memberId: updatedPlayer.id,
+        updates: updatedPlayer,
+      });
+      const updatedMembers = members.map((m) =>
+        m.id === updatedPlayer.id ? updatedPlayer : m
+      );
+      setMembers(updatedMembers);
+
+      const updatedSelectedPlayers = selectedPlayers.map((p) =>
+        p.id === updatedPlayer.id ? updatedPlayer : p
+      );
+      setSelectedPlayers(updatedSelectedPlayers);
+
+      const playerReg = registrations[updatedPlayer.name];
+      console.log('[registration] 🔍 Found player registration:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
+      
+      if (playerReg) {
+        console.log('[registration] 📤 Updating registration in backend...');
+        await updateRegistrationMutation.mutateAsync({
+          registrationId: playerReg.id,
+          updates: {
+            adjustedHandicap,
+            numberOfGuests,
+          },
+        });
+        console.log('[registration] ✅ Backend update complete');
+        
+        console.log('[registration] 🔄 Refetching registrations...');
+        const refetchResult = await registrationsQuery.refetch();
+        console.log('[registration] 📊 Refetch complete, data length:', refetchResult.data?.length);
+        
+        if (refetchResult.data) {
+          const updatedRegData = refetchResult.data.find((r: any) => r.id === playerReg.id);
+          console.log('[registration] 🎯 Updated registration from backend:', {
+            id: updatedRegData?.id,
+            adjustedHandicap: updatedRegData?.adjustedHandicap,
+            numberOfGuests: updatedRegData?.numberOfGuests,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating player:', error);
+    }
+  };
+
+  const getPlayersFlights = useMemo((): Record<string, Member[]> => {
+    const flights: Record<string, Member[]> = { A: [], B: [], C: [], L: [] };
+
+    selectedPlayers.forEach((player) => {
+      const playerReg = registrations[player.name];
+      const flight = calculateTournamentFlight(player, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, playerReg, event || undefined, useCourseHandicap, 1);
+      if (flight in flights) {
+        flights[flight].push(player);
+      }
+    });
+
+    Object.keys(flights).forEach((flight) => {
+      flights[flight].sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+    return flights;
+  }, [selectedPlayers, event?.flightACutoff, event?.flightBCutoff, registrations, useCourseHandicap, event]);
+
+  const getDisplayedPlayers = useMemo((): Member[] => {
+    let players: Member[] = [];
+    if (activeSort === 'all') {
+      const flights = getPlayersFlights;
+      players = [...flights.A, ...flights.B, ...flights.C, ...flights.L];
+    } else if (activeSort === 'abc') {
+      players = [...selectedPlayers].sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      const flights = getPlayersFlights;
+      players = flights[activeSort] || [];
+    }
+
+    if (paymentFilter === 'paid') {
+      players = players.filter((p) => registrations[p.name]?.paymentStatus === 'paid');
+    } else if (paymentFilter === 'unpaid') {
+      players = players.filter((p) => registrations[p.name]?.paymentStatus === 'unpaid');
+    }
+
+    return players;
+  }, [activeSort, selectedPlayers, getPlayersFlights, paymentFilter, registrations]);
+
+  const getAvailableFlights = useMemo((): string[] => {
+    const available: string[] = [];
+    if (getPlayersFlights.A.length > 0) available.push('A');
+    if (getPlayersFlights.B.length > 0) available.push('B');
+    if (getPlayersFlights.C.length > 0) available.push('C');
+    if (getPlayersFlights.L.length > 0) available.push('L');
+    return available;
+  }, [getPlayersFlights]);
+
+  const getFlightCounts = useMemo(() => {
+    const flights: Record<string, number> = { A: 0, B: 0, C: 0, L: 0 };
+    selectedPlayers.forEach((player) => {
+      const playerReg = registrations[player.name];
+      const flight = calculateTournamentFlight(player, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, playerReg, event || undefined, useCourseHandicap, 1);
+      if (flight in flights) {
+        flights[flight]++;
+      }
+    });
+    return flights;
+  }, [selectedPlayers, event?.flightACutoff, event?.flightBCutoff, registrations, useCourseHandicap, event]);
+
+  const getFlightCountsString = useMemo(() => {
+    const counts: string[] = [];
+    if (getFlightCounts.A > 0) counts.push(`A: ${getFlightCounts.A}`);
+    if (getFlightCounts.B > 0) counts.push(`B: ${getFlightCounts.B}`);
+    if (getFlightCounts.C > 0) counts.push(`C: ${getFlightCounts.C}`);
+    if (getFlightCounts.L > 0) counts.push(`L: ${getFlightCounts.L}`);
+    return counts.length > 0 ? ` - ${counts.join(', ')}` : '';
+  }, [getFlightCounts]);
+
+  const getPlayersWithSeparators = useMemo(() => {
+    const players = getDisplayedPlayers;
+    if (activeSort !== 'all' || event?.type === 'social') {
+      return players.map((player) => ({ type: 'player', data: player }));
+    }
+    const result: any[] = [];
+    let currentFlight: string | null = null;
+
+    players.forEach((player) => {
+      const playerReg = registrations[player.name];
+      const playerFlight = calculateTournamentFlight(player, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, playerReg, event || undefined, useCourseHandicap, 1);
+      if (playerFlight !== currentFlight) {
+        currentFlight = playerFlight;
+        result.push({ type: 'separator', flight: playerFlight });
+      }
+      result.push({ type: 'player', data: player });
+    });
+
+    return result;
+  }, [getDisplayedPlayers, activeSort, event?.flightACutoff, event?.flightBCutoff, event?.type, useCourseHandicap, registrations]);
+
+  const getTotalGuestCount = useMemo(() => {
+    return Object.values(registrations).reduce((total, reg) => {
+      return total + (reg.numberOfGuests || 0);
+    }, 0);
+  }, [registrations]);
+
+  const getTotalPeopleCount = useMemo(() => {
+    return selectedPlayers.length + getTotalGuestCount;
+  }, [selectedPlayers.length, getTotalGuestCount]);
+
+  const getTotalPaidAmount = useMemo(() => {
+    if (!event?.entryFee) return 0;
+    const entryFee = Number(event.entryFee) || 0;
+    return Object.values(registrations)
+      .filter((reg) => reg.paymentStatus === 'paid')
+      .reduce((total, reg) => {
+        const guestCount = reg.numberOfGuests || 0;
+        const totalPeople = 1 + guestCount;
+        return total + (entryFee * totalPeople);
+      }, 0);
+  }, [registrations, event?.entryFee]);
+
+  return (
+    <>
+      <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>REGISTRATION</Text>
+      </View>
+
+      {event && event.photoUrl && (
+        <View style={styles.eventPhotoContainer}>
+          <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
+          <Text style={styles.eventNameOverlay}>{event.name}</Text>
+          <TouchableOpacity 
+            style={styles.viewDetailsButton}
+            onPress={() => setEventDetailsModalVisible(true)}
+          >
+            <Text style={styles.viewDetailsButtonText}>View Details</Text>
+          </TouchableOpacity>
+          <View style={styles.bottomInfoOverlay}>
+            <Text style={styles.eventLocationOverlay}>{event.location}</Text>
+            <Text style={styles.eventDateOverlay}>
+              {event.date}
+              {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
+            </Text>
+          </View>
+          <View style={styles.entryFeeBadge}>
+            <Text style={styles.entryFeeLabel}>Entry Fee</Text>
+            <Text style={styles.entryFeeAmount}>${event.entryFee}</Text>
+          </View>
+        </View>
+      )}
+
+      {event && (
+        <View style={styles.eventCard}>
+        </View>
+      )}
+
+      {selectedPlayers.length > 0 && (
+        <View style={styles.sortButtonsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.sortButton,
+                    activeSort === 'all' && styles.sortButtonActive,
+                    { flex: 1 },
+                  ]}
+                  onPress={() => setActiveSort('all')}
+                >
+                  <Text
+                    style={[
+                      styles.sortButtonText,
+                      activeSort === 'all' && styles.sortButtonTextActive,
+                    ]}
+                  >
+                    All Flights
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.sortButton,
+                    activeSort === 'abc' && styles.sortButtonActive,
+                    { flex: 1 },
+                  ]}
+                  onPress={() => setActiveSort('abc')}
+                >
+                  <Text
+                    style={[
+                      styles.sortButtonText,
+                      activeSort === 'abc' && styles.sortButtonTextActive,
+                    ]}
+                  >
+                    ABC
+                  </Text>
+                </TouchableOpacity>
+        </View>
+      )}
+
+      {currentUser?.isAdmin && (
+        <View style={styles.statsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.statBox,
+              paymentFilter === 'paid' && styles.statBoxActive,
+            ]}
+            onPress={() =>
+              setPaymentFilter(paymentFilter === 'paid' ? 'all' : 'paid')
+            }
+          >
+            <Text style={styles.statLabel}>Paid</Text>
+            <Text
+              style={[
+                styles.statCount,
+                paymentFilter === 'paid' && styles.statCountActive,
+              ]}
+            >
+              {Object.values(registrations).filter(
+                (reg) => reg.paymentStatus === 'paid'
+              ).length}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.statBox,
+              paymentFilter === 'unpaid' && styles.statBoxActive,
+            ]}
+            onPress={() =>
+              setPaymentFilter(paymentFilter === 'unpaid' ? 'all' : 'unpaid')
+            }
+          >
+            <Text style={styles.statLabel}>Unpaid</Text>
+            <Text
+              style={[
+                styles.statCount,
+                paymentFilter === 'unpaid' && styles.statCountActive,
+              ]}
+            >
+              {Object.values(registrations).filter(
+                (reg) => reg.paymentStatus === 'unpaid'
+              ).length}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.statBox,
+              activeSort === 'A' && styles.statBoxActive,
+            ]}
+            onPress={() => setActiveSort('A')}
+          >
+            <Text style={styles.statLabel}>Flight A</Text>
+            <Text style={styles.statCount}>{getFlightCounts.A}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.statBox,
+              activeSort === 'B' && styles.statBoxActive,
+            ]}
+            onPress={() => setActiveSort('B')}
+          >
+            <Text style={styles.statLabel}>Flight B</Text>
+            <Text style={styles.statCount}>{getFlightCounts.B}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {event && currentUser?.isAdmin && (
+        <View style={styles.statusButtonSection}>
+          <TouchableOpacity
+            style={styles.addButtonInRow}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.buttonInRowText}>Add Member</Text>
+          </TouchableOpacity>
+          {event.type === 'social' && (
+            <TouchableOpacity
+              style={[styles.addButtonInRow, { backgroundColor: '#9C27B0' }]}
+              onPress={() => setAddCustomGuestModalVisible(true)}
+            >
+              <Text style={styles.buttonInRowText}>Add Guest</Text>
+            </TouchableOpacity>
+          )}
+          <View style={styles.eventStatusButtonWrapper}>
+            <EventStatusButton
+              status={(event.status as EventStatus) || 'upcoming'}
+              onStatusChange={async (newStatus) => {
+                if (event) {
+                  await updateEventMutation.mutateAsync({
+                    eventId: event.id,
+                    updates: { status: newStatus },
+                  });
+                  setEvent({ ...event, status: newStatus });
+                }
+              }}
+              isAdmin={currentUser?.isAdmin || false}
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.removeButtonInRow}
+            onPress={handleRemoveAllPlayers}
+          >
+            <Text style={styles.buttonInRowText}>Remove All</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <View style={styles.playersTitleContainer}>
+        <View style={styles.playersTitleRow}>
+          <Text style={styles.playersTitle}>
+            {event?.type === 'social' ? `ATTENDEES (${getTotalPeopleCount})` : `REGISTERED PLAYERS (${getDisplayedPlayers.length})`}
+          </Text>
+          {event && currentUser?.isAdmin && (
+            <Text style={styles.totalAmount}>
+              ${getTotalPaidAmount}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {event && (
+          <View>
+            <View style={styles.playersContainer}>
+              {selectedPlayers.length === 0 ? (
+                <Text style={styles.emptyText}>
+                  No players registered yet.
+                  {currentUser?.isAdmin
+                    ? ' Tap "Add Player" to register.'
+                    : ' Tap "Register For This Event" to join.'}
+                </Text>
+              ) : (
+                getPlayersWithSeparators.map((item) => {
+                  if (item.type === 'separator') {
+                    const flightCount = getFlightCounts[item.flight] || 0;
+                    return (
+                      <View key={`separator-${item.flight}`} style={styles.flightSeparator}>
+                        <Text style={styles.flightSeparatorText}>Flight {item.flight} ({flightCount})</Text>
+                      </View>
+                    );
+                  }
+
+                  const player = item.data;
+                  const playerReg = registrations[player.name];
+                  const isPaid = playerReg?.paymentStatus === 'paid';
+                  const isSocialEvent = event?.type === 'social';
+                  const guestCount = playerReg?.numberOfGuests || 0;
+
+                  return (
+                    <View
+                      key={player.id}
+                      style={styles.playerCard}
+                    >
+                      <TouchableOpacity
+                        onPress={() => handlePlayerCardPress(player)}
+                        activeOpacity={currentUser?.isAdmin ? 0.7 : 1}
+                        style={{ zIndex: 1 }}
+                      >
+                      <View style={styles.topRow}>
+                        <View style={styles.playerInfo}>
+                          <Text style={styles.playerName}>{player.name}</Text>
+                          {isSocialEvent && guestCount > 0 && (
+                            <Text style={styles.guestCountText}>
+                              +{guestCount} guest{guestCount !== 1 ? 's' : ''}
+                            </Text>
+                          )}
+                          {!isSocialEvent && (
+                            <Text style={styles.flightText}>
+                              Flight: {calculateTournamentFlight(player, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, playerReg, event || undefined, useCourseHandicap, 1)}
+                            </Text>
+                          )}
+                        </View>
+
+                        {!isSocialEvent && (() => {
+                          const isAdjusted = hasAdjustedHandicap(player, playerReg);
+                          const isCourse = isUsingCourseHandicap(useCourseHandicap, event || undefined, 1);
+                          const label = isAdjusted ? 'ADJH:' : isCourse ? 'CRSE:' : 'HDC:';
+                          const showHighlight = isAdjusted || isCourse;
+                          const backgroundColor = isAdjusted ? '#FF9500' : isCourse ? '#2196F3' : undefined;
+                          
+                          return (
+                            <View
+                              style={[
+                                styles.hdcRow,
+                                showHighlight && { backgroundColor },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.hdcLabel,
+                                  showHighlight && (isAdjusted ? styles.hdcLabelAdjusted : styles.hdcLabelCourse),
+                                ]}
+                              >
+                                {label}
+                              </Text>
+                              <View style={[
+                                styles.handicapBadge,
+                                isCourse && !isAdjusted && styles.handicapBadgeCourse,
+                              ]}>
+                                <Text
+                                  style={[
+                                    styles.handicapText,
+                                    isAdjusted && styles.handicapTextAdjusted,
+                                    isCourse && !isAdjusted && styles.handicapTextCourse,
+                                  ]}
+                                >
+                                  {getDisplayHandicap(player, playerReg, event || undefined, useCourseHandicap, 1)}
+                                </Text>
+                              </View>
+                              {isAdjusted && (
+                                <View style={styles.trueHandicapBox}>
+                                  <Text style={styles.trueHandicapText}>
+                                    {player.handicap}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          );
+                        })()}
+                      </View>
+                      </TouchableOpacity>
+
+                      <View style={styles.bottomRow}>
+                        <View style={styles.badgesWrapper}>
+                          <TouchableOpacity
+                            style={[
+                              styles.paymentBadge,
+                              isPaid ? styles.paymentBadgePaid : styles.paymentBadgeUnpaid,
+                            ]}
+                            onPress={() => {
+                              console.log('[registration] Payment badge tapped for:', player.name);
+                              if (currentUser?.isAdmin && playerReg) {
+                                handlePaymentToggle(player.name, playerReg);
+                              }
+                            }}
+                            disabled={!currentUser?.isAdmin || !playerReg}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.paymentBadgeText,
+                                isPaid ? styles.paymentBadgeTextPaid : styles.paymentBadgeTextUnpaid,
+                              ]}
+                            >
+                              {isPaid ? 'Paid' : 'Unpaid'}
+                            </Text>
+                          </TouchableOpacity>
+
+                          <View
+                            style={[
+                              styles.membershipBadge,
+                              player.membershipType === 'active' && styles.membershipBadgeActive,
+                              player.membershipType === 'in-active' && styles.membershipBadgeInactive,
+                              player.membershipType === 'guest' && styles.membershipBadgeGuest,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.membershipText,
+                                player.membershipType === 'active' && styles.membershipTextActive,
+                                player.membershipType === 'in-active' && styles.membershipTextInactive,
+                                player.membershipType === 'guest' && styles.membershipTextGuest,
+                              ]}
+                            >
+                              {player.membershipType === 'active' ? 'Active' : player.membershipType === 'in-active' ? 'In-active' : 'Guest'}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      {currentUser?.isAdmin && (
+                        <TouchableOpacity
+                          style={styles.removePlayerButton}
+                          onPress={() => {
+                            console.log('[registration] Remove button tapped for player:', player.name);
+                            handleRemovePlayer(player.id);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="close" size={12} color="#fff" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      <EventDetailsModal
+        visible={eventDetailsModalVisible}
+        event={event}
+        onClose={() => setEventDetailsModalVisible(false)}
+      />
+
+      <EventPlayerModal
+        visible={eventPlayerModalVisible}
+        player={selectedPlayerForEvent}
+        registration={selectedPlayerForEvent ? registrations[selectedPlayerForEvent.name] : null}
+        tournamentFlight={
+          selectedPlayerForEvent ? calculateTournamentFlight(selectedPlayerForEvent, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, selectedPlayerForEvent ? registrations[selectedPlayerForEvent.name] : undefined) : '—'
+        }
+        event={event}
+        onClose={() => {
+          setEventPlayerModalVisible(false);
+          setSelectedPlayerForEvent(null);
+        }}
+        onSave={handleSavePlayerChanges}
+      />
+
+      {addCustomGuestModalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Custom Guest</Text>
+              <TouchableOpacity onPress={() => {
+                setAddCustomGuestModalVisible(false);
+                setAddCustomGuestName('');
+                setAddCustomGuestCount('');
+              }}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Guest Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={addCustomGuestName}
+                  onChangeText={setAddCustomGuestName}
+                  placeholder="Enter guest name"
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Number of Additional Guests</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={addCustomGuestCount}
+                  onChangeText={setAddCustomGuestCount}
+                  placeholder="0"
+                  keyboardType="number-pad"
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.bulkAddButton, { backgroundColor: '#9C27B0' }]}
+                onPress={handleAddCustomGuest}
+              >
+                <Ionicons name="add-circle" size={18} color="#fff" />
+                <Text style={styles.bulkAddButtonText}>Add Guest</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {modalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Select Players ({members.filter((m) => !selectedPlayers.find((p) => p.id === m.id) && !(m.membershipType === 'guest' && m.id.startsWith('guest_'))).length})
+              </Text>
+              <TouchableOpacity onPress={() => {
+                setModalVisible(false);
+                setSelectedForBulkAdd(new Set());
+                setPlayerGuestCounts({});
+              }}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              {Array.from(new Set(members.map(m => m.id)))
+                .map(id => members.find(m => m.id === id))
+                .filter((m): m is Member => m !== undefined)
+                .filter((m) => !selectedPlayers.find((p) => p.id === m.id) && !(m.membershipType === 'guest' && m.id.startsWith('guest_')))
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((member) => (
+                  <View key={`member-${member.id}`}>
+                    <TouchableOpacity
+                      style={styles.memberCard}
+                      onPress={() => {
+                        const newSelected = new Set(selectedForBulkAdd);
+                        if (newSelected.has(member.id)) {
+                          newSelected.delete(member.id);
+                        } else {
+                          newSelected.add(member.id);
+                        }
+                        setSelectedForBulkAdd(newSelected);
+                      }}
+                    >
+                      <View style={styles.checkboxContainer}>
+                        <View style={[styles.checkbox, selectedForBulkAdd.has(member.id) && styles.checkboxSelected]}>
+                          {selectedForBulkAdd.has(member.id) && (
+                            <Ionicons name="checkmark" size={16} color="#fff" />
+                          )}
+                        </View>
+                      </View>
+                      <View style={styles.memberInfo}>
+                        <Text style={styles.memberName}>{member.name}</Text>
+                      </View>
+                      <View
+                        style={styles.handicapBadge}
+                      >
+                        <Text
+                          style={styles.handicapText}
+                        >
+                          {member.handicap ?? 0}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    {event?.type === 'social' && selectedForBulkAdd.has(member.id) && (
+                      <View style={styles.guestCountInputContainer}>
+                        <Text style={styles.guestCountLabel}>Number of Guests:</Text>
+                        <TextInput
+                          style={styles.guestCountInput}
+                          value={playerGuestCounts[member.id] || ''}
+                          onChangeText={(text) => {
+                            setPlayerGuestCounts({
+                              ...playerGuestCounts,
+                              [member.id]: text,
+                            });
+                          }}
+                          keyboardType="number-pad"
+                          placeholder="0"
+                        />
+                      </View>
+                    )}
+                  </View>
+                ))}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[
+                  styles.bulkAddButton,
+                  selectedForBulkAdd.size === 0 && styles.bulkAddButtonDisabled,
+                ]}
+                onPress={handleBulkAddPlayers}
+                disabled={selectedForBulkAdd.size === 0}
+              >
+                <Ionicons name="add-circle" size={18} color="#fff" />
+                <Text style={styles.bulkAddButtonText}>
+                  Add {selectedForBulkAdd.size > 0 ? `(${selectedForBulkAdd.size})` : ''} Players
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      <ZelleInvoiceModal
+        visible={zelleInvoiceModalVisible}
+        event={event}
+        currentUser={currentUser}
+        onClose={() => setZelleInvoiceModalVisible(false)}
+        onRegister={handleZelleRegistration}
+      />
+
+      <PayPalInvoiceModal
+        visible={paypalInvoiceModalVisible}
+        event={event}
+        currentUser={currentUser}
+        onClose={() => setPaypalInvoiceModalVisible(false)}
+        onRegister={handleZelleRegistration}
+      />
+
+      {paymentMethodModalVisible && (
+        <View style={styles.paymentModalOverlay}>
+          <View style={styles.paymentModal}>
+            <View style={styles.paymentModalHeader}>
+              <Text style={styles.paymentModalTitle}>Select Payment Method</Text>
+              <TouchableOpacity onPress={() => setPaymentMethodModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.paymentModalContent}>
+              <TouchableOpacity
+                style={styles.paymentMethodButton}
+                onPress={() => handlePaymentMethodSelected('zelle')}
+              >
+                <Text style={styles.paymentMethodButtonText}>Zelle</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.paymentMethodButton}
+                onPress={() => handlePaymentMethodSelected('paypal')}
+              >
+                <Text style={styles.paymentMethodButtonText}>PayPal</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={[
+          styles.registerButton,
+          isCurrentUserRegistered() && styles.registerButtonInactive,
+        ]}
+        onPress={handleRegisterCurrentUser}
+        disabled={isCurrentUserRegistered()}
+      >
+        <Text style={[
+          styles.registerButtonText,
+          isCurrentUserRegistered() && styles.registerButtonTextInactive,
+        ]}>
+          {isCurrentUserRegistered() ? "You're Registered For This Event" : 'Register For This Event'}
+        </Text>
+      </TouchableOpacity>
+      </SafeAreaView>
+      <EventFooter />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1B5E20',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    position: 'relative',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#fff',
+    textAlign: 'center',
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 16,
+  },
+  statusButtonSection: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f5f5f5',
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  addButtonInRow: {
+    flex: 1,
+    backgroundColor: '#1B5E20',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeButtonInRow: {
+    flex: 1,
+    backgroundColor: '#EF4444',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonInRowText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  eventStatusButtonWrapper: {
+    flex: 1,
+  },
+  addButtonAbsolute: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  addButtonText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  removeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 59, 48, 0.8)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  removeAllButtonText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  content: {
+    flex: 1,
+  },
+  eventPhotoContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 100,
+  },
+  eventPhoto: {
+    width: '100%',
+    height: 100,
+    resizeMode: 'cover',
+  },
+  eventNameOverlay: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    right: 0,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  viewDetailsButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#1976D2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  viewDetailsButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  entryFeeBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#34C759',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 8,
+    zIndex: 10,
+  },
+  entryFeeLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
+    opacity: 0.9,
+  },
+  entryFeeAmount: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 2,
+  },
+  bottomInfoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    gap: 2,
+  },
+  eventLocationOverlay: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  eventDateOverlay: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  eventCard: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 0,
+    borderBottomWidth: 0,
+    borderBottomColor: '#f0f0f0',
+    height: 0,
+  },
+  cardRow2: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  eventName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  eventLocation: {
+    fontSize: 13,
+    color: '#666',
+    flex: 1,
+  },
+  eventDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: '#2563EB',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  statBoxActive: {
+    backgroundColor: '#1e40af',
+    elevation: 4,
+    shadowOpacity: 0.15,
+  },
+  statLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 2,
+    opacity: 0.9,
+  },
+  statCount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  statCountActive: {
+    color: '#fff',
+  },
+  playersContainer: {
+    padding: 16,
+  },
+  playersTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  playerCard: {
+    flexDirection: 'column',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#666666',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 6,
+    zIndex: 1,
+  },
+  playerInfo: {
+    flex: 1,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 10,
+  },
+  badgesWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    zIndex: 10,
+  },
+  badgesColumn: {
+    gap: 4,
+    alignItems: 'flex-end',
+    flex: 1,
+  },
+  playerName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  flightText: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 4,
+  },
+  guestCountText: {
+    fontSize: 12,
+    color: '#9C27B0',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#1a1a1a',
+  },
+  hdcRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  hdcRowAdjusted: {
+    backgroundColor: '#FF9500',
+  },
+  hdcRowCourse: {
+    backgroundColor: '#2196F3',
+  },
+  hdcLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  hdcLabelAdjusted: {
+    color: '#000',
+  },
+  hdcLabelCourse: {
+    color: '#fff',
+  },
+  membershipBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  membershipBadgeActive: {
+    backgroundColor: '#E8F5E9',
+  },
+  membershipBadgeInactive: {
+    backgroundColor: '#FFEBEE',
+  },
+  membershipBadgeGuest: {
+    backgroundColor: '#F3E5F5',
+  },
+  membershipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  membershipTextActive: {
+    color: '#2E7D32',
+  },
+  membershipTextInactive: {
+    color: '#C62828',
+  },
+  membershipTextGuest: {
+    color: '#6A1B9A',
+  },
+  flightSeparator: {
+    backgroundColor: '#9E9E9E',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginVertical: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  flightSeparatorText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  handicapBadge: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  handicapText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  handicapTextAdjusted: {
+    color: '#000',
+  },
+  handicapBadgeCourse: {
+    backgroundColor: '#1976D2',
+  },
+  handicapTextCourse: {
+    color: '#fff',
+  },
+  trueHandicapBox: {
+    backgroundColor: '#34C759',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    marginLeft: 4,
+    minWidth: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trueHandicapText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  sortButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingBottom: 8,
+    marginTop: -1,
+    backgroundColor: '#fff',
+  },
+  playersTitleContainer: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  playersTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  totalAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#34C759',
+  },
+  cardButton: {
+    width: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1B5E20',
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+  },
+  removeButton: {
+    backgroundColor: '#EF4444',
+  },
+  cardButtonText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  paymentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+    zIndex: 10,
+    elevation: 10,
+  },
+  paymentBadgePaid: {
+    backgroundColor: '#1B5E20',
+    borderWidth: 1,
+    borderColor: '#1B5E20',
+  },
+  paymentBadgeUnpaid: {
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+  },
+  paymentBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  paymentBadgeTextPaid: {
+    color: '#fff',
+  },
+  paymentBadgeTextUnpaid: {
+    color: '#FF3B30',
+  },
+  removePlayerButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF3B30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 15,
+    elevation: 5,
+  },
+  sortButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#90CAF9',
+  },
+  sortButtonActive: {
+    backgroundColor: '#1976D2',
+    borderColor: '#1976D2',
+  },
+  sortButtonText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#1976D2',
+  },
+  sortButtonTextActive: {
+    color: '#fff',
+  },
+  emptyText: {
+    fontSize: 13,
+    color: '#999',
+    paddingVertical: 20,
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-start',
+    paddingTop: 210,
+  },
+  modal: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '75%',
+    marginBottom: 12,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  modalContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  memberCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  checkboxContainer: {
+    marginRight: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: '#34C759',
+    borderColor: '#34C759',
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  modalFooter: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    backgroundColor: '#fff',
+  },
+  bulkAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#34C759',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  bulkAddButtonDisabled: {
+    backgroundColor: '#ccc',
+    opacity: 0.6,
+  },
+  bulkAddButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  registerButton: {
+    backgroundColor: '#1B5E20',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  registerButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  registerButtonTextInactive: {
+    color: '#666',
+  },
+  registerButtonInactive: {
+    backgroundColor: '#FFF9C4',
+    opacity: 1,
+  },
+  guestCountInputContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#F3E5F5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  guestCountLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6A1B9A',
+    marginBottom: 4,
+  },
+  guestCountInput: {
+    borderWidth: 1,
+    borderColor: '#9C27B0',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#1a1a1a',
+    backgroundColor: '#fff',
+  },
+  paymentModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  paymentModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '80%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  paymentModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  paymentModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  paymentModalContent: {
+    padding: 20,
+    gap: 12,
+  },
+  paymentMethodButton: {
+    backgroundColor: '#1B5E20',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  paymentMethodButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+
+});
