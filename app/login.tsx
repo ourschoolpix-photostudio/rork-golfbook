@@ -149,7 +149,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#1a1a1a',
+    marginTop: 0,
     marginBottom: 40,
+    paddingTop: 0,
     textAlign: 'center',
   },
   form: {
@@ -189,7 +191,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 240,
     height: 288,
-    marginBottom: 2,
+    marginBottom: 0,
     resizeMode: 'contain' as const,
     aspectRatio: 1,
   },
