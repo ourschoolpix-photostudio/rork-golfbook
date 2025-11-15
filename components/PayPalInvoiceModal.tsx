@@ -41,6 +41,7 @@ export function PayPalInvoiceModal({
 
   const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
   const capturePaymentMutation = trpc.registrations.paypal.capturePayment.useMutation();
+  const getPayPalConfigQuery = trpc.settings.getPayPalConfig.useQuery();
 
   useEffect(() => {
     if (visible && currentUser) {
@@ -81,15 +82,27 @@ export function PayPalInvoiceModal({
   const handlePayPalPayment = async () => {
     if (!canRegister() || !event) return;
 
-    setIsSubmitting(true);
-    try {
-      console.log('[PayPal] Creating payment order...');
-      const paymentResult = await createPaymentMutation.mutateAsync({
-        amount: Number(event.entryFee),
-        eventName: event.name,
-        eventId: event.id,
-        playerEmail: email.trim(),
-      });
+    const paypalConfig = getPayPalConfigQuery.data;
+    const currentMode = paypalConfig?.mode || 'sandbox';
+    
+    Alert.alert(
+      'Confirm Payment Method',
+      `You are about to pay using PayPal in ${currentMode.toUpperCase()} mode.\n\n${currentMode === 'sandbox' ? '⚠️ This is a TEST payment. No real money will be charged.' : '💳 This is a LIVE payment. Real money will be charged.'}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              console.log('[PayPal] Creating payment order...');
+              console.log('[PayPal] Current mode:', currentMode);
+              const paymentResult = await createPaymentMutation.mutateAsync({
+                amount: Number(event.entryFee),
+                eventName: event.name,
+                eventId: event.id,
+                playerEmail: email.trim(),
+              });
 
       console.log('[PayPal] Payment order created:', paymentResult.orderId);
       console.log('[PayPal] Full payment result:', JSON.stringify(paymentResult, null, 2));
@@ -158,30 +171,34 @@ export function PayPalInvoiceModal({
       } else {
         throw new Error('No approval URL received from PayPal');
       }
-    } catch (error: any) {
-      console.error('[PayPal] Error during payment:', error);
-      console.error('[PayPal] Error stack:', error?.stack);
-      console.error('[PayPal] Error message:', error?.message);
-      
-      let errorMessage = 'Failed to process PayPal payment. Please try again or contact support.';
-      
-      if (error?.message) {
-        if (error.message.includes('credentials')) {
-          errorMessage = 'PayPal configuration error. Please contact support.';
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
-        } else {
-          errorMessage = `Payment failed: ${error.message}`;
-        }
-      }
-      
-      Alert.alert(
-        'Payment Error',
-        errorMessage
+              } catch (error: any) {
+                console.error('[PayPal] Error during payment:', error);
+                console.error('[PayPal] Error stack:', error?.stack);
+                console.error('[PayPal] Error message:', error?.message);
+                
+                let errorMessage = 'Failed to process PayPal payment. Please try again or contact support.';
+                
+                if (error?.message) {
+                  if (error.message.includes('credentials')) {
+                    errorMessage = 'PayPal configuration error. Please contact support.';
+                  } else if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                  } else {
+                    errorMessage = `Payment failed: ${error.message}`;
+                  }
+                }
+                
+                Alert.alert(
+                  'Payment Error',
+                  errorMessage
+                );
+              } finally {
+                setIsSubmitting(false);
+              }
+            },
+          },
+        ]
       );
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   return (
