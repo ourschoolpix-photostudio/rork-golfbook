@@ -28,6 +28,7 @@ import { generateGroupingsPDF } from '@/utils/pdfGenerator';
 import { EventFooter } from '@/components/EventFooter';
 import { trpc } from '@/lib/trpc';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
+import { canManageGroupings } from '@/utils/rolePermissions';
 
 interface Group {
   hole: number;
@@ -41,6 +42,7 @@ export default function GroupingsScreen() {
   const id = eventId || '';
 
   const [user, setUser] = useState<User | null>(null);
+  const [currentMember, setCurrentMember] = useState<Member | null>(null);
   const [event, setEvent] = useState<Event | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -104,6 +106,14 @@ export default function GroupingsScreen() {
     };
     loadUser();
   }, []);
+
+  useEffect(() => {
+    if (user && allMembers.length > 0) {
+      const member = allMembers.find((m: any) => m.id === user.id);
+      setCurrentMember(member as Member || null);
+      console.log('[groupings] Current member loaded:', member?.name, 'roles:', member?.boardMemberRoles);
+    }
+  }, [user, allMembers]);
 
   useEffect(() => {
     if (eventData) {
@@ -664,7 +674,7 @@ export default function GroupingsScreen() {
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.titleText}>GROUPINGS</Text>
-        {user?.isAdmin && (
+        {canManageGroupings(currentMember) && (
           <TouchableOpacity 
             style={styles.pdfBtn}
             onPress={handleGeneratePDF}
@@ -689,7 +699,7 @@ export default function GroupingsScreen() {
         </View>
       )}
 
-      {user?.isAdmin && (
+      {canManageGroupings(currentMember) && (
         <View style={styles.filterContainer}>
           <TouchableOpacity
             style={[styles.filterBtn, labelOverride === 'teeTime' && styles.filterBtnActive]}
@@ -735,10 +745,10 @@ export default function GroupingsScreen() {
         onDaySelect={setActiveDay}
         doubleMode={doubleMode}
         onDoubleModeToggle={handleDoubleModeToggle}
-        isAdmin={user?.isAdmin ?? false}
+        isAdmin={canManageGroupings(currentMember)}
       />
 
-      {user?.isAdmin && (
+      {canManageGroupings(currentMember) && (
         <View style={styles.unassignAllBtnContainer}>
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -794,7 +804,7 @@ export default function GroupingsScreen() {
       )}
 
       <View style={styles.contentWrapper}>
-        {user?.isAdmin && showUnassigned && ungroupedPlayers.length > 0 && (
+        {canManageGroupings(currentMember) && showUnassigned && ungroupedPlayers.length > 0 && (
           <View style={styles.ungroupedSection}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionCount}>{ungroupedPlayers.length}</Text>
@@ -837,7 +847,7 @@ export default function GroupingsScreen() {
         )}
 
         <View style={styles.groupsSection}>
-          {!user?.isAdmin && groups.every(g => g.slots.every(s => s === null)) ? (
+          {!canManageGroupings(currentMember) && groups.every(g => g.slots.every(s => s === null)) ? (
             <View style={styles.noGroupingsContainer}>
               <Ionicons name="people" size={64} color="#ccc" />
               <Text style={styles.noGroupingsTitle}>Groupings Not Formed</Text>
@@ -868,7 +878,7 @@ export default function GroupingsScreen() {
                     onPlayerCheckboxChange={handlePlayerCheckboxChange}
                     onAddCheckedPlayerToSlot={handleAddCheckedPlayerToGroup}
                     groupIdx={idx}
-                    isAdmin={user?.isAdmin ?? false}
+                    isAdmin={canManageGroupings(currentMember)}
                     checkedGroups={checkedGroups}
                     onGroupCheckboxChange={handleGroupCheckboxChange}
                     triggerGroupRefresh={triggerGroupRefresh}
