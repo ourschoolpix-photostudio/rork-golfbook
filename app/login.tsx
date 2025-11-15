@@ -83,7 +83,7 @@ export default function LoginScreen() {
                 {orgInfo?.logoUrl ? (
                   <Image source={{ uri: orgInfo.logoUrl }} style={styles.logo} />
                 ) : null}
-                <Text style={styles.title}>
+                <Text style={styles.title} numberOfLines={1}>
                   {orgInfo?.name || 'DMV Vietnamese Golf Association'}
                 </Text>
               </>
@@ -123,18 +123,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.appInfo}>
-              <Text style={styles.appInfoTitle}>Global App Settings</Text>
-              <Text style={styles.appInfoText}>
-                This app allows customization of various aspects including:
-              </Text>
-              <View style={styles.appInfoFeatures}>
-                <Text style={styles.appInfoFeature}>• Color palette for screens</Text>
-                <Text style={styles.appInfoFeature}>• Header and footer customization</Text>
-                <Text style={styles.appInfoFeature}>• Theme preferences</Text>
-              </View>
-              <Text style={styles.appInfoNote}>Configuration options available in Settings</Text>
-            </View>
+
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -157,7 +146,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600' as const,
     color: '#1a1a1a',
     marginBottom: 40,
@@ -165,7 +154,6 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
-    marginBottom: 32,
   },
   label: {
     fontSize: 14,
@@ -201,47 +189,12 @@ const styles = StyleSheet.create({
   logo: {
     width: 240,
     height: 288,
-    marginBottom: 24,
+    marginBottom: 4,
     resizeMode: 'contain' as const,
     aspectRatio: 1,
   },
   loader: {
     marginBottom: 20,
   },
-  appInfo: {
-    marginTop: 24,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    width: '100%',
-  },
-  appInfoTitle: {
-    fontSize: 10,
-    fontWeight: '600' as const,
-    color: '#999',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  appInfoText: {
-    fontSize: 9,
-    color: '#aaa',
-    textAlign: 'center',
-    lineHeight: 12,
-    marginBottom: 6,
-  },
-  appInfoFeatures: {
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  appInfoFeature: {
-    fontSize: 8,
-    color: '#bbb',
-    marginVertical: 2,
-  },
-  appInfoNote: {
-    fontSize: 8,
-    color: '#ccc',
-    fontStyle: 'italic' as const,
-    textAlign: 'center',
-  },
+
 });
