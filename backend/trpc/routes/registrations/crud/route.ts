@@ -10,6 +10,7 @@ const registrationSchema = z.object({
   paymentStatus: z.enum(['pending', 'paid', 'refunded']).optional(),
   registeredAt: z.string(),
   numberOfGuests: z.number().optional(),
+  guestNames: z.string().optional(),
   adjustedHandicap: z.string().nullable().optional(),
 });
 
@@ -21,6 +22,7 @@ export const createRegistrationProcedure = publicProcedure
     status: z.enum(['registered', 'confirmed', 'withdrawn']).default('registered'),
     paymentStatus: z.enum(['pending', 'paid', 'refunded']).optional(),
     numberOfGuests: z.number().optional(),
+    guestNames: z.string().optional(),
     adjustedHandicap: z.string().nullable().optional(),
   }))
   .mutation(async ({ input }) => {
@@ -54,6 +56,7 @@ export const updateRegistrationProcedure = publicProcedure
       status: z.enum(['registered', 'confirmed', 'withdrawn']).optional(),
       paymentStatus: z.enum(['pending', 'paid', 'refunded']).optional(),
       numberOfGuests: z.number().optional(),
+      guestNames: z.string().optional(),
       adjustedHandicap: z.string().nullable().optional(),
     }),
   }))
@@ -75,6 +78,9 @@ export const updateRegistrationProcedure = publicProcedure
     }
     if (input.updates.numberOfGuests !== undefined) {
       updateData.number_of_guests = input.updates.numberOfGuests;
+    }
+    if (input.updates.guestNames !== undefined) {
+      updateData.guest_names = input.updates.guestNames || null;
     }
     
     const { error } = await supabase
@@ -127,6 +133,7 @@ export const getAllRegistrationsProcedure = publicProcedure
       registeredAt: reg.registered_at,
       adjustedHandicap: reg.adjusted_handicap,
       numberOfGuests: reg.number_of_guests || 0,
+      guestNames: reg.guest_names || null,
     }));
 
     console.log('✅ Fetched registrations:', registrations.length);

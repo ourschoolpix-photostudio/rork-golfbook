@@ -22,7 +22,7 @@ interface PayPalInvoiceModalProps {
   event: Event | null;
   currentUser: Member | null;
   onClose: () => void;
-  onRegister: (ghin: string, email: string, phone: string) => Promise<void>;
+  onRegister: (ghin: string, email: string, phone: string, numberOfGuests?: number, guestNames?: string) => Promise<void>;
 }
 
 export function PayPalInvoiceModal({
@@ -38,6 +38,8 @@ export function PayPalInvoiceModal({
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [numberOfGuests, setNumberOfGuests] = useState('');
+  const [guestNames, setGuestNames] = useState('');
 
   const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
   const capturePaymentMutation = trpc.registrations.paypal.capturePayment.useMutation();
@@ -48,15 +50,22 @@ export function PayPalInvoiceModal({
       setEmail(currentUser.email || '');
       setPhone(currentUser.phone || '');
       setAgreeToTerms(false);
+      setNumberOfGuests('');
+      setGuestNames('');
     }
   }, [visible, currentUser]);
 
   if (!event || !currentUser) return null;
 
+  const isSocialEvent = event.type === 'social';
+  const guestCount = parseInt(numberOfGuests, 10) || 0;
+  const totalPeople = 1 + guestCount;
+  
   const serviceFeePercentage = 0.05;
   const entryFeeAmount = Number(event.entryFee);
-  const serviceFeeAmount = entryFeeAmount * serviceFeePercentage;
-  const totalAmount = entryFeeAmount + serviceFeeAmount;
+  const subtotal = entryFeeAmount * totalPeople;
+  const serviceFeeAmount = subtotal * serviceFeePercentage;
+  const totalAmount = subtotal + serviceFeeAmount;
 
   const getPaymentDeadline = () => {
     if (!event.date) return 'N/A';
@@ -88,7 +97,7 @@ export function PayPalInvoiceModal({
 
     Alert.alert(
       'Confirm Payment Method',
-      `You are about to pay ${totalAmount.toFixed(2)} (including service fee) using PayPal.\n\nYou will be redirected to PayPal to complete your secure payment.`,
+      `You are about to pay $${totalAmount.toFixed(2)} (including service fee) using PayPal.\n\nYou will be redirected to PayPal to complete your secure payment.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -143,16 +152,18 @@ export function PayPalInvoiceModal({
             console.log('[PayPal] Payment captured:', JSON.stringify(captureResult, null, 2));
 
             if (captureResult.success) {
-              await onRegister(ghin.trim(), email.trim(), phone.trim());
+              await onRegister(ghin.trim(), email.trim(), phone.trim(), guestCount > 0 ? guestCount : undefined, guestNames.trim() || undefined);
               
               setGhin('');
               setEmail('');
               setPhone('');
               setAgreeToTerms(false);
+              setNumberOfGuests('');
+              setGuestNames('');
               
               Alert.alert(
                 'Payment Successful',
-                `Your payment of ${totalAmount.toFixed(2)} has been processed successfully! You are now registered for ${event.name}.`,
+                `Your payment of $${totalAmount.toFixed(2)} has been processed successfully! You are now registered for ${event.name}.`,
                 [{ text: 'OK', onPress: onClose }]
               );
             } else {
@@ -248,9 +259,14 @@ export function PayPalInvoiceModal({
                 <Text style={styles.sectionTitle}>Payment Information</Text>
                 <View style={styles.feeBreakdown}>
                   <View style={styles.feeRow}>
-                    <Text style={styles.feeLabel}>Entry Fee:</Text>
-                    <Text style={styles.feeValue}>${entryFeeAmount.toFixed(2)}</Text>
+                    <Text style={styles.feeLabel}>Entry Fee ({totalPeople} {totalPeople === 1 ? 'person' : 'people'}):</Text>
+                    <Text style={styles.feeValue}>${subtotal.toFixed(2)}</Text>
                   </View>
+                  {guestCount > 0 && (
+                    <Text style={styles.feeBreakdownDetail}>
+                      {currentUser.name} + {guestCount} guest{guestCount !== 1 ? 's' : ''} × ${entryFeeAmount.toFixed(2)}
+                    </Text>
+                  )}
                   <View style={styles.feeRow}>
                     <Text style={styles.feeLabel}>Service Fee (5%):</Text>
                     <Text style={styles.feeValue}>${serviceFeeAmount.toFixed(2)}</Text>
@@ -341,6 +357,41 @@ export function PayPalInvoiceModal({
                   editable={!isSubmitting}
                 />
               </View>
+
+              {isSocialEvent && (
+                <>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>
+                      Number of Guests
+                    </Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={numberOfGuests}
+                      onChangeText={setNumberOfGuests}
+                      placeholder="0"
+                      keyboardType="number-pad"
+                      editable={!isSubmitting}
+                    />
+                  </View>
+
+                  {guestCount > 0 && (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>
+                        Guest Name{guestCount > 1 ? 's' : ''}
+                      </Text>
+                      <TextInput
+                        style={[styles.textInput, styles.textInputMultiline]}
+                        value={guestNames}
+                        onChangeText={setGuestNames}
+                        placeholder={guestCount > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
+                        multiline
+                        numberOfLines={Math.min(guestCount, 4)}
+                        editable={!isSubmitting}
+                      />
+                    </View>
+                  )}
+                </>
+              )}
 
               <View style={styles.termsWrapper}>
                 <TouchableOpacity
@@ -683,5 +734,17 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#fff',
     letterSpacing: 1,
+  },
+  feeBreakdownDetail: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: -8,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  textInputMultiline: {
+    minHeight: 80,
+    textAlignVertical: 'top' as const,
+    paddingTop: 12,
   },
 });

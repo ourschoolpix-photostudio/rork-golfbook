@@ -464,7 +464,7 @@ export default function EventRegistrationScreen() {
     setPaymentMethodModalVisible(true);
   };
 
-  const handleZelleRegistration = async (ghin: string, email: string, phone: string) => {
+  const handleZelleRegistration = async (ghin: string, email: string, phone: string, numberOfGuests?: number, guestNames?: string) => {
     if (!currentUser || !event) return;
 
     const currentUserMember = members.find(
@@ -489,6 +489,17 @@ export default function EventRegistrationScreen() {
         eventId: event.id,
         memberId: currentUserMember.id,
       });
+      
+      if (numberOfGuests && numberOfGuests > 0) {
+        const backendRegs = await registrationsQuery.refetch();
+        const userReg = backendRegs.data?.find((r: any) => r.memberId === currentUserMember.id);
+        if (userReg) {
+          await updateRegistrationMutation.mutateAsync({
+            registrationId: userReg.id,
+            updates: { numberOfGuests, guestNames },
+          });
+        }
+      }
       
       await addNotification({
         eventId: event.id,

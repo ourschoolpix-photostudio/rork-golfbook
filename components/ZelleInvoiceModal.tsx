@@ -21,7 +21,7 @@ interface ZelleInvoiceModalProps {
   event: Event | null;
   currentUser: Member | null;
   onClose: () => void;
-  onRegister: (ghin: string, email: string, phone: string) => Promise<void>;
+  onRegister: (ghin: string, email: string, phone: string, numberOfGuests?: number, guestNames?: string) => Promise<void>;
 }
 
 export function ZelleInvoiceModal({
@@ -38,6 +38,8 @@ export function ZelleInvoiceModal({
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [numberOfGuests, setNumberOfGuests] = useState('');
+  const [guestNames, setGuestNames] = useState('');
 
   useEffect(() => {
     if (visible && currentUser) {
@@ -45,10 +47,18 @@ export function ZelleInvoiceModal({
       setEmail(currentUser.email || '');
       setPhone(currentUser.phone || '');
       setAgreeToTerms(false);
+      setNumberOfGuests('');
+      setGuestNames('');
     }
   }, [visible, currentUser]);
 
   if (!event || !currentUser) return null;
+
+  const isSocialEvent = event.type === 'social';
+  const guestCount = parseInt(numberOfGuests, 10) || 0;
+  const totalPeople = 1 + guestCount;
+  const entryFeeAmount = Number(event.entryFee);
+  const totalAmount = entryFeeAmount * totalPeople;
 
   const getPaymentDeadline = () => {
     if (!event.date) return 'N/A';
@@ -80,18 +90,20 @@ export function ZelleInvoiceModal({
 
     setIsSubmitting(true);
     try {
-      await onRegister(ghin.trim(), email.trim(), phone.trim());
+      await onRegister(ghin.trim(), email.trim(), phone.trim(), guestCount > 0 ? guestCount : undefined, guestNames.trim() || undefined);
       
       setGhin('');
       setEmail('');
       setPhone('');
       setAgreeToTerms(false);
+      setNumberOfGuests('');
+      setGuestNames('');
       
       const zelleNumber = formatPhoneNumber(orgInfo.zellePhone || '5714811006');
       const formattedUserPhone = formatPhoneNumber(phone.trim());
       Alert.alert(
         'Registration Submitted',
-        `Thank you for registering! Please make your Zelle payment to ${zelleNumber} by ${getPaymentDeadline()} to confirm your spot.\n\nAn invoice has been sent to ${email.trim()} and SMS to ${formattedUserPhone}.`,
+        `Thank you for registering! Please make your Zelle payment of $${totalAmount.toFixed(2)} to ${zelleNumber} by ${getPaymentDeadline()} to confirm your spot.\n\nAn invoice has been sent to ${email.trim()} and SMS to ${formattedUserPhone}.`,
         [{ text: 'OK', onPress: onClose }]
       );
     } catch (error) {
@@ -148,8 +160,15 @@ export function ZelleInvoiceModal({
               <View style={styles.invoiceSection}>
                 <Text style={styles.sectionTitle}>Payment Information</Text>
                 <View style={styles.entryFeeRow}>
-                  <Text style={styles.entryFeeLabel}>Entry Fee:</Text>
-                  <Text style={styles.entryFeeAmount}>${event.entryFee}</Text>
+                  <View>
+                    <Text style={styles.entryFeeLabel}>Entry Fee ({totalPeople} {totalPeople === 1 ? 'person' : 'people'}):</Text>
+                    {guestCount > 0 && (
+                      <Text style={styles.feeBreakdownDetail}>
+                        {currentUser.name} + {guestCount} guest{guestCount !== 1 ? 's' : ''} × ${entryFeeAmount.toFixed(2)}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.entryFeeAmount}>${totalAmount.toFixed(2)}</Text>
                 </View>
               </View>
 
@@ -234,6 +253,41 @@ export function ZelleInvoiceModal({
                   editable={!isSubmitting}
                 />
               </View>
+
+              {isSocialEvent && (
+                <>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>
+                      Number of Guests
+                    </Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={numberOfGuests}
+                      onChangeText={setNumberOfGuests}
+                      placeholder="0"
+                      keyboardType="number-pad"
+                      editable={!isSubmitting}
+                    />
+                  </View>
+
+                  {guestCount > 0 && (
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>
+                        Guest Name{guestCount > 1 ? 's' : ''}
+                      </Text>
+                      <TextInput
+                        style={[styles.textInput, styles.textInputMultiline]}
+                        value={guestNames}
+                        onChangeText={setGuestNames}
+                        placeholder={guestCount > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
+                        multiline
+                        numberOfLines={Math.min(guestCount, 4)}
+                        editable={!isSubmitting}
+                      />
+                    </View>
+                  )}
+                </>
+              )}
 
               <View style={styles.termsWrapper}>
                 <TouchableOpacity
@@ -559,5 +613,15 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#fff',
     letterSpacing: 1,
+  },
+  feeBreakdownDetail: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  textInputMultiline: {
+    minHeight: 80,
+    textAlignVertical: 'top' as const,
+    paddingTop: 12,
   },
 });
