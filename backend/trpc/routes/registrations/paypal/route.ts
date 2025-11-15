@@ -150,6 +150,9 @@ export const createPaymentProcedure = publicProcedure
       ? 'https://api-m.paypal.com' 
       : 'https://api-m.sandbox.paypal.com';
 
+    console.log('========================================');
+    console.log('[PayPal] ⚠️ CURRENT MODE:', config.mode);
+    console.log('[PayPal] ⚠️ API BASE URL:', PAYPAL_API_BASE);
     console.log('[PayPal] Creating payment order:', {
       amount: input.amount,
       eventName: input.eventName,
@@ -157,6 +160,7 @@ export const createPaymentProcedure = publicProcedure
       mode: config.mode,
       apiBase: PAYPAL_API_BASE,
     });
+    console.log('========================================');
 
     try {
       const accessToken = await getPayPalAccessToken();
