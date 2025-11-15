@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,28 +9,33 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { storageService } from '@/utils/storage';
 import { FinancialRecord } from '@/types';
 import { AdminFooter } from '@/components/AdminFooter';
+import { trpc } from '@/lib/trpc';
 
 export default function AdminFinancialScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [form, setForm] = useState({ description: '', amount: '', type: 'expense' as 'expense' | 'income' });
 
-  useEffect(() => {
-    loadRecords();
-  }, []);
+  const { data: allFinancials = [], refetch } = trpc.financials.getAllGlobal.useQuery();
+  const createFinancialMutation = trpc.financials.create.useMutation({
+    onSuccess: () => {
+      refetch();
+    },
+  });
 
-  const loadRecords = async () => {
-    const data = await storageService.getFinancials();
-    setRecords(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-  };
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[admin-financial] 🎯 Page FOCUSED - refetching data');
+      refetch();
+    }, [refetch])
+  );
+
+  const records = allFinancials.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleAddRecord = async () => {
     if (!form.description.trim() || !form.amount.trim()) {
@@ -40,17 +45,21 @@ export default function AdminFinancialScreen() {
 
     const record: FinancialRecord = {
       id: Date.now().toString(),
-      eventId: '',
+      eventId: 'global',
       description: form.description,
       amount: parseFloat(form.amount),
       date: new Date().toISOString().split('T')[0],
       type: form.type,
     };
 
-    await storageService.addFinancial(record);
-    setForm({ description: '', amount: '', type: 'expense' });
-    setModalVisible(false);
-    loadRecords();
+    try {
+      await createFinancialMutation.mutateAsync(record);
+      setForm({ description: '', amount: '', type: 'expense' });
+      setModalVisible(false);
+    } catch (error) {
+      console.error('[admin-financial] Error adding record:', error);
+      Alert.alert('Error', 'Failed to add financial record');
+    }
   };
 
   const totalIncome = records

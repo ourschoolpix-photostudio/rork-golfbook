@@ -93,8 +93,39 @@ export const deleteFinancialProcedure = publicProcedure
     return { success: true };
   });
 
+export const getAllGlobalFinancialsProcedure = publicProcedure
+  .query(async () => {
+    console.log('📥 Fetching all global financial records');
+    
+    const { data, error } = await supabase
+      .from('financial_records')
+      .select('*')
+      .eq('event_id', 'global')
+      .order('date', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error fetching global financial records:', error);
+      throw new Error(`Failed to fetch global financial records: ${error.message}`);
+    }
+
+    const records = (data || []).map(record => ({
+      id: record.id,
+      eventId: record.event_id,
+      memberId: record.member_id,
+      type: record.type,
+      amount: Number(record.amount),
+      description: record.description,
+      date: record.date,
+      createdAt: record.created_at,
+    }));
+
+    console.log('✅ Fetched global financial records:', records.length);
+    return records;
+  });
+
 export default createTRPCRouter({
   create: createFinancialProcedure,
   getAll: getAllFinancialsProcedure,
+  getAllGlobal: getAllGlobalFinancialsProcedure,
   delete: deleteFinancialProcedure,
 });
