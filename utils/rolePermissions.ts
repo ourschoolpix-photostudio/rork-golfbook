@@ -30,6 +30,7 @@ export function canViewRegistration(user: Member | null): boolean {
     'Tournament Director',
     'Handicap Director',
     'Member Relations',
+    'Financer',
   ]);
 }
 
