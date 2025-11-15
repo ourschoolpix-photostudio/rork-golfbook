@@ -17,7 +17,7 @@ import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { Member, Event } from '@/types';
 import { trpc } from '@/lib/trpc';
-import { formatDateForDisplay } from '@/utils/dateUtils';
+import { formatDateForDisplay, formatDateAsFullDay } from '@/utils/dateUtils';
 
 
 
@@ -140,22 +140,55 @@ export default function DashboardScreen() {
 
   const formatSchedule = (event: Event) => {
     const schedules: string[] = [];
+    const isSocial = event.type === 'social';
 
-    if (event.day1StartTime) {
-      schedules.push(
-        `Day 1: ${event.day1StartTime} ${event.day1StartPeriod || 'AM'} • ${event.day1StartType || 'tee-time'}`
-      );
-    }
-    if (event.day2StartTime) {
-      schedules.push(
-        `Day 2: ${event.day2StartTime} ${event.day2StartPeriod || 'AM'} • ${event.day2StartType || 'tee-time'}`
-      );
-    }
-    if (event.day3StartTime) {
-      schedules.push(
-        `Day 3: ${event.day3StartTime} ${event.day3StartPeriod || 'AM'} • ${event.day3StartType || 'tee-time'}`
-      );
-    }
+    const formatDaySchedule = (dayNum: number, startTime?: string, startPeriod?: string, endTime?: string, endPeriod?: string, startType?: string) => {
+      if (!startTime) return null;
+
+      if (isSocial) {
+        const dayName = formatDateAsFullDay(event.date, event.numberOfDays, dayNum).split(' ')[0];
+        const formattedStartTime = startTime.toLowerCase() + (startPeriod || 'am').toLowerCase();
+        
+        if (endTime) {
+          const formattedEndTime = endTime.toLowerCase() + (endPeriod || 'am').toLowerCase();
+          return `${dayName} ${formattedStartTime} - ${formattedEndTime}`;
+        }
+        
+        return `${dayName} ${formattedStartTime}`;
+      } else {
+        return `Day ${dayNum}: ${startTime} ${startPeriod || 'AM'} • ${startType || 'tee-time'}`;
+      }
+    };
+
+    const day1Schedule = formatDaySchedule(
+      1,
+      event.day1StartTime,
+      event.day1StartPeriod,
+      event.day1EndTime,
+      event.day1EndPeriod,
+      event.day1StartType
+    );
+    if (day1Schedule) schedules.push(day1Schedule);
+
+    const day2Schedule = formatDaySchedule(
+      2,
+      event.day2StartTime,
+      event.day2StartPeriod,
+      event.day2EndTime,
+      event.day2EndPeriod,
+      event.day2StartType
+    );
+    if (day2Schedule) schedules.push(day2Schedule);
+
+    const day3Schedule = formatDaySchedule(
+      3,
+      event.day3StartTime,
+      event.day3StartPeriod,
+      event.day3EndTime,
+      event.day3EndPeriod,
+      event.day3StartType
+    );
+    if (day3Schedule) schedules.push(day3Schedule);
 
     return schedules;
   };

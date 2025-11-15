@@ -67,6 +67,8 @@ export interface Event {
   zipcode?: string;
   day1StartTime?: string;
   day1StartPeriod?: 'AM' | 'PM';
+  day1EndTime?: string;
+  day1EndPeriod?: 'AM' | 'PM';
   day1Course?: string;
   day1StartType?: 'tee-time' | 'shotgun';
   day1LeadingHole?: string;
@@ -74,6 +76,8 @@ export interface Event {
   day1HolePars?: string[];
   day2StartTime?: string;
   day2StartPeriod?: 'AM' | 'PM';
+  day2EndTime?: string;
+  day2EndPeriod?: 'AM' | 'PM';
   day2Course?: string;
   day2StartType?: 'tee-time' | 'shotgun';
   day2LeadingHole?: string;
@@ -81,6 +85,8 @@ export interface Event {
   day2HolePars?: string[];
   day3StartTime?: string;
   day3StartPeriod?: 'AM' | 'PM';
+  day3EndTime?: string;
+  day3EndPeriod?: 'AM' | 'PM';
   day3Course?: string;
   day3StartType?: 'tee-time' | 'shotgun';
   day3LeadingHole?: string;
