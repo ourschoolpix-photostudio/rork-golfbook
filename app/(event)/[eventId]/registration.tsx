@@ -106,30 +106,13 @@ export default function EventRegistrationScreen() {
   });
 
   const updatePaymentStatusMutation = trpc.registrations.update.useMutation({
-    onMutate: async ({ registrationId, updates }) => {
-      await registrationsQuery.cancel();
-      const previousRegistrations = registrationsQuery.data;
-      
-      if (previousRegistrations && updates.paymentStatus) {
-        const optimisticData = previousRegistrations.map((reg: any) => 
-          reg.id === registrationId 
-            ? { ...reg, paymentStatus: updates.paymentStatus }
-            : reg
-        );
-        registrationsQuery.setData({ eventId: eventId! }, optimisticData as any);
-      }
-      
-      return { previousRegistrations };
-    },
-    onError: (err, variables, context) => {
-      if (context?.previousRegistrations) {
-        registrationsQuery.setData({ eventId: eventId! }, context.previousRegistrations as any);
-      }
-      console.error('Error updating payment status:', err);
-      Alert.alert('Error', 'Failed to update payment status.');
-    },
-    onSettled: () => {
+    onSuccess: () => {
+      console.log('[registration] ✅ Payment status updated successfully');
       registrationsQuery.refetch();
+    },
+    onError: (err) => {
+      console.error('[registration] ❌ Error updating payment status:', err);
+      Alert.alert('Error', 'Failed to update payment status.');
     },
   });
 
@@ -470,15 +453,30 @@ export default function EventRegistrationScreen() {
   };
 
   const handlePaymentToggle = async (playerName: string, playerReg: any) => {
-    if (!playerReg) return;
+    if (!playerReg) {
+      console.error('[registration] ❌ No registration found for player:', playerName);
+      Alert.alert('Error', 'Registration not found');
+      return;
+    }
+    
+    console.log('[registration] 🔄 Toggling payment status for:', playerName);
+    console.log('[registration] Current registration:', { id: playerReg.id, currentStatus: playerReg.paymentStatus });
+    
     const currentStatus = playerReg.paymentStatus;
     const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
     const backendStatus = newStatus === 'unpaid' ? 'pending' : newStatus;
     
-    updatePaymentStatusMutation.mutate({
-      registrationId: playerReg.id,
-      updates: { paymentStatus: backendStatus },
-    });
+    console.log('[registration] New status will be:', backendStatus);
+    
+    try {
+      await updatePaymentStatusMutation.mutateAsync({
+        registrationId: playerReg.id,
+        updates: { paymentStatus: backendStatus },
+      });
+      console.log('[registration] ✅ Payment status toggle completed');
+    } catch (error) {
+      console.error('[registration] ❌ Payment toggle failed:', error);
+    }
   };
 
   const handleAddCustomGuest = async () => {
