@@ -986,26 +986,30 @@ export default function EventRegistrationScreen() {
               ).length}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.statBox,
-              activeSort === 'A' && styles.statBoxActive,
-            ]}
-            onPress={() => setActiveSort('A')}
-          >
-            <Text style={styles.statLabel}>Flight A</Text>
-            <Text style={styles.statCount}>{getFlightCounts.A}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.statBox,
-              activeSort === 'B' && styles.statBoxActive,
-            ]}
-            onPress={() => setActiveSort('B')}
-          >
-            <Text style={styles.statLabel}>Flight B</Text>
-            <Text style={styles.statCount}>{getFlightCounts.B}</Text>
-          </TouchableOpacity>
+          {event?.type !== 'social' && (
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.statBox,
+                  activeSort === 'A' && styles.statBoxActive,
+                ]}
+                onPress={() => setActiveSort('A')}
+              >
+                <Text style={styles.statLabel}>Flight A</Text>
+                <Text style={styles.statCount}>{getFlightCounts.A}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.statBox,
+                  activeSort === 'B' && styles.statBoxActive,
+                ]}
+                onPress={() => setActiveSort('B')}
+              >
+                <Text style={styles.statLabel}>Flight B</Text>
+                <Text style={styles.statCount}>{getFlightCounts.B}</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       )}
 
