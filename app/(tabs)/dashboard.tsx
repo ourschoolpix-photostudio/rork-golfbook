@@ -223,7 +223,7 @@ export default function DashboardScreen() {
           <View style={styles.nameRow}>
             <Text style={styles.userName}>{userProfile?.name || currentUser?.name || 'User'}</Text>
           </View>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 1 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
             {currentUser?.isAdmin && (
               <Text style={[styles.userRole, { color: '#FFD700' }]}>Admin</Text>
             )}
@@ -233,7 +233,7 @@ export default function DashboardScreen() {
               </Text>
             )}
           </View>
-          <View style={{ marginBottom: 4 }}>
+          <View style={{ marginTop: 1 }}>
             <Text style={[styles.userRole, { color: getMembershipStatusColor() }]}>
               {getMembershipStatus()}
             </Text>
