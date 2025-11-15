@@ -18,45 +18,19 @@ import { useRouter } from 'expo-router';
 
 import { Member } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface OrganizationInfo {
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  phone: string;
-  zellePhone: string;
-  logoUrl: string;
-}
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loadingOrg, setLoadingOrg] = useState(true);
-  const [orgInfo, setOrgInfo] = useState<OrganizationInfo | null>(null);
   const router = useRouter();
   const { login: authLogin } = useAuth();
+  const { orgInfo, isLoading: loadingOrg } = useSettings();
 
   useEffect(() => {
     ensureAdminExists();
-    loadOrganizationInfo();
   }, []);
-
-  const loadOrganizationInfo = async () => {
-    try {
-      const data = await AsyncStorage.getItem('@organization_info');
-      if (data) {
-        setOrgInfo(JSON.parse(data));
-      }
-    } catch (error) {
-      console.error('Error loading organization info:', error);
-    } finally {
-      setLoadingOrg(false);
-    }
-  };
 
   const ensureAdminExists = async () => {
     console.log('Login - Admin initialization is handled by AuthContext');
