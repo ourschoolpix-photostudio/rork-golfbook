@@ -129,6 +129,7 @@ export default function EventRegistrationScreen() {
               paymentMethod: 'zelle',
               adjustedHandicap: reg.adjustedHandicap,
               numberOfGuests: reg.numberOfGuests || 0,
+              guestNames: reg.guestNames || null,
             };
           }
         });
@@ -970,6 +971,7 @@ export default function EventRegistrationScreen() {
                   const isPaid = playerReg?.paymentStatus === 'paid';
                   const isSocialEvent = event?.type === 'social';
                   const guestCount = playerReg?.numberOfGuests || 0;
+                  const guestNames = playerReg?.guestNames || null;
 
                   return (
                     <View
@@ -985,9 +987,16 @@ export default function EventRegistrationScreen() {
                         <View style={styles.playerInfo}>
                           <Text style={styles.playerName}>{player.name}</Text>
                           {isSocialEvent && guestCount > 0 && (
-                            <Text style={styles.guestCountText}>
-                              +{guestCount} guest{guestCount !== 1 ? 's' : ''}
-                            </Text>
+                            <>
+                              <Text style={styles.guestCountText}>
+                                +{guestCount} guest{guestCount !== 1 ? 's' : ''}
+                              </Text>
+                              {guestNames && (
+                                <Text style={styles.guestNamesText}>
+                                  {guestNames}
+                                </Text>
+                              )}
+                            </>
                           )}
                           {!isSocialEvent && (
                             <Text style={styles.flightText}>
@@ -1672,6 +1681,12 @@ const styles = StyleSheet.create({
     color: '#9C27B0',
     marginTop: 2,
     fontWeight: '600',
+  },
+  guestNamesText: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 2,
+    fontStyle: 'italic' as const,
   },
   inputGroup: {
     marginBottom: 16,
