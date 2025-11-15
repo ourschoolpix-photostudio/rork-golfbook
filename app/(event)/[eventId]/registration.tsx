@@ -36,6 +36,7 @@ import {
   canModifyOnlineCourseHandicap,
   canStartEvent,
   canRemoveAllPlayers,
+  canTogglePaymentStatus,
 } from '@/utils/rolePermissions';
 
 export default function EventRegistrationScreen() {
@@ -1098,11 +1099,11 @@ export default function EventRegistrationScreen() {
                             ]}
                             onPress={() => {
                               console.log('[registration] Payment badge tapped for:', player.name);
-                              if (canViewRegistration(currentUser) && playerReg) {
+                              if (canTogglePaymentStatus(currentUser) && playerReg) {
                                 handlePaymentToggle(player.name, playerReg);
                               }
                             }}
-                            disabled={!canViewRegistration(currentUser) || !playerReg}
+                            disabled={!canTogglePaymentStatus(currentUser) || !playerReg}
                             activeOpacity={0.7}
                           >
                             <Text
