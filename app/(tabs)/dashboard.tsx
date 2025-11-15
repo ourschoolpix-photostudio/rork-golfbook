@@ -17,7 +17,7 @@ import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { Member, Event } from '@/types';
 import { trpc } from '@/lib/trpc';
-import { formatDateForDisplay, formatDateAsFullDay } from '@/utils/dateUtils';
+import { formatDateForDisplay } from '@/utils/dateUtils';
 
 
 
@@ -138,57 +138,78 @@ export default function DashboardScreen() {
     return `${formattedStart} - ${formattedEnd}`;
   };
 
+  const formatTimeRange = (startTime: string, startPeriod: string, endTime?: string, endPeriod?: string) => {
+    const start = `${startTime.toLowerCase()}${startPeriod.toLowerCase()}`;
+    if (endTime && endPeriod) {
+      const end = `${endTime.toLowerCase()}${endPeriod.toLowerCase()}`;
+      return `${start} - ${end}`;
+    }
+    return start;
+  };
+
+  const getDayName = (dateStr: string, dayOffset: number): string => {
+    const date = new Date(dateStr + 'T12:00:00');
+    if (isNaN(date.getTime())) return `Day ${dayOffset + 1}`;
+    
+    const targetDate = new Date(date);
+    targetDate.setDate(date.getDate() + dayOffset);
+    
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[targetDate.getDay()];
+  };
+
   const formatSchedule = (event: Event) => {
     const schedules: string[] = [];
-    const isSocial = event.type === 'social';
+    const isSocialEvent = event.type === 'social';
 
-    const formatDaySchedule = (dayNum: number, startTime?: string, startPeriod?: string, endTime?: string, endPeriod?: string, startType?: string) => {
-      if (!startTime) return null;
-
-      if (isSocial) {
-        const dayName = formatDateAsFullDay(event.date, event.numberOfDays, dayNum).split(' ')[0];
-        const formattedStartTime = startTime.toLowerCase() + (startPeriod || 'am').toLowerCase();
-        
-        if (endTime) {
-          const formattedEndTime = endTime.toLowerCase() + (endPeriod || 'am').toLowerCase();
-          return `${dayName} ${formattedStartTime} - ${formattedEndTime}`;
-        }
-        
-        return `${dayName} ${formattedStartTime}`;
+    if (event.day1StartTime) {
+      if (isSocialEvent) {
+        const dayName = getDayName(event.date || '', 0);
+        const timeRange = formatTimeRange(
+          event.day1StartTime,
+          event.day1StartPeriod || 'AM',
+          event.day1EndTime,
+          event.day1EndPeriod
+        );
+        schedules.push(`${dayName} ${timeRange}`);
       } else {
-        return `Day ${dayNum}: ${startTime} ${startPeriod || 'AM'} • ${startType || 'tee-time'}`;
+        schedules.push(
+          `Day 1: ${event.day1StartTime} ${event.day1StartPeriod || 'AM'} • ${event.day1StartType || 'tee-time'}`
+        );
       }
-    };
-
-    const day1Schedule = formatDaySchedule(
-      1,
-      event.day1StartTime,
-      event.day1StartPeriod,
-      event.day1EndTime,
-      event.day1EndPeriod,
-      event.day1StartType
-    );
-    if (day1Schedule) schedules.push(day1Schedule);
-
-    const day2Schedule = formatDaySchedule(
-      2,
-      event.day2StartTime,
-      event.day2StartPeriod,
-      event.day2EndTime,
-      event.day2EndPeriod,
-      event.day2StartType
-    );
-    if (day2Schedule) schedules.push(day2Schedule);
-
-    const day3Schedule = formatDaySchedule(
-      3,
-      event.day3StartTime,
-      event.day3StartPeriod,
-      event.day3EndTime,
-      event.day3EndPeriod,
-      event.day3StartType
-    );
-    if (day3Schedule) schedules.push(day3Schedule);
+    }
+    if (event.day2StartTime) {
+      if (isSocialEvent) {
+        const dayName = getDayName(event.date || '', 1);
+        const timeRange = formatTimeRange(
+          event.day2StartTime,
+          event.day2StartPeriod || 'AM',
+          event.day2EndTime,
+          event.day2EndPeriod
+        );
+        schedules.push(`${dayName} ${timeRange}`);
+      } else {
+        schedules.push(
+          `Day 2: ${event.day2StartTime} ${event.day2StartPeriod || 'AM'} • ${event.day2StartType || 'tee-time'}`
+        );
+      }
+    }
+    if (event.day3StartTime) {
+      if (isSocialEvent) {
+        const dayName = getDayName(event.date || '', 2);
+        const timeRange = formatTimeRange(
+          event.day3StartTime,
+          event.day3StartPeriod || 'AM',
+          event.day3EndTime,
+          event.day3EndPeriod
+        );
+        schedules.push(`${dayName} ${timeRange}`);
+      } else {
+        schedules.push(
+          `Day 3: ${event.day3StartTime} ${event.day3StartPeriod || 'AM'} • ${event.day3StartType || 'tee-time'}`
+        );
+      }
+    }
 
     return schedules;
   };
