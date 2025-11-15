@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600' as const,
     alignSelf: 'flex-start',
-    marginBottom: 4,
+    marginBottom: 0,
   },
   userDetailRow: {
     flexDirection: 'row',
