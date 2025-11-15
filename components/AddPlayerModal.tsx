@@ -16,6 +16,7 @@ import { X } from 'lucide-react-native';
 import { ProfilePhotoPicker } from './ProfilePhotoPicker';
 import { Member } from '@/types';
 import { formatPhoneNumber, getPhoneDigits } from '@/utils/phoneFormatter';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AddPlayerModalProps {
   visible: boolean;
@@ -24,7 +25,19 @@ interface AddPlayerModalProps {
   editingMember?: Member | null;
 }
 
+const BOARD_MEMBER_ROLES = [
+  'Admin',
+  'President',
+  'VP',
+  'Tournament Director',
+  'Handicap Director',
+  'Operations',
+  'Financer',
+  'Member Relations',
+] as const;
+
 export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPlayerModalProps) {
+  const { currentUser } = useAuth();
   const isEditMode = !!editingMember;
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
@@ -42,6 +55,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
   const [ghin, setGhin] = useState<string>('');
   const [rolexPoints, setRolexPoints] = useState<string>('');
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(null);
+  const [boardMemberRoles, setBoardMemberRoles] = useState<string[]>([]);
 
   useEffect(() => {
     if (editingMember && visible) {
@@ -61,6 +75,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
       setGhin(editingMember.ghin || '');
       setRolexPoints(editingMember.rolexPoints?.toString() || '');
       setProfilePhotoUri(editingMember.profilePhotoUri || null);
+      setBoardMemberRoles(editingMember.boardMemberRoles || []);
     } else if (!visible) {
       resetForm();
     }
@@ -97,6 +112,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
       rolexPoints: parseInt(rolexPoints) || 0,
       profilePhotoUri: profilePhotoUri || undefined,
       isAdmin: isEditMode ? editingMember?.isAdmin : false,
+      boardMemberRoles: boardMemberRoles.length > 0 ? boardMemberRoles : undefined,
     };
 
     onAdd(player);
@@ -122,6 +138,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
     setGhin('');
     setRolexPoints('');
     setProfilePhotoUri(null);
+    setBoardMemberRoles([]);
   };
 
   return (
@@ -408,6 +425,39 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
                 </View>
               </View>
             </View>
+
+            {currentUser?.isAdmin && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>BOARD MEMBER ROLES (Admin Only)</Text>
+                <View style={styles.rolesContainer}>
+                  {BOARD_MEMBER_ROLES.map((role) => (
+                    <TouchableOpacity
+                      key={role}
+                      style={[
+                        styles.roleChip,
+                        boardMemberRoles.includes(role) && styles.roleChipActive,
+                      ]}
+                      onPress={() => {
+                        setBoardMemberRoles((prev) =>
+                          prev.includes(role)
+                            ? prev.filter((r) => r !== role)
+                            : [...prev, role]
+                        );
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.roleChipText,
+                          boardMemberRoles.includes(role) && styles.roleChipTextActive,
+                        ]}
+                      >
+                        {role}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.addButton, styles.buttonRowButton]}
@@ -619,5 +669,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff3b30',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  rolesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  roleChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  roleChipActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  roleChipText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  roleChipTextActive: {
+    color: '#fff',
   },
 });

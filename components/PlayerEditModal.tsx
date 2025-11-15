@@ -17,6 +17,7 @@ import { Member } from '@/types';
 import { ProfilePhotoPicker } from './ProfilePhotoPicker';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPhoneNumber, getPhoneDigits } from '@/utils/phoneFormatter';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PlayerEditModalProps {
   visible: boolean;
@@ -27,7 +28,19 @@ interface PlayerEditModalProps {
   quickEditMode?: boolean;
 }
 
+const BOARD_MEMBER_ROLES = [
+  'Admin',
+  'President',
+  'VP',
+  'Tournament Director',
+  'Handicap Director',
+  'Operations',
+  'Financer',
+  'Member Relations',
+] as const;
+
 export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMode = false, quickEditMode = false }: PlayerEditModalProps) {
+  const { currentUser } = useAuth();
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const [fullName, setFullName] = useState('');
@@ -45,6 +58,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
   const [rolexPoints, setRolexPoints] = useState('');
   const [loading, setLoading] = useState(false);
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(null);
+  const [boardMemberRoles, setBoardMemberRoles] = useState<string[]>([]);
 
   useEffect(() => {
     if (visible) {
@@ -65,6 +79,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         setGhin(member.ghin || '');
         setRolexPoints(member.rolexPoints?.toString() || '');
         setProfilePhotoUri(member.profilePhotoUrl || null);
+        setBoardMemberRoles(member.boardMemberRoles || []);
       } else {
         setMembershipType('active');
         setGender(null);
@@ -82,6 +97,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         setGhin('');
         setRolexPoints('');
         setProfilePhotoUri(null);
+        setBoardMemberRoles([]);
       }
     }
   }, [member, visible]);
@@ -155,6 +171,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         ghin,
         rolexPoints: rolexPoints ? parseInt(rolexPoints) : 0,
         profilePhotoUrl,
+        boardMemberRoles: boardMemberRoles.length > 0 ? boardMemberRoles : undefined,
       } : {
         id: Date.now().toString(),
         name: fullName,
@@ -176,6 +193,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         ghin,
         rolexPoints: rolexPoints ? parseInt(rolexPoints) : 0,
         profilePhotoUrl,
+        boardMemberRoles: boardMemberRoles.length > 0 ? boardMemberRoles : undefined,
         dateOfBirth: '',
         emergencyContactName: '',
         emergencyContactPhone: '',
@@ -703,6 +721,41 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
             </View>
             )}
 
+            {!isLimitedMode && !quickEditMode && currentUser?.isAdmin && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>BOARD MEMBER ROLES (Admin Only)</Text>
+                <View style={styles.card}>
+                  <View style={styles.rolesContainer}>
+                    {BOARD_MEMBER_ROLES.map((role) => (
+                      <TouchableOpacity
+                        key={role}
+                        style={[
+                          styles.roleChip,
+                          boardMemberRoles.includes(role) && styles.roleChipActive,
+                        ]}
+                        onPress={() => {
+                          setBoardMemberRoles((prev) =>
+                            prev.includes(role)
+                              ? prev.filter((r) => r !== role)
+                              : [...prev, role]
+                          );
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.roleChipText,
+                            boardMemberRoles.includes(role) && styles.roleChipTextActive,
+                          ]}
+                        >
+                          {role}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            )}
+
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.saveButton, loading && styles.saveButtonDisabled, styles.buttonHalf]}
@@ -961,5 +1014,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff3b30',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  rolesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  roleChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  roleChipActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  roleChipText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  roleChipTextActive: {
+    color: '#fff',
   },
 });

@@ -30,6 +30,7 @@ export interface Member {
   scoreNet?: number;
   effectiveHandicap?: number;
   registration?: any;
+  boardMemberRoles?: string[];
 }
 
 export interface User {
