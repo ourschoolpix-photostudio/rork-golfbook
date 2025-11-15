@@ -66,7 +66,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Registration Notifications</Text>
+            <Text style={styles.title}>Board Member Notifications</Text>
             <TouchableOpacity
               onPress={onClose}
               style={styles.closeButton}
