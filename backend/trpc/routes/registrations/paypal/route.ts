@@ -46,10 +46,13 @@ const getPayPalConfig = async (): Promise<PayPalConfig> => {
     console.log('[PayPal Config] 🔑 Using stored credentials');
     console.log('[PayPal Config] CLIENT_ID exists:', !!clientId);
     console.log('[PayPal Config] CLIENT_ID (first 20 chars):', clientId?.substring(0, 20));
+    console.log('[PayPal Config] CLIENT_ID (last 10 chars):', clientId?.substring(clientId.length - 10));
     console.log('[PayPal Config] CLIENT_SECRET exists:', !!clientSecret);
+    console.log('[PayPal Config] CLIENT_SECRET length:', clientSecret?.length);
     console.log('[PayPal Config] ⚠️⚠️⚠️ CURRENT MODE:', mode);
     console.log('[PayPal Config] ⚠️⚠️⚠️ WILL USE:', mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
     console.log('[PayPal Config] Raw orgInfo.paypalMode:', orgInfo.paypalMode);
+    console.log('[PayPal Config] Is Live Credential? (ends with -LIVE):', clientId?.includes('-') ? clientId.split('-').pop() : 'unknown');
     console.log('========================================');
 
     return {
@@ -222,6 +225,7 @@ export const createPaymentProcedure = publicProcedure
 
       const approvalUrl = order.links?.find((link: any) => link.rel === 'approve')?.href;
       console.log('[PayPal] Approval URL:', approvalUrl);
+      console.log('[PayPal] ⚠️⚠️⚠️ APPROVAL URL DOMAIN:', approvalUrl?.includes('sandbox') ? 'SANDBOX' : 'LIVE');
 
       if (!approvalUrl) {
         console.error('[PayPal] No approval URL found in order links:', order.links);
