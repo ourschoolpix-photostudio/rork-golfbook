@@ -41,7 +41,6 @@ export function PayPalInvoiceModal({
 
   const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
   const capturePaymentMutation = trpc.registrations.paypal.capturePayment.useMutation();
-  const getPayPalConfigQuery = trpc.settings.getPayPalConfig.useQuery();
 
   useEffect(() => {
     if (visible && currentUser) {
@@ -82,12 +81,9 @@ export function PayPalInvoiceModal({
   const handlePayPalPayment = async () => {
     if (!canRegister() || !event) return;
 
-    const paypalConfig = getPayPalConfigQuery.data;
-    const currentMode = paypalConfig?.mode || 'sandbox';
-    
     Alert.alert(
       'Confirm Payment Method',
-      `You are about to pay using PayPal in ${currentMode.toUpperCase()} mode.\n\n${currentMode === 'sandbox' ? '⚠️ This is a TEST payment. No real money will be charged.' : '💳 This is a LIVE payment. Real money will be charged.'}`,
+      `You are about to pay ${event.entryFee} using PayPal.\n\nYou will be redirected to PayPal to complete your secure payment.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -96,7 +92,6 @@ export function PayPalInvoiceModal({
             setIsSubmitting(true);
             try {
               console.log('[PayPal] Creating payment order...');
-              console.log('[PayPal] Current mode:', currentMode);
               const paymentResult = await createPaymentMutation.mutateAsync({
                 amount: Number(event.entryFee),
                 eventName: event.name,
