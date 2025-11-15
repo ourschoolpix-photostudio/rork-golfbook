@@ -74,11 +74,11 @@ export function EventFooter() {
 
   return (
     <View style={styles.footerContainer}>
-      <View style={styles.topRow}>
-        <View style={styles.toggleButtonWrapper}>
-          <OfflineModeToggle eventId={eventId} position="footer" />
-        </View>
-        {currentUser?.isAdmin && (
+      {currentUser?.isAdmin && (
+        <View style={styles.topRow}>
+          <View style={styles.toggleButtonWrapper}>
+            <OfflineModeToggle eventId={eventId} position="footer" />
+          </View>
           <TouchableOpacity
             style={[
               styles.courseHandicapToggle,
@@ -90,8 +90,8 @@ export function EventFooter() {
               {useCourseHandicap ? 'Course' : 'Regular'}
             </Text>
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
       <View style={[styles.footer, { paddingBottom: insets.bottom }]}>
         {tabs.map((tab) => {
         const Icon = tab.icon;
