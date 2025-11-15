@@ -13,10 +13,13 @@ import { Member } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { trpc } from '@/lib/trpc';
 
+type FlightFilter = 'all' | 'A' | 'B';
+
 export default function GlobalRolexScreen() {
   const { currentUser, updateMember } = useAuth();
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [flightFilter, setFlightFilter] = useState<FlightFilter>('all');
 
   const membersQuery = trpc.members.getAll.useQuery();
   const allMembers = membersQuery.data || [];
@@ -31,7 +34,15 @@ export default function GlobalRolexScreen() {
   console.log('[GlobalRolex] Rendering with', allMembers.length, 'members');
 
   const sortedMembers = useMemo(() => {
-    const sorted = [...allMembers].sort((a, b) => {
+    let filtered = [...allMembers];
+    
+    if (flightFilter === 'A') {
+      filtered = filtered.filter(m => m.rolexFlight === 'A');
+    } else if (flightFilter === 'B') {
+      filtered = filtered.filter(m => m.rolexFlight === 'B');
+    }
+    
+    const sorted = filtered.sort((a, b) => {
       const flightA = a.rolexFlight || '';
       const flightB = b.rolexFlight || '';
       
@@ -50,7 +61,7 @@ export default function GlobalRolexScreen() {
       return pointsB - pointsA;
     });
     return sorted;
-  }, [allMembers]);
+  }, [allMembers, flightFilter]);
 
   const handleMemberPress = (member: Member) => {
     if (currentUser?.isAdmin) {
@@ -86,6 +97,32 @@ export default function GlobalRolexScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.filterButtons}>
+        <TouchableOpacity
+          style={[styles.filterButton, flightFilter === 'all' && styles.filterButtonActive]}
+          onPress={() => setFlightFilter('all')}
+        >
+          <Text style={[styles.filterButtonText, flightFilter === 'all' && styles.filterButtonTextActive]}>
+            Find All
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, flightFilter === 'A' && styles.filterButtonActive]}
+          onPress={() => setFlightFilter('A')}
+        >
+          <Text style={[styles.filterButtonText, flightFilter === 'A' && styles.filterButtonTextActive]}>
+            Find Flight A
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, flightFilter === 'B' && styles.filterButtonActive]}
+          onPress={() => setFlightFilter('B')}
+        >
+          <Text style={[styles.filterButtonText, flightFilter === 'B' && styles.filterButtonTextActive]}>
+            Find Flight B
+          </Text>
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={getPlayersWithSeparators}
         keyExtractor={(item, index) => 
@@ -163,6 +200,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  filterButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    gap: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  filterButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
   },
 
   listContent: {
