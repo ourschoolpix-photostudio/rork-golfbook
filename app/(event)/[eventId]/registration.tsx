@@ -439,7 +439,7 @@ export default function EventRegistrationScreen() {
       return;
     }
 
-    const guestCount = parseInt(addCustomGuestCount, 10) || 1;
+    const guestCount = addCustomGuestCount.trim() === '' ? 0 : parseInt(addCustomGuestCount, 10);
 
     try {
       const customGuest: Member = {
