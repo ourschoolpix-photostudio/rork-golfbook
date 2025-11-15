@@ -53,6 +53,11 @@ export function PayPalInvoiceModal({
 
   if (!event || !currentUser) return null;
 
+  const serviceFeePercentage = 0.05;
+  const entryFeeAmount = Number(event.entryFee);
+  const serviceFeeAmount = entryFeeAmount * serviceFeePercentage;
+  const totalAmount = entryFeeAmount + serviceFeeAmount;
+
   const getPaymentDeadline = () => {
     if (!event.date) return 'N/A';
     
@@ -83,7 +88,7 @@ export function PayPalInvoiceModal({
 
     Alert.alert(
       'Confirm Payment Method',
-      `You are about to pay ${event.entryFee} using PayPal.\n\nYou will be redirected to PayPal to complete your secure payment.`,
+      `You are about to pay ${totalAmount.toFixed(2)} (including service fee) using PayPal.\n\nYou will be redirected to PayPal to complete your secure payment.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -93,7 +98,7 @@ export function PayPalInvoiceModal({
             try {
               console.log('[PayPal] Creating payment order...');
               const paymentResult = await createPaymentMutation.mutateAsync({
-                amount: Number(event.entryFee),
+                amount: totalAmount,
                 eventName: event.name,
                 eventId: event.id,
                 playerEmail: email.trim(),
@@ -147,7 +152,7 @@ export function PayPalInvoiceModal({
               
               Alert.alert(
                 'Payment Successful',
-                `Your payment of ${event.entryFee} has been processed successfully! You are now registered for ${event.name}.`,
+                `Your payment of ${totalAmount.toFixed(2)} has been processed successfully! You are now registered for ${event.name}.`,
                 [{ text: 'OK', onPress: onClose }]
               );
             } else {
@@ -241,9 +246,20 @@ export function PayPalInvoiceModal({
 
               <View style={styles.invoiceSection}>
                 <Text style={styles.sectionTitle}>Payment Information</Text>
-                <View style={styles.entryFeeRow}>
-                  <Text style={styles.entryFeeLabel}>Entry Fee:</Text>
-                  <Text style={styles.entryFeeAmount}>${event.entryFee}</Text>
+                <View style={styles.feeBreakdown}>
+                  <View style={styles.feeRow}>
+                    <Text style={styles.feeLabel}>Entry Fee:</Text>
+                    <Text style={styles.feeValue}>${entryFeeAmount.toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.feeRow}>
+                    <Text style={styles.feeLabel}>Service Fee (5%):</Text>
+                    <Text style={styles.feeValue}>${serviceFeeAmount.toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.dividerThin} />
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Total:</Text>
+                    <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
+                  </View>
                 </View>
               </View>
 
@@ -476,22 +492,46 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
   },
-  entryFeeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  feeBreakdown: {
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#0070BA',
+    gap: 12,
   },
-  entryFeeLabel: {
-    fontSize: 16,
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  feeLabel: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  feeValue: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+  },
+  dividerThin: {
+    height: 1,
+    backgroundColor: '#D0D0D0',
+    marginVertical: 4,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  totalLabel: {
+    fontSize: 18,
     fontWeight: '700' as const,
     color: '#1a1a1a',
   },
-  entryFeeAmount: {
+  totalAmount: {
     fontSize: 24,
     fontWeight: '700' as const,
     color: '#0070BA',
