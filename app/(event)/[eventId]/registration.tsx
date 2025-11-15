@@ -59,7 +59,9 @@ export default function EventRegistrationScreen() {
   const [selectedForBulkAdd, setSelectedForBulkAdd] = useState<Set<string>>(new Set());
   const [addCustomGuestName, setAddCustomGuestName] = useState('');
   const [addCustomGuestCount, setAddCustomGuestCount] = useState('');
+  const [addCustomGuestNames, setAddCustomGuestNames] = useState('');
   const [playerGuestCounts, setPlayerGuestCounts] = useState<Record<string, string>>({});
+  const [playerGuestNames, setPlayerGuestNames] = useState<Record<string, string>>({});
   const [paymentMethodModalVisible, setPaymentMethodModalVisible] = useState(false);
   const [zelleInvoiceModalVisible, setZelleInvoiceModalVisible] = useState(false);
   const [paypalInvoiceModalVisible, setPaypalInvoiceModalVisible] = useState(false);
@@ -257,6 +259,7 @@ export default function EventRegistrationScreen() {
         try {
           console.log('Creating registration for:', player.name);
           const guestCount = event.type === 'social' ? parseInt(playerGuestCounts[player.id] || '0', 10) : undefined;
+          const guestNamesValue = event.type === 'social' ? playerGuestNames[player.id] : undefined;
           
           await registerMutation.mutateAsync({
             eventId: event.id,
@@ -269,7 +272,10 @@ export default function EventRegistrationScreen() {
             if (playerReg) {
               await updateRegistrationMutation.mutateAsync({
                 registrationId: playerReg.id,
-                updates: { numberOfGuests: guestCount },
+                updates: { 
+                  numberOfGuests: guestCount,
+                  guestNames: guestNamesValue || null,
+                },
               });
             }
           }
@@ -293,6 +299,7 @@ export default function EventRegistrationScreen() {
       }
       setSelectedForBulkAdd(new Set());
       setPlayerGuestCounts({});
+      setPlayerGuestNames({});
       setModalVisible(false);
 
       if (failedPlayers.length > 0) {
@@ -440,6 +447,7 @@ export default function EventRegistrationScreen() {
     }
 
     const guestCount = addCustomGuestCount.trim() === '' ? 0 : parseInt(addCustomGuestCount, 10);
+    const guestNamesValue = addCustomGuestNames.trim() || null;
 
     try {
       const customGuest: Member = {
@@ -466,7 +474,10 @@ export default function EventRegistrationScreen() {
         if (guestReg) {
           await updateRegistrationMutation.mutateAsync({
             registrationId: guestReg.id,
-            updates: { numberOfGuests: guestCount },
+            updates: { 
+              numberOfGuests: guestCount,
+              guestNames: guestNamesValue,
+            },
           });
         }
       }
@@ -476,6 +487,7 @@ export default function EventRegistrationScreen() {
       setMembers([...members, customGuest]);
       setAddCustomGuestName('');
       setAddCustomGuestCount('');
+      setAddCustomGuestNames('');
       setAddCustomGuestModalVisible(false);
     } catch (error) {
       console.error('Error adding custom guest:', error);
@@ -621,7 +633,7 @@ export default function EventRegistrationScreen() {
     }
   };
 
-  const handleSavePlayerChanges = async (updatedPlayer: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number) => {
+  const handleSavePlayerChanges = async (updatedPlayer: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number, guestNames?: string) => {
     try {
       console.log('[registration] 💾 Saving player changes:', {
         player: updatedPlayer.name,
@@ -653,6 +665,7 @@ export default function EventRegistrationScreen() {
           updates: {
             adjustedHandicap,
             numberOfGuests,
+            guestNames: guestNames || null,
           },
         });
         console.log('[registration] ✅ Backend update complete');
@@ -1199,6 +1212,7 @@ export default function EventRegistrationScreen() {
                 setAddCustomGuestModalVisible(false);
                 setAddCustomGuestName('');
                 setAddCustomGuestCount('');
+                setAddCustomGuestNames('');
               }}>
                 <Ionicons name="close" size={24} color="#1a1a1a" />
               </TouchableOpacity>
@@ -1226,6 +1240,22 @@ export default function EventRegistrationScreen() {
                   keyboardType="number-pad"
                 />
               </View>
+
+              {parseInt(addCustomGuestCount, 10) > 0 && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Guest Name{parseInt(addCustomGuestCount, 10) > 1 ? 's' : ''}
+                  </Text>
+                  <TextInput
+                    style={[styles.textInput, styles.textInputMultiline]}
+                    value={addCustomGuestNames}
+                    onChangeText={setAddCustomGuestNames}
+                    placeholder={parseInt(addCustomGuestCount, 10) > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
+                    multiline
+                    numberOfLines={Math.min(parseInt(addCustomGuestCount, 10) || 1, 4)}
+                  />
+                </View>
+              )}
             </View>
 
             <View style={styles.modalFooter}>
@@ -1252,6 +1282,7 @@ export default function EventRegistrationScreen() {
                 setModalVisible(false);
                 setSelectedForBulkAdd(new Set());
                 setPlayerGuestCounts({});
+                setPlayerGuestNames({});
               }}>
                 <Ionicons name="close" size={24} color="#1a1a1a" />
               </TouchableOpacity>
@@ -1298,21 +1329,44 @@ export default function EventRegistrationScreen() {
                       </View>
                     </TouchableOpacity>
                     {event?.type === 'social' && selectedForBulkAdd.has(member.id) && (
-                      <View style={styles.guestCountInputContainer}>
-                        <Text style={styles.guestCountLabel}>Number of Guests:</Text>
-                        <TextInput
-                          style={styles.guestCountInput}
-                          value={playerGuestCounts[member.id] || ''}
-                          onChangeText={(text) => {
-                            setPlayerGuestCounts({
-                              ...playerGuestCounts,
-                              [member.id]: text,
-                            });
-                          }}
-                          keyboardType="number-pad"
-                          placeholder="0"
-                        />
-                      </View>
+                      <>
+                        <View style={styles.guestCountInputContainer}>
+                          <Text style={styles.guestCountLabel}>Number of Guests:</Text>
+                          <TextInput
+                            style={styles.guestCountInput}
+                            value={playerGuestCounts[member.id] || ''}
+                            onChangeText={(text) => {
+                              setPlayerGuestCounts({
+                                ...playerGuestCounts,
+                                [member.id]: text,
+                              });
+                            }}
+                            keyboardType="number-pad"
+                            placeholder="0"
+                          />
+                        </View>
+
+                        {parseInt(playerGuestCounts[member.id], 10) > 0 && (
+                          <View style={styles.guestCountInputContainer}>
+                            <Text style={styles.guestCountLabel}>
+                              Guest Name{parseInt(playerGuestCounts[member.id], 10) > 1 ? 's' : ''}:
+                            </Text>
+                            <TextInput
+                              style={[styles.guestCountInput, styles.textInputMultiline]}
+                              value={playerGuestNames[member.id] || ''}
+                              onChangeText={(text) => {
+                                setPlayerGuestNames({
+                                  ...playerGuestNames,
+                                  [member.id]: text,
+                                });
+                              }}
+                              placeholder={parseInt(playerGuestCounts[member.id], 10) > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
+                              multiline
+                              numberOfLines={Math.min(parseInt(playerGuestCounts[member.id], 10) || 1, 4)}
+                            />
+                          </View>
+                        )}
+                      </>
                     )}
                   </View>
                 ))}
@@ -1748,6 +1802,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     color: '#1a1a1a',
+  },
+  textInputMultiline: {
+    minHeight: 80,
+    textAlignVertical: 'top' as const,
+    paddingTop: 10,
   },
   hdcRow: {
     flexDirection: 'row',

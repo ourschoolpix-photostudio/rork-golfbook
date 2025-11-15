@@ -21,7 +21,7 @@ interface EventPlayerModalProps {
   tournamentFlight: string;
   event: Event | null;
   onClose: () => void;
-  onSave: (player: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number) => Promise<void>;
+  onSave: (player: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number, guestNames?: string) => Promise<void>;
 }
 
 export function EventPlayerModal({
@@ -37,6 +37,7 @@ export function EventPlayerModal({
   const [adjustedHandicap, setAdjustedHandicap] = useState('');
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
   const [numberOfGuests, setNumberOfGuests] = useState('');
+  const [guestNames, setGuestNames] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const isSocialEvent = event?.type === 'social';
@@ -52,6 +53,7 @@ export function EventPlayerModal({
       setCurrentHandicap(player.handicap?.toString() || '0');
       setAdjustedHandicap(registration?.adjustedHandicap || '');
       setNumberOfGuests(registration?.numberOfGuests?.toString() || '');
+      setGuestNames(registration?.guestNames || '');
       
       let normalized: 'active' | 'in-active' | 'guest' = 'active';
       
@@ -82,12 +84,13 @@ export function EventPlayerModal({
       };
       
       const guestCount = numberOfGuests ? parseInt(numberOfGuests, 10) : undefined;
+      const guestNamesValue = guestNames.trim() || undefined;
       
       if (isSocialEvent && registration && guestCount !== registration.numberOfGuests) {
         await registrationService.updateGuestCount(registration.id, guestCount);
       }
       
-      await onSave(updatedPlayer, adjustedHandicap === '' ? null : adjustedHandicap, guestCount);
+      await onSave(updatedPlayer, adjustedHandicap === '' ? null : adjustedHandicap, guestCount, guestNamesValue);
       onClose();
     } catch (error) {
       console.error('Error saving player:', error);
@@ -202,17 +205,34 @@ export function EventPlayerModal({
               )}
 
               {isSocialEvent && (
-                <View style={styles.row}>
-                  <Text style={styles.label}>Number of Guests</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={numberOfGuests}
-                    onChangeText={setNumberOfGuests}
-                    keyboardType="number-pad"
-                    placeholder="0"
-                    editable={!isSaving}
-                  />
-                </View>
+                <>
+                  <View style={styles.row}>
+                    <Text style={styles.label}>Number of Guests</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={numberOfGuests}
+                      onChangeText={setNumberOfGuests}
+                      keyboardType="number-pad"
+                      placeholder="0"
+                      editable={!isSaving}
+                    />
+                  </View>
+
+                  {parseInt(numberOfGuests, 10) > 0 && (
+                    <View style={styles.fullWidthRow}>
+                      <Text style={styles.label}>Guest Name{parseInt(numberOfGuests, 10) > 1 ? 's' : ''}</Text>
+                      <TextInput
+                        style={[styles.textInput, styles.textInputMultiline]}
+                        value={guestNames}
+                        onChangeText={setGuestNames}
+                        placeholder={parseInt(numberOfGuests, 10) > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
+                        multiline
+                        numberOfLines={Math.min(parseInt(numberOfGuests, 10) || 1, 4)}
+                        editable={!isSaving}
+                      />
+                    </View>
+                  )}
+                </>
               )}
             </View>
 
@@ -368,5 +388,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1a1a1a',
+  },
+  fullWidthRow: {
+    paddingVertical: 12,
+  },
+  textInput: {
+    fontSize: 15,
+    color: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  textInputMultiline: {
+    minHeight: 80,
+    textAlignVertical: 'top' as const,
+    paddingTop: 12,
   },
 });
