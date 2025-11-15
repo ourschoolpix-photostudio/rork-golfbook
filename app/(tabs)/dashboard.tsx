@@ -232,6 +232,8 @@ export default function DashboardScreen() {
                 {userProfile.boardMemberRoles.join(' | ')}
               </Text>
             )}
+          </View>
+          <View style={{ marginBottom: 4 }}>
             <Text style={[styles.userRole, { color: getMembershipStatusColor() }]}>
               {getMembershipStatus()}
             </Text>
