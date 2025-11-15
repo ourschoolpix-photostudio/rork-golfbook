@@ -16,25 +16,35 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@/utils/auth';
 import { storageService } from '@/utils/storage';
-import { User } from '@/types';
+import { User, Member } from '@/types';
+import {
+  canAccessPlayerManagement,
+  canAccessEventManagement,
+  canAccessFinancialSummary,
+  canAccessBulkUpdate,
+  canAccessSettings,
+  canAccessBackupRestore,
+} from '@/utils/rolePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 export default function AdminScreen() {
   const router = useRouter();
+  const { currentUser } = useAuth();
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const currentUser = await authService.getCurrentUser();
-      setUser(currentUser);
-      if (!currentUser?.isAdmin) {
+      const currentUserFromAuth = await authService.getCurrentUser();
+      setUser(currentUserFromAuth);
+      if (!currentUserFromAuth?.isAdmin && !currentUser?.boardMemberRoles?.length) {
         router.replace('/');
       }
     };
     checkAdmin();
-  }, [router]);
+  }, [router, currentUser]);
 
-  if (!user?.isAdmin) {
+  if (!user?.isAdmin && !currentUser?.boardMemberRoles?.length) {
     return null;
   }
 
@@ -348,50 +358,65 @@ export default function AdminScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.optionsContainer}>
-          {adminOptions.map((option) => (
+          {adminOptions.map((option) => {
+            let hasAccess = false;
+            if (option.id === 'players') hasAccess = canAccessPlayerManagement(currentUser);
+            else if (option.id === 'events') hasAccess = canAccessEventManagement(currentUser);
+            else if (option.id === 'financial') hasAccess = canAccessFinancialSummary(currentUser);
+            else if (option.id === 'bulk-update') hasAccess = canAccessBulkUpdate(currentUser);
+            else if (option.id === 'settings') hasAccess = canAccessSettings(currentUser);
+            
+            if (!hasAccess) return null;
+            
+            return (
+              <TouchableOpacity
+                key={option.id}
+                style={styles.optionCard}
+                onPress={() => handleAdminOption(option.href)}
+              >
+                <View style={styles.optionIcon}>
+                  <Ionicons name={option.icon as any} size={28} color="#007AFF" />
+                </View>
+                <View style={styles.optionContent}>
+                  <Text style={styles.optionTitle}>{option.title}</Text>
+                  <Text style={styles.optionDescription}>{option.description}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#999" />
+              </TouchableOpacity>
+            );
+          })}
+
+          {canAccessBackupRestore(currentUser) && (
             <TouchableOpacity
-              key={option.id}
-              style={styles.optionCard}
-              onPress={() => handleAdminOption(option.href)}
+              style={[styles.optionCard, styles.backupCard]}
+              onPress={backupOption.action}
             >
-              <View style={styles.optionIcon}>
-                <Ionicons name={option.icon as any} size={28} color="#007AFF" />
+              <View style={[styles.optionIcon, styles.backupIcon]}>
+                <Ionicons name={backupOption.icon as any} size={28} color="#34C759" />
               </View>
               <View style={styles.optionContent}>
-                <Text style={styles.optionTitle}>{option.title}</Text>
-                <Text style={styles.optionDescription}>{option.description}</Text>
+                <Text style={styles.optionTitle}>{backupOption.title}</Text>
+                <Text style={styles.optionDescription}>{backupOption.description}</Text>
               </View>
               <Ionicons name="chevron-forward" size={24} color="#999" />
             </TouchableOpacity>
-          ))}
+          )}
 
-          <TouchableOpacity
-            style={[styles.optionCard, styles.backupCard]}
-            onPress={backupOption.action}
-          >
-            <View style={[styles.optionIcon, styles.backupIcon]}>
-              <Ionicons name={backupOption.icon as any} size={28} color="#34C759" />
-            </View>
-            <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>{backupOption.title}</Text>
-              <Text style={styles.optionDescription}>{backupOption.description}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.optionCard, styles.restoreCard]}
-            onPress={restoreOption.action}
-          >
-            <View style={[styles.optionIcon, styles.restoreIcon]}>
-              <Ionicons name={restoreOption.icon as any} size={28} color="#FF9500" />
-            </View>
-            <View style={styles.optionContent}>
-              <Text style={styles.optionTitle}>{restoreOption.title}</Text>
-              <Text style={styles.optionDescription}>{restoreOption.description}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#999" />
-          </TouchableOpacity>
+          {canAccessBackupRestore(currentUser) && (
+            <TouchableOpacity
+              style={[styles.optionCard, styles.restoreCard]}
+              onPress={restoreOption.action}
+            >
+              <View style={[styles.optionIcon, styles.restoreIcon]}>
+                <Ionicons name={restoreOption.icon as any} size={28} color="#FF9500" />
+              </View>
+              <View style={styles.optionContent}>
+                <Text style={styles.optionTitle}>{restoreOption.title}</Text>
+                <Text style={styles.optionDescription}>{restoreOption.description}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#999" />
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

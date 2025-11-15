@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { canViewFinance, canAddExpensesGains } from '@/utils/rolePermissions';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Plus, X } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, TextInput, Alert } from 'react-native';
@@ -139,7 +140,7 @@ export default function FinanceScreen() {
     setDescription('');
   };
 
-  if (!currentUser?.isAdmin) {
+  if (!canViewFinance(currentUser)) {
     return (
       <>
         <View style={styles.container}>
@@ -147,7 +148,7 @@ export default function FinanceScreen() {
             <Text style={styles.headerTitle}>FINANCE</Text>
           </View>
           <View style={styles.noAccessContainer}>
-            <Text style={styles.noAccessText}>Admin access required</Text>
+            <Text style={styles.noAccessText}>You don't have permission to view this page</Text>
           </View>
         </View>
         <EventFooter />
@@ -192,13 +193,15 @@ export default function FinanceScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Expenses</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => setExpenseModalVisible(true)}
-              >
-                <Plus size={20} color="#fff" />
-                <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
+              {canAddExpensesGains(currentUser) && (
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={() => setExpenseModalVisible(true)}
+                >
+                  <Plus size={20} color="#fff" />
+                  <Text style={styles.addButtonText}>Add</Text>
+                </TouchableOpacity>
+              )}
             </View>
             {expenses.length === 0 ? (
               <View style={styles.emptySection}>
@@ -220,13 +223,15 @@ export default function FinanceScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Gains</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => setGainModalVisible(true)}
-              >
-                <Plus size={20} color="#fff" />
-                <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
+              {canAddExpensesGains(currentUser) && (
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={() => setGainModalVisible(true)}
+                >
+                  <Plus size={20} color="#fff" />
+                  <Text style={styles.addButtonText}>Add</Text>
+                </TouchableOpacity>
+              )}
             </View>
             {gains.length === 0 ? (
               <View style={styles.emptySection}>

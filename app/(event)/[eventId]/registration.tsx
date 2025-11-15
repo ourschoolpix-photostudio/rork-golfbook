@@ -31,6 +31,12 @@ import {
   calculateTournamentFlight,
   isUsingCourseHandicap,
 } from '@/utils/handicapHelper';
+import {
+  canViewRegistration,
+  canModifyOnlineCourseHandicap,
+  canStartEvent,
+  canRemoveAllPlayers,
+} from '@/utils/rolePermissions';
 
 export default function EventRegistrationScreen() {
   const router = useRouter();
@@ -596,7 +602,7 @@ export default function EventRegistrationScreen() {
 
   const handlePlayerCardPress = async (player: Member) => {
     console.log('[registration] handlePlayerCardPress - currentUser:', currentUser ? { id: currentUser.id, name: currentUser.name, isAdmin: currentUser.isAdmin } : 'NULL');
-    if (currentUser?.isAdmin) {
+    if (canViewRegistration(currentUser)) {
       const freshPlayer = allMembers.find(m => m.id === player.id);
       if (freshPlayer) {
         setSelectedPlayerForEvent(freshPlayer);
@@ -849,7 +855,7 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      {currentUser?.isAdmin && (
+      {canViewRegistration(currentUser) && (
         <View style={styles.statsContainer}>
           <TouchableOpacity
             style={[
@@ -916,7 +922,7 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      {event && currentUser?.isAdmin && (
+      {event && canViewRegistration(currentUser) && (
         <View style={styles.statusButtonSection}>
           <TouchableOpacity
             style={styles.addButtonInRow}
@@ -932,27 +938,31 @@ export default function EventRegistrationScreen() {
               <Text style={styles.buttonInRowText}>Add Guest</Text>
             </TouchableOpacity>
           )}
-          <View style={styles.eventStatusButtonWrapper}>
-            <EventStatusButton
-              status={(event.status as EventStatus) || 'upcoming'}
-              onStatusChange={async (newStatus) => {
-                if (event) {
-                  await updateEventMutation.mutateAsync({
-                    eventId: event.id,
-                    updates: { status: newStatus },
-                  });
-                  setEvent({ ...event, status: newStatus });
-                }
-              }}
-              isAdmin={currentUser?.isAdmin || false}
-            />
-          </View>
-          <TouchableOpacity
-            style={styles.removeButtonInRow}
-            onPress={handleRemoveAllPlayers}
-          >
-            <Text style={styles.buttonInRowText}>Remove All</Text>
-          </TouchableOpacity>
+          {canStartEvent(currentUser) && (
+            <View style={styles.eventStatusButtonWrapper}>
+              <EventStatusButton
+                status={(event.status as EventStatus) || 'upcoming'}
+                onStatusChange={async (newStatus) => {
+                  if (event) {
+                    await updateEventMutation.mutateAsync({
+                      eventId: event.id,
+                      updates: { status: newStatus },
+                    });
+                    setEvent({ ...event, status: newStatus });
+                  }
+                }}
+                isAdmin={currentUser?.isAdmin || false}
+              />
+            </View>
+          )}
+          {canRemoveAllPlayers(currentUser) && (
+            <TouchableOpacity
+              style={styles.removeButtonInRow}
+              onPress={handleRemoveAllPlayers}
+            >
+              <Text style={styles.buttonInRowText}>Remove All</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -961,7 +971,7 @@ export default function EventRegistrationScreen() {
           <Text style={styles.playersTitle}>
             {event?.type === 'social' ? `ATTENDEES (${getTotalPeopleCount})` : `REGISTERED PLAYERS (${getDisplayedPlayers.length})`}
           </Text>
-          {event && currentUser?.isAdmin && (
+          {event && canViewRegistration(currentUser) && (
             <Text style={styles.totalAmount}>
               ${getTotalPaidAmount}
             </Text>
@@ -976,7 +986,7 @@ export default function EventRegistrationScreen() {
               {selectedPlayers.length === 0 ? (
                 <Text style={styles.emptyText}>
                   No players registered yet.
-                  {currentUser?.isAdmin
+                  {canViewRegistration(currentUser)
                     ? ' Tap "Add Player" to register.'
                     : ' Tap "Register For This Event" to join.'}
                 </Text>
@@ -1005,7 +1015,7 @@ export default function EventRegistrationScreen() {
                     >
                       <TouchableOpacity
                         onPress={() => handlePlayerCardPress(player)}
-                        activeOpacity={currentUser?.isAdmin ? 0.7 : 1}
+                        activeOpacity={canViewRegistration(currentUser) ? 0.7 : 1}
                         style={{ zIndex: 1 }}
                       >
                       <View style={styles.topRow}>
@@ -1088,11 +1098,11 @@ export default function EventRegistrationScreen() {
                             ]}
                             onPress={() => {
                               console.log('[registration] Payment badge tapped for:', player.name);
-                              if (currentUser?.isAdmin && playerReg) {
+                              if (canViewRegistration(currentUser) && playerReg) {
                                 handlePaymentToggle(player.name, playerReg);
                               }
                             }}
-                            disabled={!currentUser?.isAdmin || !playerReg}
+                            disabled={!canViewRegistration(currentUser) || !playerReg}
                             activeOpacity={0.7}
                           >
                             <Text
@@ -1127,7 +1137,7 @@ export default function EventRegistrationScreen() {
                         </View>
                       </View>
 
-                      {currentUser?.isAdmin && (
+                      {canViewRegistration(currentUser) && (
                         <TouchableOpacity
                           style={styles.removePlayerButton}
                           onPress={() => {
