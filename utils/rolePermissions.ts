@@ -110,6 +110,7 @@ export function canAccessFinancialSummary(user: Member | null): boolean {
     'Handicap Director',
     'Member Relations',
     'Financer',
+    'Operations',
   ]);
 }
 
