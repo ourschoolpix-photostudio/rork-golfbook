@@ -71,9 +71,13 @@ const getPayPalAccessToken = async (): Promise<string> => {
   console.log('[PayPal] Client Secret length:', config.clientSecret.length);
   console.log('[PayPal] Auth endpoint:', `${PAYPAL_API_BASE}/v1/oauth2/token`);
   
-  if (config.mode === 'live' && config.clientId.includes('sandbox')) {
+  if (config.mode === 'live' && config.clientId.toLowerCase().includes('sandbox')) {
     console.error('[PayPal] ⚠️⚠️⚠️ WARNING: Client ID appears to be a sandbox credential but mode is set to LIVE!');
     throw new Error('PayPal configuration error: Sandbox credentials cannot be used in live mode. Please enter your live PayPal credentials in the admin settings.');
+  }
+  
+  if (config.mode === 'sandbox' && !config.clientId.toLowerCase().includes('sandbox')) {
+    console.warn('[PayPal] ⚠️ Notice: Client ID does not appear to be a sandbox credential but mode is set to SANDBOX. This might be intentional, but double-check your credentials.');
   }
 
   const authString = `${config.clientId}:${config.clientSecret}`;
@@ -122,9 +126,9 @@ const getPayPalAccessToken = async (): Promise<string> => {
         console.error('[PayPal] Make sure your credentials match the mode in admin settings!');
         
         if (config.mode === 'live') {
-          throw new Error('PayPal authentication failed. You are in LIVE mode - make sure you have entered your production credentials (not sandbox credentials) in the admin settings.');
+          throw new Error('PayPal authentication failed. You are in LIVE mode - please verify:\n\n1. Your Client ID and Secret are from your PayPal LIVE account (not sandbox)\n2. There are no extra spaces in your credentials\n3. Your PayPal account is approved for live transactions\n4. The credentials are copied exactly as shown in your PayPal Developer Dashboard\n\nIf you\'re still testing, switch to Sandbox mode in Admin Settings.');
         } else {
-          throw new Error('PayPal authentication failed. You are in SANDBOX mode - make sure you have entered your sandbox credentials in the admin settings.');
+          throw new Error('PayPal authentication failed. You are in SANDBOX mode - make sure you have entered your sandbox credentials from developer.paypal.com in the admin settings.');
         }
       }
       

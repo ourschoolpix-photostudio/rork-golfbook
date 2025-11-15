@@ -326,6 +326,21 @@ export default function SettingsScreen() {
                 Configure your PayPal credentials to accept payments. You can use sandbox mode for testing or live mode for production.
               </Text>
               
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle" size={20} color="#007AFF" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={styles.infoTitle}>Getting Your Credentials:</Text>
+                  <Text style={styles.infoText}>
+                    1. Go to developer.paypal.com{"\n"}
+                    2. Log in and go to "Dashboard"{"\n"}
+                    3. Click "My Apps & Credentials"{"\n"}
+                    4. For sandbox: Use the "Sandbox" tab{"\n"}
+                    5. For live: Use the "Live" tab{"\n"}
+                    6. Copy your Client ID and Secret
+                  </Text>
+                </View>
+              </View>
+              
               <View style={[styles.currentModeIndicator, orgInfo.paypalMode === 'live' && styles.liveModeIndicator]}>
                 <Ionicons 
                   name={orgInfo.paypalMode === 'live' ? 'flash' : 'flask'} 
@@ -413,9 +428,26 @@ export default function SettingsScreen() {
               {orgInfo.paypalMode === 'live' && (orgInfo.paypalClientId || orgInfo.paypalClientSecret) && (
                 <View style={styles.warningBox}>
                   <Ionicons name="warning" size={20} color="#FF9500" />
-                  <Text style={styles.warningText}>
-                    You are using LIVE mode. Make sure you have entered your production credentials from PayPal.
-                  </Text>
+                  <View style={styles.warningTextContainer}>
+                    <Text style={styles.warningText}>
+                      You are using LIVE mode. Make sure:{"\n\n"}
+                      • Credentials are from the "Live" tab on developer.paypal.com{"\n"}
+                      • Your PayPal account is approved for live transactions{"\n"}
+                      • There are no extra spaces when copying/pasting{"\n"}
+                      • You have saved the credentials by clicking "Save All Settings"
+                    </Text>
+                  </View>
+                </View>
+              )}
+              
+              {orgInfo.paypalMode === 'sandbox' && (orgInfo.paypalClientId || orgInfo.paypalClientSecret) && (
+                <View style={styles.sandboxInfoBox}>
+                  <Ionicons name="flask" size={20} color="#F59E0B" />
+                  <View style={styles.warningTextContainer}>
+                    <Text style={styles.sandboxInfoText}>
+                      You are in SANDBOX mode for testing. Use credentials from the "Sandbox" tab on developer.paypal.com.
+                    </Text>
+                  </View>
                 </View>
               )}
 
@@ -783,5 +815,50 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
     fontStyle: 'italic' as const,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+  },
+  infoTextContainer: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#1976D2',
+    marginBottom: 4,
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#1565C0',
+    lineHeight: 18,
+  },
+  warningTextContainer: {
+    flex: 1,
+  },
+  sandboxInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  sandboxInfoText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#92400E',
+    lineHeight: 18,
   },
 });
