@@ -250,14 +250,6 @@ export default function EventRegistrationScreen() {
             }
           }
           
-          await addNotification({
-            eventId: event.id,
-            eventName: event.name,
-            playerName: player.name,
-            playerPhone: player.phone || null,
-            paymentMethod: 'zelle',
-          });
-          
           console.log('✓ Registration created:', player.name, 'with guest count:', guestCount);
 
           updated = [...updated, player];
@@ -454,14 +446,6 @@ export default function EventRegistrationScreen() {
           });
         }
       }
-      
-      await addNotification({
-        eventId: event.id,
-        eventName: event.name,
-        playerName: customGuest.name,
-        playerPhone: null,
-        paymentMethod: 'zelle',
-      });
 
       const updated = [...selectedPlayers, customGuest];
       setSelectedPlayers(updated);
