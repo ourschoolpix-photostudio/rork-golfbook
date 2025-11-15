@@ -960,9 +960,13 @@ export default function EventRegistrationScreen() {
                 paymentFilter === 'paid' && styles.statCountActive,
               ]}
             >
-              {Object.values(registrations).filter(
-                (reg) => reg.paymentStatus === 'paid'
-              ).length}
+              {event?.type === 'social' 
+                ? Object.values(registrations)
+                    .filter((reg) => reg.paymentStatus === 'paid')
+                    .reduce((total, reg) => total + 1 + (reg.numberOfGuests || 0), 0)
+                : Object.values(registrations).filter(
+                    (reg) => reg.paymentStatus === 'paid'
+                  ).length}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -981,9 +985,13 @@ export default function EventRegistrationScreen() {
                 paymentFilter === 'unpaid' && styles.statCountActive,
               ]}
             >
-              {Object.values(registrations).filter(
-                (reg) => reg.paymentStatus === 'unpaid'
-              ).length}
+              {event?.type === 'social' 
+                ? Object.values(registrations)
+                    .filter((reg) => reg.paymentStatus === 'unpaid')
+                    .reduce((total, reg) => total + 1 + (reg.numberOfGuests || 0), 0)
+                : Object.values(registrations).filter(
+                    (reg) => reg.paymentStatus === 'unpaid'
+                  ).length}
             </Text>
           </TouchableOpacity>
           {event?.type !== 'social' && (
