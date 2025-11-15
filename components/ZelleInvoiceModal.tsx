@@ -154,45 +154,6 @@ export function ZelleInvoiceModal({
                   <Text style={styles.detailValue}>{event.date}</Text>
                 </View>
               </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.invoiceSection}>
-                <Text style={styles.sectionTitle}>Payment Information</Text>
-                <View style={styles.entryFeeRow}>
-                  <View>
-                    <Text style={styles.entryFeeLabel}>Entry Fee ({totalPeople} {totalPeople === 1 ? 'person' : 'people'}):</Text>
-                    {guestCount > 0 && (
-                      <Text style={styles.feeBreakdownDetail}>
-                        {currentUser.name} + {guestCount} guest{guestCount !== 1 ? 's' : ''} × ${entryFeeAmount.toFixed(2)}
-                      </Text>
-                    )}
-                  </View>
-                  <Text style={styles.entryFeeAmount}>${totalAmount.toFixed(2)}</Text>
-                </View>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.paymentInstructions}>
-                <Text style={styles.instructionsTitle}>Payment Instructions</Text>
-                <Text style={styles.instructionsText}>
-                  Please send your payment via Zelle to:
-                </Text>
-                <View style={styles.zelleInfoBox}>
-                  <Ionicons name="cash-outline" size={24} color="#6B21A8" />
-                  <Text style={styles.zelleNumber}>{formatPhoneNumber(orgInfo.zellePhone || '5714811006')}</Text>
-                </View>
-                <View style={styles.deadlineBox}>
-                  <Ionicons name="time-outline" size={20} color="#DC2626" />
-                  <Text style={styles.deadlineText}>
-                    Payment must be received by {getPaymentDeadline()}
-                  </Text>
-                </View>
-                <Text style={styles.warningText}>
-                  Your name will be removed if payment is not received by the deadline to make room for anyone on the waiting list.
-                </Text>
-              </View>
             </View>
 
             <View style={styles.formSection}>
@@ -288,7 +249,48 @@ export function ZelleInvoiceModal({
                   )}
                 </>
               )}
+            </View>
 
+            <View style={styles.paymentCard}>
+              <View style={styles.invoiceSection}>
+                <Text style={styles.sectionTitle}>Payment Information</Text>
+                <View style={styles.entryFeeRow}>
+                  <View>
+                    <Text style={styles.entryFeeLabel}>Entry Fee ({totalPeople} {totalPeople === 1 ? 'person' : 'people'}):</Text>
+                    {guestCount > 0 && (
+                      <Text style={styles.feeBreakdownDetail}>
+                        {currentUser.name} + {guestCount} guest{guestCount !== 1 ? 's' : ''} × ${entryFeeAmount.toFixed(2)}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.entryFeeAmount}>${totalAmount.toFixed(2)}</Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.paymentInstructions}>
+                <Text style={styles.instructionsTitle}>Payment Instructions</Text>
+                <Text style={styles.instructionsText}>
+                  Please send your payment via Zelle to:
+                </Text>
+                <View style={styles.zelleInfoBox}>
+                  <Ionicons name="cash-outline" size={24} color="#6B21A8" />
+                  <Text style={styles.zelleNumber}>{formatPhoneNumber(orgInfo.zellePhone || '5714811006')}</Text>
+                </View>
+                <View style={styles.deadlineBox}>
+                  <Ionicons name="time-outline" size={20} color="#DC2626" />
+                  <Text style={styles.deadlineText}>
+                    Payment must be received by {getPaymentDeadline()}
+                  </Text>
+                </View>
+                <Text style={styles.warningText}>
+                  Your name will be removed if payment is not received by the deadline to make room for anyone on the waiting list.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.termsSection}>
               <View style={styles.termsWrapper}>
                 <TouchableOpacity
                   style={styles.termsContainer}
@@ -512,6 +514,11 @@ const styles = StyleSheet.create({
   },
   formSection: {
     marginBottom: 20,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   formTitle: {
     fontSize: 18,
@@ -623,5 +630,16 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top' as const,
     paddingTop: 12,
+  },
+  paymentCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  termsSection: {
+    marginBottom: 20,
   },
 });

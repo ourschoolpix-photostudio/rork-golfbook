@@ -252,51 +252,6 @@ export function PayPalInvoiceModal({
                   <Text style={styles.detailValue}>{event.date}</Text>
                 </View>
               </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.invoiceSection}>
-                <Text style={styles.sectionTitle}>Payment Information</Text>
-                <View style={styles.feeBreakdown}>
-                  <View style={styles.feeRow}>
-                    <Text style={styles.feeLabel}>Entry Fee ({totalPeople} {totalPeople === 1 ? 'person' : 'people'}):</Text>
-                    <Text style={styles.feeValue}>${subtotal.toFixed(2)}</Text>
-                  </View>
-                  {guestCount > 0 && (
-                    <Text style={styles.feeBreakdownDetail}>
-                      {currentUser.name} + {guestCount} guest{guestCount !== 1 ? 's' : ''} × ${entryFeeAmount.toFixed(2)}
-                    </Text>
-                  )}
-                  <View style={styles.feeRow}>
-                    <Text style={styles.feeLabel}>Service Fee (5%):</Text>
-                    <Text style={styles.feeValue}>${serviceFeeAmount.toFixed(2)}</Text>
-                  </View>
-                  <View style={styles.dividerThin} />
-                  <View style={styles.totalRow}>
-                    <Text style={styles.totalLabel}>Total:</Text>
-                    <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.paymentInstructions}>
-                <Text style={styles.instructionsTitle}>Payment Instructions</Text>
-                <Text style={styles.instructionsText}>
-                  You will be redirected to PayPal to complete your payment securely.
-                </Text>
-                <View style={styles.paypalInfoBox}>
-                  <Ionicons name="logo-paypal" size={32} color="#0070BA" />
-                  <Text style={styles.paypalText}>Secure Payment via PayPal</Text>
-                </View>
-                <View style={styles.deadlineBox}>
-                  <Ionicons name="time-outline" size={20} color="#DC2626" />
-                  <Text style={styles.deadlineText}>
-                    Payment must be completed by {getPaymentDeadline()}
-                  </Text>
-                </View>
-              </View>
             </View>
 
             <View style={styles.formSection}>
@@ -392,7 +347,54 @@ export function PayPalInvoiceModal({
                   )}
                 </>
               )}
+            </View>
 
+            <View style={styles.paymentCard}>
+              <View style={styles.invoiceSection}>
+                <Text style={styles.sectionTitle}>Payment Information</Text>
+                <View style={styles.feeBreakdown}>
+                  <View style={styles.feeRow}>
+                    <Text style={styles.feeLabel}>Entry Fee ({totalPeople} {totalPeople === 1 ? 'person' : 'people'}):</Text>
+                    <Text style={styles.feeValue}>${subtotal.toFixed(2)}</Text>
+                  </View>
+                  {guestCount > 0 && (
+                    <Text style={styles.feeBreakdownDetail}>
+                      {currentUser.name} + {guestCount} guest{guestCount !== 1 ? 's' : ''} × ${entryFeeAmount.toFixed(2)}
+                    </Text>
+                  )}
+                  <View style={styles.feeRow}>
+                    <Text style={styles.feeLabel}>Service Fee (5%):</Text>
+                    <Text style={styles.feeValue}>${serviceFeeAmount.toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.dividerThin} />
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Total:</Text>
+                    <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.paymentInstructions}>
+                <Text style={styles.instructionsTitle}>Payment Instructions</Text>
+                <Text style={styles.instructionsText}>
+                  You will be redirected to PayPal to complete your payment securely.
+                </Text>
+                <View style={styles.paypalInfoBox}>
+                  <Ionicons name="logo-paypal" size={32} color="#0070BA" />
+                  <Text style={styles.paypalText}>Secure Payment via PayPal</Text>
+                </View>
+                <View style={styles.deadlineBox}>
+                  <Ionicons name="time-outline" size={20} color="#DC2626" />
+                  <Text style={styles.deadlineText}>
+                    Payment must be completed by {getPaymentDeadline()}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.termsSection}>
               <View style={styles.termsWrapper}>
                 <TouchableOpacity
                   style={styles.termsContainer}
@@ -633,6 +635,11 @@ const styles = StyleSheet.create({
   },
   formSection: {
     marginBottom: 20,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   formTitle: {
     fontSize: 18,
@@ -746,5 +753,16 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top' as const,
     paddingTop: 12,
+  },
+  paymentCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  termsSection: {
+    marginBottom: 20,
   },
 });
