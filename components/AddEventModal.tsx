@@ -10,8 +10,13 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { photoService } from '@/utils/photoService';
 
 interface AddEventModalProps {
   visible: boolean;
@@ -113,6 +118,7 @@ export function AddEventModal({
 }: AddEventModalProps) {
   const [useSameCourseDay2, setUseSameCourseDay2] = useState(false);
   const [useSameCourseDay3, setUseSameCourseDay3] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   
   const day1HoleRefs = useRef<(TextInput | null)[]>(Array(18).fill(null));
   const day2HoleRefs = useRef<(TextInput | null)[]>(Array(18).fill(null));
@@ -307,14 +313,58 @@ export function AddEventModal({
               </View>
 
               <View style={styles.photoSection}>
-                <Text style={styles.sectionLabel}>Event Photo URL</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter photo URL (optional)"
-                  placeholderTextColor="#999"
-                  value={form.photoUrl || ''}
-                  onChangeText={(text) => onFormChange('photoUrl', text)}
-                />
+                <Text style={styles.sectionLabel}>Event Photo</Text>
+                <TouchableOpacity 
+                  style={styles.photoPickerButton} 
+                  onPress={async () => {
+                    try {
+                      if (Platform.OS !== 'web') {
+                        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                        if (status !== 'granted') {
+                          Alert.alert('Permission Required', 'Please allow access to your photo library');
+                          return;
+                        }
+                      }
+
+                      const result = await ImagePicker.launchImageLibraryAsync({
+                        mediaTypes: ['images'],
+                        allowsEditing: true,
+                        aspect: [4, 3],
+                        quality: 0.8,
+                      });
+
+                      if (!result.canceled && result.assets[0]) {
+                        setUploadingPhoto(true);
+                        const eventId = isEditing ? form.eventName.replace(/\s+/g, '-') : `event-${Date.now()}`;
+                        const photoUrl = await photoService.uploadPhoto(result.assets[0], eventId, false);
+                        onFormChange('photoUrl', photoUrl);
+                        setUploadingPhoto(false);
+                      }
+                    } catch (error: any) {
+                      setUploadingPhoto(false);
+                      Alert.alert('Upload Failed', error.message || 'Failed to upload photo');
+                      console.error('Photo upload error:', error);
+                    }
+                  }}
+                  disabled={uploadingPhoto}
+                >
+                  {uploadingPhoto ? (
+                    <View style={styles.photoPickerContent}>
+                      <ActivityIndicator size="small" color="#007AFF" />
+                      <Text style={styles.photoPickerText}>Uploading...</Text>
+                    </View>
+                  ) : form.photoUrl ? (
+                    <View style={styles.photoPickerContent}>
+                      <Image source={{ uri: form.photoUrl }} style={styles.photoPreview} />
+                      <Text style={styles.photoPickerText}>Tap to change photo</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.photoPickerContent}>
+                      <Ionicons name="camera" size={32} color="#007AFF" />
+                      <Text style={styles.photoPickerText}>Tap to add event photo</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -1615,6 +1665,31 @@ const styles = StyleSheet.create({
   dayButtonText: { fontSize: 18, fontWeight: '600', color: '#666' },
   dayButtonTextActive: { color: '#fff' },
   photoSection: { marginTop: 16 },
+  photoPickerButton: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 120,
+  },
+  photoPickerContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoPickerText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600' as const,
+  },
+  photoPreview: {
+    width: 120,
+    height: 90,
+    borderRadius: 8,
+  },
   submitButton: { backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 8, alignItems: 'center', marginTop: 32, marginBottom: 32 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   dayScheduleSection: { marginTop: 12, marginBottom: 6, paddingHorizontal: 8, paddingVertical: 8, backgroundColor: '#D9D9D9', borderRadius: 12 },
