@@ -227,6 +227,11 @@ export default function DashboardScreen() {
             {currentUser?.isAdmin && (
               <Text style={[styles.userRole, { color: '#FFD700' }]}>Admin</Text>
             )}
+            {userProfile?.boardMemberRoles && userProfile.boardMemberRoles.length > 0 && (
+              <Text style={[styles.userRole, { color: '#FFD700' }]}>
+                {userProfile.boardMemberRoles.join(' | ')}
+              </Text>
+            )}
             <Text style={[styles.userRole, { color: getMembershipStatusColor() }]}>
               {getMembershipStatus()}
             </Text>
