@@ -1,9 +1,9 @@
 -- Migration 013: Add user preferences table
 
 CREATE TABLE IF NOT EXISTS user_preferences (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  member_id UUID REFERENCES members(id) ON DELETE CASCADE,
-  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  member_id TEXT REFERENCES members(id) ON DELETE CASCADE,
+  event_id TEXT REFERENCES events(id) ON DELETE CASCADE,
   preference_key TEXT NOT NULL,
   preference_value JSONB NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),

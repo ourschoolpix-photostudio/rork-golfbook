@@ -1,11 +1,11 @@
 -- Migration 014: Add offline operations table
 
 CREATE TABLE IF NOT EXISTS offline_operations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  member_id UUID REFERENCES members(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  member_id TEXT REFERENCES members(id) ON DELETE CASCADE,
   operation_type TEXT NOT NULL CHECK (operation_type IN ('score_submit', 'registration_create', 'registration_update', 'registration_delete', 'grouping_sync', 'member_update', 'event_update')),
   operation_data JSONB NOT NULL,
-  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  event_id TEXT REFERENCES events(id) ON DELETE CASCADE,
   retry_count INTEGER DEFAULT 0,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
   error_message TEXT,
