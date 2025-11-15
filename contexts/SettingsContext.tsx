@@ -11,6 +11,9 @@ interface OrganizationInfo {
   phone: string;
   zellePhone: string;
   logoUrl: string;
+  paypalClientId: string;
+  paypalClientSecret: string;
+  paypalMode: 'sandbox' | 'live';
 }
 
 const DEFAULT_ORG_INFO: OrganizationInfo = {
@@ -22,6 +25,9 @@ const DEFAULT_ORG_INFO: OrganizationInfo = {
   phone: '',
   zellePhone: '',
   logoUrl: '',
+  paypalClientId: '',
+  paypalClientSecret: '',
+  paypalMode: 'sandbox',
 };
 
 export const [SettingsProvider, useSettings] = createContextHook(() => {

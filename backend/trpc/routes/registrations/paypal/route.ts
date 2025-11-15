@@ -1,39 +1,89 @@
 import { publicProcedure, createTRPCRouter } from "@/backend/trpc/create-context";
 import { z } from "zod";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-console.log('[PayPal Config Debug] process.env.PAYPAL_CLIENT_ID:', process.env.PAYPAL_CLIENT_ID);
-console.log('[PayPal Config Debug] process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID:', process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID);
-console.log('[PayPal Config Debug] All env keys with PAYPAL:', Object.keys(process.env).filter(k => k.includes('PAYPAL')));
+interface PayPalConfig {
+  clientId: string;
+  clientSecret: string;
+  mode: 'sandbox' | 'live';
+}
 
-const PAYPAL_CLIENT_ID = (process.env.PAYPAL_CLIENT_ID || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID || '').trim().replace(/\r/g, '');
-const PAYPAL_CLIENT_SECRET = (process.env.PAYPAL_CLIENT_SECRET || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_SECRET || '').trim().replace(/\r/g, '');
-const PAYPAL_MODE = (process.env.PAYPAL_MODE || process.env.EXPO_PUBLIC_PAYPAL_MODE || 'sandbox').trim();
-const PAYPAL_API_BASE = PAYPAL_MODE === 'live' 
-  ? 'https://api-m.paypal.com' 
-  : 'https://api-m.sandbox.paypal.com';
+const getPayPalConfig = async (): Promise<PayPalConfig> => {
+  try {
+    const orgInfoData = await AsyncStorage.getItem('@organization_info');
+    
+    if (!orgInfoData) {
+      const envClientId = (process.env.PAYPAL_CLIENT_ID || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID || '').trim().replace(/\r/g, '');
+      const envClientSecret = (process.env.PAYPAL_CLIENT_SECRET || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_SECRET || '').trim().replace(/\r/g, '');
+      const envMode = (process.env.PAYPAL_MODE || process.env.EXPO_PUBLIC_PAYPAL_MODE || 'sandbox').trim() as 'sandbox' | 'live';
+      
+      return {
+        clientId: envClientId,
+        clientSecret: envClientSecret,
+        mode: envMode,
+      };
+    }
 
-console.log('[PayPal Config] CLIENT_ID exists:', !!PAYPAL_CLIENT_ID);
-console.log('[PayPal Config] CLIENT_ID (first 20 chars):', PAYPAL_CLIENT_ID?.substring(0, 20));
-console.log('[PayPal Config] CLIENT_ID length:', PAYPAL_CLIENT_ID?.length);
-console.log('[PayPal Config] CLIENT_SECRET exists:', !!PAYPAL_CLIENT_SECRET);
-console.log('[PayPal Config] CLIENT_SECRET (last 4 chars):', PAYPAL_CLIENT_SECRET ? '...' + PAYPAL_CLIENT_SECRET.slice(-4) : 'none');
-console.log('[PayPal Config] CLIENT_SECRET length:', PAYPAL_CLIENT_SECRET?.length);
-console.log('[PayPal Config] MODE:', PAYPAL_MODE);
-console.log('[PayPal Config] API_BASE:', PAYPAL_API_BASE);
+    const orgInfo = JSON.parse(orgInfoData);
+    
+    const clientId = (orgInfo.paypalClientId || '').trim();
+    const clientSecret = (orgInfo.paypalClientSecret || '').trim();
+    const mode = (orgInfo.paypalMode || 'sandbox') as 'sandbox' | 'live';
+    
+    if (!clientId || !clientSecret) {
+      const envClientId = (process.env.PAYPAL_CLIENT_ID || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID || '').trim().replace(/\r/g, '');
+      const envClientSecret = (process.env.PAYPAL_CLIENT_SECRET || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_SECRET || '').trim().replace(/\r/g, '');
+      const envMode = (process.env.PAYPAL_MODE || process.env.EXPO_PUBLIC_PAYPAL_MODE || 'sandbox').trim() as 'sandbox' | 'live';
+      
+      return {
+        clientId: envClientId,
+        clientSecret: envClientSecret,
+        mode: envMode,
+      };
+    }
+
+    console.log('[PayPal Config] Using stored credentials');
+    console.log('[PayPal Config] CLIENT_ID exists:', !!clientId);
+    console.log('[PayPal Config] CLIENT_ID (first 20 chars):', clientId?.substring(0, 20));
+    console.log('[PayPal Config] CLIENT_SECRET exists:', !!clientSecret);
+    console.log('[PayPal Config] MODE:', mode);
+
+    return {
+      clientId,
+      clientSecret,
+      mode,
+    };
+  } catch (error) {
+    console.error('[PayPal Config] Error loading config from storage:', error);
+    const envClientId = (process.env.PAYPAL_CLIENT_ID || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID || '').trim().replace(/\r/g, '');
+    const envClientSecret = (process.env.PAYPAL_CLIENT_SECRET || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_SECRET || '').trim().replace(/\r/g, '');
+    const envMode = (process.env.PAYPAL_MODE || process.env.EXPO_PUBLIC_PAYPAL_MODE || 'sandbox').trim() as 'sandbox' | 'live';
+    
+    return {
+      clientId: envClientId,
+      clientSecret: envClientSecret,
+      mode: envMode,
+    };
+  }
+};
 
 const getPayPalAccessToken = async (): Promise<string> => {
+  const config = await getPayPalConfig();
+  const PAYPAL_API_BASE = config.mode === 'live' 
+    ? 'https://api-m.paypal.com' 
+    : 'https://api-m.sandbox.paypal.com';
   console.log('[PayPal] Getting access token...');
   
-  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+  if (!config.clientId || !config.clientSecret) {
     throw new Error('PayPal credentials not configured');
   }
 
-  console.log('[PayPal] Client ID (first 20):', PAYPAL_CLIENT_ID.substring(0, 20) + '...');
-  console.log('[PayPal] Client ID (last 10):', '...' + PAYPAL_CLIENT_ID.substring(PAYPAL_CLIENT_ID.length - 10));
-  console.log('[PayPal] Client Secret length:', PAYPAL_CLIENT_SECRET.length);
+  console.log('[PayPal] Client ID (first 20):', config.clientId.substring(0, 20) + '...');
+  console.log('[PayPal] Client ID (last 10):', '...' + config.clientId.substring(config.clientId.length - 10));
+  console.log('[PayPal] Client Secret length:', config.clientSecret.length);
   console.log('[PayPal] Auth endpoint:', `${PAYPAL_API_BASE}/v1/oauth2/token`);
 
-  const authString = `${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`;
+  const authString = `${config.clientId}:${config.clientSecret}`;
   console.log('[PayPal] Auth string length (before encoding):', authString.length);
   const auth = Buffer.from(authString).toString('base64');
   console.log('[PayPal] Auth header (base64) length:', auth.length);
@@ -95,11 +145,16 @@ export const createPaymentProcedure = publicProcedure
     playerEmail: z.string().email(),
   }))
   .mutation(async ({ input }) => {
+    const config = await getPayPalConfig();
+    const PAYPAL_API_BASE = config.mode === 'live' 
+      ? 'https://api-m.paypal.com' 
+      : 'https://api-m.sandbox.paypal.com';
+
     console.log('[PayPal] Creating payment order:', {
       amount: input.amount,
       eventName: input.eventName,
       eventId: input.eventId,
-      mode: PAYPAL_MODE,
+      mode: config.mode,
       apiBase: PAYPAL_API_BASE,
     });
 
@@ -182,6 +237,11 @@ export const capturePaymentProcedure = publicProcedure
     orderId: z.string(),
   }))
   .mutation(async ({ input }) => {
+    const config = await getPayPalConfig();
+    const PAYPAL_API_BASE = config.mode === 'live' 
+      ? 'https://api-m.paypal.com' 
+      : 'https://api-m.sandbox.paypal.com';
+
     console.log('[PayPal] Capturing payment for order:', input.orderId);
     console.log('[PayPal] Using API base:', PAYPAL_API_BASE);
 

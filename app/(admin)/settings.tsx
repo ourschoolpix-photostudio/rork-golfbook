@@ -29,6 +29,9 @@ interface OrganizationInfo {
   phone: string;
   zellePhone: string;
   logoUrl: string;
+  paypalClientId: string;
+  paypalClientSecret: string;
+  paypalMode: 'sandbox' | 'live';
 }
 
 export default function SettingsScreen() {
@@ -47,6 +50,9 @@ export default function SettingsScreen() {
     phone: '',
     zellePhone: '',
     logoUrl: '',
+    paypalClientId: '',
+    paypalClientSecret: '',
+    paypalMode: 'sandbox',
   });
 
   useEffect(() => {
@@ -300,6 +306,79 @@ export default function SettingsScreen() {
                 placeholder="(123) 456-7890"
                 keyboardType="phone-pad"
               />
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>PayPal Configuration</Text>
+              <Text style={styles.sectionDescription}>
+                Configure your PayPal credentials to accept payments. You can use sandbox mode for testing or live mode for production.
+              </Text>
+
+              <Text style={styles.fieldLabel}>PayPal Mode</Text>
+              <View style={styles.modeSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.modeButton,
+                    orgInfo.paypalMode === 'sandbox' && styles.modeButtonActive,
+                  ]}
+                  onPress={() => setOrgInfo({ ...orgInfo, paypalMode: 'sandbox' })}
+                >
+                  <Text
+                    style={[
+                      styles.modeButtonText,
+                      orgInfo.paypalMode === 'sandbox' && styles.modeButtonTextActive,
+                    ]}
+                  >
+                    Sandbox (Testing)
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.modeButton,
+                    orgInfo.paypalMode === 'live' && styles.modeButtonActive,
+                  ]}
+                  onPress={() => setOrgInfo({ ...orgInfo, paypalMode: 'live' })}
+                >
+                  <Text
+                    style={[
+                      styles.modeButtonText,
+                      orgInfo.paypalMode === 'live' && styles.modeButtonTextActive,
+                    ]}
+                  >
+                    Live (Production)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.fieldLabel}>PayPal Client ID</Text>
+              <TextInput
+                style={styles.input}
+                value={orgInfo.paypalClientId}
+                onChangeText={(text) => setOrgInfo({ ...orgInfo, paypalClientId: text })}
+                placeholder="Enter PayPal Client ID"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <Text style={styles.fieldLabel}>PayPal Client Secret</Text>
+              <TextInput
+                style={styles.input}
+                value={orgInfo.paypalClientSecret}
+                onChangeText={(text) => setOrgInfo({ ...orgInfo, paypalClientSecret: text })}
+                placeholder="Enter PayPal Client Secret"
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry
+              />
+
+              {orgInfo.paypalMode === 'live' && (orgInfo.paypalClientId || orgInfo.paypalClientSecret) && (
+                <View style={styles.warningBox}>
+                  <Ionicons name="warning" size={20} color="#FF9500" />
+                  <Text style={styles.warningText}>
+                    You are using LIVE mode. Make sure you have entered your production credentials from PayPal.
+                  </Text>
+                </View>
+              )}
 
               <TouchableOpacity
                 style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
@@ -311,7 +390,7 @@ export default function SettingsScreen() {
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text style={styles.saveButtonText}>Save Organization Info</Text>
+                    <Text style={styles.saveButtonText}>Save All Settings</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -584,5 +663,55 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 12,
     minHeight: 60,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 8,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  modeButtonActive: {
+    borderColor: '#007AFF',
+    backgroundColor: '#E3F2FD',
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  modeButtonTextActive: {
+    color: '#007AFF',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#E65100',
+    lineHeight: 18,
   },
 });
