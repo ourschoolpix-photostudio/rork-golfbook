@@ -450,6 +450,8 @@ export default function EventRegistrationScreen() {
     const guestNamesValue = addCustomGuestNames.trim() || null;
 
     try {
+      console.log('[registration] 🎯 Adding custom guest:', addCustomGuestName.trim(), 'with', guestCount, 'additional guests');
+      
       const customGuest: Member = {
         id: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: addCustomGuestName.trim(),
@@ -461,14 +463,19 @@ export default function EventRegistrationScreen() {
         membershipType: 'guest',
       };
 
+      console.log('[registration] Step 1: Creating member record...');
       await createMemberMutation.mutateAsync(customGuest);
+      console.log('[registration] ✓ Member created');
 
+      console.log('[registration] Step 2: Creating registration...');
       await registerMutation.mutateAsync({
         eventId: event.id,
         memberId: customGuest.id,
       });
+      console.log('[registration] ✓ Registration created');
       
       if (guestCount > 0) {
+        console.log('[registration] Step 3: Updating guest count...');
         const backendRegs = await registrationsQuery.refetch();
         const guestReg = backendRegs.data?.find((r: any) => r.memberId === customGuest.id);
         if (guestReg) {
@@ -479,18 +486,27 @@ export default function EventRegistrationScreen() {
               guestNames: guestNamesValue,
             },
           });
+          console.log('[registration] ✓ Guest count updated');
         }
       }
 
+      console.log('[registration] Step 4: Updating local state...');
       const updated = [...selectedPlayers, customGuest];
       setSelectedPlayers(updated);
       setMembers([...members, customGuest]);
+      
+      console.log('[registration] Step 5: Final refetch to sync UI...');
+      await registrationsQuery.refetch();
+      console.log('[registration] ✓ Final refetch complete');
+      
       setAddCustomGuestName('');
       setAddCustomGuestCount('');
       setAddCustomGuestNames('');
       setAddCustomGuestModalVisible(false);
+      
+      console.log('[registration] ✅ Custom guest added successfully!');
     } catch (error) {
-      console.error('Error adding custom guest:', error);
+      console.error('[registration] ❌ Error adding custom guest:', error);
       Alert.alert('Error', 'Failed to add guest. Please try again.');
     }
   };
