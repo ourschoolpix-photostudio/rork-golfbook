@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { NotificationsModal } from "@/components/NotificationsModal";
+import { hasAnyRole } from "@/utils/rolePermissions";
 
 export default function TabLayout() {
   const { currentUser, logout } = useAuth();
@@ -104,7 +105,7 @@ export default function TabLayout() {
           options={{
             title: "Admin",
             tabBarIcon: ({ color }) => <ShieldCheck size={24} color={color} />,
-            href: currentUser?.isAdmin ? undefined : null,
+            href: (currentUser?.isAdmin || hasAnyRole(currentUser, ['Financer'])) ? undefined : null,
             headerRight: () => null,
           }}
         />
