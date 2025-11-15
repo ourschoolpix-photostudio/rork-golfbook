@@ -104,7 +104,10 @@ export const PlayerCard = memo(function PlayerCard({
                 )}
               </View>
             </View>
-            {member.membershipType && (
+          </View>
+
+          {member.membershipType && (
+            <View style={styles.membershipRow}>
               <View
                 style={[
                   styles.membershipBadge,
@@ -115,8 +118,8 @@ export const PlayerCard = memo(function PlayerCard({
                   {getMemberStatusText(member.membershipType)}
                 </Text>
               </View>
-            )}
-          </View>
+            </View>
+          )}
 
           <View style={styles.memberInfo}>
             <Text style={styles.memberDetail}>Handicap: {member.handicap || 'N/A'}</Text>
@@ -198,8 +201,12 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
     justifyContent: 'space-between',
+  },
+  membershipRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
   },
   nameContainer: {
     flex: 1,
@@ -224,7 +231,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
-    marginLeft: 8,
   },
   membershipText: {
     fontSize: 10,
