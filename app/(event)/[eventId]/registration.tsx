@@ -11,7 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { trpc } from '@/lib/trpc';
@@ -106,6 +106,13 @@ export default function EventRegistrationScreen() {
   const refreshEventData = async () => {
     await eventQuery.refetch();
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('[registration] 🔄 Screen focused - refetching event data');
+      eventQuery.refetch();
+    }, [eventId])
+  );
 
   useEffect(() => {
     if (eventQuery.data) {
