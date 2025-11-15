@@ -22,7 +22,7 @@ interface PayPalInvoiceModalProps {
   event: Event | null;
   currentUser: Member | null;
   onClose: () => void;
-  onRegister: (ghin: string, email: string, phone: string, numberOfGuests?: number, guestNames?: string) => Promise<void>;
+  onRegister: (ghin: string, email: string, phone: string, numberOfGuests?: number, guestNames?: string, paymentStatus?: 'paid' | 'pending') => Promise<void>;
 }
 
 export function PayPalInvoiceModal({
@@ -152,7 +152,8 @@ export function PayPalInvoiceModal({
             console.log('[PayPal] Payment captured:', JSON.stringify(captureResult, null, 2));
 
             if (captureResult.success) {
-              await onRegister(ghin.trim(), email.trim(), phone.trim(), guestCount > 0 ? guestCount : undefined, guestNames.trim() || undefined);
+              console.log('[PayPal] Payment successful, registering with PAID status');
+              await onRegister(ghin.trim(), email.trim(), phone.trim(), guestCount > 0 ? guestCount : undefined, guestNames.trim() || undefined, 'paid');
               
               setGhin('');
               setEmail('');

@@ -464,7 +464,7 @@ export default function EventRegistrationScreen() {
     setPaymentMethodModalVisible(true);
   };
 
-  const handleZelleRegistration = async (ghin: string, email: string, phone: string, numberOfGuests?: number, guestNames?: string) => {
+  const handleZelleRegistration = async (ghin: string, email: string, phone: string, numberOfGuests?: number, guestNames?: string, paymentStatus?: 'paid' | 'pending') => {
     if (!currentUser || !event) return;
 
     const currentUserMember = members.find(
@@ -476,6 +476,7 @@ export default function EventRegistrationScreen() {
     }
 
     try {
+      console.log('[PayPal Registration] Updating member info...');
       await updateMemberMutation.mutateAsync({
         memberId: currentUserMember.id,
         updates: {
@@ -485,35 +486,59 @@ export default function EventRegistrationScreen() {
         },
       });
 
+      console.log('[PayPal Registration] Creating registration...');
       await registerMutation.mutateAsync({
         eventId: event.id,
         memberId: currentUserMember.id,
       });
       
-      if (numberOfGuests && numberOfGuests > 0) {
-        const backendRegs = await registrationsQuery.refetch();
-        const userReg = backendRegs.data?.find((r: any) => r.memberId === currentUserMember.id);
-        if (userReg) {
+      console.log('[PayPal Registration] Refetching registrations...');
+      const backendRegs = await registrationsQuery.refetch();
+      const userReg = backendRegs.data?.find((r: any) => r.memberId === currentUserMember.id);
+      
+      if (userReg) {
+        const updates: any = {};
+        
+        if (numberOfGuests && numberOfGuests > 0) {
+          updates.numberOfGuests = numberOfGuests;
+          updates.guestNames = guestNames;
+        }
+        
+        if (paymentStatus === 'paid') {
+          console.log('[PayPal Registration] Setting payment status to PAID');
+          updates.paymentStatus = 'paid';
+        }
+        
+        if (Object.keys(updates).length > 0) {
+          console.log('[PayPal Registration] Updating registration with:', updates);
           await updateRegistrationMutation.mutateAsync({
             registrationId: userReg.id,
-            updates: { numberOfGuests, guestNames },
+            updates,
           });
         }
       }
       
-      await addNotification({
-        eventId: event.id,
-        eventName: event.name,
-        playerName: currentUserMember.name,
-        playerPhone: phone || currentUserMember.phone || null,
-        paymentMethod: 'zelle',
-      });
+      if (paymentStatus !== 'paid') {
+        console.log('[Registration] Adding notification for Zelle/unpaid registration');
+        await addNotification({
+          eventId: event.id,
+          eventName: event.name,
+          playerName: currentUserMember.name,
+          playerPhone: phone || currentUserMember.phone || null,
+          paymentMethod: paymentStatus === 'paid' ? 'paypal' : 'zelle',
+        });
+      } else {
+        console.log('[Registration] Skipping notification for PayPal payment (already paid)');
+      }
 
       const updated = [...selectedPlayers, currentUserMember];
       setSelectedPlayers(updated);
+      
+      console.log('[Registration] Final refetch of registrations...');
       await registrationsQuery.refetch();
 
       setZelleInvoiceModalVisible(false);
+      setPaypalInvoiceModalVisible(false);
     } catch (error) {
       console.error('Error during Zelle registration:', error);
       throw error;
