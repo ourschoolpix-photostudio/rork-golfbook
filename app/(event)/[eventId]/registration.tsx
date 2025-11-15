@@ -784,7 +784,7 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      {selectedPlayers.length > 0 && (
+      {selectedPlayers.length > 0 && event?.type !== 'social' && (
         <View style={styles.sortButtonsContainer}>
                 <TouchableOpacity
                   style={[

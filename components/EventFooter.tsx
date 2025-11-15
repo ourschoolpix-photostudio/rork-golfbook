@@ -6,6 +6,7 @@ import { Home, Users, Grid3x3, Target, Award, DollarSign } from 'lucide-react-na
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { OfflineModeToggle } from '@/components/OfflineModeToggle';
+import { trpc } from '@/lib/trpc';
 
 export function EventFooter() {
   const router = useRouter();
@@ -14,6 +15,10 @@ export function EventFooter() {
   const { currentUser } = useAuth();
   const insets = useSafeAreaInsets();
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
+
+  const eventQuery = trpc.events.get.useQuery({ eventId: eventId! }, { enabled: !!eventId });
+  const event = eventQuery.data;
+  const isSocialEvent = event?.type === 'social';
 
   useEffect(() => {
     const loadCourseHandicapSetting = async () => {
@@ -63,9 +68,11 @@ export function EventFooter() {
   const tabs = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'registration', icon: Users, label: 'Register' },
-    { id: 'groupings', icon: Grid3x3, label: 'Groupings' },
-    { id: 'scoring', icon: Target, label: 'Scoring' },
-    { id: 'rolex', icon: Award, label: 'Leader' },
+    ...(!isSocialEvent ? [
+      { id: 'groupings', icon: Grid3x3, label: 'Groupings' },
+      { id: 'scoring', icon: Target, label: 'Scoring' },
+      { id: 'rolex', icon: Award, label: 'Leader' },
+    ] : []),
   ];
 
   if (currentUser?.isAdmin) {
