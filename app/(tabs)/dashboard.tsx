@@ -264,6 +264,11 @@ export default function DashboardScreen() {
           visible={detailsModalVisible}
           event={selectedEvent}
           onClose={() => setDetailsModalVisible(false)}
+          onRegister={() => {
+            router.push(`/(event)/${selectedEvent.id}/registration` as any);
+          }}
+          currentUserId={currentUser?.id}
+          registeredPlayerIds={selectedEvent?.registeredPlayers || []}
         />
       )}
 

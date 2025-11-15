@@ -18,6 +18,8 @@ interface EventDetailsModalProps {
   event: Event | null;
   onClose: () => void;
   onRegister?: () => void;
+  currentUserId?: string;
+  registeredPlayerIds?: string[];
 }
 
 export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
@@ -25,8 +27,12 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   event,
   onClose,
   onRegister,
+  currentUserId,
+  registeredPlayerIds = [],
 }) => {
   if (!event) return null;
+
+  const isAlreadyRegistered = currentUserId && registeredPlayerIds.includes(currentUserId);
 
   const getPrizePoolItems = () => {
     const items: { label: string; value: string }[] = [];
@@ -320,15 +326,20 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
           <View style={styles.buttonFooter}>
             <TouchableOpacity 
-              style={styles.registerButton}
+              style={[styles.registerButton, isAlreadyRegistered && styles.registeredButton]}
               onPress={() => {
-                onClose();
-                if (onRegister) {
-                  onRegister();
+                if (!isAlreadyRegistered) {
+                  onClose();
+                  if (onRegister) {
+                    onRegister();
+                  }
                 }
               }}
+              disabled={isAlreadyRegistered}
             >
-              <Text style={styles.registerButtonText}>REGISTER NOW!</Text>
+              <Text style={styles.registerButtonText}>
+                {isAlreadyRegistered ? 'ALREADY REGISTERED' : 'REGISTER NOW!'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -561,5 +572,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     letterSpacing: 0.5,
+  },
+  registeredButton: {
+    backgroundColor: '#666',
+    opacity: 0.7,
   },
 });
