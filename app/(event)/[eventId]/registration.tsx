@@ -689,8 +689,15 @@ export default function EventRegistrationScreen() {
       );
       setSelectedPlayers(updatedSelectedPlayers);
 
-      const playerReg = registrations[updatedPlayer.name];
-      console.log('[registration] 🔍 Found player registration:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
+      let playerReg = registrations[updatedPlayer.name];
+      console.log('[registration] 🔍 Found player registration in local state:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
+      
+      if (!playerReg) {
+        console.log('[registration] 🔍 Registration not in local state, fetching from backend by memberId...');
+        const backendRegs = await registrationsQuery.refetch();
+        playerReg = backendRegs.data?.find((r: any) => r.memberId === updatedPlayer.id);
+        console.log('[registration] 🔍 Found in backend:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
+      }
       
       if (playerReg) {
         console.log('[registration] 📤 Updating registration in backend...');
@@ -716,9 +723,13 @@ export default function EventRegistrationScreen() {
             numberOfGuests: updatedRegData?.numberOfGuests,
           });
         }
+      } else {
+        console.error('[registration] ❌ Registration not found for player:', updatedPlayer.name, 'memberId:', updatedPlayer.id);
+        Alert.alert('Error', 'Registration not found. Please try removing and re-adding the player.');
       }
     } catch (error) {
-      console.error('Error updating player:', error);
+      console.error('[registration] ❌ Error updating player:', error);
+      Alert.alert('Error', `Failed to update player: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
