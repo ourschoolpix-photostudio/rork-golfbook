@@ -42,11 +42,15 @@ const getPayPalConfig = async (): Promise<PayPalConfig> => {
       };
     }
 
-    console.log('[PayPal Config] Using stored credentials');
+    console.log('========================================');
+    console.log('[PayPal Config] 🔑 Using stored credentials');
     console.log('[PayPal Config] CLIENT_ID exists:', !!clientId);
     console.log('[PayPal Config] CLIENT_ID (first 20 chars):', clientId?.substring(0, 20));
     console.log('[PayPal Config] CLIENT_SECRET exists:', !!clientSecret);
-    console.log('[PayPal Config] MODE:', mode);
+    console.log('[PayPal Config] ⚠️⚠️⚠️ CURRENT MODE:', mode);
+    console.log('[PayPal Config] ⚠️⚠️⚠️ WILL USE:', mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
+    console.log('[PayPal Config] Raw orgInfo.paypalMode:', orgInfo.paypalMode);
+    console.log('========================================');
 
     return {
       clientId,

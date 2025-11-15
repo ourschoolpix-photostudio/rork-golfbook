@@ -313,6 +313,17 @@ export default function SettingsScreen() {
               <Text style={styles.sectionDescription}>
                 Configure your PayPal credentials to accept payments. You can use sandbox mode for testing or live mode for production.
               </Text>
+              
+              <View style={[styles.currentModeIndicator, orgInfo.paypalMode === 'live' && styles.liveModeIndicator]}>
+                <Ionicons 
+                  name={orgInfo.paypalMode === 'live' ? 'flash' : 'flask'} 
+                  size={20} 
+                  color={orgInfo.paypalMode === 'live' ? '#10B981' : '#F59E0B'} 
+                />
+                <Text style={[styles.currentModeText, orgInfo.paypalMode === 'live' && styles.liveModeText]}>
+                  Currently in {orgInfo.paypalMode === 'live' ? 'LIVE' : 'SANDBOX'} mode
+                </Text>
+              </View>
 
               <Text style={styles.fieldLabel}>PayPal Mode</Text>
               <View style={styles.modeSelector}>
@@ -713,5 +724,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#E65100',
     lineHeight: 18,
+  },
+  currentModeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+  },
+  liveModeIndicator: {
+    backgroundColor: '#D1FAE5',
+    borderColor: '#10B981',
+  },
+  currentModeText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#F59E0B',
+  },
+  liveModeText: {
+    color: '#10B981',
   },
 });
