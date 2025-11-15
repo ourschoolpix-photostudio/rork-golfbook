@@ -73,9 +73,20 @@ export default function SettingsScreen() {
   const saveOrganizationInfo = async () => {
     try {
       setIsSaving(true);
-      console.log('[Settings] Saving to database:', { ...orgInfo, paypalClientSecret: '[REDACTED]' });
       
-      await updateSettingsMutation.mutateAsync(orgInfo);
+      const trimmedOrgInfo = {
+        ...orgInfo,
+        paypalClientId: orgInfo.paypalClientId.trim(),
+        paypalClientSecret: orgInfo.paypalClientSecret.trim(),
+      };
+      
+      console.log('[Settings] Saving to database:', { ...trimmedOrgInfo, paypalClientSecret: '[REDACTED]' });
+      console.log('[Settings] Client ID length:', trimmedOrgInfo.paypalClientId.length);
+      console.log('[Settings] Client Secret length:', trimmedOrgInfo.paypalClientSecret.length);
+      console.log('[Settings] Mode:', trimmedOrgInfo.paypalMode);
+      
+      await updateSettingsMutation.mutateAsync(trimmedOrgInfo);
+      setOrgInfo(trimmedOrgInfo);
       await refreshOrganizationInfo();
       
       Alert.alert('Success', 'Organization information saved successfully to database.');
@@ -363,25 +374,41 @@ export default function SettingsScreen() {
               </View>
 
               <Text style={styles.fieldLabel}>PayPal Client ID</Text>
-              <TextInput
-                style={styles.input}
-                value={orgInfo.paypalClientId}
-                onChangeText={(text) => setOrgInfo({ ...orgInfo, paypalClientId: text })}
-                placeholder="Enter PayPal Client ID"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={styles.credentialInputContainer}>
+                <TextInput
+                  style={styles.input}
+                  value={orgInfo.paypalClientId}
+                  onChangeText={(text) => setOrgInfo({ ...orgInfo, paypalClientId: text })}
+                  placeholder="Enter PayPal Client ID"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  multiline={false}
+                />
+                {orgInfo.paypalClientId && (
+                  <Text style={styles.credentialLength}>
+                    Length: {orgInfo.paypalClientId.length} chars
+                  </Text>
+                )}
+              </View>
 
               <Text style={styles.fieldLabel}>PayPal Client Secret</Text>
-              <TextInput
-                style={styles.input}
-                value={orgInfo.paypalClientSecret}
-                onChangeText={(text) => setOrgInfo({ ...orgInfo, paypalClientSecret: text })}
-                placeholder="Enter PayPal Client Secret"
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry
-              />
+              <View style={styles.credentialInputContainer}>
+                <TextInput
+                  style={styles.input}
+                  value={orgInfo.paypalClientSecret}
+                  onChangeText={(text) => setOrgInfo({ ...orgInfo, paypalClientSecret: text })}
+                  placeholder="Enter PayPal Client Secret"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  multiline={false}
+                />
+                {orgInfo.paypalClientSecret && (
+                  <Text style={styles.credentialLength}>
+                    Length: {orgInfo.paypalClientSecret.length} chars
+                  </Text>
+                )}
+              </View>
 
               {orgInfo.paypalMode === 'live' && (orgInfo.paypalClientId || orgInfo.paypalClientSecret) && (
                 <View style={styles.warningBox}>
@@ -748,5 +775,13 @@ const styles = StyleSheet.create({
   },
   liveModeText: {
     color: '#10B981',
+  },
+  credentialInputContainer: {
+    gap: 4,
+  },
+  credentialLength: {
+    fontSize: 11,
+    color: '#666',
+    fontStyle: 'italic' as const,
   },
 });

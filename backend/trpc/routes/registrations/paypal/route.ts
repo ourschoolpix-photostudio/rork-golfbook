@@ -70,6 +70,11 @@ const getPayPalAccessToken = async (): Promise<string> => {
   console.log('[PayPal] Client ID (last 10):', '...' + config.clientId.substring(config.clientId.length - 10));
   console.log('[PayPal] Client Secret length:', config.clientSecret.length);
   console.log('[PayPal] Auth endpoint:', `${PAYPAL_API_BASE}/v1/oauth2/token`);
+  
+  if (config.mode === 'live' && config.clientId.includes('sandbox')) {
+    console.error('[PayPal] ⚠️⚠️⚠️ WARNING: Client ID appears to be a sandbox credential but mode is set to LIVE!');
+    throw new Error('PayPal configuration error: Sandbox credentials cannot be used in live mode. Please enter your live PayPal credentials in the admin settings.');
+  }
 
   const authString = `${config.clientId}:${config.clientSecret}`;
   console.log('[PayPal] Auth string length (before encoding):', authString.length);
@@ -106,7 +111,24 @@ const getPayPalAccessToken = async (): Promise<string> => {
         errorDetails = responseText;
       }
       
-      throw new Error(`Failed to get PayPal access token. Status: ${response.status}, Details: ${errorDetails}`);
+      const errorMessage = `Failed to get PayPal access token. Status: ${response.status}, Details: ${errorDetails}`;
+      
+      if (response.status === 401) {
+        console.error('[PayPal] ⚠️ Authentication failed! This usually means:');
+        console.error('[PayPal]   1. The credentials are incorrect');
+        console.error('[PayPal]   2. You\'re using sandbox credentials in live mode (or vice versa)');
+        console.error('[PayPal]   3. The credentials have extra spaces or formatting issues');
+        console.error('[PayPal] Current mode:', config.mode);
+        console.error('[PayPal] Make sure your credentials match the mode in admin settings!');
+        
+        if (config.mode === 'live') {
+          throw new Error('PayPal authentication failed. You are in LIVE mode - make sure you have entered your production credentials (not sandbox credentials) in the admin settings.');
+        } else {
+          throw new Error('PayPal authentication failed. You are in SANDBOX mode - make sure you have entered your sandbox credentials in the admin settings.');
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data = JSON.parse(responseText);
