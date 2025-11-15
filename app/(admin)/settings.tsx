@@ -14,11 +14,11 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AdminFooter } from '@/components/AdminFooter';
 import { storageService } from '@/utils/storage';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { photoService } from '@/utils/photoService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
+import { trpc } from '@/lib/trpc';
 
 interface OrganizationInfo {
   name: string;
@@ -55,29 +55,30 @@ export default function SettingsScreen() {
     paypalMode: 'sandbox',
   });
 
-  useEffect(() => {
-    loadOrganizationInfo();
-  }, []);
+  const settingsQuery = trpc.settings.getSettings.useQuery();
+  const updateSettingsMutation = trpc.settings.updateSettings.useMutation();
 
-  const loadOrganizationInfo = async () => {
-    try {
-      const data = await AsyncStorage.getItem('@organization_info');
-      if (data) {
-        setOrgInfo(JSON.parse(data));
-      }
-    } catch (error) {
-      console.error('Error loading organization info:', error);
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (settingsQuery.data) {
+      setOrgInfo(settingsQuery.data);
     }
-  };
+  }, [settingsQuery.data]);
+
+  useEffect(() => {
+    setIsLoading(settingsQuery.isLoading);
+  }, [settingsQuery.isLoading]);
+
+
 
   const saveOrganizationInfo = async () => {
     try {
       setIsSaving(true);
-      await AsyncStorage.setItem('@organization_info', JSON.stringify(orgInfo));
+      console.log('[Settings] Saving to database:', { ...orgInfo, paypalClientSecret: '[REDACTED]' });
+      
+      await updateSettingsMutation.mutateAsync(orgInfo);
       await refreshOrganizationInfo();
-      Alert.alert('Success', 'Organization information saved successfully.');
+      
+      Alert.alert('Success', 'Organization information saved successfully to database.');
     } catch (error) {
       console.error('Error saving organization info:', error);
       Alert.alert('Error', 'Failed to save organization information.');
@@ -103,7 +104,7 @@ export default function SettingsScreen() {
         
         const updatedInfo = { ...orgInfo, logoUrl: uploadedUrl };
         setOrgInfo(updatedInfo);
-        await AsyncStorage.setItem('@organization_info', JSON.stringify(updatedInfo));
+        await updateSettingsMutation.mutateAsync(updatedInfo);
         Alert.alert('Success', 'Logo uploaded successfully');
       }
     } catch (error: any) {
@@ -128,7 +129,7 @@ export default function SettingsScreen() {
             try {
               const updatedInfo = { ...orgInfo, logoUrl: '' };
               setOrgInfo(updatedInfo);
-              await AsyncStorage.setItem('@organization_info', JSON.stringify(updatedInfo));
+              await updateSettingsMutation.mutateAsync(updatedInfo);
               Alert.alert('Success', 'Logo removed successfully');
             } catch (error) {
               console.error('Error removing logo:', error);

@@ -12,6 +12,7 @@ import registrationsEmailRoute from "@/backend/trpc/routes/registrations/send-em
 import registrationsPaypalRoute from "@/backend/trpc/routes/registrations/paypal/route";
 import financialsCrudRoute from "@/backend/trpc/routes/financials/crud/route";
 import settingsRoute from "@/backend/trpc/routes/settings/get-paypal-config/route";
+import settingsCrudRoute from "@/backend/trpc/routes/settings/crud/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -34,7 +35,11 @@ export const appRouter = createTRPCRouter({
     paypal: registrationsPaypalRoute,
   }),
   financials: financialsCrudRoute,
-  settings: settingsRoute,
+  settings: createTRPCRouter({
+    getPayPalConfig: settingsRoute.getPayPalConfig,
+    getSettings: settingsCrudRoute.getSettings,
+    updateSettings: settingsCrudRoute.updateSettings,
+  }),
 });
 
 export type AppRouter = typeof appRouter;

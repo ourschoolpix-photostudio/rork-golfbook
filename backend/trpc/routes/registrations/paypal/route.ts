@@ -1,6 +1,6 @@
 import { publicProcedure, createTRPCRouter } from "@/backend/trpc/create-context";
 import { z } from "zod";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from "@/integrations/supabase/client";
 
 interface PayPalConfig {
   clientId: string;
@@ -8,42 +8,29 @@ interface PayPalConfig {
   mode: 'sandbox' | 'live';
 }
 
+const SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
+
 const getPayPalConfig = async (): Promise<PayPalConfig> => {
   try {
-    const orgInfoData = await AsyncStorage.getItem('@organization_info');
+    console.log('[PayPal Config] 🔍 Fetching PayPal config from database...');
     
-    if (!orgInfoData) {
-      const envClientId = (process.env.PAYPAL_CLIENT_ID || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID || '').trim().replace(/\r/g, '');
-      const envClientSecret = (process.env.PAYPAL_CLIENT_SECRET || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_SECRET || '').trim().replace(/\r/g, '');
-      const envMode = (process.env.PAYPAL_MODE || process.env.EXPO_PUBLIC_PAYPAL_MODE || 'sandbox').trim() as 'sandbox' | 'live';
-      
-      return {
-        clientId: envClientId,
-        clientSecret: envClientSecret,
-        mode: envMode,
-      };
+    const { data, error } = await supabase
+      .from('organization_settings')
+      .select('paypal_client_id, paypal_client_secret, paypal_mode')
+      .eq('id', SETTINGS_ID)
+      .single();
+
+    if (error) {
+      console.error('[PayPal Config] ❌ Error fetching from database:', error);
+      throw error;
     }
 
-    const orgInfo = JSON.parse(orgInfoData);
-    
-    const clientId = (orgInfo.paypalClientId || '').trim();
-    const clientSecret = (orgInfo.paypalClientSecret || '').trim();
-    const mode = (orgInfo.paypalMode || 'sandbox') as 'sandbox' | 'live';
-    
-    if (!clientId || !clientSecret) {
-      const envClientId = (process.env.PAYPAL_CLIENT_ID || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID || '').trim().replace(/\r/g, '');
-      const envClientSecret = (process.env.PAYPAL_CLIENT_SECRET || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_SECRET || '').trim().replace(/\r/g, '');
-      const envMode = (process.env.PAYPAL_MODE || process.env.EXPO_PUBLIC_PAYPAL_MODE || 'sandbox').trim() as 'sandbox' | 'live';
-      
-      return {
-        clientId: envClientId,
-        clientSecret: envClientSecret,
-        mode: envMode,
-      };
-    }
+    const clientId = (data?.paypal_client_id || '').trim();
+    const clientSecret = (data?.paypal_client_secret || '').trim();
+    const mode = (data?.paypal_mode || 'sandbox') as 'sandbox' | 'live';
 
     console.log('========================================');
-    console.log('[PayPal Config] 🔑 Using stored credentials');
+    console.log('[PayPal Config] 🔑 Using database credentials');
     console.log('[PayPal Config] CLIENT_ID exists:', !!clientId);
     console.log('[PayPal Config] CLIENT_ID (first 20 chars):', clientId?.substring(0, 20));
     console.log('[PayPal Config] CLIENT_ID (last 10 chars):', clientId?.substring(clientId.length - 10));
@@ -51,9 +38,11 @@ const getPayPalConfig = async (): Promise<PayPalConfig> => {
     console.log('[PayPal Config] CLIENT_SECRET length:', clientSecret?.length);
     console.log('[PayPal Config] ⚠️⚠️⚠️ CURRENT MODE:', mode);
     console.log('[PayPal Config] ⚠️⚠️⚠️ WILL USE:', mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
-    console.log('[PayPal Config] Raw orgInfo.paypalMode:', orgInfo.paypalMode);
-    console.log('[PayPal Config] Is Live Credential? (ends with -LIVE):', clientId?.includes('-') ? clientId.split('-').pop() : 'unknown');
     console.log('========================================');
+
+    if (!clientId || !clientSecret) {
+      throw new Error('PayPal credentials not configured in database');
+    }
 
     return {
       clientId,
@@ -61,16 +50,8 @@ const getPayPalConfig = async (): Promise<PayPalConfig> => {
       mode,
     };
   } catch (error) {
-    console.error('[PayPal Config] Error loading config from storage:', error);
-    const envClientId = (process.env.PAYPAL_CLIENT_ID || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID || '').trim().replace(/\r/g, '');
-    const envClientSecret = (process.env.PAYPAL_CLIENT_SECRET || process.env.EXPO_PUBLIC_PAYPAL_CLIENT_SECRET || '').trim().replace(/\r/g, '');
-    const envMode = (process.env.PAYPAL_MODE || process.env.EXPO_PUBLIC_PAYPAL_MODE || 'sandbox').trim() as 'sandbox' | 'live';
-    
-    return {
-      clientId: envClientId,
-      clientSecret: envClientSecret,
-      mode: envMode,
-    };
+    console.error('[PayPal Config] ❌ Error loading config from database:', error);
+    throw new Error('Failed to load PayPal configuration from database');
   }
 };
 
