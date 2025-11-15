@@ -1,8 +1,8 @@
--- Migration 011: Add personal games table
+-- Migration 011: Add personal games table (Fixed - TEXT IDs to match members table)
 
 CREATE TABLE IF NOT EXISTS personal_games (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
   course_name TEXT NOT NULL,
   course_par INTEGER NOT NULL,
   hole_pars INTEGER[] NOT NULL,
