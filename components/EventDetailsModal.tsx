@@ -107,15 +107,22 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   const formatScheduleItem = (day: number) => {
     const startTime = event[`day${day}StartTime` as keyof Event];
     const startPeriod = event[`day${day}StartPeriod` as keyof Event];
+    const endTime = event[`day${day}EndTime` as keyof Event];
+    const endPeriod = event[`day${day}EndPeriod` as keyof Event];
     const startType = event[`day${day}StartType` as keyof Event];
     const course = event[`day${day}Course` as keyof Event];
     const leadingHole = event[`day${day}LeadingHole` as keyof Event];
 
     if (!startTime) return null;
 
+    let timeDisplay = `${startTime} ${startPeriod}`;
+    if (endTime && endPeriod) {
+      timeDisplay += ` - ${endTime} ${endPeriod}`;
+    }
+
     return {
       day,
-      time: `${startTime} ${startPeriod}`,
+      time: timeDisplay,
       type: startType,
       course: course,
       leadingHole: startType === 'shotgun' ? leadingHole : null,
