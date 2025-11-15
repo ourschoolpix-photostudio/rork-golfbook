@@ -75,6 +75,7 @@ export function canViewFinance(user: Member | null): boolean {
     'Handicap Director',
     'Member Relations',
     'Financer',
+    'Operations',
   ]);
 }
 
