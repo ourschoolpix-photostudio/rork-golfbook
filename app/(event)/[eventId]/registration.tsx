@@ -105,6 +105,34 @@ export default function EventRegistrationScreen() {
     },
   });
 
+  const updatePaymentStatusMutation = trpc.registrations.update.useMutation({
+    onMutate: async ({ registrationId, updates }) => {
+      await registrationsQuery.cancel();
+      const previousRegistrations = registrationsQuery.data;
+      
+      if (previousRegistrations && updates.paymentStatus) {
+        const optimisticData = previousRegistrations.map((reg: any) => 
+          reg.id === registrationId 
+            ? { ...reg, paymentStatus: updates.paymentStatus }
+            : reg
+        );
+        registrationsQuery.setData({ eventId: eventId! }, optimisticData as any);
+      }
+      
+      return { previousRegistrations };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousRegistrations) {
+        registrationsQuery.setData({ eventId: eventId! }, context.previousRegistrations as any);
+      }
+      console.error('Error updating payment status:', err);
+      Alert.alert('Error', 'Failed to update payment status.');
+    },
+    onSettled: () => {
+      registrationsQuery.refetch();
+    },
+  });
+
   const refreshEventData = async () => {
     await eventQuery.refetch();
   };
@@ -446,16 +474,11 @@ export default function EventRegistrationScreen() {
     const currentStatus = playerReg.paymentStatus;
     const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
     const backendStatus = newStatus === 'unpaid' ? 'pending' : newStatus;
-    try {
-      await updateRegistrationMutation.mutateAsync({
-        registrationId: playerReg.id,
-        updates: { paymentStatus: backendStatus },
-      });
-      await registrationsQuery.refetch();
-    } catch (error) {
-      console.error('Error updating payment status:', error);
-      Alert.alert('Error', 'Failed to update payment status.');
-    }
+    
+    updatePaymentStatusMutation.mutate({
+      registrationId: playerReg.id,
+      updates: { paymentStatus: backendStatus },
+    });
   };
 
   const handleAddCustomGuest = async () => {
