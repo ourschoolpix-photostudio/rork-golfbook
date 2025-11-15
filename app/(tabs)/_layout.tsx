@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import { LayoutDashboard, Users, Trophy, ShieldCheck, LogOut, Gamepad2, Bell } from "lucide-react-native";
+import { LayoutDashboard, Users, Trophy, ShieldCheck, LogOut, FlagTriangleRight, Bell } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
@@ -75,7 +75,7 @@ export default function TabLayout() {
           name="games"
           options={{
             title: "Games",
-            tabBarIcon: ({ color }) => <Gamepad2 size={24} color={color} />,
+            tabBarIcon: ({ color }) => <FlagTriangleRight size={24} color={color} />,
             headerRight: () => null,
           }}
         />
