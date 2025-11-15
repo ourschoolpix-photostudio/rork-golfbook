@@ -1,9 +1,9 @@
 -- Migration 012: Add notifications table
 
 CREATE TABLE IF NOT EXISTS notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  member_id UUID REFERENCES members(id) ON DELETE CASCADE,
-  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  member_id TEXT REFERENCES members(id) ON DELETE CASCADE,
+  event_id TEXT REFERENCES events(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('registration', 'cancellation', 'update', 'payment', 'general')),
   title TEXT NOT NULL,
   message TEXT NOT NULL,
