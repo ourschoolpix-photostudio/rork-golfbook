@@ -31,6 +31,7 @@ export function canViewRegistration(user: Member | null): boolean {
     'Handicap Director',
     'Member Relations',
     'Financer',
+    'Operations',
   ]);
 }
 
@@ -132,5 +133,6 @@ export function canTogglePaymentStatus(user: Member | null): boolean {
     'Handicap Director',
     'Member Relations',
     'Financer',
+    'Operations',
   ]);
 }
