@@ -6,10 +6,10 @@ import type { Event } from "@/types";
 const eventSchema = z.object({
   id: z.string(),
   name: z.string(),
-  date: z.string(),
+  date: z.string().optional().nullable(),
   venue: z.string(),
   status: z.enum(['draft', 'active', 'completed', 'upcoming', 'complete']),
-  startDate: z.string().optional().nullable(),
+  startDate: z.string(),
   endDate: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
   course: z.string().optional().nullable(),
