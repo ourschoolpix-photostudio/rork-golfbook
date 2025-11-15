@@ -15,6 +15,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Member, Event } from '@/types';
 import { TournamentTermsModal } from './TournamentTermsModal';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
+import { formatDateAsFullDay } from '@/utils/dateUtils';
 import { trpc } from '@/lib/trpc';
 
 interface PayPalInvoiceModalProps {
@@ -250,7 +251,7 @@ export function PayPalInvoiceModal({
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Date:</Text>
-                  <Text style={styles.detailValue}>{event.date}</Text>
+                  <Text style={styles.detailValue}>{formatDateAsFullDay(event.date, event.numberOfDays, 1)}</Text>
                 </View>
               </View>
             </View>

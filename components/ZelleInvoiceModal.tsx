@@ -15,6 +15,7 @@ import { Member, Event } from '@/types';
 import { TournamentTermsModal } from './TournamentTermsModal';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
+import { formatDateAsFullDay } from '@/utils/dateUtils';
 
 interface ZelleInvoiceModalProps {
   visible: boolean;
@@ -151,7 +152,7 @@ export function ZelleInvoiceModal({
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Date:</Text>
-                  <Text style={styles.detailValue}>{event.date}</Text>
+                  <Text style={styles.detailValue}>{formatDateAsFullDay(event.date, event.numberOfDays, 1)}</Text>
                 </View>
               </View>
             </View>
