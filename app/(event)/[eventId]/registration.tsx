@@ -539,12 +539,18 @@ export default function EventRegistrationScreen() {
       if (paymentStatus !== 'paid') {
         console.log('[Registration] Step 5: Adding notification for Zelle/unpaid registration');
         try {
+          const paymentMethodText = paymentStatus === 'paid' ? 'PayPal' : 'Zelle';
           await addNotification({
             eventId: event.id,
-            eventName: event.name,
-            playerName: currentUserMember.name,
-            playerPhone: phone || currentUserMember.phone || null,
-            paymentMethod: paymentStatus === 'paid' ? 'paypal' : 'zelle',
+            type: 'registration',
+            title: 'New Registration',
+            message: `${currentUserMember.name} registered for ${event.name} via ${paymentMethodText}`,
+            metadata: {
+              eventName: event.name,
+              playerName: currentUserMember.name,
+              playerPhone: phone || currentUserMember.phone || null,
+              paymentMethod: paymentStatus === 'paid' ? 'paypal' : 'zelle',
+            },
           });
           console.log('[Registration] ✓ Notification added');
         } catch (notifError) {

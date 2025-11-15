@@ -189,11 +189,12 @@ export interface PersonalGame {
 
 export interface RegistrationNotification {
   id: string;
-  eventId: string;
-  eventName: string;
-  playerName: string;
-  playerPhone: string | null;
-  paymentMethod: 'zelle' | 'paypal';
-  createdAt: string;
+  memberId?: string;
+  eventId?: string;
+  type: 'registration' | 'cancellation' | 'update' | 'payment' | 'general';
+  title: string;
+  message: string;
   isRead: boolean;
+  metadata?: any;
+  createdAt: string;
 }
