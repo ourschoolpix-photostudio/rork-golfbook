@@ -35,7 +35,7 @@ import {
 export default function EventRegistrationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { eventId } = useLocalSearchParams<{ eventId: string }>();
+  const { eventId, openPayment } = useLocalSearchParams<{ eventId: string; openPayment?: string }>();
   const { currentUser, members: allMembers } = useAuth();
   const { addNotification } = useNotifications();
   const [event, setEvent] = useState<Event | null>(null);
@@ -176,6 +176,15 @@ export default function EventRegistrationScreen() {
     const interval = setInterval(loadCourseHandicapSetting, 500);
     return () => clearInterval(interval);
   }, [eventId]);
+
+  useEffect(() => {
+    if (openPayment === 'true' && event && !isCurrentUserRegistered()) {
+      const timer = setTimeout(() => {
+        setPaymentMethodModalVisible(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [openPayment, event]);
 
   const handleHomePress = () => {
     router.push('/(tabs)');

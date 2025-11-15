@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Event } from '@/types';
+import { useRouter } from 'expo-router';
 import { formatDateForDisplay, formatDateAsFullDay } from '@/utils/dateUtils';
 
 interface EventDetailsModalProps {
@@ -30,6 +31,8 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   currentUserId,
   registeredPlayerIds = [],
 }) => {
+  const router = useRouter();
+  
   if (!event) return null;
 
   const isAlreadyRegistered = currentUserId && registeredPlayerIds.includes(currentUserId);
@@ -328,8 +331,12 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             <TouchableOpacity 
               style={[styles.registerButton, isAlreadyRegistered && styles.registeredButton]}
               onPress={() => {
-                if (!isAlreadyRegistered && onRegister) {
-                  onRegister();
+                if (!isAlreadyRegistered && event) {
+                  onClose();
+                  router.push({
+                    pathname: '/(event)/[eventId]/registration',
+                    params: { eventId: event.id, openPayment: 'true' }
+                  });
                 }
               }}
               disabled={isAlreadyRegistered}
