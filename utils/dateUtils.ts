@@ -76,8 +76,8 @@ export function formatDateForDisplay(dateStr: string | null | undefined): string
   if (dateStr.includes('/')) return dateStr;
   
   if (dateStr.includes('-')) {
-    const date = new Date(dateStr);
-    if (!isNaN(date.getTime())) {
+    const date = parseDateString(dateStr);
+    if (date && !isNaN(date.getTime())) {
       return formatDate(date);
     }
   }
@@ -85,11 +85,36 @@ export function formatDateForDisplay(dateStr: string | null | undefined): string
   return dateStr;
 }
 
+function parseDateString(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const month = parseInt(parts[0], 10);
+      const day = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+      
+      const date = new Date(year, month - 1, day, 12, 0, 0, 0);
+      return date;
+    }
+  }
+  
+  if (dateStr.includes('-')) {
+    const date = new Date(dateStr + 'T12:00:00');
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+  
+  return null;
+}
+
 export function formatDateAsFullDay(dateStr: string | null | undefined, numberOfDays: number | null | undefined, dayNumber: number): string {
   if (!dateStr) return `Day ${dayNumber}`;
   
-  const baseDate = new Date(dateStr);
-  if (isNaN(baseDate.getTime())) return `Day ${dayNumber}`;
+  const baseDate = parseDateString(dateStr);
+  if (!baseDate || isNaN(baseDate.getTime())) return `Day ${dayNumber}`;
   
   const targetDate = new Date(baseDate);
   targetDate.setDate(baseDate.getDate() + (dayNumber - 1));
