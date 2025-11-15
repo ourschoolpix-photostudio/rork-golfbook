@@ -2,6 +2,8 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import NetInfo from '@react-native-community/netinfo';
+import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/contexts/AuthContext';
 
 const STORAGE_KEYS = {
   OFFLINE_MODE: '@golf_offline_mode',
@@ -64,20 +66,13 @@ export const [OfflineModeProvider, useOfflineMode] = createContextHook(() => {
 
   const loadOfflineState = async () => {
     try {
-      const [offlineModeData, pendingOpsData, cacheData] = await Promise.all([
+      const [offlineModeData, cacheData] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.OFFLINE_MODE),
-        AsyncStorage.getItem(STORAGE_KEYS.PENDING_OPERATIONS),
         AsyncStorage.getItem(STORAGE_KEYS.OFFLINE_DATA_CACHE),
       ]);
 
       if (offlineModeData) {
         setIsOfflineMode(JSON.parse(offlineModeData));
-      }
-
-      if (pendingOpsData) {
-        const ops = JSON.parse(pendingOpsData);
-        setPendingOperations(ops);
-        console.log('[OfflineMode] Loaded pending operations:', ops.length);
       }
 
       if (cacheData) {

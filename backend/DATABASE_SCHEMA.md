@@ -222,6 +222,75 @@ CREATE TABLE sync_status (
 );
 ```
 
+### personal_games
+Stores personal games (casual rounds) for individual members.
+
+```sql
+CREATE TABLE personal_games (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  course_name TEXT NOT NULL,
+  course_par INTEGER NOT NULL,
+  hole_pars INTEGER[] NOT NULL,
+  players JSONB NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('in-progress', 'completed')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### notifications
+Stores user notifications for various events.
+
+```sql
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  member_id UUID REFERENCES members(id) ON DELETE CASCADE,
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('registration', 'cancellation', 'update', 'payment', 'general')),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT false,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### user_preferences
+Stores user-specific or event-specific preferences.
+
+```sql
+CREATE TABLE user_preferences (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  member_id UUID REFERENCES members(id) ON DELETE CASCADE,
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  preference_key TEXT NOT NULL,
+  preference_value JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(member_id, event_id, preference_key)
+);
+```
+
+### offline_operations
+Tracks offline operations that need to be synced when connection is restored.
+
+```sql
+CREATE TABLE offline_operations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  member_id UUID REFERENCES members(id) ON DELETE CASCADE,
+  operation_type TEXT NOT NULL CHECK (operation_type IN ('score_submit', 'registration_create', 'registration_update', 'registration_delete', 'grouping_sync', 'member_update', 'event_update')),
+  operation_data JSONB NOT NULL,
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  retry_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  processed_at TIMESTAMPTZ
+);
+```
+
 ## Indexes
 
 ```sql
@@ -236,6 +305,19 @@ CREATE INDEX idx_scores_event ON scores(event_id);
 CREATE INDEX idx_scores_member ON scores(member_id);
 CREATE INDEX idx_financial_records_event ON financial_records(event_id);
 CREATE INDEX idx_sync_status_entity ON sync_status(entity_type, entity_id);
+CREATE INDEX idx_personal_games_member ON personal_games(member_id);
+CREATE INDEX idx_personal_games_status ON personal_games(status);
+CREATE INDEX idx_notifications_member ON notifications(member_id);
+CREATE INDEX idx_notifications_event ON notifications(event_id);
+CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
+CREATE INDEX idx_user_preferences_member ON user_preferences(member_id);
+CREATE INDEX idx_user_preferences_event ON user_preferences(event_id);
+CREATE INDEX idx_user_preferences_key ON user_preferences(preference_key);
+CREATE INDEX idx_offline_operations_member ON offline_operations(member_id);
+CREATE INDEX idx_offline_operations_event ON offline_operations(event_id);
+CREATE INDEX idx_offline_operations_status ON offline_operations(status);
+CREATE INDEX idx_offline_operations_created_at ON offline_operations(created_at);
 ```
 
 ## Row Level Security (RLS) Policies

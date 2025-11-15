@@ -1,42 +1,34 @@
 import createContextHook from '@nkzw/create-context-hook';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { PersonalGame } from '@/types';
-
-const STORAGE_KEY = '@golf_personal_games';
+import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const [GamesProvider, useGames] = createContextHook(() => {
-  const [games, setGames] = useState<PersonalGame[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { currentUser } = useAuth();
 
-  useEffect(() => {
-    loadGames();
-  }, []);
+  const gamesQuery = trpc.games.getAll.useQuery(
+    { memberId: currentUser?.id },
+    { enabled: !!currentUser?.id }
+  );
 
-  const loadGames = async () => {
-    try {
-      setIsLoading(true);
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as PersonalGame[];
-        console.log('[GamesContext] Loaded games:', parsed.length);
-        setGames(parsed);
-      }
-    } catch (error) {
-      console.error('[GamesContext] Error loading games:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const createGameMutation = trpc.games.create.useMutation({
+    onSuccess: () => {
+      gamesQuery.refetch();
+    },
+  });
 
-  const saveGames = async (updatedGames: PersonalGame[]) => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedGames));
-      console.log('[GamesContext] Saved games:', updatedGames.length);
-    } catch (error) {
-      console.error('[GamesContext] Error saving games:', error);
-    }
-  };
+  const updateGameMutation = trpc.games.update.useMutation({
+    onSuccess: () => {
+      gamesQuery.refetch();
+    },
+  });
+
+  const deleteGameMutation = trpc.games.delete.useMutation({
+    onSuccess: () => {
+      gamesQuery.refetch();
+    },
+  });
 
   const createGame = useCallback(async (
     courseName: string,
@@ -44,9 +36,12 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     holePars: number[],
     players: { name: string; handicap: number }[]
   ): Promise<string> => {
-    const gameId = `game-${Date.now()}`;
-    const newGame: PersonalGame = {
-      id: gameId,
+    if (!currentUser?.id) {
+      throw new Error('User must be logged in to create a game');
+    }
+
+    const result = await createGameMutation.mutateAsync({
+      memberId: currentUser.id,
       courseName,
       coursePar,
       holePars,
@@ -56,67 +51,54 @@ export const [GamesProvider, useGames] = createContextHook(() => {
         scores: new Array(18).fill(0),
         totalScore: 0,
       })),
-      createdAt: new Date().toISOString(),
-      status: 'in-progress',
-    };
-
-    const updatedGames = [...games, newGame];
-    setGames(updatedGames);
-    await saveGames(updatedGames);
-    console.log('[GamesContext] Created game:', gameId);
-    return gameId;
-  }, [games]);
+    });
+    console.log('[GamesContext] Created game:', result.id);
+    return result.id;
+  }, [currentUser, createGameMutation]);
 
   const updateGameScores = useCallback(async (
     gameId: string,
     playerIndex: number,
     scores: number[]
   ) => {
-    const updatedGames = games.map(game => {
-      if (game.id === gameId) {
-        const updatedPlayers = [...game.players];
-        updatedPlayers[playerIndex] = {
-          ...updatedPlayers[playerIndex],
-          scores,
-          totalScore: scores.reduce((sum, score) => sum + score, 0),
-        };
-        return { ...game, players: updatedPlayers };
-      }
-      return game;
-    });
+    const game = gamesQuery.data?.find(g => g.id === gameId);
+    if (!game) {
+      throw new Error('Game not found');
+    }
 
-    setGames(updatedGames);
-    await saveGames(updatedGames);
+    const updatedPlayers = [...game.players];
+    updatedPlayers[playerIndex] = {
+      ...updatedPlayers[playerIndex],
+      scores,
+      totalScore: scores.reduce((sum, score) => sum + score, 0),
+    };
+
+    await updateGameMutation.mutateAsync({
+      gameId,
+      players: updatedPlayers,
+    });
     console.log('[GamesContext] Updated scores for game:', gameId);
-  }, [games]);
+  }, [gamesQuery.data, updateGameMutation]);
 
   const completeGame = useCallback(async (gameId: string) => {
-    const updatedGames = games.map(game => {
-      if (game.id === gameId) {
-        return {
-          ...game,
-          status: 'completed' as const,
-          completedAt: new Date().toISOString(),
-        };
-      }
-      return game;
+    await updateGameMutation.mutateAsync({
+      gameId,
+      status: 'completed',
     });
-
-    setGames(updatedGames);
-    await saveGames(updatedGames);
     console.log('[GamesContext] Completed game:', gameId);
-  }, [games]);
+  }, [updateGameMutation]);
 
   const deleteGame = useCallback(async (gameId: string) => {
-    const updatedGames = games.filter(g => g.id !== gameId);
-    setGames(updatedGames);
-    await saveGames(updatedGames);
+    await deleteGameMutation.mutateAsync({ gameId });
     console.log('[GamesContext] Deleted game:', gameId);
-  }, [games]);
+  }, [deleteGameMutation]);
 
   const getGame = useCallback((gameId: string): PersonalGame | undefined => {
-    return games.find(g => g.id === gameId);
-  }, [games]);
+    return gamesQuery.data?.find(g => g.id === gameId);
+  }, [gamesQuery.data]);
+
+  const games = gamesQuery.data || [];
+  const isLoading = gamesQuery.isLoading;
 
   const inProgressGames = useMemo(() => {
     return games.filter(g => g.status === 'in-progress');

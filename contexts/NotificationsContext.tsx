@@ -1,83 +1,85 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useMemo } from 'react';
 import { RegistrationNotification } from '@/types';
-
-const NOTIFICATIONS_KEY = 'registration_notifications';
+import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const [NotificationsProvider, useNotifications] = createContextHook(() => {
-  const [notifications, setNotifications] = useState<RegistrationNotification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { currentUser } = useAuth();
 
-  useEffect(() => {
-    loadNotifications();
-  }, []);
+  const notificationsQuery = trpc.notifications.getAll.useQuery(
+    { memberId: currentUser?.id },
+    { enabled: !!currentUser?.id }
+  );
 
-  const loadNotifications = async () => {
-    try {
-      const stored = await AsyncStorage.getItem(NOTIFICATIONS_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setNotifications(parsed);
-      }
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const createNotificationMutation = trpc.notifications.create.useMutation({
+    onSuccess: () => {
+      notificationsQuery.refetch();
+    },
+  });
 
-  const saveNotifications = async (notifs: RegistrationNotification[]) => {
-    try {
-      await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifs));
-      setNotifications(notifs);
-    } catch (error) {
-      console.error('Error saving notifications:', error);
-    }
-  };
+  const markAsReadMutation = trpc.notifications.markAsRead.useMutation({
+    onSuccess: () => {
+      notificationsQuery.refetch();
+    },
+  });
+
+  const markAllAsReadMutation = trpc.notifications.markAllAsRead.useMutation({
+    onSuccess: () => {
+      notificationsQuery.refetch();
+    },
+  });
+
+  const deleteNotificationMutation = trpc.notifications.delete.useMutation({
+    onSuccess: () => {
+      notificationsQuery.refetch();
+    },
+  });
+
+  const clearAllMutation = trpc.notifications.clearAll.useMutation({
+    onSuccess: () => {
+      notificationsQuery.refetch();
+    },
+  });
 
   const addNotification = useCallback(
     async (notification: Omit<RegistrationNotification, 'id' | 'isRead' | 'createdAt'>) => {
-      const newNotification: RegistrationNotification = {
-        ...notification,
-        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: new Date().toISOString(),
-        isRead: false,
-      };
-
-      const updated = [newNotification, ...notifications];
-      await saveNotifications(updated);
+      await createNotificationMutation.mutateAsync({
+        memberId: currentUser?.id,
+        eventId: notification.eventId,
+        type: notification.type as any,
+        title: notification.title,
+        message: notification.message,
+        metadata: notification.metadata,
+      });
     },
-    [notifications]
+    [currentUser, createNotificationMutation]
   );
 
   const markAsRead = useCallback(
     async (notificationId: string) => {
-      const updated = notifications.map(n =>
-        n.id === notificationId ? { ...n, isRead: true } : n
-      );
-      await saveNotifications(updated);
+      await markAsReadMutation.mutateAsync({ notificationId });
     },
-    [notifications]
+    [markAsReadMutation]
   );
 
   const deleteNotification = useCallback(
     async (notificationId: string) => {
-      const updated = notifications.filter(n => n.id !== notificationId);
-      await saveNotifications(updated);
+      await deleteNotificationMutation.mutateAsync({ notificationId });
     },
-    [notifications]
+    [deleteNotificationMutation]
   );
 
   const markAllAsRead = useCallback(async () => {
-    const updated = notifications.map(n => ({ ...n, isRead: true }));
-    await saveNotifications(updated);
-  }, [notifications]);
+    await markAllAsReadMutation.mutateAsync({ memberId: currentUser?.id });
+  }, [currentUser, markAllAsReadMutation]);
 
   const clearAll = useCallback(async () => {
-    await saveNotifications([]);
-  }, []);
+    await clearAllMutation.mutateAsync({ memberId: currentUser?.id });
+  }, [currentUser, clearAllMutation]);
 
+  const notifications = notificationsQuery.data || [];
+  const isLoading = notificationsQuery.isLoading;
   const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 
   return useMemo(() => ({

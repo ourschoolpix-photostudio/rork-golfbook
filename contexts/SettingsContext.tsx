@@ -1,8 +1,8 @@
 import createContextHook from '@nkzw/create-context-hook';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
+import { trpc } from '@/lib/trpc';
 
-interface OrganizationInfo {
+export interface OrganizationInfo {
   name: string;
   address: string;
   city: string;
@@ -31,42 +31,29 @@ const DEFAULT_ORG_INFO: OrganizationInfo = {
 };
 
 export const [SettingsProvider, useSettings] = createContextHook(() => {
-  const [orgInfo, setOrgInfo] = useState<OrganizationInfo>(DEFAULT_ORG_INFO);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const settingsQuery = trpc.settings.getSettings.useQuery();
 
-  useEffect(() => {
-    loadOrganizationInfo();
-  }, []);
+  const updateSettingsMutation = trpc.settings.updateSettings.useMutation({
+    onSuccess: () => {
+      settingsQuery.refetch();
+    },
+  });
 
-  const loadOrganizationInfo = async () => {
-    try {
-      setIsLoading(true);
-      const data = await AsyncStorage.getItem('@organization_info');
-      if (data) {
-        try {
-          const parsed = JSON.parse(data);
-          setOrgInfo(parsed);
-        } catch (parseError) {
-          console.error('Error parsing organization info, resetting to default:', parseError);
-          await AsyncStorage.removeItem('@organization_info');
-          setOrgInfo(DEFAULT_ORG_INFO);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading organization info in context:', error);
-      setOrgInfo(DEFAULT_ORG_INFO);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const orgInfo = settingsQuery.data || DEFAULT_ORG_INFO;
+  const isLoading = settingsQuery.isLoading;
 
   const refreshOrganizationInfo = useCallback(async () => {
-    await loadOrganizationInfo();
-  }, []);
+    await settingsQuery.refetch();
+  }, [settingsQuery]);
+
+  const updateOrganizationInfo = useCallback(async (updates: Partial<OrganizationInfo>) => {
+    await updateSettingsMutation.mutateAsync(updates);
+  }, [updateSettingsMutation]);
 
   return useMemo(() => ({
     orgInfo,
     isLoading,
     refreshOrganizationInfo,
-  }), [orgInfo, isLoading, refreshOrganizationInfo]);
+    updateOrganizationInfo,
+  }), [orgInfo, isLoading, refreshOrganizationInfo, updateOrganizationInfo]);
 });
