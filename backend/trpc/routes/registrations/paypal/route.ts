@@ -194,8 +194,8 @@ export const createPaymentProcedure = publicProcedure
           brand_name: 'Golf Tournament',
           landing_page: 'NO_PREFERENCE',
           user_action: 'PAY_NOW',
-          return_url: 'https://api.j382mhvmbvtqiifrytg5g.rork.app',
-          cancel_url: 'https://api.j382mhvmbvtqiifrytg5g.rork.app',
+          return_url: 'rork-app://paypal-callback',
+          cancel_url: 'rork-app://paypal-callback',
         },
       };
 

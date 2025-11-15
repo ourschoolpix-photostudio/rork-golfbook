@@ -121,7 +121,7 @@ export function PayPalInvoiceModal({
         
         const result = await WebBrowser.openAuthSessionAsync(
           paymentResult.approvalUrl,
-          'https://api.j382mhvmbvtqiifrytg5g.rork.app'
+          'rork-app://paypal-callback'
         );
 
         console.log('[PayPal] WebBrowser result type:', result.type);
