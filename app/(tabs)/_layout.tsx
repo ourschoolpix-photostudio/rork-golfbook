@@ -39,28 +39,6 @@ export default function TabLayout() {
           },
           headerTintColor: '#ffffff',
           headerShown: true,
-          headerRight: () => (
-            <View style={headerStyles.headerRight}>
-              {currentUser?.isAdmin && (
-                <TouchableOpacity 
-                  onPress={() => setShowNotifications(true)} 
-                  style={headerStyles.bellButton}
-                >
-                  <Bell size={22} color="#e5e7eb" />
-                  {unreadCount > 0 && (
-                    <View style={headerStyles.badge}>
-                      <Text style={headerStyles.badgeText}>
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={handleLogout} style={headerStyles.logoutButton}>
-                <LogOut size={22} color="#e5e7eb" />
-              </TouchableOpacity>
-            </View>
-          ),
         }}
       >
         <Tabs.Screen
@@ -68,6 +46,28 @@ export default function TabLayout() {
           options={{
             title: "Dashboard",
             tabBarIcon: ({ color }) => <LayoutDashboard size={24} color={color} />,
+            headerRight: () => (
+              <View style={headerStyles.headerRight}>
+                {currentUser?.isAdmin && (
+                  <TouchableOpacity 
+                    onPress={() => setShowNotifications(true)} 
+                    style={headerStyles.bellButton}
+                  >
+                    <Bell size={22} color="#e5e7eb" />
+                    {unreadCount > 0 && (
+                      <View style={headerStyles.badge}>
+                        <Text style={headerStyles.badgeText}>
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={handleLogout} style={headerStyles.logoutButton}>
+                  <LogOut size={22} color="#e5e7eb" />
+                </TouchableOpacity>
+              </View>
+            ),
           }}
         />
         <Tabs.Screen
@@ -75,6 +75,7 @@ export default function TabLayout() {
           options={{
             title: "Games",
             tabBarIcon: ({ color }) => <Gamepad2 size={24} color={color} />,
+            headerRight: () => null,
           }}
         />
         <Tabs.Screen
@@ -87,6 +88,7 @@ export default function TabLayout() {
               fontSize: 16,
               fontWeight: '700',
             },
+            headerRight: () => null,
           }}
         />
         <Tabs.Screen
@@ -94,6 +96,7 @@ export default function TabLayout() {
           options={{
             title: "Global Rolex Points",
             tabBarIcon: ({ color }) => <Trophy size={24} color={color} />,
+            headerRight: () => null,
           }}
         />
         <Tabs.Screen
@@ -102,6 +105,7 @@ export default function TabLayout() {
             title: "Admin",
             tabBarIcon: ({ color }) => <ShieldCheck size={24} color={color} />,
             href: currentUser?.isAdmin ? undefined : null,
+            headerRight: () => null,
           }}
         />
       </Tabs>
