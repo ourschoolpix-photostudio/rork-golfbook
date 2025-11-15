@@ -74,6 +74,24 @@ export function EventPlayerModal({
 
   if (!player) return null;
 
+  const normalizeGuestNames = (guestNamesInput: string, guestCount: number): string | undefined => {
+    if (!guestCount || guestCount === 0) return undefined;
+    
+    if (!guestNamesInput || guestNamesInput.trim() === '') {
+      return Array(guestCount).fill('Unknown Guest').join('\n');
+    }
+    
+    const names = guestNamesInput.split('\n').map(n => n.trim()).filter(n => n !== '');
+    const missingCount = guestCount - names.length;
+    
+    if (missingCount > 0) {
+      const unknownGuests = Array(missingCount).fill('Unknown Guest');
+      return [...names, ...unknownGuests].join('\n');
+    }
+    
+    return names.slice(0, guestCount).join('\n');
+  };
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -84,7 +102,7 @@ export function EventPlayerModal({
       };
       
       const guestCount = numberOfGuests ? parseInt(numberOfGuests, 10) : undefined;
-      const guestNamesValue = guestNames.trim() || undefined;
+      const guestNamesValue = guestCount ? normalizeGuestNames(guestNames, guestCount) : undefined;
       
       if (isSocialEvent && registration && guestCount !== registration.numberOfGuests) {
         await registrationService.updateGuestCount(registration.id, guestCount);

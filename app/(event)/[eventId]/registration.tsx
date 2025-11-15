@@ -227,6 +227,24 @@ export default function EventRegistrationScreen() {
     }
   };
 
+  const normalizeGuestNames = (guestNamesInput: string | undefined, guestCount: number): string | null => {
+    if (!guestCount || guestCount === 0) return null;
+    
+    if (!guestNamesInput || guestNamesInput.trim() === '') {
+      return Array(guestCount).fill('Unknown Guest').join('\n');
+    }
+    
+    const names = guestNamesInput.split('\n').map(n => n.trim()).filter(n => n !== '');
+    const missingCount = guestCount - names.length;
+    
+    if (missingCount > 0) {
+      const unknownGuests = Array(missingCount).fill('Unknown Guest');
+      return [...names, ...unknownGuests].join('\n');
+    }
+    
+    return names.slice(0, guestCount).join('\n');
+  };
+
   const handleBulkAddPlayers = async () => {
     console.log('=== handleBulkAddPlayers started ===');
     console.log('selectedForBulkAdd size:', selectedForBulkAdd.size);
@@ -259,7 +277,7 @@ export default function EventRegistrationScreen() {
         try {
           console.log('Creating registration for:', player.name);
           const guestCount = event.type === 'social' ? parseInt(playerGuestCounts[player.id] || '0', 10) : undefined;
-          const guestNamesValue = event.type === 'social' ? playerGuestNames[player.id] : undefined;
+          const guestNamesValue = event.type === 'social' ? normalizeGuestNames(playerGuestNames[player.id], guestCount || 0) : undefined;
           
           await registerMutation.mutateAsync({
             eventId: event.id,
@@ -274,7 +292,7 @@ export default function EventRegistrationScreen() {
                 registrationId: playerReg.id,
                 updates: { 
                   numberOfGuests: guestCount,
-                  guestNames: guestNamesValue || null,
+                  guestNames: guestNamesValue,
                 },
               });
             }
@@ -447,7 +465,7 @@ export default function EventRegistrationScreen() {
     }
 
     const guestCount = addCustomGuestCount.trim() === '' ? 0 : parseInt(addCustomGuestCount, 10);
-    const guestNamesValue = addCustomGuestNames.trim() || null;
+    const guestNamesValue = normalizeGuestNames(addCustomGuestNames, guestCount);
 
     try {
       console.log('[registration] 🎯 Adding custom guest:', addCustomGuestName.trim(), 'with', guestCount, 'additional guests');
@@ -560,7 +578,7 @@ export default function EventRegistrationScreen() {
         
         if (numberOfGuests && numberOfGuests > 0) {
           updates.numberOfGuests = numberOfGuests;
-          updates.guestNames = guestNames;
+          updates.guestNames = normalizeGuestNames(guestNames, numberOfGuests);
         }
         
         if (paymentStatus === 'paid') {
