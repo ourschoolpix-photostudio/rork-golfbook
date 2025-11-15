@@ -84,3 +84,23 @@ export function formatDateForDisplay(dateStr: string | null | undefined): string
   
   return dateStr;
 }
+
+export function formatDateAsFullDay(dateStr: string | null | undefined, numberOfDays: number | null | undefined, dayNumber: number): string {
+  if (!dateStr) return `Day ${dayNumber}`;
+  
+  const baseDate = new Date(dateStr);
+  if (isNaN(baseDate.getTime())) return `Day ${dayNumber}`;
+  
+  const targetDate = new Date(baseDate);
+  targetDate.setDate(baseDate.getDate() + (dayNumber - 1));
+  
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  const dayName = days[targetDate.getDay()];
+  const monthName = months[targetDate.getMonth()];
+  const day = String(targetDate.getDate()).padStart(2, '0');
+  const year = targetDate.getFullYear();
+  
+  return `${dayName} ${monthName} ${day}, ${year}`;
+}

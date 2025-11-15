@@ -1109,6 +1109,7 @@ export default function EventRegistrationScreen() {
         visible={eventDetailsModalVisible}
         event={event}
         onClose={() => setEventDetailsModalVisible(false)}
+        onRegister={handleRegisterCurrentUser}
       />
 
       <EventPlayerModal

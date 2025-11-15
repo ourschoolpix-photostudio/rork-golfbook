@@ -11,18 +11,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Event } from '@/types';
-import { formatDateForDisplay } from '@/utils/dateUtils';
+import { formatDateForDisplay, formatDateAsFullDay } from '@/utils/dateUtils';
 
 interface EventDetailsModalProps {
   visible: boolean;
   event: Event | null;
   onClose: () => void;
+  onRegister?: () => void;
 }
 
 export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   visible,
   event,
   onClose,
+  onRegister,
 }) => {
   if (!event) return null;
 
@@ -195,7 +197,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                   <View key={idx}>
                     <View style={styles.scheduleItem}>
                       <View style={styles.scheduleLeft}>
-                        <Text style={styles.scheduleDay}>Day {item.day}</Text>
+                        <Text style={styles.scheduleDay}>{formatDateAsFullDay(event.date, event.numberOfDays, item.day)}</Text>
                         <Text style={styles.scheduleTime}>{item.time}</Text>
                       </View>
                       <View style={styles.scheduleRight}>
@@ -317,7 +319,15 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           </ScrollView>
 
           <View style={styles.buttonFooter}>
-            <TouchableOpacity style={styles.registerButton}>
+            <TouchableOpacity 
+              style={styles.registerButton}
+              onPress={() => {
+                onClose();
+                if (onRegister) {
+                  onRegister();
+                }
+              }}
+            >
               <Text style={styles.registerButtonText}>REGISTER NOW!</Text>
             </TouchableOpacity>
           </View>
