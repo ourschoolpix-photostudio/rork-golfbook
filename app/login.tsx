@@ -15,7 +15,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { storageService } from '@/utils/storage';
+
 import { Member } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -59,38 +59,7 @@ export default function LoginScreen() {
   };
 
   const ensureAdminExists = async () => {
-    try {
-      const members = await storageService.getMembers();
-      console.log('Login - All members:', members.map(m => ({ id: m.id, name: m.name, username: m.username, pin: m.pin, isAdmin: m.isAdmin })));
-      
-      const adminExists = members.find(
-        (m: Member) => (m.username === 'Bruce Pham' || m.name === 'Bruce Pham') && m.pin === '8650'
-      );
-
-      if (!adminExists) {
-        console.log('Login - Admin does not exist, creating...');
-        const brucePham: Member = {
-          id: 'admin-bruce-pham',
-          name: 'Bruce Pham',
-          username: 'Bruce Pham',
-          pin: '8650',
-          isAdmin: true,
-          email: '',
-          phone: '',
-          handicap: 0,
-          rolexPoints: 0,
-          createdAt: new Date().toISOString(),
-          membershipType: 'active',
-          joinDate: new Date().toISOString().split('T')[0],
-        };
-        await storageService.addMember(brucePham);
-        console.log('Login - Admin profile created for Bruce Pham');
-      } else {
-        console.log('Login - Bruce Pham admin already exists:', { id: adminExists.id, name: adminExists.name, pin: adminExists.pin });
-      }
-    } catch (error) {
-      console.error('Error ensuring admin exists:', error);
-    }
+    console.log('Login - Admin initialization is handled by AuthContext');
   };
 
   const handleLogin = async () => {
@@ -105,54 +74,18 @@ export default function LoginScreen() {
       console.log('Login - Input username:', username);
       console.log('Login - Input pin:', pin);
       
-      const members = await storageService.getMembers();
-      console.log('Login - Retrieved members count:', members.length);
-      console.log('Login - All members:', JSON.stringify(members.map(m => ({ 
-        id: m.id, 
-        name: m.name, 
-        username: m.username, 
-        pin: m.pin, 
-        isAdmin: m.isAdmin 
-      })), null, 2));
+      console.log('Login - Calling authLogin with username:', username.trim(), 'and pin:', pin.trim());
+      const loggedIn = await authLogin(username.trim(), pin.trim());
+      console.log('Login - Auth login result:', loggedIn);
       
-      const user = members.find(
-        (m: Member) => 
-          (m.username?.toLowerCase() === username.trim().toLowerCase() || 
-           m.name?.toLowerCase() === username.trim().toLowerCase()) && 
-          m.pin === pin.trim()
-      );
-
-      console.log('Login - Found user:', user ? JSON.stringify({ 
-        id: user.id, 
-        name: user.name, 
-        username: user.username,
-        pin: user.pin, 
-        isAdmin: user.isAdmin 
-      }, null, 2) : 'NOT FOUND');
-
-      if (user) {
-        console.log('Login - Calling authLogin with username:', username, 'and pin:', user.pin);
-        const loggedIn = await authLogin(username.trim(), user.pin);
-        console.log('Login - Auth login result:', loggedIn);
-        
-        if (loggedIn) {
-          console.log('Login - Success! Navigating to dashboard...');
-          console.log('=== LOGIN END (SUCCESS) ===');
-          router.replace('/(tabs)/dashboard');
-        } else {
-          console.log('Login - authLogin returned false');
-          console.log('=== LOGIN END (AUTH FAILED) ===');
-          Alert.alert('Login Failed', 'Authentication error');
-          setPin('');
-        }
+      if (loggedIn) {
+        console.log('Login - Success! Navigating to dashboard...');
+        console.log('=== LOGIN END (SUCCESS) ===');
+        router.replace('/(tabs)/dashboard');
       } else {
-        console.log('Login - No matching user found');
-        console.log('Login - Username match attempts:');
-        members.forEach(m => {
-          console.log(`  - Member: "${m.name}" vs Input: "${username}" | Name match: ${m.name?.toLowerCase() === username.trim().toLowerCase()} | Username match: ${m.username?.toLowerCase() === username.trim().toLowerCase()} | Pin: "${m.pin}" vs "${pin}" | Pin match: ${m.pin === pin.trim()}`);
-        });
-        console.log('=== LOGIN END (USER NOT FOUND) ===');
-        Alert.alert('Login Failed', 'Invalid username or PIN');
+        console.log('Login - authLogin returned false');
+        console.log('=== LOGIN END (AUTH FAILED) ===');
+        Alert.alert('Login Failed', 'Invalid username or PIN. Make sure the player exists in the database.');
         setPin('');
       }
     } catch (error) {
