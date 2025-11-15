@@ -175,11 +175,6 @@ export default function MembersScreen() {
             fontSize: 20,
             fontWeight: '700',
           },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ marginLeft: 8 }}>
-              <Ionicons name="arrow-back" size={24} color="#007AFF" />
-            </TouchableOpacity>
-          ),
         }}
       />
       <View style={styles.container}>

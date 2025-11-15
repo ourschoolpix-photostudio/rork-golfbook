@@ -65,12 +65,6 @@ export default function AdminFinancialScreen() {
     <View style={styles.container}>
       <View style={styles.customHeaderWrapper}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="chevron-back" size={24} color="#fff" />
-          </TouchableOpacity>
           <Text style={styles.title}>Financial Summary</Text>
           <TouchableOpacity
             style={styles.addButton}
@@ -226,17 +220,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
   },
-  backButton: {
-    position: 'absolute' as 'absolute',
-    left: 16,
-    top: 60,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
   addButton: {
     position: 'absolute' as 'absolute',
     right: 16,
