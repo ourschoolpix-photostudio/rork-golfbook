@@ -36,6 +36,7 @@ const memberSchema = z.object({
   profilePhotoUrl: z.string().nullable().optional(),
   adjustedHandicap: z.string().nullable().optional(),
   ghin: z.string().nullable().optional(),
+  boardMemberRoles: z.array(z.string()).nullable().optional(),
 });
 
 export const syncMembersProcedure = publicProcedure
@@ -73,6 +74,7 @@ export const syncMembersProcedure = publicProcedure
       profile_photo_url: member.profilePhotoUrl,
       adjusted_handicap: member.adjustedHandicap,
       ghin: member.ghin,
+      board_member_roles: member.boardMemberRoles || [],
       updated_at: new Date().toISOString(),
     }));
 
@@ -145,6 +147,7 @@ export const getMembersProcedure = publicProcedure
       profilePhotoUrl: m.profile_photo_url,
       adjustedHandicap: m.adjusted_handicap,
       ghin: m.ghin,
+      boardMemberRoles: m.board_member_roles || [],
     }));
 
     console.log('✅ Fetched members:', members.length);

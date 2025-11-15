@@ -36,6 +36,7 @@ const memberSchema = z.object({
   profilePhotoUrl: z.string().nullable().optional(),
   adjustedHandicap: z.string().nullable().optional(),
   ghin: z.string().nullable().optional(),
+  boardMemberRoles: z.array(z.string()).nullable().optional(),
 });
 
 function mapMemberToDb(member: z.infer<typeof memberSchema>) {
@@ -66,6 +67,7 @@ function mapMemberToDb(member: z.infer<typeof memberSchema>) {
     profile_photo_url: member.profilePhotoUrl,
     adjusted_handicap: member.adjustedHandicap,
     ghin: member.ghin,
+    board_member_roles: member.boardMemberRoles || [],
     updated_at: new Date().toISOString(),
   };
 }
@@ -98,6 +100,7 @@ function mapDbToMember(m: any): Member {
     profilePhotoUrl: m.profile_photo_url,
     adjustedHandicap: m.adjusted_handicap,
     ghin: m.ghin,
+    boardMemberRoles: m.board_member_roles || [],
   };
 }
 
