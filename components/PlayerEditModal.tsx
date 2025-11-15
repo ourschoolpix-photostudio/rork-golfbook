@@ -26,6 +26,7 @@ interface PlayerEditModalProps {
   onSave: (member: Member) => Promise<void>;
   isLimitedMode?: boolean;
   quickEditMode?: boolean;
+  pinChangeMode?: boolean;
 }
 
 const BOARD_MEMBER_ROLES = [
@@ -39,7 +40,7 @@ const BOARD_MEMBER_ROLES = [
   'Member Relations',
 ] as const;
 
-export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMode = false, quickEditMode = false }: PlayerEditModalProps) {
+export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMode = false, quickEditMode = false, pinChangeMode = false }: PlayerEditModalProps) {
   const { currentUser } = useAuth();
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
@@ -139,6 +140,11 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       return;
     }
 
+    if (pinChangeMode && pin === '1111') {
+      Alert.alert('Error', 'You must change your PIN from the default value (1111)');
+      return;
+    }
+
     try {
       setLoading(true);
       let profilePhotoUrl = member?.profilePhotoUrl || '';
@@ -226,7 +232,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
             <Ionicons name="checkmark" size={20} color="#fff" />
             <Text style={styles.headerSaveButtonText}>{loading ? 'Saving...' : 'Save'}</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{member ? member.name : 'Add New Player'}</Text>
+          <Text style={styles.headerTitle}>{pinChangeMode ? 'Change PIN Required' : member ? member.name : 'Add New Player'}</Text>
           <TouchableOpacity 
             onPress={onClose} 
             disabled={loading}
@@ -385,6 +391,17 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
                       </Text>
                     </TouchableOpacity>
                   </View>
+                </View>
+              </View>
+            )}
+
+            {pinChangeMode && (
+              <View style={styles.section}>
+                <View style={styles.warningBox}>
+                  <Text style={styles.warningTitle}>⚠️ PIN Change Required</Text>
+                  <Text style={styles.warningText}>
+                    For security reasons, you must change your PIN from the default value (1111). You can update your username if desired, but changing the PIN is mandatory.
+                  </Text>
                 </View>
               </View>
             )}
@@ -1039,5 +1056,23 @@ const styles = StyleSheet.create({
   },
   roleChipTextActive: {
     color: '#fff',
+  },
+  warningBox: {
+    backgroundColor: '#fff3cd',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#ffc107',
+  },
+  warningTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#856404',
+    marginBottom: 8,
+  },
+  warningText: {
+    fontSize: 13,
+    color: '#856404',
+    lineHeight: 18,
   },
 });

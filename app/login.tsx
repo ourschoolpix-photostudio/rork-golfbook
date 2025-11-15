@@ -19,13 +19,16 @@ import { useRouter } from 'expo-router';
 import { Member } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
+import { PlayerEditModal } from '@/components/PlayerEditModal';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPinChangeModal, setShowPinChangeModal] = useState(false);
+  const [userToUpdate, setUserToUpdate] = useState<Member | null>(null);
   const router = useRouter();
-  const { login: authLogin } = useAuth();
+  const { login: authLogin, updateMember, members } = useAuth();
   const { orgInfo, isLoading: loadingOrg } = useSettings();
 
   useEffect(() => {
@@ -53,9 +56,25 @@ export default function LoginScreen() {
       console.log('Login - Auth login result:', loggedIn);
       
       if (loggedIn) {
-        console.log('Login - Success! Navigating to dashboard...');
-        console.log('=== LOGIN END (SUCCESS) ===');
-        router.replace('/(tabs)/dashboard');
+        console.log('Login - Success!');
+        
+        if (pin.trim() === '1111') {
+          console.log('Login - User has default PIN, prompting change...');
+          console.log('=== LOGIN END (PIN CHANGE REQUIRED) ===');
+          const member = members.find((m: Member) => 
+            (m.username?.toLowerCase() === username.trim().toLowerCase() || 
+             m.name?.toLowerCase() === username.trim().toLowerCase()) && 
+            m.pin === pin.trim()
+          );
+          if (member) {
+            setUserToUpdate(member);
+            setShowPinChangeModal(true);
+          }
+        } else {
+          console.log('Login - Navigating to dashboard...');
+          console.log('=== LOGIN END (SUCCESS) ===');
+          router.replace('/(tabs)/dashboard');
+        }
       } else {
         console.log('Login - authLogin returned false');
         console.log('=== LOGIN END (AUTH FAILED) ===');
@@ -71,9 +90,31 @@ export default function LoginScreen() {
     }
   };
 
+  const handlePinChange = async (member: Member) => {
+    try {
+      if (member.pin === '1111') {
+        Alert.alert('Error', 'You must change your PIN from the default value');
+        return;
+      }
+
+      console.log('Login - Updating user PIN...');
+      await updateMember(member.id, { pin: member.pin, username: member.username });
+      console.log('Login - PIN updated successfully');
+      
+      setShowPinChangeModal(false);
+      setUserToUpdate(null);
+      
+      router.replace('/(tabs)/dashboard');
+    } catch (error) {
+      console.error('Error updating PIN:', error);
+      Alert.alert('Error', 'Failed to update PIN. Please try again.');
+    }
+  };
+
   return (
-    <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
+    <>
+      <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
+        <SafeAreaView style={styles.container}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
           <View style={styles.content}>
             {loadingOrg ? (
@@ -128,6 +169,20 @@ export default function LoginScreen() {
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Pressable>
+
+    <PlayerEditModal
+      visible={showPinChangeModal}
+      member={userToUpdate}
+      onClose={() => {
+        setShowPinChangeModal(false);
+        setUserToUpdate(null);
+        Alert.alert('PIN Change Required', 'You must change your PIN from the default value to continue.');
+      }}
+      onSave={handlePinChange}
+      isLimitedMode={true}
+      pinChangeMode={true}
+    />
+    </>
   );
 }
 
