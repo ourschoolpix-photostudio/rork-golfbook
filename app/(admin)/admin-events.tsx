@@ -35,6 +35,8 @@ type EventFormType = {
   numberOfDays: 1 | 2 | 3;
   day1StartTime: string;
   day1StartPeriod: 'AM' | 'PM';
+  day1EndTime: string;
+  day1EndPeriod: 'AM' | 'PM';
   day1Course: string;
   day1StartType: 'tee-time' | 'shotgun';
   day1LeadingHole: string;
@@ -43,6 +45,8 @@ type EventFormType = {
   day1CourseRating: string;
   day2StartTime: string;
   day2StartPeriod: 'AM' | 'PM';
+  day2EndTime: string;
+  day2EndPeriod: 'AM' | 'PM';
   day2Course: string;
   day2StartType: 'tee-time' | 'shotgun';
   day2LeadingHole: string;
@@ -51,6 +55,8 @@ type EventFormType = {
   day2CourseRating: string;
   day3StartTime: string;
   day3StartPeriod: 'AM' | 'PM';
+  day3EndTime: string;
+  day3EndPeriod: 'AM' | 'PM';
   day3Course: string;
   day3StartType: 'tee-time' | 'shotgun';
   day3LeadingHole: string;
@@ -121,6 +127,8 @@ export default function AdminEventsScreen() {
     numberOfDays: 1 as 1 | 2 | 3,
     day1StartTime: '',
     day1StartPeriod: 'AM' as 'AM' | 'PM',
+    day1EndTime: '',
+    day1EndPeriod: 'AM' as 'AM' | 'PM',
     day1Course: '',
     day1StartType: 'tee-time' as 'tee-time' | 'shotgun',
     day1LeadingHole: '',
@@ -129,6 +137,8 @@ export default function AdminEventsScreen() {
     day1CourseRating: '',
     day2StartTime: '',
     day2StartPeriod: 'AM' as 'AM' | 'PM',
+    day2EndTime: '',
+    day2EndPeriod: 'AM' as 'AM' | 'PM',
     day2Course: '',
     day2StartType: 'tee-time' as 'tee-time' | 'shotgun',
     day2LeadingHole: '',
@@ -137,6 +147,8 @@ export default function AdminEventsScreen() {
     day2CourseRating: '',
     day3StartTime: '',
     day3StartPeriod: 'AM' as 'AM' | 'PM',
+    day3EndTime: '',
+    day3EndPeriod: 'AM' as 'AM' | 'PM',
     day3Course: '',
     day3StartType: 'tee-time' as 'tee-time' | 'shotgun',
     day3LeadingHole: '',
@@ -220,6 +232,8 @@ export default function AdminEventsScreen() {
       numberOfDays: 1,
       day1StartTime: '',
       day1StartPeriod: 'AM',
+      day1EndTime: '',
+      day1EndPeriod: 'AM',
       day1Course: '',
       day1StartType: 'tee-time',
       day1LeadingHole: '',
@@ -228,6 +242,8 @@ export default function AdminEventsScreen() {
       day1CourseRating: '',
       day2StartTime: '',
       day2StartPeriod: 'AM',
+      day2EndTime: '',
+      day2EndPeriod: 'AM',
       day2Course: '',
       day2StartType: 'tee-time',
       day2LeadingHole: '',
@@ -236,6 +252,8 @@ export default function AdminEventsScreen() {
       day2CourseRating: '',
       day3StartTime: '',
       day3StartPeriod: 'AM',
+      day3EndTime: '',
+      day3EndPeriod: 'AM',
       day3Course: '',
       day3StartType: 'tee-time',
       day3LeadingHole: '',
@@ -311,6 +329,8 @@ export default function AdminEventsScreen() {
             numberOfDays: form.numberOfDays,
             day1StartTime: form.day1StartTime,
             day1StartPeriod: form.day1StartPeriod,
+            day1EndTime: form.day1EndTime,
+            day1EndPeriod: form.day1EndPeriod,
             day1Course: form.day1Course,
             day1StartType: form.day1StartType,
             day1LeadingHole: form.day1LeadingHole,
@@ -320,6 +340,8 @@ export default function AdminEventsScreen() {
             day1HolePars: form.day1HolePars,
             day2StartTime: form.day2StartTime,
             day2StartPeriod: form.day2StartPeriod,
+            day2EndTime: form.day2EndTime,
+            day2EndPeriod: form.day2EndPeriod,
             day2Course: form.day2Course,
             day2StartType: form.day2StartType,
             day2LeadingHole: form.day2LeadingHole,
@@ -329,6 +351,8 @@ export default function AdminEventsScreen() {
             day2HolePars: form.day2HolePars,
             day3StartTime: form.day3StartTime,
             day3StartPeriod: form.day3StartPeriod,
+            day3EndTime: form.day3EndTime,
+            day3EndPeriod: form.day3EndPeriod,
             day3Course: form.day3Course,
             day3StartType: form.day3StartType,
             day3LeadingHole: form.day3LeadingHole,
@@ -390,6 +414,8 @@ export default function AdminEventsScreen() {
           numberOfDays: form.numberOfDays,
           day1StartTime: form.day1StartTime,
           day1StartPeriod: form.day1StartPeriod,
+          day1EndTime: form.day1EndTime,
+          day1EndPeriod: form.day1EndPeriod,
           day1Course: form.day1Course,
           day1StartType: form.day1StartType,
           day1LeadingHole: form.day1LeadingHole,
@@ -399,6 +425,8 @@ export default function AdminEventsScreen() {
           day1HolePars: form.day1HolePars,
           day2StartTime: form.day2StartTime,
           day2StartPeriod: form.day2StartPeriod,
+          day2EndTime: form.day2EndTime,
+          day2EndPeriod: form.day2EndPeriod,
           day2Course: form.day2Course,
           day2StartType: form.day2StartType,
           day2LeadingHole: form.day2LeadingHole,
@@ -408,6 +436,8 @@ export default function AdminEventsScreen() {
           day2HolePars: form.day2HolePars,
           day3StartTime: form.day3StartTime,
           day3StartPeriod: form.day3StartPeriod,
+          day3EndTime: form.day3EndTime,
+          day3EndPeriod: form.day3EndPeriod,
           day3Course: form.day3Course,
           day3StartType: form.day3StartType,
           day3LeadingHole: form.day3LeadingHole,
@@ -530,6 +560,8 @@ export default function AdminEventsScreen() {
       numberOfDays: (event.numberOfDays || 1) as 1 | 2 | 3,
       day1StartTime: event.day1StartTime || '',
       day1StartPeriod: event.day1StartPeriod || 'AM',
+      day1EndTime: event.day1EndTime || '',
+      day1EndPeriod: event.day1EndPeriod || 'AM',
       day1Course: event.day1Course || '',
       day1StartType: event.day1StartType || 'tee-time',
       day1LeadingHole: event.day1LeadingHole || '',
@@ -538,6 +570,8 @@ export default function AdminEventsScreen() {
       day1CourseRating: event.day1CourseRating || '',
       day2StartTime: event.day2StartTime || '',
       day2StartPeriod: event.day2StartPeriod || 'AM',
+      day2EndTime: event.day2EndTime || '',
+      day2EndPeriod: event.day2EndPeriod || 'AM',
       day2Course: event.day2Course || '',
       day2StartType: event.day2StartType || 'tee-time',
       day2LeadingHole: event.day2LeadingHole || '',
@@ -546,6 +580,8 @@ export default function AdminEventsScreen() {
       day2CourseRating: event.day2CourseRating || '',
       day3StartTime: event.day3StartTime || '',
       day3StartPeriod: event.day3StartPeriod || 'AM',
+      day3EndTime: event.day3EndTime || '',
+      day3EndPeriod: event.day3EndPeriod || 'AM',
       day3Course: event.day3Course || '',
       day3StartType: event.day3StartType || 'tee-time',
       day3LeadingHole: event.day3LeadingHole || '',
