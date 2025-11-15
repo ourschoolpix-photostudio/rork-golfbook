@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { OfflineModeToggle } from '@/components/OfflineModeToggle';
 import { trpc } from '@/lib/trpc';
+import { canViewFinance } from '@/utils/rolePermissions';
 
 export function EventFooter() {
   const router = useRouter();
@@ -75,7 +76,7 @@ export function EventFooter() {
     ] : []),
   ];
 
-  if (currentUser?.isAdmin) {
+  if (canViewFinance(currentUser)) {
     tabs.push({ id: 'finance', icon: DollarSign, label: 'Finance' });
   }
 

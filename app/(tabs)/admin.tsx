@@ -37,14 +37,30 @@ export default function AdminScreen() {
     const checkAdmin = async () => {
       const currentUserFromAuth = await authService.getCurrentUser();
       setUser(currentUserFromAuth);
-      if (!currentUserFromAuth?.isAdmin && !currentUser?.boardMemberRoles?.length) {
+      const hasAnyAccess = currentUserFromAuth?.isAdmin ||
+        canAccessPlayerManagement(currentUser) ||
+        canAccessEventManagement(currentUser) ||
+        canAccessFinancialSummary(currentUser) ||
+        canAccessBulkUpdate(currentUser) ||
+        canAccessSettings(currentUser) ||
+        canAccessBackupRestore(currentUser);
+      
+      if (!hasAnyAccess) {
         router.replace('/');
       }
     };
     checkAdmin();
   }, [router, currentUser]);
 
-  if (!user?.isAdmin && !currentUser?.boardMemberRoles?.length) {
+  const hasAnyAccess = user?.isAdmin ||
+    canAccessPlayerManagement(currentUser) ||
+    canAccessEventManagement(currentUser) ||
+    canAccessFinancialSummary(currentUser) ||
+    canAccessBulkUpdate(currentUser) ||
+    canAccessSettings(currentUser) ||
+    canAccessBackupRestore(currentUser);
+  
+  if (!hasAnyAccess) {
     return null;
   }
 
