@@ -61,7 +61,7 @@ export function canEditLeaderboard(user: Member | null): boolean {
 }
 
 export function canAddExpensesGains(user: Member | null): boolean {
-  return hasRole(user, 'Admin');
+  return hasAnyRole(user, ['Admin', 'Financer']);
 }
 
 export function canViewFinance(user: Member | null): boolean {
@@ -72,6 +72,7 @@ export function canViewFinance(user: Member | null): boolean {
     'Tournament Director',
     'Handicap Director',
     'Member Relations',
+    'Financer',
   ]);
 }
 
@@ -105,6 +106,7 @@ export function canAccessFinancialSummary(user: Member | null): boolean {
     'Tournament Director',
     'Handicap Director',
     'Member Relations',
+    'Financer',
   ]);
 }
 
