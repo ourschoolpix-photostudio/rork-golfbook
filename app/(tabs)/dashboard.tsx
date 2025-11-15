@@ -265,7 +265,10 @@ export default function DashboardScreen() {
           event={selectedEvent}
           onClose={() => setDetailsModalVisible(false)}
           onRegister={() => {
-            router.push(`/(event)/${selectedEvent.id}/registration` as any);
+            setDetailsModalVisible(false);
+            setTimeout(() => {
+              router.push(`/(event)/${selectedEvent.id}/registration` as any);
+            }, 100);
           }}
           currentUserId={currentUser?.id}
           registeredPlayerIds={selectedEvent?.registeredPlayers || []}

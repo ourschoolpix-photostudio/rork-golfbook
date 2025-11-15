@@ -328,11 +328,8 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             <TouchableOpacity 
               style={[styles.registerButton, isAlreadyRegistered && styles.registeredButton]}
               onPress={() => {
-                if (!isAlreadyRegistered) {
-                  onClose();
-                  if (onRegister) {
-                    onRegister();
-                  }
+                if (!isAlreadyRegistered && onRegister) {
+                  onRegister();
                 }
               }}
               disabled={isAlreadyRegistered}
