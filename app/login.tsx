@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 240,
     height: 288,
-    marginBottom: 4,
+    marginBottom: 2,
     resizeMode: 'contain' as const,
     aspectRatio: 1,
   },
