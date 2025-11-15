@@ -486,7 +486,11 @@ export default function EventRegistrationScreen() {
     }
 
     try {
-      console.log('[PayPal Registration] Updating member info...');
+      console.log('[Registration] Starting Zelle registration...');
+      console.log('[Registration] Member:', currentUserMember.name, 'Event:', event.name);
+      console.log('[Registration] Guest count:', numberOfGuests);
+      
+      console.log('[Registration] Step 1: Updating member info...');
       await updateMemberMutation.mutateAsync({
         memberId: currentUserMember.id,
         updates: {
@@ -495,16 +499,19 @@ export default function EventRegistrationScreen() {
           phone,
         },
       });
+      console.log('[Registration] ✓ Member info updated');
 
-      console.log('[PayPal Registration] Creating registration...');
+      console.log('[Registration] Step 2: Creating registration...');
       await registerMutation.mutateAsync({
         eventId: event.id,
         memberId: currentUserMember.id,
       });
+      console.log('[Registration] ✓ Registration created');
       
-      console.log('[PayPal Registration] Refetching registrations...');
+      console.log('[Registration] Step 3: Refetching registrations...');
       const backendRegs = await registrationsQuery.refetch();
       const userReg = backendRegs.data?.find((r: any) => r.memberId === currentUserMember.id);
+      console.log('[Registration] Found user registration:', userReg ? `ID: ${userReg.id}` : 'NOT FOUND');
       
       if (userReg) {
         const updates: any = {};
@@ -515,28 +522,34 @@ export default function EventRegistrationScreen() {
         }
         
         if (paymentStatus === 'paid') {
-          console.log('[PayPal Registration] Setting payment status to PAID');
+          console.log('[Registration] Setting payment status to PAID');
           updates.paymentStatus = 'paid';
         }
         
         if (Object.keys(updates).length > 0) {
-          console.log('[PayPal Registration] Updating registration with:', updates);
+          console.log('[Registration] Step 4: Updating registration with:', updates);
           await updateRegistrationMutation.mutateAsync({
             registrationId: userReg.id,
             updates,
           });
+          console.log('[Registration] ✓ Registration updated');
         }
       }
       
       if (paymentStatus !== 'paid') {
-        console.log('[Registration] Adding notification for Zelle/unpaid registration');
-        await addNotification({
-          eventId: event.id,
-          eventName: event.name,
-          playerName: currentUserMember.name,
-          playerPhone: phone || currentUserMember.phone || null,
-          paymentMethod: paymentStatus === 'paid' ? 'paypal' : 'zelle',
-        });
+        console.log('[Registration] Step 5: Adding notification for Zelle/unpaid registration');
+        try {
+          await addNotification({
+            eventId: event.id,
+            eventName: event.name,
+            playerName: currentUserMember.name,
+            playerPhone: phone || currentUserMember.phone || null,
+            paymentMethod: paymentStatus === 'paid' ? 'paypal' : 'zelle',
+          });
+          console.log('[Registration] ✓ Notification added');
+        } catch (notifError) {
+          console.error('[Registration] ⚠️ Warning: Failed to add notification:', notifError);
+        }
       } else {
         console.log('[Registration] Skipping notification for PayPal payment (already paid)');
       }
@@ -544,13 +557,19 @@ export default function EventRegistrationScreen() {
       const updated = [...selectedPlayers, currentUserMember];
       setSelectedPlayers(updated);
       
-      console.log('[Registration] Final refetch of registrations...');
+      console.log('[Registration] Step 6: Final refetch of registrations...');
       await registrationsQuery.refetch();
+      console.log('[Registration] ✓ Final refetch complete');
 
       setZelleInvoiceModalVisible(false);
       setPaypalInvoiceModalVisible(false);
+      console.log('[Registration] ✅ Registration completed successfully!');
     } catch (error) {
-      console.error('Error during Zelle registration:', error);
+      console.error('[Registration] ❌ ERROR during registration:', error);
+      if (error instanceof Error) {
+        console.error('[Registration] Error message:', error.message);
+        console.error('[Registration] Error stack:', error.stack);
+      }
       throw error;
     }
   };
