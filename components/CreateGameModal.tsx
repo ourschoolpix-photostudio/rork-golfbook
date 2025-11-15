@@ -58,9 +58,11 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
   };
 
   const handlePlayerHandicapChange = (index: number, value: string) => {
-    const updated = [...players];
-    updated[index] = { ...updated[index], handicap: value };
-    setPlayers(updated);
+    if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
+      const updated = [...players];
+      updated[index] = { ...updated[index], handicap: value };
+      setPlayers(updated);
+    }
   };
 
   const handleSave = async () => {
@@ -89,7 +91,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
 
     const parsedPlayers = activePlayers.map(p => ({
       name: p.name.trim(),
-      handicap: parseInt(p.handicap, 10) || 0,
+      handicap: parseFloat(p.handicap) || 0,
     }));
 
     console.log('[CreateGameModal] Creating game:', { courseName, par, parsedPlayers });
@@ -191,7 +193,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
                     style={[styles.input, styles.handicapInput]}
                     placeholder="HDC"
                     placeholderTextColor="#999"
-                    keyboardType="number-pad"
+                    keyboardType="decimal-pad"
                     value={player.handicap}
                     onChangeText={(value) => handlePlayerHandicapChange(index, value)}
                   />
@@ -312,7 +314,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   handicapInput: {
-    width: 60,
+    width: 70,
     marginBottom: 0,
   },
   footer: {
