@@ -393,7 +393,7 @@ function buildRegistrationHTMLContent(
       playersHTML += `
         <div class="player-row">
           <div class="item-number">${itemNumber}.</div>
-          <div class="registrant-name">${member.name}</div>
+          <div class="player-name-item">${member.name}</div>
         </div>
       `;
       
@@ -402,9 +402,9 @@ function buildRegistrationHTMLContent(
           itemNumber++;
           totalAttendees++;
           playersHTML += `
-            <div class="guest-row">
+            <div class="player-row">
               <div class="item-number">${itemNumber}.</div>
-              <div class="guest-name">${guestName}</div>
+              <div class="player-name-item">${guestName}</div>
             </div>
           `;
         });
@@ -534,7 +534,6 @@ function buildRegistrationHTMLContent(
       display: flex;
       align-items: baseline;
       padding: 4px 6px;
-      border-bottom: 1px solid #E0E0E0;
       line-height: 1.4;
       gap: 6px;
     }
@@ -544,23 +543,10 @@ function buildRegistrationHTMLContent(
       color: #666;
       min-width: 20px;
     }
-    .registrant-name {
+    .player-name-item {
       font-size: 10px;
       font-weight: 600;
       color: #1a1a1a;
-      flex: 1;
-    }
-    .guest-row {
-      display: flex;
-      align-items: baseline;
-      padding: 2px 6px 2px 12px;
-      line-height: 1.3;
-      gap: 6px;
-    }
-    .guest-name {
-      font-size: 8px;
-      font-style: italic;
-      color: #555;
       flex: 1;
     }
     .total-row {
