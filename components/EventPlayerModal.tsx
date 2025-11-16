@@ -248,21 +248,21 @@ export function EventPlayerModal({
                       />
                     </View>
                   )}
-
-                  <TouchableOpacity
-                    style={styles.sponsorToggleContainer}
-                    onPress={() => setIsSponsor(!isSponsor)}
-                    disabled={isSaving}
-                  >
-                    <View style={[styles.sponsorCheckbox, isSponsor && styles.sponsorCheckboxActive]}>
-                      {isSponsor && (
-                        <Ionicons name="checkmark" size={16} color="#fff" />
-                      )}
-                    </View>
-                    <Text style={styles.sponsorLabel}>Sponsor</Text>
-                  </TouchableOpacity>
                 </>
               )}
+
+              <TouchableOpacity
+                style={styles.sponsorToggleContainer}
+                onPress={() => setIsSponsor(!isSponsor)}
+                disabled={isSaving}
+              >
+                <View style={[styles.sponsorCheckbox, isSponsor && styles.sponsorCheckboxActive]}>
+                  {isSponsor && (
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                  )}
+                </View>
+                <Text style={styles.sponsorLabel}>Sponsor</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.buttonContainer}>

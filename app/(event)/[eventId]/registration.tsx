@@ -299,7 +299,7 @@ export default function EventRegistrationScreen() {
           console.log('Creating registration for:', player.name);
           const guestCount = event.type === 'social' ? parseInt(playerGuestCounts[player.id] || '0', 10) : undefined;
           const guestNamesValue = event.type === 'social' ? normalizeGuestNames(playerGuestNames[player.id], guestCount || 0) : undefined;
-          const isSponsor = event.type === 'social' ? playerSponsorFlags[player.id] || false : false;
+          const isSponsor = playerSponsorFlags[player.id] || false;
           
           await registerMutation.mutateAsync({
             eventId: event.id,
@@ -1579,7 +1579,7 @@ export default function EventRegistrationScreen() {
                         </Text>
                       </View>
                     </TouchableOpacity>
-                    {event?.type === 'social' && selectedForBulkAdd.has(member.id) && (
+                    {selectedForBulkAdd.has(member.id) && (
                       <>
                         <View style={styles.guestCountInputContainer}>
                           <Text style={styles.guestCountLabel}>Number of Guests:</Text>
