@@ -533,7 +533,7 @@ function buildRegistrationHTMLContent(
     .player-row {
       display: flex;
       align-items: baseline;
-      padding: 4px 6px;
+      padding: 4px 0px;
       line-height: 1.4;
       gap: 6px;
     }
