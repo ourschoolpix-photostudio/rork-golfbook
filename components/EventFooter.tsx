@@ -6,10 +6,23 @@ import { Home, Users, Grid3x3, Target, Award, DollarSign } from 'lucide-react-na
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { OfflineModeToggle } from '@/components/OfflineModeToggle';
+import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
 import { trpc } from '@/lib/trpc';
 import { canViewFinance } from '@/utils/rolePermissions';
 
-export function EventFooter() {
+type EventFooterProps = {
+  showStartButton?: boolean;
+  eventStatus?: EventStatus;
+  onStatusChange?: (newStatus: EventStatus) => void | Promise<void>;
+  isAdmin?: boolean;
+};
+
+export function EventFooter({
+  showStartButton = false,
+  eventStatus = 'upcoming',
+  onStatusChange,
+  isAdmin = false,
+}: EventFooterProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -87,6 +100,15 @@ export function EventFooter() {
           <View style={styles.toggleButtonWrapper}>
             <OfflineModeToggle eventId={eventId} position="footer" />
           </View>
+          {showStartButton && onStatusChange && (
+            <View style={styles.startButtonWrapper}>
+              <EventStatusButton
+                status={eventStatus}
+                onStatusChange={onStatusChange}
+                isAdmin={isAdmin}
+              />
+            </View>
+          )}
           <TouchableOpacity
             style={[
               styles.courseHandicapToggle,
@@ -134,9 +156,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    gap: 8,
+    gap: 6,
   },
   toggleButtonWrapper: {
+    flex: 1,
+  },
+  startButtonWrapper: {
     flex: 1,
   },
   courseHandicapToggle: {

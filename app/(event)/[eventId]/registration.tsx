@@ -1180,31 +1180,12 @@ export default function EventRegistrationScreen() {
           >
             <Text style={styles.buttonInRowText}>Add Member</Text>
           </TouchableOpacity>
-          {event.type === 'social' && (
-            <TouchableOpacity
-              style={[styles.addButtonInRow, { backgroundColor: '#9C27B0' }]}
-              onPress={() => setAddCustomGuestModalVisible(true)}
-            >
-              <Text style={styles.buttonInRowText}>Add Guest</Text>
-            </TouchableOpacity>
-          )}
-          {canStartEvent(currentUser) && (
-            <View style={styles.eventStatusButtonWrapper}>
-              <EventStatusButton
-                status={(event.status as EventStatus) || 'upcoming'}
-                onStatusChange={async (newStatus) => {
-                  if (event) {
-                    await updateEventMutation.mutateAsync({
-                      eventId: event.id,
-                      updates: { status: newStatus },
-                    });
-                    setEvent({ ...event, status: newStatus });
-                  }
-                }}
-                isAdmin={currentUser?.isAdmin || false}
-              />
-            </View>
-          )}
+          <TouchableOpacity
+            style={[styles.addButtonInRow, { backgroundColor: '#9C27B0' }]}
+            onPress={() => setAddCustomGuestModalVisible(true)}
+          >
+            <Text style={styles.buttonInRowText}>Add Guest</Text>
+          </TouchableOpacity>
           {canRemoveAllPlayers(currentUser) && (
             <TouchableOpacity
               style={styles.removeButtonInRow}
@@ -1762,6 +1743,21 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
+      </SafeAreaView>
+      <EventFooter 
+        showStartButton={event && canStartEvent(currentUser)}
+        eventStatus={(event?.status as EventStatus) || 'upcoming'}
+        onStatusChange={async (newStatus) => {
+          if (event) {
+            await updateEventMutation.mutateAsync({
+              eventId: event.id,
+              updates: { status: newStatus },
+            });
+            setEvent({ ...event, status: newStatus });
+          }
+        }}
+        isAdmin={currentUser?.isAdmin || false}
+      />
       <TouchableOpacity
         style={[
           styles.registerButton,
@@ -1777,8 +1773,6 @@ export default function EventRegistrationScreen() {
           {isCurrentUserRegistered() ? "You're Registered For This Event" : 'Register For This Event'}
         </Text>
       </TouchableOpacity>
-      </SafeAreaView>
-      <EventFooter />
     </>
   );
 }
@@ -1830,13 +1824,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: '#f5f5f5',
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     alignItems: 'center',
   },
   addButtonInRow: {
     flex: 1,
     backgroundColor: '#1B5E20',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1844,13 +1838,13 @@ const styles = StyleSheet.create({
   removeButtonInRow: {
     flex: 1,
     backgroundColor: '#EF4444',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonInRowText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#fff',
   },
