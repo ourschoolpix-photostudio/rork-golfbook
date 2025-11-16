@@ -529,6 +529,7 @@ function buildRegistrationHTMLContent(
     .header-subtitle {
       font-size: 9px;
       color: #666;
+      margin-top: 2px;
     }
     .player-row {
       display: flex;
@@ -575,12 +576,16 @@ function buildRegistrationHTMLContent(
 <body>
   <div class="header">
     <div class="header-title">${event.name}</div>
-    <div class="header-subtitle">Registration List</div>
+    <div class="header-subtitle">Attendee List</div>
   </div>
   ${playersHTML}
 </body>
 </html>`;
   } else {
+    const dateRange = event.endDate && event.endDate !== event.date 
+      ? `${event.date} - ${event.endDate}` 
+      : event.date;
+
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -608,9 +613,16 @@ function buildRegistrationHTMLContent(
       color: #1B5E20;
       margin-bottom: 2px;
     }
+    .header-dates {
+      font-size: 9px;
+      color: #666;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
     .header-subtitle {
       font-size: 9px;
       color: #666;
+      margin-top: 2px;
     }
     .flight-separator {
       background: #E8F5E9;
@@ -684,6 +696,7 @@ function buildRegistrationHTMLContent(
 <body>
   <div class="header">
     <div class="header-title">${event.name}</div>
+    <div class="header-dates">${dateRange}</div>
     <div class="header-subtitle">Registration List</div>
   </div>
   ${playersHTML}
