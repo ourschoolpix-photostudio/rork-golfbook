@@ -297,11 +297,11 @@ interface RegistrationPDFOptions {
   useCourseHandicap?: boolean;
 }
 
-export async function generateRegistrationPDF(options: RegistrationPDFOptions): Promise<void> {
+export async function generateRegistrationPDF(options: RegistrationPDFOptions, includeHandicap?: boolean): Promise<void> {
   try {
     console.log('[pdfGenerator] Starting registration PDF generation...');
     const { registrations, members, event, useCourseHandicap = false } = options;
-    const htmlContent = buildRegistrationHTMLContent(registrations, members, event, useCourseHandicap);
+    const htmlContent = buildRegistrationHTMLContent(registrations, members, event, useCourseHandicap, includeHandicap);
 
     if (Platform.OS === 'web') {
       return generateWebRegistrationPDF(htmlContent, event.name);
@@ -362,37 +362,106 @@ function buildRegistrationHTMLContent(
   registrations: any[],
   members: Member[],
   event: Event,
-  useCourseHandicap: boolean
+  useCourseHandicap: boolean,
+  includeHandicap?: boolean
 ): string {
   const isSocial = event.type === 'social';
   let playersHTML = '';
 
-  registrations.forEach((reg, index) => {
-    const member = members.find(m => m.id === reg.memberId);
-    if (!member) return;
+  if (isSocial) {
+    const sortedRegs = registrations
+      .map(reg => ({ reg, member: members.find(m => m.id === reg.memberId) }))
+      .filter(item => item.member)
+      .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
 
-    if (isSocial) {
-      const guestCount = reg.numberOfGuests || 0;
+    sortedRegs.forEach(({ reg, member }) => {
+      if (!member) return;
+      
       const guestNames = reg.guestNames ? reg.guestNames.split('\n').filter((n: string) => n.trim()) : [];
       
       playersHTML += `
         <div class="player-row">
-          <div class="player-name">${member.name}</div>
-          <div class="guest-count">${guestCount}</div>
-          <div class="guest-names">${guestCount > 0 ? guestNames.join(', ') : '—'}</div>
+          <div class="registrant-name">${member.name}</div>
         </div>
       `;
-    } else {
-      const handicap = getDisplayHandicap(member, reg, event, useCourseHandicap, 1);
+      
+      if (guestNames.length > 0) {
+        guestNames.forEach((guestName: string) => {
+          playersHTML += `
+            <div class="guest-row">
+              <div class="guest-name">${guestName}</div>
+            </div>
+          `;
+        });
+      }
+    });
+  } else {
+    const calculateTournamentFlight = (player: Member, reg: any): string => {
+      if (event.flightACutoff === undefined || event.flightBCutoff === undefined) {
+        return 'L';
+      }
+      
+      const handicap = reg?.adjustedHandicap && reg.adjustedHandicap !== '0' && reg.adjustedHandicap !== '' 
+        ? parseFloat(reg.adjustedHandicap) 
+        : (player.handicap ?? 0);
+      
+      if (handicap <= Number(event.flightACutoff)) return 'A';
+      if (handicap <= Number(event.flightBCutoff)) return 'B';
+      return 'C';
+    };
+    
+    const regsWithFlight = registrations
+      .map(reg => ({
+        reg,
+        member: members.find(m => m.id === reg.memberId),
+        flight: calculateTournamentFlight(members.find(m => m.id === reg.memberId)!, reg)
+      }))
+      .filter(item => item.member);
+    
+    const groupedByFlight: Record<string, typeof regsWithFlight> = {
+      A: [],
+      B: [],
+      C: [],
+      L: []
+    };
+    
+    regsWithFlight.forEach(item => {
+      if (item.flight in groupedByFlight) {
+        groupedByFlight[item.flight].push(item);
+      }
+    });
+    
+    ['A', 'B', 'C', 'L'].forEach(flight => {
+      const flightRegs = groupedByFlight[flight];
+      if (flightRegs.length === 0) return;
+      
+      flightRegs.sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
       
       playersHTML += `
-        <div class="player-row">
-          <div class="player-name">${member.name}</div>
-          <div class="handicap">${handicap}</div>
-        </div>
+        <div class="flight-separator">Flight ${flight}</div>
       `;
-    }
-  });
+      
+      flightRegs.forEach(({ reg, member }) => {
+        if (!member) return;
+        const handicap = getDisplayHandicap(member, reg, event, useCourseHandicap, 1);
+        
+        if (includeHandicap) {
+          playersHTML += `
+            <div class="player-row">
+              <div class="player-name">${member.name}</div>
+              <div class="handicap">${handicap}</div>
+            </div>
+          `;
+        } else {
+          playersHTML += `
+            <div class="player-row-no-handicap">
+              <div class="player-name-full">${member.name}</div>
+            </div>
+          `;
+        }
+      });
+    });
+  }
 
   if (isSocial) {
     return `<!DOCTYPE html>
@@ -426,46 +495,24 @@ function buildRegistrationHTMLContent(
       font-size: 9px;
       color: #666;
     }
-    .table-header {
-      display: flex;
-      background: #E8F5E9;
-      padding: 4px 6px;
-      font-weight: bold;
-      font-size: 9px;
-      border-bottom: 1px solid #1B5E20;
-      margin-bottom: 4px;
-    }
-    .header-name {
-      flex: 2;
-    }
-    .header-guests {
-      flex: 1;
-      text-align: center;
-    }
-    .header-guest-names {
-      flex: 2;
-    }
     .player-row {
-      display: flex;
       padding: 4px 6px;
       border-bottom: 1px solid #E0E0E0;
-      font-size: 9px;
-      line-height: 1.3;
+      line-height: 1.4;
     }
-    .player-name {
-      flex: 2;
+    .registrant-name {
+      font-size: 10px;
       font-weight: 600;
       color: #1a1a1a;
     }
-    .guest-count {
-      flex: 1;
-      text-align: center;
-      color: #666;
+    .guest-row {
+      padding: 2px 6px 2px 20px;
+      line-height: 1.3;
     }
-    .guest-names {
-      flex: 2;
-      color: #444;
+    .guest-name {
       font-size: 8px;
+      font-style: italic;
+      color: #555;
     }
   </style>
 </head>
@@ -473,11 +520,6 @@ function buildRegistrationHTMLContent(
   <div class="header">
     <div class="header-title">${event.name}</div>
     <div class="header-subtitle">Registration List</div>
-  </div>
-  <div class="table-header">
-    <div class="header-name">Name</div>
-    <div class="header-guests">Guests</div>
-    <div class="header-guest-names">Guest Names</div>
   </div>
   ${playersHTML}
 </body>
@@ -514,21 +556,15 @@ function buildRegistrationHTMLContent(
       font-size: 9px;
       color: #666;
     }
-    .table-header {
-      display: flex;
+    .flight-separator {
       background: #E8F5E9;
-      padding: 4px 6px;
+      padding: 6px;
       font-weight: bold;
-      font-size: 9px;
-      border-bottom: 1px solid #1B5E20;
+      font-size: 10px;
+      color: #1B5E20;
+      margin-top: 8px;
       margin-bottom: 4px;
-    }
-    .header-name {
-      flex: 2;
-    }
-    .header-handicap {
-      flex: 1;
-      text-align: center;
+      border-radius: 3px;
     }
     .player-row {
       display: flex;
@@ -544,9 +580,19 @@ function buildRegistrationHTMLContent(
     }
     .handicap {
       flex: 1;
-      text-align: center;
+      text-align: right;
       color: #666;
       font-weight: 600;
+    }
+    .player-row-no-handicap {
+      padding: 4px 6px;
+      border-bottom: 1px solid #E0E0E0;
+      font-size: 9px;
+      line-height: 1.3;
+    }
+    .player-name-full {
+      font-weight: 600;
+      color: #1a1a1a;
     }
   </style>
 </head>
@@ -554,10 +600,6 @@ function buildRegistrationHTMLContent(
   <div class="header">
     <div class="header-title">${event.name}</div>
     <div class="header-subtitle">Registration List</div>
-  </div>
-  <div class="table-header">
-    <div class="header-name">Player Name</div>
-    <div class="header-handicap">Handicap</div>
   </div>
   ${playersHTML}
 </body>

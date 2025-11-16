@@ -762,24 +762,79 @@ export default function EventRegistrationScreen() {
       return;
     }
 
-    setIsGeneratingPDF(true);
-    try {
-      console.log('[registration] Generating registration PDF...');
-      const regs = registrationsQuery.data || [];
-      
-      await generateRegistrationPDF({
-        registrations: regs,
-        members: allMembers,
-        event,
-        useCourseHandicap,
-      });
-      
-      console.log('[registration] ✅ PDF generated successfully');
-    } catch (error) {
-      console.error('[registration] ❌ PDF generation error:', error);
-      Alert.alert('Error', 'Failed to generate PDF. Please try again.');
-    } finally {
-      setIsGeneratingPDF(false);
+    const regs = registrationsQuery.data || [];
+    
+    if (event.type === 'tournament') {
+      Alert.alert(
+        'Include Handicap?',
+        'Would you like to include handicap in the PDF?',
+        [
+          {
+            text: 'No',
+            onPress: async () => {
+              setIsGeneratingPDF(true);
+              try {
+                await generateRegistrationPDF(
+                  {
+                    registrations: regs,
+                    members: allMembers,
+                    event,
+                    useCourseHandicap,
+                  },
+                  false
+                );
+                console.log('[registration] ✅ PDF generated without handicap');
+              } catch (error) {
+                console.error('[registration] ❌ PDF generation error:', error);
+                Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+              } finally {
+                setIsGeneratingPDF(false);
+              }
+            },
+          },
+          {
+            text: 'Yes',
+            onPress: async () => {
+              setIsGeneratingPDF(true);
+              try {
+                await generateRegistrationPDF(
+                  {
+                    registrations: regs,
+                    members: allMembers,
+                    event,
+                    useCourseHandicap,
+                  },
+                  true
+                );
+                console.log('[registration] ✅ PDF generated with handicap');
+              } catch (error) {
+                console.error('[registration] ❌ PDF generation error:', error);
+                Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+              } finally {
+                setIsGeneratingPDF(false);
+              }
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+    } else {
+      setIsGeneratingPDF(true);
+      try {
+        console.log('[registration] Generating social event PDF...');
+        await generateRegistrationPDF({
+          registrations: regs,
+          members: allMembers,
+          event,
+          useCourseHandicap,
+        });
+        console.log('[registration] ✅ PDF generated successfully');
+      } catch (error) {
+        console.error('[registration] ❌ PDF generation error:', error);
+        Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+      } finally {
+        setIsGeneratingPDF(false);
+      }
     }
   };
 
