@@ -18,7 +18,7 @@ import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { registrationService } from '@/utils/registrationService';
-import { generateRegistrationPDF, generateRegistrationHTML } from '@/utils/pdfGenerator';
+import { generateRegistrationPDF, generateRegistrationText } from '@/utils/pdfGenerator';
 import * as Clipboard from 'expo-clipboard';
 import { Member, User, Event } from '@/types';
 import { EventPlayerModal } from '@/components/EventPlayerModal';
@@ -71,8 +71,8 @@ export default function EventRegistrationScreen() {
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [outputFormatModalVisible, setOutputFormatModalVisible] = useState(false);
-  const [htmlPreviewModalVisible, setHtmlPreviewModalVisible] = useState(false);
-  const [generatedHtmlContent, setGeneratedHtmlContent] = useState<string>('');
+  const [textPreviewModalVisible, setTextPreviewModalVisible] = useState(false);
+  const [generatedTextContent, setGeneratedTextContent] = useState<string>('');
   const [includeHandicapForPDF, setIncludeHandicapForPDF] = useState<boolean>(false);
 
   const eventsQuery = trpc.events.getAll.useQuery();
@@ -801,7 +801,7 @@ export default function EventRegistrationScreen() {
     }
   };
 
-  const handleOutputFormatSelected = async (format: 'pdf' | 'html') => {
+  const handleOutputFormatSelected = async (format: 'pdf' | 'text') => {
     setOutputFormatModalVisible(false);
     const regs = registrationsQuery.data || [];
 
@@ -827,7 +827,7 @@ export default function EventRegistrationScreen() {
     } else {
       setIsGeneratingPDF(true);
       try {
-        const htmlContent = await generateRegistrationHTML(
+        const textContent = await generateRegistrationText(
           {
             registrations: regs,
             members: allMembers,
@@ -836,26 +836,26 @@ export default function EventRegistrationScreen() {
           },
           includeHandicapForPDF
         );
-        setGeneratedHtmlContent(htmlContent);
-        setHtmlPreviewModalVisible(true);
-        console.log('[registration] ✅ HTML generated successfully');
+        setGeneratedTextContent(textContent);
+        setTextPreviewModalVisible(true);
+        console.log('[registration] ✅ Text generated successfully');
       } catch (error) {
-        console.error('[registration] ❌ HTML generation error:', error);
-        Alert.alert('Error', 'Failed to generate HTML. Please try again.');
+        console.error('[registration] ❌ Text generation error:', error);
+        Alert.alert('Error', 'Failed to generate text. Please try again.');
       } finally {
         setIsGeneratingPDF(false);
       }
     }
   };
 
-  const handleCopyHtml = async () => {
+  const handleCopyText = async () => {
     try {
-      await Clipboard.setStringAsync(generatedHtmlContent);
-      Alert.alert('Success', 'HTML code copied to clipboard!');
-      setHtmlPreviewModalVisible(false);
+      await Clipboard.setStringAsync(generatedTextContent);
+      Alert.alert('Success', 'Text copied to clipboard!');
+      setTextPreviewModalVisible(false);
     } catch (error) {
       console.error('[registration] ❌ Copy error:', error);
-      Alert.alert('Error', 'Failed to copy HTML to clipboard.');
+      Alert.alert('Error', 'Failed to copy text to clipboard.');
     }
   };
 
@@ -1643,34 +1643,34 @@ export default function EventRegistrationScreen() {
 
               <TouchableOpacity
                 style={[styles.paymentMethodButton, { backgroundColor: '#2196F3' }]}
-                onPress={() => handleOutputFormatSelected('html')}
+                onPress={() => handleOutputFormatSelected('text')}
               >
-                <Ionicons name="code-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.paymentMethodButtonText}>HTML</Text>
+                <Ionicons name="text-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.paymentMethodButtonText}>Text</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       )}
 
-      {htmlPreviewModalVisible && (
+      {textPreviewModalVisible && (
         <View style={styles.htmlModalOverlay}>
           <View style={styles.htmlModal}>
             <View style={styles.htmlModalHeader}>
-              <Text style={styles.htmlModalTitle}>HTML Preview</Text>
-              <TouchableOpacity onPress={() => setHtmlPreviewModalVisible(false)}>
+              <Text style={styles.htmlModalTitle}>Text Preview</Text>
+              <TouchableOpacity onPress={() => setTextPreviewModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#1a1a1a" />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.htmlModalContent}>
-              <Text style={styles.htmlCode}>{generatedHtmlContent}</Text>
+              <Text style={styles.htmlCode}>{generatedTextContent}</Text>
             </ScrollView>
 
             <View style={styles.htmlModalFooter}>
               <TouchableOpacity
                 style={styles.copyButton}
-                onPress={handleCopyHtml}
+                onPress={handleCopyText}
               >
                 <Ionicons name="copy-outline" size={20} color="#fff" />
                 <Text style={styles.copyButtonText}>Copy to Clipboard</Text>

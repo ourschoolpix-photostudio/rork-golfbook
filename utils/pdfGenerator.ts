@@ -319,6 +319,11 @@ export async function generateRegistrationHTML(options: RegistrationPDFOptions, 
   return buildRegistrationHTMLContent(registrations, members, event, useCourseHandicap, includeHandicap);
 }
 
+export async function generateRegistrationText(options: RegistrationPDFOptions, includeHandicap?: boolean): Promise<string> {
+  const { registrations, members, event, useCourseHandicap = false } = options;
+  return buildRegistrationTextContent(registrations, members, event, useCourseHandicap, includeHandicap);
+}
+
 async function generateNativeRegistrationPDF(
   htmlContent: string,
   eventName: string
@@ -757,4 +762,141 @@ function buildRegistrationHTMLContent(
 </body>
 </html>`;
   }
+}
+
+function buildRegistrationTextContent(
+  registrations: any[],
+  members: Member[],
+  event: Event,
+  useCourseHandicap: boolean,
+  includeHandicap?: boolean
+): string {
+  const isSocial = event.type === 'social';
+  let textContent = '';
+  let itemNumber = 0;
+
+  textContent += `${event.name}\n`;
+  
+  if (isSocial) {
+    textContent += `Attendee List\n\n`;
+
+    const sponsors = registrations
+      .filter(reg => reg.isSponsor)
+      .map(reg => ({ reg, member: members.find(m => m.id === reg.memberId) }))
+      .filter(item => item.member)
+      .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
+    
+    const nonSponsors = registrations
+      .filter(reg => !reg.isSponsor)
+      .map(reg => ({ reg, member: members.find(m => m.id === reg.memberId) }))
+      .filter(item => item.member)
+      .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
+
+    if (sponsors.length > 0) {
+      textContent += `Special Thanks to Our Valued Sponsors\n`;
+      textContent += `Thank you for your dedication and sponsorship throughout the season\n\n`;
+      
+      sponsors.forEach(({ member }) => {
+        if (!member) return;
+        textContent += `${member.name}\n`;
+      });
+      
+      textContent += `\n`;
+    }
+
+    let totalAttendees = 0;
+
+    nonSponsors.forEach(({ reg, member }) => {
+      if (!member) return;
+      
+      itemNumber++;
+      totalAttendees++;
+      
+      const guestNames = reg.guestNames ? reg.guestNames.split('\n').filter((n: string) => n.trim()) : [];
+      
+      textContent += `${itemNumber}. ${member.name}\n`;
+      
+      if (guestNames.length > 0) {
+        guestNames.forEach((guestName: string) => {
+          itemNumber++;
+          totalAttendees++;
+          textContent += `${itemNumber}. ${member.name} - ${guestName}\n`;
+        });
+      }
+    });
+
+    textContent += `\nTotal Attendees: ${totalAttendees}`;
+  } else {
+    const dateRange = event.endDate && event.endDate !== event.date 
+      ? `${event.date} - ${event.endDate}` 
+      : event.date;
+    
+    textContent += `${dateRange}\n`;
+    textContent += `Registration List\n\n`;
+
+    const calculateTournamentFlight = (player: Member, reg: any): string => {
+      if (event.flightACutoff === undefined || event.flightBCutoff === undefined) {
+        return 'L';
+      }
+      
+      const handicap = reg?.adjustedHandicap && reg.adjustedHandicap !== '0' && reg.adjustedHandicap !== '' 
+        ? parseFloat(reg.adjustedHandicap) 
+        : (player.handicap ?? 0);
+      
+      if (handicap <= Number(event.flightACutoff)) return 'A';
+      if (handicap <= Number(event.flightBCutoff)) return 'B';
+      return 'C';
+    };
+    
+    const regsWithFlight = registrations
+      .map(reg => ({
+        reg,
+        member: members.find(m => m.id === reg.memberId),
+        flight: calculateTournamentFlight(members.find(m => m.id === reg.memberId)!, reg)
+      }))
+      .filter(item => item.member);
+    
+    const groupedByFlight: Record<string, typeof regsWithFlight> = {
+      A: [],
+      B: [],
+      C: [],
+      L: []
+    };
+    
+    regsWithFlight.forEach(item => {
+      if (item.flight in groupedByFlight) {
+        groupedByFlight[item.flight].push(item);
+      }
+    });
+    
+    let totalPlayers = 0;
+
+    ['A', 'B', 'C', 'L'].forEach(flight => {
+      const flightRegs = groupedByFlight[flight];
+      if (flightRegs.length === 0) return;
+      
+      flightRegs.sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
+      
+      textContent += `Flight ${flight}\n`;
+      
+      flightRegs.forEach(({ reg, member }) => {
+        if (!member) return;
+        itemNumber++;
+        totalPlayers++;
+        const handicap = getDisplayHandicap(member, reg, event, useCourseHandicap, 1);
+        
+        if (includeHandicap) {
+          textContent += `${itemNumber}. ${member.name} - ${handicap}\n`;
+        } else {
+          textContent += `${itemNumber}. ${member.name}\n`;
+        }
+      });
+      
+      textContent += `\n`;
+    });
+
+    textContent += `Total Players: ${totalPlayers}`;
+  }
+
+  return textContent;
 }
