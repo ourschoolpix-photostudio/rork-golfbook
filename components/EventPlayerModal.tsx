@@ -21,7 +21,7 @@ interface EventPlayerModalProps {
   tournamentFlight: string;
   event: Event | null;
   onClose: () => void;
-  onSave: (player: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number, guestNames?: string) => Promise<void>;
+  onSave: (player: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number, guestNames?: string, isSponsor?: boolean) => Promise<void>;
 }
 
 export function EventPlayerModal({
@@ -39,6 +39,7 @@ export function EventPlayerModal({
   const [numberOfGuests, setNumberOfGuests] = useState('');
   const [guestNames, setGuestNames] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSponsor, setIsSponsor] = useState(false);
 
   const isSocialEvent = event?.type === 'social';
 
@@ -54,6 +55,7 @@ export function EventPlayerModal({
       setAdjustedHandicap(registration?.adjustedHandicap || '');
       setNumberOfGuests(registration?.numberOfGuests?.toString() || '');
       setGuestNames(registration?.guestNames || '');
+      setIsSponsor(registration?.isSponsor || false);
       
       let normalized: 'active' | 'in-active' | 'guest' = 'active';
       
@@ -104,7 +106,7 @@ export function EventPlayerModal({
       const guestCount = numberOfGuests ? parseInt(numberOfGuests, 10) : undefined;
       const guestNamesValue = guestCount ? normalizeGuestNames(guestNames, guestCount) : undefined;
       
-      await onSave(updatedPlayer, adjustedHandicap === '' ? null : adjustedHandicap, guestCount, guestNamesValue);
+      await onSave(updatedPlayer, adjustedHandicap === '' ? null : adjustedHandicap, guestCount, guestNamesValue, isSponsor);
       onClose();
     } catch (error) {
       console.error('Error saving player:', error);
@@ -246,6 +248,19 @@ export function EventPlayerModal({
                       />
                     </View>
                   )}
+
+                  <TouchableOpacity
+                    style={styles.sponsorToggleContainer}
+                    onPress={() => setIsSponsor(!isSponsor)}
+                    disabled={isSaving}
+                  >
+                    <View style={[styles.sponsorCheckbox, isSponsor && styles.sponsorCheckboxActive]}>
+                      {isSponsor && (
+                        <Ionicons name="checkmark" size={16} color="#fff" />
+                      )}
+                    </View>
+                    <Text style={styles.sponsorLabel}>Sponsor</Text>
+                  </TouchableOpacity>
                 </>
               )}
             </View>
@@ -420,5 +435,30 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top' as const,
     paddingTop: 12,
+  },
+  sponsorToggleContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  sponsorCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: '#fff',
+  },
+  sponsorCheckboxActive: {
+    backgroundColor: '#FF9500',
+    borderColor: '#FF9500',
+  },
+  sponsorLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#666',
   },
 });

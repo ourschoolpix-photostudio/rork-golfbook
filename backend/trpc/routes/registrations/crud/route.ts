@@ -12,6 +12,7 @@ const registrationSchema = z.object({
   numberOfGuests: z.number().optional(),
   guestNames: z.string().optional(),
   adjustedHandicap: z.string().nullable().optional(),
+  isSponsor: z.boolean().optional(),
 });
 
 export const createRegistrationProcedure = publicProcedure
@@ -24,6 +25,7 @@ export const createRegistrationProcedure = publicProcedure
     numberOfGuests: z.number().optional(),
     guestNames: z.string().optional(),
     adjustedHandicap: z.string().nullable().optional(),
+    isSponsor: z.boolean().optional(),
   }))
   .mutation(async ({ input }) => {
     console.log('📝 Creating registration:', input);
@@ -37,6 +39,7 @@ export const createRegistrationProcedure = publicProcedure
         status: input.status,
         payment_status: input.paymentStatus || 'pending',
         adjusted_handicap: input.adjustedHandicap,
+        is_sponsor: input.isSponsor || false,
         registered_at: new Date().toISOString(),
       });
 
@@ -58,6 +61,7 @@ export const updateRegistrationProcedure = publicProcedure
       numberOfGuests: z.number().optional(),
       guestNames: z.string().optional(),
       adjustedHandicap: z.string().nullable().optional(),
+      isSponsor: z.boolean().optional(),
     }),
   }))
   .mutation(async ({ input }) => {
@@ -81,6 +85,9 @@ export const updateRegistrationProcedure = publicProcedure
     }
     if (input.updates.guestNames !== undefined) {
       updateData.guest_names = input.updates.guestNames || null;
+    }
+    if (input.updates.isSponsor !== undefined) {
+      updateData.is_sponsor = input.updates.isSponsor;
     }
     
     const { error } = await supabase
@@ -134,6 +141,7 @@ export const getAllRegistrationsProcedure = publicProcedure
       adjustedHandicap: reg.adjusted_handicap,
       numberOfGuests: reg.number_of_guests || 0,
       guestNames: reg.guest_names || null,
+      isSponsor: reg.is_sponsor || false,
     }));
 
     console.log('✅ Fetched registrations:', registrations.length);

@@ -64,6 +64,7 @@ export default function EventRegistrationScreen() {
   const [addCustomGuestNames, setAddCustomGuestNames] = useState('');
   const [playerGuestCounts, setPlayerGuestCounts] = useState<Record<string, string>>({});
   const [playerGuestNames, setPlayerGuestNames] = useState<Record<string, string>>({});
+  const [playerSponsorFlags, setPlayerSponsorFlags] = useState<Record<string, boolean>>({});
   const [paymentMethodModalVisible, setPaymentMethodModalVisible] = useState(false);
   const [zelleInvoiceModalVisible, setZelleInvoiceModalVisible] = useState(false);
   const [paypalInvoiceModalVisible, setPaypalInvoiceModalVisible] = useState(false);
@@ -296,10 +297,12 @@ export default function EventRegistrationScreen() {
           console.log('Creating registration for:', player.name);
           const guestCount = event.type === 'social' ? parseInt(playerGuestCounts[player.id] || '0', 10) : undefined;
           const guestNamesValue = event.type === 'social' ? normalizeGuestNames(playerGuestNames[player.id], guestCount || 0) : undefined;
+          const isSponsor = event.type === 'social' ? playerSponsorFlags[player.id] || false : false;
           
           await registerMutation.mutateAsync({
             eventId: event.id,
             memberId: player.id,
+            isSponsor,
           });
           
           if (guestCount && guestCount > 0) {
@@ -311,6 +314,7 @@ export default function EventRegistrationScreen() {
                 updates: { 
                   numberOfGuests: guestCount,
                   guestNames: guestNamesValue,
+                  isSponsor,
                 },
               });
             }
@@ -336,6 +340,7 @@ export default function EventRegistrationScreen() {
       setSelectedForBulkAdd(new Set());
       setPlayerGuestCounts({});
       setPlayerGuestNames({});
+      setPlayerSponsorFlags({});
       setModalVisible(false);
 
       if (failedPlayers.length > 0) {
@@ -695,7 +700,7 @@ export default function EventRegistrationScreen() {
     }
   };
 
-  const handleSavePlayerChanges = async (updatedPlayer: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number, guestNames?: string) => {
+  const handleSavePlayerChanges = async (updatedPlayer: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number, guestNames?: string, isSponsor?: boolean) => {
     try {
       console.log('[registration] 💾 Saving player changes:', {
         player: updatedPlayer.name,
@@ -735,6 +740,7 @@ export default function EventRegistrationScreen() {
             adjustedHandicap,
             numberOfGuests,
             guestNames: guestNames || null,
+            isSponsor,
           },
         });
         console.log('[registration] ✅ Backend update complete');
@@ -1474,6 +1480,7 @@ export default function EventRegistrationScreen() {
                 setSelectedForBulkAdd(new Set());
                 setPlayerGuestCounts({});
                 setPlayerGuestNames({});
+                setPlayerSponsorFlags({});
               }}>
                 <Ionicons name="close" size={24} color="#1a1a1a" />
               </TouchableOpacity>
@@ -1557,6 +1564,23 @@ export default function EventRegistrationScreen() {
                             />
                           </View>
                         )}
+                        
+                        <TouchableOpacity
+                          style={styles.sponsorToggleRow}
+                          onPress={() => {
+                            setPlayerSponsorFlags({
+                              ...playerSponsorFlags,
+                              [member.id]: !playerSponsorFlags[member.id],
+                            });
+                          }}
+                        >
+                          <View style={[styles.sponsorCheckbox, playerSponsorFlags[member.id] && styles.sponsorCheckboxActive]}>
+                            {playerSponsorFlags[member.id] && (
+                              <Ionicons name="checkmark" size={16} color="#fff" />
+                            )}
+                          </View>
+                          <Text style={styles.sponsorLabel}>Sponsor</Text>
+                        </TouchableOpacity>
                       </>
                     )}
                   </View>
@@ -2428,6 +2452,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1a1a1a',
     backgroundColor: '#fff',
+  },
+  sponsorToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFF3E0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    gap: 10,
+  },
+  sponsorCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  sponsorCheckboxActive: {
+    backgroundColor: '#FF9500',
+    borderColor: '#FF9500',
+  },
+  sponsorLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FF9500',
   },
   paymentModalOverlay: {
     ...StyleSheet.absoluteFillObject,
