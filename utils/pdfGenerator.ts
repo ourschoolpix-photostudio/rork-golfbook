@@ -4,6 +4,7 @@ import * as Print from 'expo-print';
 import type { Grouping, Member, Event } from '@/types';
 
 import { generateGroupLabel } from '@/utils/groupLabelHelper';
+import { getDisplayHandicap } from '@/utils/handicapHelper';
 
 interface PDFOptions {
   groups: Grouping[];
@@ -287,4 +288,279 @@ function buildHTMLContent(groups: Grouping[], event: Event, activeDay: number, e
   ${groupsHTML}
 </body>
 </html>`;
+}
+
+interface RegistrationPDFOptions {
+  registrations: any[];
+  members: Member[];
+  event: Event;
+  useCourseHandicap?: boolean;
+}
+
+export async function generateRegistrationPDF(options: RegistrationPDFOptions): Promise<void> {
+  try {
+    console.log('[pdfGenerator] Starting registration PDF generation...');
+    const { registrations, members, event, useCourseHandicap = false } = options;
+    const htmlContent = buildRegistrationHTMLContent(registrations, members, event, useCourseHandicap);
+
+    if (Platform.OS === 'web') {
+      return generateWebRegistrationPDF(htmlContent, event.name);
+    }
+
+    return generateNativeRegistrationPDF(htmlContent, event.name);
+  } catch (error) {
+    console.error('[pdfGenerator] Registration PDF error:', error);
+    throw error;
+  }
+}
+
+async function generateNativeRegistrationPDF(
+  htmlContent: string,
+  eventName: string
+): Promise<void> {
+  try {
+    console.log('[pdfGenerator] Generating registration PDF with expo-print...');
+    
+    const { uri } = await Print.printToFileAsync({
+      html: htmlContent,
+      base64: false,
+    });
+
+    console.log('[pdfGenerator] Registration PDF created at:', uri);
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share Registration PDF',
+        UTI: 'com.adobe.pdf',
+      });
+    }
+  } catch (error) {
+    console.error('[pdfGenerator] Native registration PDF error:', error);
+    throw error;
+  }
+}
+
+function generateWebRegistrationPDF(htmlContent: string, eventName: string): void {
+  try {
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${eventName.replace(/\s+/g, '-')}_registrations.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    console.log('[pdfGenerator] Web registration download initiated');
+  } catch (error) {
+    console.error('[pdfGenerator] Web registration error:', error);
+  }
+}
+
+function buildRegistrationHTMLContent(
+  registrations: any[],
+  members: Member[],
+  event: Event,
+  useCourseHandicap: boolean
+): string {
+  const isSocial = event.type === 'social';
+  let playersHTML = '';
+
+  registrations.forEach((reg, index) => {
+    const member = members.find(m => m.id === reg.memberId);
+    if (!member) return;
+
+    if (isSocial) {
+      const guestCount = reg.numberOfGuests || 0;
+      const guestNames = reg.guestNames ? reg.guestNames.split('\n').filter((n: string) => n.trim()) : [];
+      
+      playersHTML += `
+        <div class="player-row">
+          <div class="player-name">${member.name}</div>
+          <div class="guest-count">${guestCount}</div>
+          <div class="guest-names">${guestCount > 0 ? guestNames.join(', ') : '—'}</div>
+        </div>
+      `;
+    } else {
+      const handicap = getDisplayHandicap(member, reg, event, useCourseHandicap, 1);
+      
+      playersHTML += `
+        <div class="player-row">
+          <div class="player-name">${member.name}</div>
+          <div class="handicap">${handicap}</div>
+        </div>
+      `;
+    }
+  });
+
+  if (isSocial) {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${event.name} - Registrations</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      width: 2.5in;
+      background: white;
+      padding: 0.15in;
+      font-size: 10px;
+    }
+    @page { size: 2.5in 11in; margin: 0.15in; }
+    .header {
+      text-align: center;
+      margin-bottom: 8px;
+      border-bottom: 1.5px solid #1B5E20;
+      padding-bottom: 6px;
+    }
+    .header-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #1B5E20;
+      margin-bottom: 2px;
+    }
+    .header-subtitle {
+      font-size: 9px;
+      color: #666;
+    }
+    .table-header {
+      display: flex;
+      background: #E8F5E9;
+      padding: 4px 6px;
+      font-weight: bold;
+      font-size: 9px;
+      border-bottom: 1px solid #1B5E20;
+      margin-bottom: 4px;
+    }
+    .header-name {
+      flex: 2;
+    }
+    .header-guests {
+      flex: 1;
+      text-align: center;
+    }
+    .header-guest-names {
+      flex: 2;
+    }
+    .player-row {
+      display: flex;
+      padding: 4px 6px;
+      border-bottom: 1px solid #E0E0E0;
+      font-size: 9px;
+      line-height: 1.3;
+    }
+    .player-name {
+      flex: 2;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .guest-count {
+      flex: 1;
+      text-align: center;
+      color: #666;
+    }
+    .guest-names {
+      flex: 2;
+      color: #444;
+      font-size: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">${event.name}</div>
+    <div class="header-subtitle">Registration List</div>
+  </div>
+  <div class="table-header">
+    <div class="header-name">Name</div>
+    <div class="header-guests">Guests</div>
+    <div class="header-guest-names">Guest Names</div>
+  </div>
+  ${playersHTML}
+</body>
+</html>`;
+  } else {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${event.name} - Registrations</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      width: 2.5in;
+      background: white;
+      padding: 0.15in;
+      font-size: 10px;
+    }
+    @page { size: 2.5in 11in; margin: 0.15in; }
+    .header {
+      text-align: center;
+      margin-bottom: 8px;
+      border-bottom: 1.5px solid #1B5E20;
+      padding-bottom: 6px;
+    }
+    .header-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #1B5E20;
+      margin-bottom: 2px;
+    }
+    .header-subtitle {
+      font-size: 9px;
+      color: #666;
+    }
+    .table-header {
+      display: flex;
+      background: #E8F5E9;
+      padding: 4px 6px;
+      font-weight: bold;
+      font-size: 9px;
+      border-bottom: 1px solid #1B5E20;
+      margin-bottom: 4px;
+    }
+    .header-name {
+      flex: 2;
+    }
+    .header-handicap {
+      flex: 1;
+      text-align: center;
+    }
+    .player-row {
+      display: flex;
+      padding: 4px 6px;
+      border-bottom: 1px solid #E0E0E0;
+      font-size: 9px;
+      line-height: 1.3;
+    }
+    .player-name {
+      flex: 2;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .handicap {
+      flex: 1;
+      text-align: center;
+      color: #666;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">${event.name}</div>
+    <div class="header-subtitle">Registration List</div>
+  </div>
+  <div class="table-header">
+    <div class="header-name">Player Name</div>
+    <div class="header-handicap">Handicap</div>
+  </div>
+  ${playersHTML}
+</body>
+</html>`;
+  }
 }

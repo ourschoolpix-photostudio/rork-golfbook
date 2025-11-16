@@ -18,6 +18,7 @@ import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { registrationService } from '@/utils/registrationService';
+import { generateRegistrationPDF } from '@/utils/pdfGenerator';
 import { Member, User, Event } from '@/types';
 import { EventPlayerModal } from '@/components/EventPlayerModal';
 import { ZelleInvoiceModal } from '@/components/ZelleInvoiceModal';
@@ -66,6 +67,7 @@ export default function EventRegistrationScreen() {
   const [zelleInvoiceModalVisible, setZelleInvoiceModalVisible] = useState(false);
   const [paypalInvoiceModalVisible, setPaypalInvoiceModalVisible] = useState(false);
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const eventsQuery = trpc.events.getAll.useQuery();
   const eventQuery = trpc.events.get.useQuery({ eventId: eventId! }, { enabled: !!eventId });
@@ -754,6 +756,33 @@ export default function EventRegistrationScreen() {
     }
   };
 
+  const handleGeneratePDF = async () => {
+    if (!event || !currentUser?.isAdmin) {
+      console.log('[registration] PDF generation not allowed');
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+    try {
+      console.log('[registration] Generating registration PDF...');
+      const regs = registrationsQuery.data || [];
+      
+      await generateRegistrationPDF({
+        registrations: regs,
+        members: allMembers,
+        event,
+        useCourseHandicap,
+      });
+      
+      console.log('[registration] ✅ PDF generated successfully');
+    } catch (error) {
+      console.error('[registration] ❌ PDF generation error:', error);
+      Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const getPlayersFlights = useMemo((): Record<string, Member[]> => {
     const flights: Record<string, Member[]> = { A: [], B: [], C: [], L: [] };
 
@@ -871,6 +900,20 @@ export default function EventRegistrationScreen() {
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>REGISTRATION</Text>
+        {currentUser?.isAdmin && event && selectedPlayers.length > 0 && (
+          <TouchableOpacity
+            style={styles.pdfButton}
+            onPress={handleGeneratePDF}
+            disabled={isGeneratingPDF}
+          >
+            <Ionicons 
+              name={isGeneratingPDF ? "hourglass-outline" : "document-text-outline"} 
+              size={16} 
+              color="#fff" 
+            />
+            <Text style={styles.pdfButtonText}>PDF</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {event && event.photoUrl && (
@@ -1554,6 +1597,24 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#fff',
     textAlign: 'center',
+  },
+  pdfButton: {
+    position: 'absolute' as const,
+    right: 12,
+    top: '50%' as const,
+    transform: [{ translateY: -12 }],
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  pdfButtonText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#fff',
   },
   backBtn: {
     position: 'absolute',
