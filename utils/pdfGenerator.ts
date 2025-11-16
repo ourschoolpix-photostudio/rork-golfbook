@@ -533,21 +533,23 @@ function buildRegistrationHTMLContent(
     .player-row {
       display: flex;
       align-items: baseline;
-      padding: 4px 0px;
-      line-height: 1.4;
+      padding: 3px 0px;
+      line-height: 1.3;
       gap: 6px;
     }
     .item-number {
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 600;
       color: #666;
-      min-width: 20px;
+      min-width: 22px;
+      text-align: left;
     }
     .player-name-item {
       font-size: 10px;
       font-weight: 600;
       color: #1a1a1a;
       flex: 1;
+      line-height: 1.3;
     }
     .total-row {
       display: flex;
