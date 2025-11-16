@@ -528,21 +528,21 @@ export default function EventRegistrationScreen() {
       });
       console.log('[registration] ✓ Registration created');
       
-      if (guestCount > 0) {
-        console.log('[registration] Step 3: Updating guest count...');
-        const backendRegs = await registrationsQuery.refetch();
-        const guestReg = backendRegs.data?.find((r: any) => r.memberId === customGuest.id);
-        if (guestReg) {
-          await updateRegistrationMutation.mutateAsync({
-            registrationId: guestReg.id,
-            updates: { 
-              numberOfGuests: guestCount,
-              guestNames: guestNamesValue,
-              isSponsor: addCustomGuestIsSponsor,
-            },
-          });
-          console.log('[registration] ✓ Guest count updated');
-        }
+      console.log('[registration] Step 3: Refetching to get registration ID...');
+      const backendRegs = await registrationsQuery.refetch();
+      const guestReg = backendRegs.data?.find((r: any) => r.memberId === customGuest.id);
+      
+      if (guestReg) {
+        console.log('[registration] Step 4: Updating registration with all details...');
+        await updateRegistrationMutation.mutateAsync({
+          registrationId: guestReg.id,
+          updates: { 
+            numberOfGuests: guestCount || 0,
+            guestNames: guestNamesValue || null,
+            isSponsor: addCustomGuestIsSponsor,
+          },
+        });
+        console.log('[registration] ✓ Registration fully updated');
       }
 
       console.log('[registration] Step 4: Updating local state...');
@@ -966,8 +966,15 @@ export default function EventRegistrationScreen() {
   }, [registrations]);
 
   const getTotalPeopleCount = useMemo(() => {
-    return selectedPlayers.length + getTotalGuestCount;
-  }, [selectedPlayers.length, getTotalGuestCount]);
+    const nonSponsorCount = selectedPlayers.filter(player => {
+      const playerReg = registrations[player.name];
+      return !playerReg?.isSponsor;
+    }).length;
+    const nonSponsorGuestCount = Object.values(registrations)
+      .filter(reg => !reg.isSponsor)
+      .reduce((total, reg) => total + (reg.numberOfGuests || 0), 0);
+    return nonSponsorCount + nonSponsorGuestCount;
+  }, [selectedPlayers, registrations]);
 
   const getTotalPaidAmount = useMemo(() => {
     if (!event?.entryFee) return 0;
