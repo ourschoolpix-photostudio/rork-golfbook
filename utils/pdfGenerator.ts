@@ -401,13 +401,10 @@ function buildRegistrationHTMLContent(
         guestNames.forEach((guestName: string) => {
           itemNumber++;
           totalAttendees++;
-          const displayName = guestName.toLowerCase().includes('unknown') 
-            ? `${guestName} (${member.name})`
-            : guestName;
           playersHTML += `
             <div class="player-row">
               <div class="item-number">${itemNumber}.</div>
-              <div class="player-name-item">${displayName}</div>
+              <div class="player-name-item">${member.name} - ${guestName}</div>
             </div>
           `;
         });
