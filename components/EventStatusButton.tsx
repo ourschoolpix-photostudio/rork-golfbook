@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   text: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '700' as const,
     letterSpacing: 0.5,
   },
