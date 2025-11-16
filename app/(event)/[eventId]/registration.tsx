@@ -939,8 +939,23 @@ export default function EventRegistrationScreen() {
   }, [getFlightCounts]);
 
   const getPlayersWithSeparators = useMemo(() => {
-    const players = getDisplayedPlayers;
-    if (activeSort !== 'all' || event?.type === 'social') {
+    let players = getDisplayedPlayers;
+    
+    if (event?.type === 'social') {
+      players = [...players].sort((a, b) => {
+        const aReg = registrations[a.name];
+        const bReg = registrations[b.name];
+        const aIsSponsor = aReg?.isSponsor || false;
+        const bIsSponsor = bReg?.isSponsor || false;
+        
+        if (aIsSponsor && !bIsSponsor) return -1;
+        if (!aIsSponsor && bIsSponsor) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      return players.map((player) => ({ type: 'player', data: player }));
+    }
+    
+    if (activeSort !== 'all') {
       return players.map((player) => ({ type: 'player', data: player }));
     }
     const result: any[] = [];
