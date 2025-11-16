@@ -166,6 +166,7 @@ export default function EventRegistrationScreen() {
               adjustedHandicap: reg.adjustedHandicap,
               numberOfGuests: reg.numberOfGuests || 0,
               guestNames: reg.guestNames || null,
+              isSponsor: reg.isSponsor || false,
             };
           }
         });

@@ -151,6 +151,10 @@ CREATE TABLE event_registrations (
   registered_at TIMESTAMPTZ DEFAULT NOW(),
   status TEXT DEFAULT 'registered' CHECK (status IN ('registered', 'confirmed', 'withdrawn')),
   payment_status TEXT CHECK (payment_status IN ('pending', 'paid', 'refunded')),
+  adjusted_handicap TEXT,
+  number_of_guests INTEGER DEFAULT 0,
+  guest_names TEXT,
+  is_sponsor BOOLEAN DEFAULT FALSE,
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(event_id, member_id)
 );
