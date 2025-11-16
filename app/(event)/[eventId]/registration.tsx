@@ -1250,7 +1250,7 @@ export default function EventRegistrationScreen() {
                     >
                       <TouchableOpacity
                         onPress={() => handlePlayerCardPress(player)}
-                        activeOpacity={canViewRegistration(currentUser) ? 0.7 : 1}
+                        activeOpacity={0.7}
                         style={{ zIndex: 1 }}
                       >
                       <View style={styles.topRow}>
@@ -1350,25 +1350,33 @@ export default function EventRegistrationScreen() {
                             </Text>
                           </TouchableOpacity>
 
-                          <View
-                            style={[
-                              styles.membershipBadge,
-                              player.membershipType === 'active' && styles.membershipBadgeActive,
-                              player.membershipType === 'in-active' && styles.membershipBadgeInactive,
-                              player.membershipType === 'guest' && styles.membershipBadgeGuest,
-                            ]}
-                          >
-                            <Text
+                          {playerReg?.isSponsor ? (
+                            <View style={[styles.membershipBadge, styles.membershipBadgeSponsor]}>
+                              <Text style={[styles.membershipText, styles.membershipTextSponsor]}>
+                                Sponsor
+                              </Text>
+                            </View>
+                          ) : (
+                            <View
                               style={[
-                                styles.membershipText,
-                                player.membershipType === 'active' && styles.membershipTextActive,
-                                player.membershipType === 'in-active' && styles.membershipTextInactive,
-                                player.membershipType === 'guest' && styles.membershipTextGuest,
+                                styles.membershipBadge,
+                                player.membershipType === 'active' && styles.membershipBadgeActive,
+                                player.membershipType === 'in-active' && styles.membershipBadgeInactive,
+                                player.membershipType === 'guest' && styles.membershipBadgeGuest,
                               ]}
                             >
-                              {player.membershipType === 'active' ? 'Active' : player.membershipType === 'in-active' ? 'In-active' : 'Guest'}
-                            </Text>
-                          </View>
+                              <Text
+                                style={[
+                                  styles.membershipText,
+                                  player.membershipType === 'active' && styles.membershipTextActive,
+                                  player.membershipType === 'in-active' && styles.membershipTextInactive,
+                                  player.membershipType === 'guest' && styles.membershipTextGuest,
+                                ]}
+                              >
+                                {player.membershipType === 'active' ? 'Active' : player.membershipType === 'in-active' ? 'In-active' : 'Guest'}
+                              </Text>
+                            </View>
+                          )}
                         </View>
                       </View>
 
@@ -2168,6 +2176,9 @@ const styles = StyleSheet.create({
   membershipBadgeGuest: {
     backgroundColor: '#F3E5F5',
   },
+  membershipBadgeSponsor: {
+    backgroundColor: '#FFF3E0',
+  },
   membershipText: {
     fontSize: 12,
     fontWeight: '600',
@@ -2180,6 +2191,9 @@ const styles = StyleSheet.create({
   },
   membershipTextGuest: {
     color: '#6A1B9A',
+  },
+  membershipTextSponsor: {
+    color: '#FF9500',
   },
   flightSeparator: {
     backgroundColor: '#9E9E9E',
