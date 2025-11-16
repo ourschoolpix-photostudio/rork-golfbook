@@ -62,6 +62,7 @@ export default function EventRegistrationScreen() {
   const [addCustomGuestName, setAddCustomGuestName] = useState('');
   const [addCustomGuestCount, setAddCustomGuestCount] = useState('');
   const [addCustomGuestNames, setAddCustomGuestNames] = useState('');
+  const [addCustomGuestIsSponsor, setAddCustomGuestIsSponsor] = useState(false);
   const [playerGuestCounts, setPlayerGuestCounts] = useState<Record<string, string>>({});
   const [playerGuestNames, setPlayerGuestNames] = useState<Record<string, string>>({});
   const [playerSponsorFlags, setPlayerSponsorFlags] = useState<Record<string, boolean>>({});
@@ -522,6 +523,7 @@ export default function EventRegistrationScreen() {
       await registerMutation.mutateAsync({
         eventId: event.id,
         memberId: customGuest.id,
+        isSponsor: addCustomGuestIsSponsor,
       });
       console.log('[registration] ✓ Registration created');
       
@@ -535,6 +537,7 @@ export default function EventRegistrationScreen() {
             updates: { 
               numberOfGuests: guestCount,
               guestNames: guestNamesValue,
+              isSponsor: addCustomGuestIsSponsor,
             },
           });
           console.log('[registration] ✓ Guest count updated');
@@ -553,6 +556,7 @@ export default function EventRegistrationScreen() {
       setAddCustomGuestName('');
       setAddCustomGuestCount('');
       setAddCustomGuestNames('');
+      setAddCustomGuestIsSponsor(false);
       setAddCustomGuestModalVisible(false);
       
       console.log('[registration] ✅ Custom guest added successfully!');
@@ -1410,6 +1414,7 @@ export default function EventRegistrationScreen() {
                 setAddCustomGuestName('');
                 setAddCustomGuestCount('');
                 setAddCustomGuestNames('');
+                setAddCustomGuestIsSponsor(false);
               }}>
                 <Ionicons name="close" size={24} color="#1a1a1a" />
               </TouchableOpacity>
@@ -1453,6 +1458,18 @@ export default function EventRegistrationScreen() {
                   />
                 </View>
               )}
+
+              <TouchableOpacity
+                style={styles.sponsorToggleRow}
+                onPress={() => setAddCustomGuestIsSponsor(!addCustomGuestIsSponsor)}
+              >
+                <View style={[styles.sponsorCheckbox, addCustomGuestIsSponsor && styles.sponsorCheckboxActive]}>
+                  {addCustomGuestIsSponsor && (
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                  )}
+                </View>
+                <Text style={styles.sponsorLabel}>Sponsor</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.modalFooter}>
