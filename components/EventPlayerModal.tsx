@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Member, Event } from '@/types';
-import { Registration, registrationService } from '@/utils/registrationService';
+import { Registration } from '@/utils/registrationService';
 
 interface EventPlayerModalProps {
   visible: boolean;
@@ -103,10 +103,6 @@ export function EventPlayerModal({
       
       const guestCount = numberOfGuests ? parseInt(numberOfGuests, 10) : undefined;
       const guestNamesValue = guestCount ? normalizeGuestNames(guestNames, guestCount) : undefined;
-      
-      if (isSocialEvent && registration && guestCount !== registration.numberOfGuests) {
-        await registrationService.updateGuestCount(registration.id, guestCount);
-      }
       
       await onSave(updatedPlayer, adjustedHandicap === '' ? null : adjustedHandicap, guestCount, guestNamesValue);
       onClose();
