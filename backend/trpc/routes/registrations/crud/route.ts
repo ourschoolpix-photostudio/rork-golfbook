@@ -59,7 +59,7 @@ export const updateRegistrationProcedure = publicProcedure
       status: z.enum(['registered', 'confirmed', 'withdrawn']).optional(),
       paymentStatus: z.enum(['pending', 'paid', 'refunded']).optional(),
       numberOfGuests: z.number().optional(),
-      guestNames: z.string().optional(),
+      guestNames: z.string().nullable().optional(),
       adjustedHandicap: z.string().nullable().optional(),
       isSponsor: z.boolean().optional(),
     }),

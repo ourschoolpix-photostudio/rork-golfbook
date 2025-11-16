@@ -711,11 +711,16 @@ export default function EventRegistrationScreen() {
         player: updatedPlayer.name,
         adjustedHandicap,
         numberOfGuests,
+        guestNames,
+        isSponsor,
       });
       
       await updateMemberMutation.mutateAsync({
         memberId: updatedPlayer.id,
-        updates: updatedPlayer,
+        updates: {
+          handicap: updatedPlayer.handicap,
+          membershipType: updatedPlayer.membershipType,
+        },
       });
       const updatedMembers = members.map((m) =>
         m.id === updatedPlayer.id ? updatedPlayer : m
