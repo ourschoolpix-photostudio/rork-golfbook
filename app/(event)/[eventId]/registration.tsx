@@ -18,7 +18,8 @@ import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { registrationService } from '@/utils/registrationService';
-import { generateRegistrationPDF } from '@/utils/pdfGenerator';
+import { generateRegistrationPDF, generateRegistrationHTML } from '@/utils/pdfGenerator';
+import * as Clipboard from 'expo-clipboard';
 import { Member, User, Event } from '@/types';
 import { EventPlayerModal } from '@/components/EventPlayerModal';
 import { ZelleInvoiceModal } from '@/components/ZelleInvoiceModal';
@@ -68,6 +69,10 @@ export default function EventRegistrationScreen() {
   const [paypalInvoiceModalVisible, setPaypalInvoiceModalVisible] = useState(false);
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [outputFormatModalVisible, setOutputFormatModalVisible] = useState(false);
+  const [htmlPreviewModalVisible, setHtmlPreviewModalVisible] = useState(false);
+  const [generatedHtmlContent, setGeneratedHtmlContent] = useState<string>('');
+  const [includeHandicapForPDF, setIncludeHandicapForPDF] = useState<boolean>(false);
 
   const eventsQuery = trpc.events.getAll.useQuery();
   const eventQuery = trpc.events.get.useQuery({ eventId: eventId! }, { enabled: !!eventId });
@@ -762,72 +767,50 @@ export default function EventRegistrationScreen() {
       return;
     }
 
-    const regs = registrationsQuery.data || [];
-    
     if (event.type === 'tournament') {
       Alert.alert(
         'Include Handicap?',
-        'Would you like to include handicap in the PDF?',
+        'Would you like to include handicap in the list?',
         [
           {
             text: 'No',
-            onPress: async () => {
-              setIsGeneratingPDF(true);
-              try {
-                await generateRegistrationPDF(
-                  {
-                    registrations: regs,
-                    members: allMembers,
-                    event,
-                    useCourseHandicap,
-                  },
-                  false
-                );
-                console.log('[registration] ✅ PDF generated without handicap');
-              } catch (error) {
-                console.error('[registration] ❌ PDF generation error:', error);
-                Alert.alert('Error', 'Failed to generate PDF. Please try again.');
-              } finally {
-                setIsGeneratingPDF(false);
-              }
+            onPress: () => {
+              setIncludeHandicapForPDF(false);
+              setOutputFormatModalVisible(true);
             },
           },
           {
             text: 'Yes',
-            onPress: async () => {
-              setIsGeneratingPDF(true);
-              try {
-                await generateRegistrationPDF(
-                  {
-                    registrations: regs,
-                    members: allMembers,
-                    event,
-                    useCourseHandicap,
-                  },
-                  true
-                );
-                console.log('[registration] ✅ PDF generated with handicap');
-              } catch (error) {
-                console.error('[registration] ❌ PDF generation error:', error);
-                Alert.alert('Error', 'Failed to generate PDF. Please try again.');
-              } finally {
-                setIsGeneratingPDF(false);
-              }
+            onPress: () => {
+              setIncludeHandicapForPDF(true);
+              setOutputFormatModalVisible(true);
             },
           },
         ],
         { cancelable: true }
       );
     } else {
+      setIncludeHandicapForPDF(false);
+      setOutputFormatModalVisible(true);
+    }
+  };
+
+  const handleOutputFormatSelected = async (format: 'pdf' | 'html') => {
+    setOutputFormatModalVisible(false);
+    const regs = registrationsQuery.data || [];
+
+    if (format === 'pdf') {
       setIsGeneratingPDF(true);
       try {
-        console.log('[registration] Generating social event PDF...');
-        await generateRegistrationPDF({
-          registrations: regs,
-          members: allMembers,
-          event,
-          useCourseHandicap,
-        });
+        await generateRegistrationPDF(
+          {
+            registrations: regs,
+            members: allMembers,
+            event,
+            useCourseHandicap,
+          },
+          includeHandicapForPDF
+        );
         console.log('[registration] ✅ PDF generated successfully');
       } catch (error) {
         console.error('[registration] ❌ PDF generation error:', error);
@@ -835,6 +818,38 @@ export default function EventRegistrationScreen() {
       } finally {
         setIsGeneratingPDF(false);
       }
+    } else {
+      setIsGeneratingPDF(true);
+      try {
+        const htmlContent = await generateRegistrationHTML(
+          {
+            registrations: regs,
+            members: allMembers,
+            event,
+            useCourseHandicap,
+          },
+          includeHandicapForPDF
+        );
+        setGeneratedHtmlContent(htmlContent);
+        setHtmlPreviewModalVisible(true);
+        console.log('[registration] ✅ HTML generated successfully');
+      } catch (error) {
+        console.error('[registration] ❌ HTML generation error:', error);
+        Alert.alert('Error', 'Failed to generate HTML. Please try again.');
+      } finally {
+        setIsGeneratingPDF(false);
+      }
+    }
+  };
+
+  const handleCopyHtml = async () => {
+    try {
+      await Clipboard.setStringAsync(generatedHtmlContent);
+      Alert.alert('Success', 'HTML code copied to clipboard!');
+      setHtmlPreviewModalVisible(false);
+    } catch (error) {
+      console.error('[registration] ❌ Copy error:', error);
+      Alert.alert('Error', 'Failed to copy HTML to clipboard.');
     }
   };
 
@@ -1582,6 +1597,64 @@ export default function EventRegistrationScreen() {
         onClose={() => setPaypalInvoiceModalVisible(false)}
         onRegister={handleZelleRegistration}
       />
+
+      {outputFormatModalVisible && (
+        <View style={styles.paymentModalOverlay}>
+          <View style={styles.paymentModal}>
+            <View style={styles.paymentModalHeader}>
+              <Text style={styles.paymentModalTitle}>Select Output Format</Text>
+              <TouchableOpacity onPress={() => setOutputFormatModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.paymentModalContent}>
+              <TouchableOpacity
+                style={styles.paymentMethodButton}
+                onPress={() => handleOutputFormatSelected('pdf')}
+              >
+                <Ionicons name="document-text-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.paymentMethodButtonText}>PDF</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.paymentMethodButton, { backgroundColor: '#2196F3' }]}
+                onPress={() => handleOutputFormatSelected('html')}
+              >
+                <Ionicons name="code-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.paymentMethodButtonText}>HTML</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {htmlPreviewModalVisible && (
+        <View style={styles.htmlModalOverlay}>
+          <View style={styles.htmlModal}>
+            <View style={styles.htmlModalHeader}>
+              <Text style={styles.htmlModalTitle}>HTML Preview</Text>
+              <TouchableOpacity onPress={() => setHtmlPreviewModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.htmlModalContent}>
+              <Text style={styles.htmlCode}>{generatedHtmlContent}</Text>
+            </ScrollView>
+
+            <View style={styles.htmlModalFooter}>
+              <TouchableOpacity
+                style={styles.copyButton}
+                onPress={handleCopyHtml}
+              >
+                <Ionicons name="copy-outline" size={20} color="#fff" />
+                <Text style={styles.copyButtonText}>Copy to Clipboard</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
 
       {paymentMethodModalVisible && (
         <View style={styles.paymentModalOverlay}>
@@ -2393,6 +2466,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   paymentMethodButton: {
+    flexDirection: 'row',
     backgroundColor: '#1B5E20',
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -2404,8 +2478,78 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+    gap: 8,
   },
   paymentMethodButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  htmlModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  htmlModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 600,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  htmlModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  htmlModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  htmlModalContent: {
+    padding: 16,
+    maxHeight: 400,
+  },
+  htmlCode: {
+    fontFamily: 'monospace' as const,
+    fontSize: 11,
+    color: '#1a1a1a',
+    lineHeight: 16,
+  },
+  htmlModalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2196F3',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  copyButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',

@@ -314,6 +314,11 @@ export async function generateRegistrationPDF(options: RegistrationPDFOptions, i
   }
 }
 
+export async function generateRegistrationHTML(options: RegistrationPDFOptions, includeHandicap?: boolean): Promise<string> {
+  const { registrations, members, event, useCourseHandicap = false } = options;
+  return buildRegistrationHTMLContent(registrations, members, event, useCourseHandicap, includeHandicap);
+}
+
 async function generateNativeRegistrationPDF(
   htmlContent: string,
   eventName: string
@@ -367,6 +372,7 @@ function buildRegistrationHTMLContent(
 ): string {
   const isSocial = event.type === 'social';
   let playersHTML = '';
+  let itemNumber = 0;
 
   if (isSocial) {
     const sortedRegs = registrations
@@ -374,27 +380,43 @@ function buildRegistrationHTMLContent(
       .filter(item => item.member)
       .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
 
+    let totalAttendees = 0;
+
     sortedRegs.forEach(({ reg, member }) => {
       if (!member) return;
+      
+      itemNumber++;
+      totalAttendees++;
       
       const guestNames = reg.guestNames ? reg.guestNames.split('\n').filter((n: string) => n.trim()) : [];
       
       playersHTML += `
         <div class="player-row">
+          <div class="item-number">${itemNumber}.</div>
           <div class="registrant-name">${member.name}</div>
         </div>
       `;
       
       if (guestNames.length > 0) {
         guestNames.forEach((guestName: string) => {
+          itemNumber++;
+          totalAttendees++;
           playersHTML += `
             <div class="guest-row">
+              <div class="item-number">${itemNumber}.</div>
               <div class="guest-name">${guestName}</div>
             </div>
           `;
         });
       }
     });
+
+    playersHTML += `
+      <div class="total-row">
+        <div class="total-label">Total Attendees:</div>
+        <div class="total-value">${totalAttendees}</div>
+      </div>
+    `;
   } else {
     const calculateTournamentFlight = (player: Member, reg: any): string => {
       if (event.flightACutoff === undefined || event.flightBCutoff === undefined) {
@@ -431,6 +453,8 @@ function buildRegistrationHTMLContent(
       }
     });
     
+    let totalPlayers = 0;
+
     ['A', 'B', 'C', 'L'].forEach(flight => {
       const flightRegs = groupedByFlight[flight];
       if (flightRegs.length === 0) return;
@@ -443,11 +467,14 @@ function buildRegistrationHTMLContent(
       
       flightRegs.forEach(({ reg, member }) => {
         if (!member) return;
+        itemNumber++;
+        totalPlayers++;
         const handicap = getDisplayHandicap(member, reg, event, useCourseHandicap, 1);
         
         if (includeHandicap) {
           playersHTML += `
             <div class="player-row">
+              <div class="item-number">${itemNumber}.</div>
               <div class="player-name">${member.name}</div>
               <div class="handicap">${handicap}</div>
             </div>
@@ -455,12 +482,20 @@ function buildRegistrationHTMLContent(
         } else {
           playersHTML += `
             <div class="player-row-no-handicap">
+              <div class="item-number">${itemNumber}.</div>
               <div class="player-name-full">${member.name}</div>
             </div>
           `;
         }
       });
     });
+
+    playersHTML += `
+      <div class="total-row">
+        <div class="total-label">Total Players:</div>
+        <div class="total-value">${totalPlayers}</div>
+      </div>
+    `;
   }
 
   if (isSocial) {
@@ -496,23 +531,56 @@ function buildRegistrationHTMLContent(
       color: #666;
     }
     .player-row {
+      display: flex;
+      align-items: baseline;
       padding: 4px 6px;
       border-bottom: 1px solid #E0E0E0;
       line-height: 1.4;
+      gap: 6px;
+    }
+    .item-number {
+      font-size: 9px;
+      font-weight: 600;
+      color: #666;
+      min-width: 20px;
     }
     .registrant-name {
       font-size: 10px;
       font-weight: 600;
       color: #1a1a1a;
+      flex: 1;
     }
     .guest-row {
-      padding: 2px 6px 2px 20px;
+      display: flex;
+      align-items: baseline;
+      padding: 2px 6px 2px 12px;
       line-height: 1.3;
+      gap: 6px;
     }
     .guest-name {
       font-size: 8px;
       font-style: italic;
       color: #555;
+      flex: 1;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 6px;
+      margin-top: 12px;
+      border-top: 2px solid #1B5E20;
+      background: #E8F5E9;
+    }
+    .total-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1B5E20;
+    }
+    .total-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1B5E20;
     }
   </style>
 </head>
@@ -572,6 +640,13 @@ function buildRegistrationHTMLContent(
       border-bottom: 1px solid #E0E0E0;
       font-size: 9px;
       line-height: 1.3;
+      gap: 6px;
+    }
+    .item-number {
+      font-size: 9px;
+      font-weight: 600;
+      color: #666;
+      min-width: 20px;
     }
     .player-name {
       flex: 2;
@@ -585,14 +660,36 @@ function buildRegistrationHTMLContent(
       font-weight: 600;
     }
     .player-row-no-handicap {
+      display: flex;
       padding: 4px 6px;
       border-bottom: 1px solid #E0E0E0;
       font-size: 9px;
       line-height: 1.3;
+      gap: 6px;
     }
     .player-name-full {
       font-weight: 600;
       color: #1a1a1a;
+      flex: 1;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 6px;
+      margin-top: 12px;
+      border-top: 2px solid #1B5E20;
+      background: #E8F5E9;
+    }
+    .total-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1B5E20;
+    }
+    .total-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1B5E20;
     }
   </style>
 </head>
