@@ -103,7 +103,7 @@ export function EventFooter({
           {showStartButton && onStatusChange && (
             <View style={styles.startButtonWrapper}>
               <EventStatusButton
-                status={eventStatus}
+                status={eventStatus!}
                 onStatusChange={onStatusChange}
                 isAdmin={isAdmin}
               />
