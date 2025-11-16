@@ -375,14 +375,40 @@ function buildRegistrationHTMLContent(
   let itemNumber = 0;
 
   if (isSocial) {
-    const sortedRegs = registrations
+    const sponsors = registrations
+      .filter(reg => reg.isSponsor)
+      .map(reg => ({ reg, member: members.find(m => m.id === reg.memberId) }))
+      .filter(item => item.member)
+      .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
+    
+    const nonSponsors = registrations
+      .filter(reg => !reg.isSponsor)
       .map(reg => ({ reg, member: members.find(m => m.id === reg.memberId) }))
       .filter(item => item.member)
       .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
 
+    if (sponsors.length > 0) {
+      playersHTML += `
+        <div class="sponsor-section">
+          <div class="sponsor-header">Special Thanks to Our Valued Sponsors</div>
+          <div class="sponsor-subheader">Thank you for your dedication and sponsorship throughout the season</div>
+      `;
+      
+      sponsors.forEach(({ member }) => {
+        if (!member) return;
+        playersHTML += `
+          <div class="sponsor-name">${member.name}</div>
+        `;
+      });
+      
+      playersHTML += `
+        </div>
+      `;
+    }
+
     let totalAttendees = 0;
 
-    sortedRegs.forEach(({ reg, member }) => {
+    nonSponsors.forEach(({ reg, member }) => {
       if (!member) return;
       
       itemNumber++;
@@ -530,6 +556,34 @@ function buildRegistrationHTMLContent(
       font-size: 9px;
       color: #666;
       margin-top: 2px;
+    }
+    .sponsor-section {
+      background: #FFF3E0;
+      border: 1.5px solid #F57C00;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 12px;
+    }
+    .sponsor-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: #E65100;
+      text-align: center;
+      margin-bottom: 3px;
+    }
+    .sponsor-subheader {
+      font-size: 8px;
+      color: #F57C00;
+      text-align: center;
+      margin-bottom: 6px;
+      font-style: italic;
+    }
+    .sponsor-name {
+      font-size: 10px;
+      font-weight: 600;
+      color: #1a1a1a;
+      padding: 2px 4px;
+      text-align: center;
     }
     .player-row {
       display: flex;
