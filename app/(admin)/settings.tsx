@@ -9,6 +9,9 @@ import {
   TextInput,
   Image,
   ActivityIndicator,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +37,10 @@ interface OrganizationInfo {
   paypalMode: 'sandbox' | 'live';
 }
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 export default function SettingsScreen() {
   const router = useRouter();
   const { refreshOrganizationInfo } = useSettings();
@@ -41,6 +48,15 @@ export default function SettingsScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<{
+    organization: boolean;
+    paypal: boolean;
+    dataManagement: boolean;
+  }>({
+    organization: false,
+    paypal: false,
+    dataManagement: false,
+  });
   const [orgInfo, setOrgInfo] = useState<OrganizationInfo>({
     name: '',
     address: '',
@@ -177,6 +193,14 @@ export default function SettingsScreen() {
     );
   };
 
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.customHeaderWrapper}>
@@ -199,7 +223,24 @@ export default function SettingsScreen() {
         ) : (
           <>
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Organization Information</Text>
+              <TouchableOpacity
+                style={styles.sectionHeader}
+                onPress={() => toggleSection('organization')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.sectionHeaderLeft}>
+                  <Ionicons name="business" size={22} color="#007AFF" />
+                  <Text style={styles.sectionTitle}>Organization Information</Text>
+                </View>
+                <Ionicons
+                  name={expandedSections.organization ? 'chevron-up' : 'chevron-down'}
+                  size={24}
+                  color="#007AFF"
+                />
+              </TouchableOpacity>
+              
+              {expandedSections.organization && (
+                <View style={styles.sectionContent}>
               
               <Text style={styles.fieldLabel}>Organization Logo</Text>
               <View style={styles.logoContainer}>
@@ -318,10 +359,29 @@ export default function SettingsScreen() {
                 placeholder="(123) 456-7890"
                 keyboardType="phone-pad"
               />
+                </View>
+              )}
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>PayPal Configuration</Text>
+              <TouchableOpacity
+                style={styles.sectionHeader}
+                onPress={() => toggleSection('paypal')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.sectionHeaderLeft}>
+                  <Ionicons name="logo-paypal" size={22} color="#007AFF" />
+                  <Text style={styles.sectionTitle}>PayPal Configuration</Text>
+                </View>
+                <Ionicons
+                  name={expandedSections.paypal ? 'chevron-up' : 'chevron-down'}
+                  size={24}
+                  color="#007AFF"
+                />
+              </TouchableOpacity>
+
+              {expandedSections.paypal && (
+                <View style={styles.sectionContent}>
               <Text style={styles.sectionDescription}>
                 Configure your PayPal credentials to accept payments. You can use sandbox mode for testing or live mode for production.
               </Text>
@@ -465,12 +525,31 @@ export default function SettingsScreen() {
                   </>
                 )}
               </TouchableOpacity>
+                </View>
+              )}
             </View>
           </>
         )}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data Management</Text>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('dataManagement')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons name="server" size={22} color="#007AFF" />
+              <Text style={styles.sectionTitle}>Data Management</Text>
+            </View>
+            <Ionicons
+              name={expandedSections.dataManagement ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color="#007AFF"
+            />
+          </TouchableOpacity>
+          
+          {expandedSections.dataManagement && (
+            <View style={styles.sectionContent}>
           
           <TouchableOpacity
             style={[styles.actionButton, isNormalizing && styles.actionButtonDisabled]}
@@ -485,6 +564,8 @@ export default function SettingsScreen() {
           <Text style={styles.actionDescription}>
             Convert all member names to proper case (first letter capitalized)
           </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -543,19 +624,35 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 20,
     marginTop: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    overflow: 'hidden',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
     color: '#1a1a1a',
-    marginBottom: 16,
+    flex: 1,
+  },
+  sectionContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   actionButton: {
     flexDirection: 'row',
