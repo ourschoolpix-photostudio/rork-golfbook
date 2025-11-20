@@ -575,9 +575,10 @@ export default function SettingsScreen() {
                   {Array.from({ length: 30 }, (_, i) => {
                     const placement = i + 1;
                     const suffix = placement === 1 ? 'st' : placement === 2 ? 'nd' : placement === 3 ? 'rd' : 'th';
+                    const label = placement === 30 ? '30th and above' : `${placement}${suffix} Place`;
                     return (
                       <View key={placement} style={styles.pointsRow}>
-                        <Text style={styles.placementLabel}>{placement}{suffix} Place</Text>
+                        <Text style={styles.placementLabel}>{label}</Text>
                         <TextInput
                           style={styles.pointsInput}
                           value={orgInfo.rolexPlacementPoints[i] || ''}
