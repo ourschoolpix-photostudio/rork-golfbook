@@ -16,6 +16,9 @@ const organizationSettingsSchema = z.object({
   paypalClientId: z.string().optional(),
   paypalClientSecret: z.string().optional(),
   paypalMode: z.enum(['sandbox', 'live']).optional(),
+  rolexPlacementPoints: z.array(z.string()).optional(),
+  rolexAttendancePoints: z.string().optional(),
+  rolexBonusPoints: z.string().optional(),
 });
 
 export const getSettingsProcedure = publicProcedure
@@ -56,6 +59,9 @@ export const getSettingsProcedure = publicProcedure
         paypalClientId: data.paypal_client_id || '',
         paypalClientSecret: data.paypal_client_secret || '',
         paypalMode: (data.paypal_mode || 'sandbox') as 'sandbox' | 'live',
+        rolexPlacementPoints: (data.rolex_placement_points as string[]) || Array(30).fill(''),
+        rolexAttendancePoints: data.rolex_attendance_points || '',
+        rolexBonusPoints: data.rolex_bonus_points || '',
       };
     } catch (error) {
       console.error('[Settings] Exception fetching settings:', error);
@@ -95,6 +101,9 @@ export const updateSettingsProcedure = publicProcedure
           paypal_client_id: input.paypalClientId,
           paypal_client_secret: input.paypalClientSecret,
           paypal_mode: input.paypalMode,
+          rolex_placement_points: input.rolexPlacementPoints,
+          rolex_attendance_points: input.rolexAttendancePoints,
+          rolex_bonus_points: input.rolexBonusPoints,
           updated_at: new Date().toISOString(),
         })
         .eq('id', SETTINGS_ID);

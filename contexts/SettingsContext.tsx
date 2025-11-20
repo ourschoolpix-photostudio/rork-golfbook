@@ -14,6 +14,9 @@ export interface OrganizationInfo {
   paypalClientId: string;
   paypalClientSecret: string;
   paypalMode: 'sandbox' | 'live';
+  rolexPlacementPoints: string[];
+  rolexAttendancePoints: string;
+  rolexBonusPoints: string;
 }
 
 const DEFAULT_ORG_INFO: OrganizationInfo = {
@@ -28,6 +31,9 @@ const DEFAULT_ORG_INFO: OrganizationInfo = {
   paypalClientId: '',
   paypalClientSecret: '',
   paypalMode: 'sandbox',
+  rolexPlacementPoints: Array(30).fill(''),
+  rolexAttendancePoints: '',
+  rolexBonusPoints: '',
 };
 
 export const [SettingsProvider, useSettings] = createContextHook(() => {
