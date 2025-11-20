@@ -55,16 +55,12 @@ export default function SettingsScreen() {
     organization: boolean;
     paypal: boolean;
     dataManagement: boolean;
-    rolexPlacement: boolean;
-    rolexAttendance: boolean;
-    rolexBonus: boolean;
+    rolexPoints: boolean;
   }>({
     organization: false,
     paypal: false,
     dataManagement: false,
-    rolexPlacement: false,
-    rolexAttendance: false,
-    rolexBonus: false,
+    rolexPoints: false,
   });
   const [orgInfo, setOrgInfo] = useState<OrganizationInfo>({
     name: '',
@@ -551,157 +547,108 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeader}
-            onPress={() => toggleSection('rolexPlacement')}
+            onPress={() => toggleSection('rolexPoints')}
             activeOpacity={0.7}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons name="trophy" size={22} color="#007AFF" />
-              <Text style={styles.sectionTitle}>Placement Rolex Points</Text>
+              <Text style={styles.sectionTitle}>Rolex Points Distribution</Text>
             </View>
             <Ionicons
-              name={expandedSections.rolexPlacement ? 'chevron-up' : 'chevron-down'}
+              name={expandedSections.rolexPoints ? 'chevron-up' : 'chevron-down'}
               size={24}
               color="#007AFF"
             />
           </TouchableOpacity>
           
-          {expandedSections.rolexPlacement && (
+          {expandedSections.rolexPoints && (
             <View style={styles.sectionContent}>
-              <Text style={styles.sectionDescription}>
-                Configure Rolex points awarded for each placement (1st through 30th place).
-              </Text>
-              <View style={styles.pointsGrid}>
-                {Array.from({ length: 30 }, (_, i) => {
-                  const placement = i + 1;
-                  const suffix = placement === 1 ? 'st' : placement === 2 ? 'nd' : placement === 3 ? 'rd' : 'th';
-                  return (
-                    <View key={placement} style={styles.pointsRow}>
-                      <Text style={styles.placementLabel}>{placement}{suffix} Place</Text>
-                      <TextInput
-                        style={styles.pointsInput}
-                        value={orgInfo.rolexPlacementPoints[i] || ''}
-                        onChangeText={(text) => {
-                          const filtered = text.replace(/[^0-9]/g, '').slice(0, 4);
-                          const newPoints = [...orgInfo.rolexPlacementPoints];
-                          newPoints[i] = filtered;
-                          setOrgInfo({ ...orgInfo, rolexPlacementPoints: newPoints });
-                        }}
-                        placeholder="0"
-                        keyboardType="number-pad"
-                        maxLength={4}
-                      />
-                    </View>
-                  );
-                })}
+              <View style={styles.subsectionContainer}>
+                <View style={styles.subsectionHeader}>
+                  <Ionicons name="trophy-outline" size={20} color="#007AFF" />
+                  <Text style={styles.subsectionTitle}>Placement Points</Text>
+                </View>
+                <Text style={styles.subsectionDescription}>
+                  Configure Rolex points awarded for each placement (1st through 30th place).
+                </Text>
+                <View style={styles.pointsGrid}>
+                  {Array.from({ length: 30 }, (_, i) => {
+                    const placement = i + 1;
+                    const suffix = placement === 1 ? 'st' : placement === 2 ? 'nd' : placement === 3 ? 'rd' : 'th';
+                    return (
+                      <View key={placement} style={styles.pointsRow}>
+                        <Text style={styles.placementLabel}>{placement}{suffix} Place</Text>
+                        <TextInput
+                          style={styles.pointsInput}
+                          value={orgInfo.rolexPlacementPoints[i] || ''}
+                          onChangeText={(text) => {
+                            const filtered = text.replace(/[^0-9]/g, '').slice(0, 4);
+                            const newPoints = [...orgInfo.rolexPlacementPoints];
+                            newPoints[i] = filtered;
+                            setOrgInfo({ ...orgInfo, rolexPlacementPoints: newPoints });
+                          }}
+                          placeholder="0"
+                          keyboardType="number-pad"
+                          maxLength={4}
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
               </View>
-              <TouchableOpacity
-                style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-                onPress={saveOrganizationInfo}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text style={styles.saveButtonText}>Save All Settings</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
 
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('rolexAttendance')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <Ionicons name="calendar" size={22} color="#007AFF" />
-              <Text style={styles.sectionTitle}>Attendance Rolex Points</Text>
-            </View>
-            <Ionicons
-              name={expandedSections.rolexAttendance ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color="#007AFF"
-            />
-          </TouchableOpacity>
-          
-          {expandedSections.rolexAttendance && (
-            <View style={styles.sectionContent}>
-              <Text style={styles.sectionDescription}>
-                Configure base Rolex points awarded for event attendance.
-              </Text>
-              <View style={styles.singlePointRow}>
-                <Text style={styles.placementLabel}>Attendance Points</Text>
-                <TextInput
-                  style={styles.pointsInput}
-                  value={orgInfo.rolexAttendancePoints}
-                  onChangeText={(text) => {
-                    const filtered = text.replace(/[^0-9]/g, '').slice(0, 4);
-                    setOrgInfo({ ...orgInfo, rolexAttendancePoints: filtered });
-                  }}
-                  placeholder="0"
-                  keyboardType="number-pad"
-                  maxLength={4}
-                />
-              </View>
-              <TouchableOpacity
-                style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-                onPress={saveOrganizationInfo}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text style={styles.saveButtonText}>Save All Settings</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+              <View style={styles.subsectionDivider} />
 
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('rolexBonus')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <Ionicons name="star" size={22} color="#007AFF" />
-              <Text style={styles.sectionTitle}>Bonus Rolex Points</Text>
-            </View>
-            <Ionicons
-              name={expandedSections.rolexBonus ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color="#007AFF"
-            />
-          </TouchableOpacity>
-          
-          {expandedSections.rolexBonus && (
-            <View style={styles.sectionContent}>
-              <Text style={styles.sectionDescription}>
-                Configure bonus Rolex points for net score achievements.
-              </Text>
-              <View style={styles.singlePointRow}>
-                <Text style={styles.placementLabel}>Net Score Bonus Points</Text>
-                <TextInput
-                  style={styles.pointsInput}
-                  value={orgInfo.rolexBonusPoints}
-                  onChangeText={(text) => {
-                    const filtered = text.replace(/[^0-9]/g, '').slice(0, 4);
-                    setOrgInfo({ ...orgInfo, rolexBonusPoints: filtered });
-                  }}
-                  placeholder="0"
-                  keyboardType="number-pad"
-                  maxLength={4}
-                />
+              <View style={styles.subsectionContainer}>
+                <View style={styles.subsectionHeader}>
+                  <Ionicons name="calendar-outline" size={20} color="#007AFF" />
+                  <Text style={styles.subsectionTitle}>Attendance Points</Text>
+                </View>
+                <Text style={styles.subsectionDescription}>
+                  Configure base Rolex points awarded for event attendance.
+                </Text>
+                <View style={styles.singlePointRow}>
+                  <Text style={styles.placementLabel}>Attendance Points</Text>
+                  <TextInput
+                    style={styles.pointsInput}
+                    value={orgInfo.rolexAttendancePoints}
+                    onChangeText={(text) => {
+                      const filtered = text.replace(/[^0-9]/g, '').slice(0, 4);
+                      setOrgInfo({ ...orgInfo, rolexAttendancePoints: filtered });
+                    }}
+                    placeholder="0"
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
+                </View>
               </View>
+
+              <View style={styles.subsectionDivider} />
+
+              <View style={styles.subsectionContainer}>
+                <View style={styles.subsectionHeader}>
+                  <Ionicons name="star-outline" size={20} color="#007AFF" />
+                  <Text style={styles.subsectionTitle}>Bonus Points</Text>
+                </View>
+                <Text style={styles.subsectionDescription}>
+                  Configure bonus Rolex points for net score achievements.
+                </Text>
+                <View style={styles.singlePointRow}>
+                  <Text style={styles.placementLabel}>Net Score Bonus Points</Text>
+                  <TextInput
+                    style={styles.pointsInput}
+                    value={orgInfo.rolexBonusPoints}
+                    onChangeText={(text) => {
+                      const filtered = text.replace(/[^0-9]/g, '').slice(0, 4);
+                      setOrgInfo({ ...orgInfo, rolexBonusPoints: filtered });
+                    }}
+                    placeholder="0"
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
+                </View>
+              </View>
+
               <TouchableOpacity
                 style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
                 onPress={saveOrganizationInfo}
@@ -1180,5 +1127,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
+  },
+  subsectionContainer: {
+    marginBottom: 16,
+  },
+  subsectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+  },
+  subsectionDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  subsectionDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 20,
   },
 });
