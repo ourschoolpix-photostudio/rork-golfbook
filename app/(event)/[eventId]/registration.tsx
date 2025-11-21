@@ -1743,21 +1743,6 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      </SafeAreaView>
-      <EventFooter 
-        showStartButton={event && canStartEvent(currentUser)}
-        eventStatus={(event?.status as EventStatus) || 'upcoming'}
-        onStatusChange={async (newStatus) => {
-          if (event) {
-            await updateEventMutation.mutateAsync({
-              eventId: event.id,
-              updates: { status: newStatus },
-            });
-            setEvent({ ...event, status: newStatus });
-          }
-        }}
-        isAdmin={currentUser?.isAdmin || false}
-      />
       <TouchableOpacity
         style={[
           styles.registerButton,
@@ -1773,6 +1758,21 @@ export default function EventRegistrationScreen() {
           {isCurrentUserRegistered() ? "You're Registered For This Event" : 'Register For This Event'}
         </Text>
       </TouchableOpacity>
+      </SafeAreaView>
+      <EventFooter 
+        showStartButton={event && canStartEvent(currentUser)}
+        eventStatus={(event?.status as EventStatus) || 'upcoming'}
+        onStatusChange={async (newStatus) => {
+          if (event) {
+            await updateEventMutation.mutateAsync({
+              eventId: event.id,
+              updates: { status: newStatus },
+            });
+            setEvent({ ...event, status: newStatus });
+          }
+        }}
+        isAdmin={currentUser?.isAdmin || false}
+      />
     </>
   );
 }
