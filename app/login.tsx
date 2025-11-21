@@ -15,11 +15,16 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as LocalAuthentication from 'expo-local-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Fingerprint } from 'lucide-react-native';
 
 import { Member } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
+
+const BIOMETRIC_USER_KEY = '@golf_biometric_user';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -27,16 +32,106 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPinChangeModal, setShowPinChangeModal] = useState(false);
   const [userToUpdate, setUserToUpdate] = useState<Member | null>(null);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [hasSavedBiometric, setHasSavedBiometric] = useState(false);
   const router = useRouter();
   const { login: authLogin, updateMember, members } = useAuth();
   const { orgInfo, isLoading: loadingOrg } = useSettings();
 
   useEffect(() => {
     ensureAdminExists();
+    checkBiometricAvailability();
   }, []);
 
   const ensureAdminExists = async () => {
     console.log('Login - Admin initialization is handled by AuthContext');
+  };
+
+  const checkBiometricAvailability = async () => {
+    if (Platform.OS === 'web') {
+      setBiometricAvailable(false);
+      return;
+    }
+
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setBiometricAvailable(compatible && enrolled);
+
+      const savedUser = await AsyncStorage.getItem(BIOMETRIC_USER_KEY);
+      setHasSavedBiometric(!!savedUser);
+
+      console.log('Biometric available:', compatible && enrolled);
+      console.log('Has saved biometric user:', !!savedUser);
+    } catch (error) {
+      console.error('Error checking biometric availability:', error);
+      setBiometricAvailable(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Available', 'Biometric authentication is not available on web');
+      return;
+    }
+
+    try {
+      const savedUserData = await AsyncStorage.getItem(BIOMETRIC_USER_KEY);
+      if (!savedUserData) {
+        Alert.alert('No Saved User', 'Please login with username and PIN first to enable biometric login');
+        return;
+      }
+
+      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      const hasFaceID = supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
+      const hasFingerprint = supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
+
+      let promptMessage = 'Authenticate to login';
+      if (hasFaceID) {
+        promptMessage = 'Authenticate with Face ID';
+      } else if (hasFingerprint) {
+        promptMessage = 'Authenticate with Fingerprint';
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage,
+        fallbackLabel: 'Use PIN',
+        cancelLabel: 'Cancel',
+      });
+
+      if (result.success) {
+        const { username: savedUsername, pin: savedPin } = JSON.parse(savedUserData);
+        setLoading(true);
+        const loggedIn = await authLogin(savedUsername, savedPin);
+        
+        if (loggedIn) {
+          console.log('Biometric login - Success!');
+          router.replace('/(tabs)/dashboard');
+        } else {
+          Alert.alert('Login Failed', 'User credentials are no longer valid. Please login with username and PIN.');
+          await AsyncStorage.removeItem(BIOMETRIC_USER_KEY);
+          setHasSavedBiometric(false);
+        }
+        setLoading(false);
+      } else {
+        console.log('Biometric authentication failed or cancelled');
+      }
+    } catch (error) {
+      console.error('Biometric login error:', error);
+      Alert.alert('Error', 'Failed to authenticate with biometrics');
+    }
+  };
+
+  const saveBiometricCredentials = async (username: string, pin: string) => {
+    if (Platform.OS === 'web') return;
+    
+    try {
+      await AsyncStorage.setItem(BIOMETRIC_USER_KEY, JSON.stringify({ username, pin }));
+      setHasSavedBiometric(true);
+      console.log('Biometric credentials saved');
+    } catch (error) {
+      console.error('Error saving biometric credentials:', error);
+    }
   };
 
   const handleLogin = async () => {
@@ -71,9 +166,30 @@ export default function LoginScreen() {
             setShowPinChangeModal(true);
           }
         } else {
-          console.log('Login - Navigating to dashboard...');
-          console.log('=== LOGIN END (SUCCESS) ===');
-          router.replace('/(tabs)/dashboard');
+          if (biometricAvailable && !hasSavedBiometric) {
+            Alert.alert(
+              'Enable Biometric Login',
+              'Would you like to enable facial recognition or fingerprint login for faster access?',
+              [
+                {
+                  text: 'No Thanks',
+                  style: 'cancel',
+                  onPress: () => router.replace('/(tabs)/dashboard'),
+                },
+                {
+                  text: 'Enable',
+                  onPress: async () => {
+                    await saveBiometricCredentials(username.trim(), pin.trim());
+                    router.replace('/(tabs)/dashboard');
+                  },
+                },
+              ]
+            );
+          } else {
+            console.log('Login - Navigating to dashboard...');
+            console.log('=== LOGIN END (SUCCESS) ===');
+            router.replace('/(tabs)/dashboard');
+          }
         }
       } else {
         console.log('Login - authLogin returned false');
@@ -162,6 +278,17 @@ export default function LoginScreen() {
               >
                 <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Login'}</Text>
               </TouchableOpacity>
+
+              {biometricAvailable && hasSavedBiometric && (
+                <TouchableOpacity
+                  style={styles.biometricButton}
+                  onPress={handleBiometricLogin}
+                  disabled={loading}
+                >
+                  <Fingerprint size={24} color="#007AFF" />
+                  <Text style={styles.biometricButtonText}>Login with Biometrics</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
 
@@ -253,5 +380,21 @@ const styles = StyleSheet.create({
   loader: {
     marginBottom: 20,
   },
-
+  biometricButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0F8FF',
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginTop: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  biometricButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
 });
