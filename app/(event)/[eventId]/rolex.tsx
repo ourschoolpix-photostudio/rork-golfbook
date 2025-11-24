@@ -169,7 +169,10 @@ export default function EventRolexScreen() {
         scoreNet: m.scoreNet 
       })));
 
-      setMembers(sorted);
+      setMembers(sorted.map(m => ({
+        ...m,
+        flight: (m.flight === 'A' || m.flight === 'B' || m.flight === 'C' || m.flight === 'L') ? m.flight : undefined
+      })));
     } catch (error) {
       console.error('Error loading event members:', error);
     }
@@ -204,7 +207,10 @@ export default function EventRolexScreen() {
 
   const handleSaveQuickEdit = async (updatedMember: Member) => {
     try {
-      await updateMemberMutation.mutateAsync(updatedMember);
+      await updateMemberMutation.mutateAsync({ 
+        memberId: updatedMember.id, 
+        updates: updatedMember 
+      });
       await loadMembers();
     } catch (error) {
       console.error('Error saving member:', error);

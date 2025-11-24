@@ -148,20 +148,20 @@ export default function ScoringScreen() {
               return {
                 ...member,
                 effectiveHandicap,
-                registration,
-              };
+                registration: registration || undefined,
+              } as Member & { effectiveHandicap: number; registration?: any };
             })
-            .filter((m): m is Member => m !== null);
+            .filter((m): m is Member & { effectiveHandicap: number } => m !== null && typeof m.effectiveHandicap === 'number');
           
           console.log('[scoring] 🔍 Checking if players are still in registration...');
           console.log('[scoring] Registered players:', golfEvent.registeredPlayers || []);
-          console.log('[scoring] Group members found:', groupMembers.map(m => ({ id: m.id, name: m.name })));
+          console.log('[scoring] Group members found:', groupMembers.map(m => m ? { id: m.id, name: m.name } : null).filter(Boolean));
           
           const validGroupMembers = groupMembers.filter(member => 
-            (golfEvent.registeredPlayers || []).includes(member.id)
+            member && (golfEvent.registeredPlayers || []).includes(member.id)
           );
           
-          console.log('[scoring] Valid members (still registered):', validGroupMembers.map(m => m.name));
+          console.log('[scoring] Valid members (still registered):', validGroupMembers.map(m => m?.name).filter(Boolean));
           
           if (validGroupMembers.length === 0) {
             console.log('[scoring] ⚠️ No valid players found in group - all have been removed from registration');
@@ -170,7 +170,7 @@ export default function ScoringScreen() {
             return;
           }
           
-          setMyGroup(validGroupMembers);
+          setMyGroup(validGroupMembers as Member[]);
           setMyGrouping(grouping);
           console.log('[scoring] Found my group:', validGroupMembers.map(m => m.name));
           console.log('[scoring] Group hole number:', grouping.hole);

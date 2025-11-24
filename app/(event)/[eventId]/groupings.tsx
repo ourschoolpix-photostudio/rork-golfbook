@@ -492,7 +492,10 @@ export default function GroupingsScreen() {
     try {
       if (!event) return;
 
-      await updateMemberMutation.mutateAsync(updatedMember);
+      await updateMemberMutation.mutateAsync({ 
+        memberId: updatedMember.id, 
+        updates: updatedMember 
+      });
       console.log('[groupings] ✅ Member updated and saved to backend:', updatedMember.name, { 
         adjustedHandicap: updatedMember.adjustedHandicap,
         handicap: updatedMember.handicap 
