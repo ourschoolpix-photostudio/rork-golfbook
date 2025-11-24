@@ -7,7 +7,6 @@ import { StyleSheet, View, Platform } from "react-native";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { EventsProvider } from "@/contexts/EventsContext";
 import { GamesProvider } from "@/contexts/GamesContext";
-import { CoursesProvider } from "@/contexts/CoursesContext";
 import { OfflineModeProvider } from "@/contexts/OfflineModeContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
@@ -81,9 +80,7 @@ export default function RootLayout() {
                 <NotificationsProvider>
                   <EventsProvider>
                     <GamesProvider>
-                      <CoursesProvider>
-                        <RootLayoutNav />
-                      </CoursesProvider>
+                      <RootLayoutNav />
                     </GamesProvider>
                   </EventsProvider>
                 </NotificationsProvider>
