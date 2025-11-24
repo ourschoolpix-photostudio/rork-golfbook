@@ -92,11 +92,25 @@ export function ProfilePhotoPicker({ onPhotoPicked, currentPhotoUri }: ProfilePh
     ]);
   };
 
+  const isValidUri = currentPhotoUri && 
+    typeof currentPhotoUri === 'string' && 
+    currentPhotoUri.trim() !== '' && 
+    currentPhotoUri !== 'undefined' && 
+    currentPhotoUri !== 'null' &&
+    (currentPhotoUri.startsWith('http://') || 
+     currentPhotoUri.startsWith('https://') || 
+     currentPhotoUri.startsWith('file://') ||
+     currentPhotoUri.startsWith('data:'));
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.photoContainer} onPress={showOptions}>
-        {(currentPhotoUri && currentPhotoUri.trim() !== '' && currentPhotoUri !== 'undefined' && currentPhotoUri !== 'null') ? (
-          <Image source={{ uri: currentPhotoUri }} style={styles.photo} />
+        {isValidUri ? (
+          <Image 
+            source={{ uri: currentPhotoUri }} 
+            style={styles.photo}
+            defaultSource={undefined}
+          />
         ) : (
           <View style={styles.placeholder}>
             <Camera size={32} color="#999" />

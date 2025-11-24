@@ -70,11 +70,22 @@ export const PlayerCard = memo(function PlayerCard({
               ? member.profilePhotoUrl 
               : null;
             
-            if (photoUri && photoUri.trim() !== '' && photoUri !== 'undefined' && photoUri !== 'null') {
+            const isValidUri = photoUri && 
+              typeof photoUri === 'string' && 
+              photoUri.trim() !== '' && 
+              photoUri !== 'undefined' && 
+              photoUri !== 'null' &&
+              (photoUri.startsWith('http://') || 
+               photoUri.startsWith('https://') || 
+               photoUri.startsWith('file://') ||
+               photoUri.startsWith('data:'));
+            
+            if (isValidUri) {
               return (
                 <Image
                   source={{ uri: photoUri }}
                   style={[styles.profilePhoto, isSelected && styles.profilePhotoSelected]}
+                  defaultSource={undefined}
                 />
               );
             }
