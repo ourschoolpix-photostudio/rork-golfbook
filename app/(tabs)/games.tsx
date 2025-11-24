@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { useFocusEffect, Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Plus, Play, Trophy, Trash2 } from 'lucide-react-native';
+import { Plus, Play, Trophy, Trash2, BookOpen } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
 import CreateGameModal from '@/components/CreateGameModal';
+import CoursesManagementModal from '@/components/CoursesManagementModal';
 import { PersonalGame } from '@/types';
 
 export default function GamesScreen() {
@@ -20,6 +21,7 @@ export default function GamesScreen() {
   const insets = useSafeAreaInsets();
   const { inProgressGames, completedGames, createGame, deleteGame } = useGames();
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
+  const [coursesModalVisible, setCoursesModalVisible] = useState<boolean>(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -138,12 +140,20 @@ export default function GamesScreen() {
             <Text style={styles.headerTitle}>My Games</Text>
             <Text style={styles.headerSubtitle}>Personal scoring records</Text>
           </View>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setCreateModalVisible(true)}
-          >
-            <Plus size={24} color="#fff" />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={styles.coursesButton}
+              onPress={() => setCoursesModalVisible(true)}
+            >
+              <BookOpen size={20} color="#1B5E20" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setCreateModalVisible(true)}
+            >
+              <Plus size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -192,6 +202,11 @@ export default function GamesScreen() {
           onClose={() => setCreateModalVisible(false)}
           onSave={handleCreateGame}
         />
+
+        <CoursesManagementModal
+          visible={coursesModalVisible}
+          onClose={() => setCoursesModalVisible(false)}
+        />
       </View>
     </>
   );
@@ -219,6 +234,23 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 13,
     color: '#d1d5db',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  coursesButton: {
+    backgroundColor: '#fff',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   addButton: {
     backgroundColor: '#1B5E20',
