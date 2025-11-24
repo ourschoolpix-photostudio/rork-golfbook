@@ -12,6 +12,9 @@ import {
   Alert,
 } from 'react-native';
 import { X } from 'lucide-react-native';
+import CoursePickerModal from './CoursePickerModal';
+import { useCourses } from '@/contexts/CoursesContext';
+import { Course } from '@/types';
 
 interface CreateGameModalProps {
   visible: boolean;
@@ -25,9 +28,12 @@ interface CreateGameModalProps {
 }
 
 export default function CreateGameModal({ visible, onClose, onSave }: CreateGameModalProps) {
+  const { myCourses, publicCourses, createCourse } = useCourses();
+  const [showCoursePicker, setShowCoursePicker] = useState<boolean>(false);
   const [courseName, setCourseName] = useState<string>('');
   const [coursePar, setCoursePar] = useState<string>('72');
   const [holePars, setHolePars] = useState<string[]>(new Array(18).fill(''));
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [players, setPlayers] = useState<{ name: string; handicap: string }[]>([
     { name: '', handicap: '' },
     { name: '', handicap: '' },
@@ -36,6 +42,22 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
   ]);
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
 
+  const handleSelectCourse = (course: Course) => {
+    console.log('[CreateGameModal] Selected course:', course.name);
+    setSelectedCourse(course);
+    setCourseName(course.name);
+    setCoursePar(course.par.toString());
+    setHolePars(course.holePars.map(p => p.toString()));
+  };
+
+  const handleCreateNewCourse = async (name: string, par: number, holePars: number[]) => {
+    console.log('[CreateGameModal] Creating new course:', name);
+    await createCourse(name, par, holePars, false);
+    setCourseName(name);
+    setCoursePar(par.toString());
+    setHolePars(holePars.map(p => p.toString()));
+  };
+
   const handleHoleParChange = (index: number, value: string) => {
     if (value.length > 1) {
       return;
@@ -43,6 +65,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
     const updated = [...holePars];
     updated[index] = value;
     setHolePars(updated);
+    setSelectedCourse(null);
 
     if (value.length === 1 && index < 17) {
       setTimeout(() => {
@@ -101,6 +124,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       setCourseName('');
       setCoursePar('72');
       setHolePars(new Array(18).fill(''));
+      setSelectedCourse(null);
       setPlayers([
         { name: '', handicap: '' },
         { name: '', handicap: '' },
@@ -115,7 +139,16 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <>
+      <CoursePickerModal
+        visible={showCoursePicker}
+        onClose={() => setShowCoursePicker(false)}
+        onSelectCourse={handleSelectCourse}
+        onCreateNew={handleCreateNewCourse}
+        myCourses={myCourses}
+        publicCourses={publicCourses}
+      />
+      <Modal visible={visible} transparent animationType="slide">
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -132,6 +165,12 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Course Information</Text>
+              <TouchableOpacity 
+                style={styles.coursePickerButton}
+                onPress={() => setShowCoursePicker(true)}
+              >
+                <Text style={styles.coursePickerText}>Select from Saved Courses</Text>
+              </TouchableOpacity>
               <TextInput
                 style={styles.input}
                 placeholder="Course Name"
@@ -213,6 +252,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
         </View>
       </KeyboardAvoidingView>
     </Modal>
+    </>
   );
 }
 
@@ -349,5 +389,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700' as const,
     color: '#fff',
+  },
+  coursePickerButton: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  coursePickerText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#1B5E20',
+    textAlign: 'center',
   },
 });

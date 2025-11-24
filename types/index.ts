@@ -199,3 +199,14 @@ export interface RegistrationNotification {
   metadata?: any;
   createdAt: string;
 }
+
+export interface Course {
+  id: string;
+  name: string;
+  par: number;
+  holePars: number[];
+  memberId?: string;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

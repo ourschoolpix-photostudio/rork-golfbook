@@ -17,6 +17,7 @@ import gamesCrudRoute from "@/backend/trpc/routes/games/crud/route";
 import notificationsCrudRoute from "@/backend/trpc/routes/notifications/crud/route";
 import preferencesCrudRoute from "@/backend/trpc/routes/preferences/crud/route";
 import offlineCrudRoute from "@/backend/trpc/routes/offline/crud/route";
+import coursesCrudRoute from "@/backend/trpc/routes/courses/crud/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -48,6 +49,7 @@ export const appRouter = createTRPCRouter({
   notifications: notificationsCrudRoute,
   preferences: preferencesCrudRoute,
   offline: offlineCrudRoute,
+  courses: coursesCrudRoute,
 });
 
 export type AppRouter = typeof appRouter;
