@@ -164,9 +164,11 @@ const deleteProcedure = publicProcedure
     }
   });
 
-export default createTRPCRouter({
+export const coursesCrudRoute = createTRPCRouter({
   getAll: getAllProcedure,
   create: createProcedure,
   update: updateProcedure,
   delete: deleteProcedure,
 });
+
+export default coursesCrudRoute;
