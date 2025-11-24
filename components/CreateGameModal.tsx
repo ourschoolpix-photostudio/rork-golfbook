@@ -140,14 +140,16 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
 
   return (
     <>
-      <CoursePickerModal
-        visible={showCoursePicker}
-        onClose={() => setShowCoursePicker(false)}
-        onSelectCourse={handleSelectCourse}
-        onCreateNew={handleCreateNewCourse}
-        myCourses={myCourses}
-        publicCourses={publicCourses}
-      />
+      {showCoursePicker && (
+        <CoursePickerModal
+          visible={showCoursePicker}
+          onClose={() => setShowCoursePicker(false)}
+          onSelectCourse={handleSelectCourse}
+          onCreateNew={handleCreateNewCourse}
+          myCourses={myCourses}
+          publicCourses={publicCourses}
+        />
+      )}
       <Modal visible={visible} transparent animationType="slide">
       <KeyboardAvoidingView
         style={styles.overlay}
