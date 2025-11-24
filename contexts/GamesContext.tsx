@@ -13,8 +13,8 @@ export const [GamesProvider, useGames] = createContextHook(() => {
   );
 
   const createGameMutation = trpc.games.create.useMutation({
-    onSuccess: () => {
-      gamesQuery.refetch();
+    onSuccess: async () => {
+      await gamesQuery.refetch();
     },
   });
 
@@ -53,8 +53,10 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       })),
     });
     console.log('[GamesContext] Created game:', result.id);
+    await gamesQuery.refetch();
+    console.log('[GamesContext] Refetched games after creation');
     return result.id;
-  }, [currentUser, createGameMutation]);
+  }, [currentUser, createGameMutation, gamesQuery]);
 
   const updateGameScores = useCallback(async (
     gameId: string,
