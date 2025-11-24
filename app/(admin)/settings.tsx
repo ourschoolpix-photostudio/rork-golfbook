@@ -22,6 +22,7 @@ import { photoService } from '@/utils/photoService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { trpc } from '@/lib/trpc';
+import CoursesManagementModal from '@/components/CoursesManagementModal';
 
 interface OrganizationInfo {
   name: string;
@@ -56,12 +57,15 @@ export default function SettingsScreen() {
     paypal: boolean;
     dataManagement: boolean;
     rolexPoints: boolean;
+    courses: boolean;
   }>({
     organization: false,
     paypal: false,
     dataManagement: false,
     rolexPoints: false,
+    courses: false,
   });
+  const [showCoursesModal, setShowCoursesModal] = useState(false);
   const [orgInfo, setOrgInfo] = useState<OrganizationInfo>({
     name: '',
     address: '',
@@ -671,6 +675,42 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeader}
+            onPress={() => toggleSection('courses')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons name="golf" size={22} color="#007AFF" />
+              <Text style={styles.sectionTitle}>Courses Management</Text>
+            </View>
+            <Ionicons
+              name={expandedSections.courses ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color="#007AFF"
+            />
+          </TouchableOpacity>
+          
+          {expandedSections.courses && (
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionDescription}>
+                Manage golf courses for reuse in tournaments and private games.
+              </Text>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => setShowCoursesModal(true)}
+              >
+                <Ionicons name="golf" size={20} color="#fff" />
+                <Text style={styles.actionButtonText}>Manage Courses</Text>
+              </TouchableOpacity>
+              <Text style={styles.actionDescription}>
+                Add, edit, or remove courses that can be used when creating events and games
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
             onPress={() => toggleSection('dataManagement')}
             activeOpacity={0.7}
           >
@@ -707,6 +747,11 @@ export default function SettingsScreen() {
       </ScrollView>
 
       <AdminFooter />
+
+      <CoursesManagementModal
+        visible={showCoursesModal}
+        onClose={() => setShowCoursesModal(false)}
+      />
     </View>
   );
 }
