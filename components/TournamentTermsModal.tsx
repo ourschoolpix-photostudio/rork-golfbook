@@ -53,7 +53,7 @@ export function TournamentTermsModal({ visible, onClose }: TournamentTermsModalP
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>LIABILITY</Text>
               <Text style={styles.paragraph}>
-                DMVVGA is not liable for any damages that may occur to a member's equipment or personal property while participating in a tournament. Furthermore, DMVVGA is not liable for any injury that may occur to a member while participating in a tournament. All DMVVGA tournament are play at your own risk.
+                DMVVGA is not liable for any damages that may occur to a member&apos;s equipment or personal property while participating in a tournament. Furthermore, DMVVGA is not liable for any injury that may occur to a member while participating in a tournament. All DMVVGA tournament are play at your own risk.
               </Text>
             </View>
 

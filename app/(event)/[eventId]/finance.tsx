@@ -148,7 +148,7 @@ export default function FinanceScreen() {
             <Text style={styles.headerTitle}>FINANCE</Text>
           </View>
           <View style={styles.noAccessContainer}>
-            <Text style={styles.noAccessText}>You don't have permission to view this page</Text>
+            <Text style={styles.noAccessText}>You don&apos;t have permission to view this page</Text>
           </View>
         </View>
         <EventFooter />

@@ -405,10 +405,10 @@ export default function SettingsScreen() {
                   <Text style={styles.infoTitle}>Getting Your Credentials:</Text>
                   <Text style={styles.infoText}>
                     1. Go to developer.paypal.com{"\n"}
-                    2. Log in and go to "Dashboard"{"\n"}
-                    3. Click "My Apps & Credentials"{"\n"}
-                    4. For sandbox: Use the "Sandbox" tab{"\n"}
-                    5. For live: Use the "Live" tab{"\n"}
+                    2. Log in and go to &quot;Dashboard&quot;{"\n"}
+                    3. Click &quot;My Apps & Credentials&quot;{"\n"}
+                    4. For sandbox: Use the &quot;Sandbox&quot; tab{"\n"}
+                    5. For live: Use the &quot;Live&quot; tab{"\n"}
                     6. Copy your Client ID and Secret
                   </Text>
                 </View>
@@ -504,10 +504,10 @@ export default function SettingsScreen() {
                   <View style={styles.warningTextContainer}>
                     <Text style={styles.warningText}>
                       You are using LIVE mode. Make sure:{"\n\n"}
-                      • Credentials are from the "Live" tab on developer.paypal.com{"\n"}
+                      • Credentials are from the &quot;Live&quot; tab on developer.paypal.com{"\n"}
                       • Your PayPal account is approved for live transactions{"\n"}
                       • There are no extra spaces when copying/pasting{"\n"}
-                      • You have saved the credentials by clicking "Save All Settings"
+                      • You have saved the credentials by clicking &quot;Save All Settings&quot;
                     </Text>
                   </View>
                 </View>
@@ -518,7 +518,7 @@ export default function SettingsScreen() {
                   <Ionicons name="flask" size={20} color="#F59E0B" />
                   <View style={styles.warningTextContainer}>
                     <Text style={styles.sandboxInfoText}>
-                      You are in SANDBOX mode for testing. Use credentials from the "Sandbox" tab on developer.paypal.com.
+                      You are in SANDBOX mode for testing. Use credentials from the &quot;Sandbox&quot; tab on developer.paypal.com.
                     </Text>
                   </View>
                 </View>
