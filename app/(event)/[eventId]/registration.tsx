@@ -634,10 +634,10 @@ export default function EventRegistrationScreen() {
         }
       }
       
-      if (paymentStatus !== 'paid') {
+      if (paymentStatus !== 'paid' && paymentStatus !== undefined) {
         console.log('[Registration] Step 5: Adding notification for Zelle/unpaid registration');
         try {
-          const paymentMethodText = paymentStatus === 'paid' ? 'PayPal' : 'Zelle';
+          const paymentMethodText = paymentStatus === 'pending' ? 'Zelle' : 'PayPal';
           await addNotification({
             eventId: event.id,
             type: 'registration',
@@ -647,7 +647,7 @@ export default function EventRegistrationScreen() {
               eventName: event.name,
               playerName: currentUserMember.name,
               playerPhone: phone || currentUserMember.phone || null,
-              paymentMethod: paymentStatus === 'paid' ? 'paypal' : 'zelle',
+              paymentMethod: paymentStatus === 'pending' ? 'zelle' : 'paypal',
             },
           });
           console.log('[Registration] ✓ Notification added');
@@ -818,15 +818,17 @@ export default function EventRegistrationScreen() {
     if (format === 'pdf') {
       setIsGeneratingPDF(true);
       try {
-        await generateRegistrationPDF(
-          {
-            registrations: regs,
-            members: allMembers,
-            event,
-            useCourseHandicap,
-          },
-          includeHandicapForPDF
-        );
+        if (event) {
+          await generateRegistrationPDF(
+            {
+              registrations: regs,
+              members: allMembers,
+              event,
+              useCourseHandicap,
+            },
+            includeHandicapForPDF
+          );
+        }
         console.log('[registration] ✅ PDF generated successfully');
       } catch (error) {
         console.error('[registration] ❌ PDF generation error:', error);
@@ -837,16 +839,18 @@ export default function EventRegistrationScreen() {
     } else {
       setIsGeneratingPDF(true);
       try {
-        const textContent = await generateRegistrationText(
-          {
-            registrations: regs,
-            members: allMembers,
-            event,
-            useCourseHandicap,
-          },
-          includeHandicapForPDF
-        );
-        setGeneratedTextContent(textContent);
+        if (event) {
+          const textContent = await generateRegistrationText(
+            {
+              registrations: regs,
+              members: allMembers,
+              event,
+              useCourseHandicap,
+            },
+            includeHandicapForPDF
+          );
+          setGeneratedTextContent(textContent);
+        }
         setTextPreviewModalVisible(true);
         console.log('[registration] ✅ Text generated successfully');
       } catch (error) {
@@ -1760,7 +1764,7 @@ export default function EventRegistrationScreen() {
       </TouchableOpacity>
       </SafeAreaView>
       <EventFooter 
-        showStartButton={event && canStartEvent(currentUser)}
+        showStartButton={!!event && canStartEvent(currentUser)}
         eventStatus={(event?.status as EventStatus) || 'upcoming'}
         onStatusChange={async (newStatus) => {
           if (event) {

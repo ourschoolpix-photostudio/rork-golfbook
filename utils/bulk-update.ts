@@ -51,9 +51,9 @@ export const bulkUpdateMembers = async (updates: BulkUpdateFields) => {
       if (updates.flight) updatedMember.flight = updates.flight;
       if (updates.rolexFlight) updatedMember.rolexFlight = updates.rolexFlight;
       if (updates.currentHandicap !== undefined) updatedMember.handicap = updates.currentHandicap;
-      if (updates.adjustedHandicap !== undefined) updatedMember.adjustedHandicap = updates.adjustedHandicap;
+      if (updates.adjustedHandicap !== undefined) updatedMember.adjustedHandicap = String(updates.adjustedHandicap);
       if (updates.ghin) updatedMember.ghin = updates.ghin;
-      if (updates.rolexPoints) updatedMember.rolexPoints = updates.rolexPoints;
+      if (updates.rolexPoints) updatedMember.rolexPoints = Number(updates.rolexPoints);
       if (updates.phone) updatedMember.phone = updates.phone;
       if (updates.city) updatedMember.city = updates.city;
       if (updates.state) updatedMember.state = updates.state;

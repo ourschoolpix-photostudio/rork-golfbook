@@ -51,7 +51,7 @@ export const getDisplayHandicap = (
   day: number = 1
 ): number => {
   // PRIORITY 1: Check for adjusted handicap in registration
-  const adjustedHdc = registration?.adjustedHandicap ?? registration?.adjusted_handicap;
+  const adjustedHdc = registration?.adjustedHandicap;
   
   // If adjusted handicap exists and is not 0 or '0', use it (TAKES PRECEDENCE OVER EVERYTHING)
   if (adjustedHdc !== undefined && adjustedHdc !== null && adjustedHdc !== 0 && adjustedHdc !== '0') {
@@ -102,7 +102,7 @@ export const getDisplayHandicap = (
  * This checks if adjusted handicap exists AND is not 0 or '0'
  */
 export const hasAdjustedHandicap = (member: Member, registration?: Registration | Record<string, any>): boolean => {
-  const adjustedHdc = registration?.adjustedHandicap ?? registration?.adjusted_handicap;
+  const adjustedHdc = registration?.adjustedHandicap;
   
   if (adjustedHdc === undefined || adjustedHdc === null || adjustedHdc === 0 || adjustedHdc === '0') {
     return false;

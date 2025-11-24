@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   MEMBERS: '@golf_members',
   REGISTRATIONS: '@golf_registrations',
   GROUPINGS: '@golf_groupings',
+  FINANCIALS: '@golf_financials',
 };
 
 export const storageService = {
@@ -289,6 +290,44 @@ export const storageService = {
       await AsyncStorage.setItem(`${STORAGE_KEYS.GROUPINGS}_${eventId}`, JSON.stringify(groupings));
     } catch (error) {
       console.error('Error saving groupings:', error);
+      throw error;
+    }
+  },
+
+  async getFinancials(): Promise<any[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.FINANCIALS);
+      if (data) {
+        try {
+          return JSON.parse(data);
+        } catch (parseError) {
+          console.error('Error parsing financials, clearing corrupted data:', parseError);
+          await AsyncStorage.removeItem(STORAGE_KEYS.FINANCIALS);
+          return [];
+        }
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading financials:', error);
+      return [];
+    }
+  },
+
+  async restoreFinancials(financials: any[], merge: boolean = false): Promise<void> {
+    try {
+      if (merge) {
+        const existingFinancials = await this.getFinancials();
+        const existingIds = new Set(existingFinancials.map(f => f.id));
+        const newFinancials = financials.filter(f => !existingIds.has(f.id));
+        const mergedFinancials = [...existingFinancials, ...newFinancials];
+        await AsyncStorage.setItem(STORAGE_KEYS.FINANCIALS, JSON.stringify(mergedFinancials));
+        console.log(`Merged ${newFinancials.length} new financial records (${financials.length - newFinancials.length} duplicates skipped)`);
+      } else {
+        await AsyncStorage.setItem(STORAGE_KEYS.FINANCIALS, JSON.stringify(financials));
+        console.log(`Replaced with ${financials.length} financial records`);
+      }
+    } catch (error) {
+      console.error('Error restoring financials:', error);
       throw error;
     }
   },

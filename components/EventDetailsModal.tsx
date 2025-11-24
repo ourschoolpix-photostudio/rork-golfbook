@@ -346,7 +346,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                   });
                 }
               }}
-              disabled={isAlreadyRegistered}
+              disabled={!!isAlreadyRegistered}
             >
               <Text style={styles.registerButtonText}>
                 {isAlreadyRegistered ? 'ALREADY REGISTERED' : 'REGISTER NOW!'}
