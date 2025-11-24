@@ -311,16 +311,16 @@ const styles = StyleSheet.create({
   },
   holeParsGrid: {
     flexDirection: 'column',
-    gap: 12,
   },
   holeParsRow: {
     flexDirection: 'row',
-    gap: 6,
     justifyContent: 'space-between',
+    marginBottom: 12,
   },
   holePar: {
     flex: 1,
     alignItems: 'center',
+    marginHorizontal: 3,
   },
   holeLabel: {
     fontSize: 11,
@@ -342,7 +342,6 @@ const styles = StyleSheet.create({
   playerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 12,
   },
   playerNumber: {
@@ -350,10 +349,12 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#374151',
     width: 20,
+    marginRight: 8,
   },
   playerNameInput: {
     flex: 1,
     marginBottom: 0,
+    marginRight: 8,
   },
   handicapInput: {
     width: 70,
@@ -363,7 +364,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
@@ -374,6 +374,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     alignItems: 'center',
+    marginRight: 6,
   },
   cancelButtonText: {
     fontSize: 14,
@@ -386,6 +387,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#1B5E20',
     alignItems: 'center',
+    marginLeft: 6,
   },
   saveButtonText: {
     fontSize: 14,

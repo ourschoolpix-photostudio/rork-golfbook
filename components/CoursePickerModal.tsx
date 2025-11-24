@@ -166,8 +166,10 @@ export default function CoursePickerModal({
                   style={styles.createButton}
                   onPress={() => setMode('create')}
                 >
-                  <Plus size={20} color="#fff" />
-                  <Text style={styles.createButtonText}>Create New Course</Text>
+                  <View style={styles.createButtonContent}>
+                    <Plus size={20} color="#fff" />
+                    <Text style={styles.createButtonText}>Create New Course</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </>
@@ -335,16 +337,16 @@ const styles = StyleSheet.create({
   },
   holeParsGrid: {
     flexDirection: 'column',
-    gap: 12,
   },
   holeParsRow: {
     flexDirection: 'row',
-    gap: 6,
     justifyContent: 'space-between',
+    marginBottom: 12,
   },
   holePar: {
     flex: 1,
     alignItems: 'center',
+    marginHorizontal: 3,
   },
   holeLabel: {
     fontSize: 11,
@@ -367,24 +369,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
   createButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 8,
     backgroundColor: '#1B5E20',
-    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+  createButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   createButtonText: {
     fontSize: 14,
     fontWeight: '700' as const,
     color: '#fff',
+    marginLeft: 8,
   },
   cancelButton: {
     flex: 1,
@@ -393,6 +398,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     alignItems: 'center',
+    marginRight: 6,
   },
   cancelButtonText: {
     fontSize: 14,
@@ -405,6 +411,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#1B5E20',
     alignItems: 'center',
+    marginLeft: 6,
   },
   saveButtonText: {
     fontSize: 14,
