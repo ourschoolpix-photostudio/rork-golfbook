@@ -110,22 +110,22 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                   >
                     <View style={styles.notificationHeader}>
                       <Text style={styles.eventName} numberOfLines={1}>
-                        {notification.eventName}
+                        {notification.metadata?.eventName || 'Event'}
                       </Text>
                       <Text style={styles.timestamp}>
                         {formatDate(notification.createdAt)}
                       </Text>
                     </View>
-                    <Text style={styles.playerName}>{notification.playerName}</Text>
-                    {notification.playerPhone && (
-                      <Text style={styles.playerPhone}>{notification.playerPhone}</Text>
+                    <Text style={styles.playerName}>{notification.metadata?.playerName || 'Player'}</Text>
+                    {notification.metadata?.playerPhone && (
+                      <Text style={styles.playerPhone}>{notification.metadata?.playerPhone}</Text>
                     )}
                     <View style={styles.paymentBadge}>
                       <Text style={[
                         styles.paymentText,
-                        notification.paymentMethod === 'paypal' && styles.paypalText
+                        notification.metadata?.paymentMethod === 'paypal' && styles.paypalText
                       ]}>
-                        {notification.paymentMethod === 'zelle' ? 'Zelle - Unpaid' : 'PayPal - Paid'}
+                        {notification.metadata?.paymentMethod === 'zelle' ? 'Zelle - Unpaid' : 'PayPal - Paid'}
                       </Text>
                     </View>
                   </TouchableOpacity>

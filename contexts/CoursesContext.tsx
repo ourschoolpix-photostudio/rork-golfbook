@@ -8,7 +8,7 @@ export const [CoursesProvider, useCourses] = createContextHook(() => {
   const { currentUser } = useAuth();
 
   const coursesQuery = trpc.courses.getAll.useQuery(
-    currentUser?.id ? { memberId: currentUser.id } : undefined,
+    { memberId: currentUser?.id || '' },
     { enabled: !!currentUser?.id }
   );
 

@@ -37,7 +37,11 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
   });
 
   const addEvent = useCallback(async (event: Event) => {
-    await createEventMutation.mutateAsync(event);
+    const eventWithDefaults = {
+      ...event,
+      startDate: event.startDate || event.date,
+    };
+    await createEventMutation.mutateAsync(eventWithDefaults as any);
   }, [createEventMutation]);
 
   const updateEvent = useCallback(async (eventId: string, updates: Partial<Event>) => {
@@ -51,7 +55,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
   const addRegistration = useCallback(async (registration: EventRegistration) => {
     await registerMutation.mutateAsync({
       eventId: registration.eventId,
-      memberId: registration.playerId,
+      memberId: registration.memberId,
     });
   }, [registerMutation]);
 

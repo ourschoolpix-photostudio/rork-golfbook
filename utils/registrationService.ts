@@ -11,6 +11,8 @@ export interface Registration {
   adjustedHandicap?: string;
   isCustomGuest?: boolean;
   numberOfGuests?: number;
+  guestNames?: string;
+  isSponsor?: boolean | null;
 }
 
 export const registrationService = {

@@ -431,6 +431,7 @@ export const registerForEventProcedure = publicProcedure
   .input(z.object({
     eventId: z.string(),
     memberId: z.string(),
+    isSponsor: z.boolean().optional(),
   }))
   .mutation(async ({ input }) => {
     console.log('📝 Registering member for event:', input.memberId, input.eventId);
@@ -443,6 +444,7 @@ export const registerForEventProcedure = publicProcedure
         member_id: input.memberId,
         status: 'registered',
         registered_at: new Date().toISOString(),
+        is_sponsor: input.isSponsor || false,
       });
 
     if (error) {

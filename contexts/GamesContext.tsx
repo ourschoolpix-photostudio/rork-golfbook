@@ -8,7 +8,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
   const { currentUser } = useAuth();
 
   const gamesQuery = trpc.games.getAll.useQuery(
-    { memberId: currentUser?.id },
+    { memberId: currentUser?.id || '' },
     { enabled: !!currentUser?.id }
   );
 

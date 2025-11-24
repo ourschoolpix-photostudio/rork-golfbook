@@ -75,6 +75,8 @@ export interface Event {
   day1LeadingHole?: string;
   day1Par?: string;
   day1HolePars?: string[];
+  day1SlopeRating?: string;
+  day1CourseRating?: string;
   day2StartTime?: string;
   day2StartPeriod?: 'AM' | 'PM';
   day2EndTime?: string;
@@ -84,6 +86,8 @@ export interface Event {
   day2LeadingHole?: string;
   day2Par?: string;
   day2HolePars?: string[];
+  day2SlopeRating?: string;
+  day2CourseRating?: string;
   day3StartTime?: string;
   day3StartPeriod?: 'AM' | 'PM';
   day3EndTime?: string;
@@ -93,6 +97,8 @@ export interface Event {
   day3LeadingHole?: string;
   day3Par?: string;
   day3HolePars?: string[];
+  day3SlopeRating?: string;
+  day3CourseRating?: string;
   holePars?: string[];
   flightACutoff?: string;
   flightBCutoff?: string;
