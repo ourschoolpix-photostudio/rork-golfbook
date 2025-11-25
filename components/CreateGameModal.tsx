@@ -45,6 +45,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
     { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
     { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
   ]);
+  const [bettingAmount, setBettingAmount] = useState<string>('');
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
 
   const coursesQuery = trpc.courses.getAll.useQuery(
@@ -215,6 +216,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
         { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
         { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
       ]);
+      setBettingAmount('');
       onClose();
     } catch (error) {
       console.error('[CreateGameModal] Error creating game:', error);
@@ -584,6 +586,46 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
                 </View>
               ))}
             </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Betting (Optional)</Text>
+              {gameType === 'wolf' ? (
+                <View>
+                  <Text style={styles.bettingDescription}>Enter dollar amount per hole</Text>
+                  <View style={styles.bettingRow}>
+                    <Text style={styles.bettingLabel}>$ Per Hole:</Text>
+                    <TextInput
+                      style={styles.bettingInput}
+                      placeholder="0.00"
+                      placeholderTextColor="#999"
+                      keyboardType="decimal-pad"
+                      value={bettingAmount}
+                      onChangeText={setBettingAmount}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View>
+                  <Text style={styles.bettingDescription}>
+                    Amount per player for Front 9 / Back 9 / Overall
+                  </Text>
+                  <View style={styles.bettingRow}>
+                    <Text style={styles.bettingLabel}>$ Amount:</Text>
+                    <TextInput
+                      style={styles.bettingInput}
+                      placeholder="0.00"
+                      placeholderTextColor="#999"
+                      keyboardType="decimal-pad"
+                      value={bettingAmount}
+                      onChangeText={setBettingAmount}
+                    />
+                  </View>
+                  <Text style={styles.bettingHelpText}>
+                    Example: ${bettingAmount || '0'} = ${bettingAmount || '0'} front, ${bettingAmount || '0'} back, ${bettingAmount || '0'} overall = ${(parseFloat(bettingAmount) * 3 || 0).toFixed(2)} total per player
+                  </Text>
+                </View>
+              )}
+            </View>
           </ScrollView>
 
           <View style={styles.footer}>
@@ -951,6 +993,41 @@ const styles = StyleSheet.create({
   },
   strokeModeButtonTextDisabled: {
     color: '#ccc',
+  },
+  bettingDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 12,
+  },
+  bettingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  bettingLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#374151',
+    minWidth: 90,
+  },
+  bettingInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+    backgroundColor: '#fff',
+  },
+  bettingHelpText: {
+    fontSize: 11,
+    color: '#1B5E20',
+    marginTop: 4,
+    fontStyle: 'italic' as const,
   },
   footer: {
     flexDirection: 'row',
