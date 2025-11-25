@@ -17,6 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { photoService } from '@/utils/photoService';
+import { trpc } from '@/lib/trpc';
 
 interface AddEventModalProps {
   visible: boolean;
@@ -45,6 +46,7 @@ interface AddEventModalProps {
     day1SlopeRating: string;
     day1CourseRating: string;
     day1HolePars?: string[];
+    day1CourseId?: string;
     day2StartTime: string;
     day2StartPeriod: 'AM' | 'PM';
     day2EndTime: string;
@@ -56,6 +58,7 @@ interface AddEventModalProps {
     day2SlopeRating: string;
     day2CourseRating: string;
     day2HolePars?: string[];
+    day2CourseId?: string;
     day3StartTime: string;
     day3StartPeriod: 'AM' | 'PM';
     day3EndTime: string;
@@ -67,6 +70,7 @@ interface AddEventModalProps {
     day3SlopeRating: string;
     day3CourseRating: string;
     day3HolePars?: string[];
+    day3CourseId?: string;
     flightACutoff: string;
     flightBCutoff: string;
     flightATeebox: string;
@@ -118,6 +122,12 @@ export function AddEventModal({
 }: AddEventModalProps) {
   const [useSameCourseDay2, setUseSameCourseDay2] = useState(false);
   const [useSameCourseDay3, setUseSameCourseDay3] = useState(false);
+  const [showCourseDropdown1, setShowCourseDropdown1] = useState(false);
+  const [showCourseDropdown2, setShowCourseDropdown2] = useState(false);
+  const [showCourseDropdown3, setShowCourseDropdown3] = useState(false);
+  
+  const coursesQuery = trpc.courses.getAll.useQuery({ source: 'admin' });
+  const adminCourses = coursesQuery.data || [];
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   
   const day1HoleRefs = useRef<(TextInput | null)[]>(Array(18).fill(null));
@@ -175,6 +185,27 @@ export function AddEventModal({
 
   const handleMemoChange = (text: string) => {
     onFormChange('memo', text);
+  };
+
+  const handleCourseSelect = (day: 1 | 2 | 3, courseId: string) => {
+    const course = adminCourses.find((c: { id: string }) => c.id === courseId);
+    if (!course) return;
+
+    const prefix = `day${day}` as 'day1' | 'day2' | 'day3';
+    
+    onFormChange(`${prefix}CourseId`, courseId);
+    onFormChange(`${prefix}Course`, course.name);
+    onFormChange(`${prefix}Par`, course.par.toString());
+    onFormChange(`${prefix}SlopeRating`, course.slopeRating?.toString() || '');
+    onFormChange(`${prefix}CourseRating`, course.courseRating?.toString() || '');
+    
+    if (course.holePars && course.holePars.length === 18) {
+      onFormChange(`${prefix}HolePars`, course.holePars.map((p: number) => p.toString()));
+    }
+
+    if (day === 1) setShowCourseDropdown1(false);
+    if (day === 2) setShowCourseDropdown2(false);
+    if (day === 3) setShowCourseDropdown3(false);
   };
 
   const displayEntryFee = form.entryFee ? `$${form.entryFee}` : '';
