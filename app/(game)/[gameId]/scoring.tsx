@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from 'lucide-react-native';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy, Users } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonalGamePlayer } from '@/types';
@@ -38,6 +38,8 @@ export default function GameScoringScreen() {
   const [strokesUsedOnHole, setStrokesUsedOnHole] = useState<{ [playerIndex: number]: boolean }>({});
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [initialLoadDone, setInitialLoadDone] = useState<boolean>(false);
+  const [wolfPartner, setWolfPartner] = useState<number | null>(null);
+  const [isLoneWolf, setIsLoneWolf] = useState<boolean>(false);
 
   const updateGameMutation = trpc.games.update.useMutation();
 
@@ -476,6 +478,27 @@ export default function GameScoringScreen() {
 
   const allComplete = areAllPlayersComplete();
   const isTeamMatchPlay = game.gameType === 'team-match-play';
+  const isWolf = game.gameType === 'wolf';
+
+  const currentWolfPlayerIndex = useMemo(() => {
+    if (!isWolf || !game.wolfOrder) return -1;
+    return game.wolfOrder[(currentHole - 1) % game.wolfOrder.length];
+  }, [isWolf, game, currentHole]);
+
+  const currentWolfPartnership = useMemo(() => {
+    if (!isWolf || !game.wolfPartnerships) return null;
+    return game.wolfPartnerships[currentHole];
+  }, [isWolf, game, currentHole]);
+
+  useEffect(() => {
+    if (isWolf && currentWolfPartnership) {
+      setWolfPartner(currentWolfPartnership.partnerPlayerIndex);
+      setIsLoneWolf(currentWolfPartnership.isLoneWolf);
+    } else {
+      setWolfPartner(null);
+      setIsLoneWolf(false);
+    }
+  }, [isWolf, currentWolfPartnership]);
 
   return (
     <>

@@ -185,6 +185,7 @@ export interface PersonalGamePlayer {
   teamId?: 1 | 2;
   strokesUsed?: number[];
   strokeMode?: 'manual' | 'auto' | 'all-but-par3';
+  wolfPoints?: number;
 }
 
 export interface PersonalGame {
@@ -201,6 +202,8 @@ export interface PersonalGame {
   matchPlayScoringType?: 'best-ball' | 'alternate-ball';
   teamScores?: { team1: number; team2: number };
   holeResults?: ('team1' | 'team2' | 'tie')[];
+  wolfOrder?: number[];
+  wolfPartnerships?: { [hole: number]: { wolfPlayerIndex: number; partnerPlayerIndex: number | null; isLoneWolf: boolean } };
 }
 
 export interface RegistrationNotification {

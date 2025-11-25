@@ -43,7 +43,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       throw new Error('User must be logged in to create a game');
     }
 
-    const result = await createGameMutation.mutateAsync({
+    const gameData: any = {
       memberId: currentUser.id,
       courseName,
       coursePar,
@@ -58,10 +58,18 @@ export const [GamesProvider, useGames] = createContextHook(() => {
         strokeMode: p.strokeMode || 'manual',
         teamId: p.teamId,
         strokesUsed: new Array(18).fill(0),
+        wolfPoints: gameType === 'wolf' ? 0 : undefined,
       })),
       gameType: gameType || 'individual-net',
       matchPlayScoringType,
-    });
+    };
+
+    if (gameType === 'wolf') {
+      gameData.wolfOrder = players.map((_, idx) => idx);
+      gameData.wolfPartnerships = {};
+    }
+
+    const result = await createGameMutation.mutateAsync(gameData);
     console.log('[GamesContext] Created game:', result.id);
     await gamesQuery.refetch();
     console.log('[GamesContext] Refetched games after creation');
