@@ -48,7 +48,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
 
   const coursesQuery = trpc.courses.getAll.useQuery(
-    { memberId: currentUser?.id || '' },
+    { memberId: currentUser?.id || '', source: 'admin' },
     { enabled: !!currentUser?.id && visible }
   );
 

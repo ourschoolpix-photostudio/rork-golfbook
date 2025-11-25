@@ -42,7 +42,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
   const strokeIndexInputRefs = React.useRef<(TextInput | null)[]>([]);
 
   const coursesQuery = trpc.courses.getAll.useQuery(
-    { memberId: currentUser?.id || '' },
+    { memberId: currentUser?.id || '', source: 'admin' },
     { enabled: !!currentUser?.id && visible }
   );
 
@@ -148,6 +148,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
           holePars: parsedHolePars,
           strokeIndices: parsedStrokeIndices.length === 18 ? parsedStrokeIndices : undefined,
           isPublic: false,
+          source: 'admin',
         });
         console.log('[CoursesManagementModal] Created course');
       }

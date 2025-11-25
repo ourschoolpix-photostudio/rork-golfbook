@@ -4,17 +4,30 @@ import { z } from "zod";
 
 
 const getAllProcedure = publicProcedure
-  .input(z.object({ memberId: z.string() }).optional())
+  .input(z.object({ 
+    memberId: z.string(),
+    source: z.enum(['admin', 'personal', 'all']).optional(),
+  }).optional())
   .query(async ({ ctx, input }) => {
     try {
-      console.log('[Courses tRPC] Getting all courses for member:', input?.memberId);
+      console.log('[Courses tRPC] Getting courses for member:', input?.memberId, 'source:', input?.source);
       
       let query = ctx.supabase.from('courses').select('*');
       
-      if (input?.memberId) {
-        query = query.or(`is_public.eq.true,member_id.eq.${input.memberId}`);
+      if (input?.source === 'admin') {
+        query = query.eq('source', 'admin');
+      } else if (input?.source === 'personal') {
+        if (input?.memberId) {
+          query = query.eq('source', 'personal').eq('member_id', input.memberId);
+        } else {
+          query = query.eq('source', 'personal');
+        }
       } else {
-        query = query.eq('is_public', true);
+        if (input?.memberId) {
+          query = query.or(`source.eq.admin,and(source.eq.personal,member_id.eq.${input.memberId})`);
+        } else {
+          query = query.eq('source', 'admin');
+        }
       }
       
       query = query.order('name', { ascending: true });
@@ -34,6 +47,7 @@ const getAllProcedure = publicProcedure
         strokeIndices: course.stroke_indices,
         memberId: course.member_id,
         isPublic: course.is_public,
+        source: course.source,
         createdAt: course.created_at,
         updatedAt: course.updated_at,
       }));
@@ -54,10 +68,11 @@ const createProcedure = publicProcedure
     holePars: z.array(z.number()),
     strokeIndices: z.array(z.number()).optional(),
     isPublic: z.boolean().optional(),
+    source: z.enum(['admin', 'personal']).optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
-      console.log('[Courses tRPC] Creating course:', input.name);
+      console.log('[Courses tRPC] Creating course:', input.name, 'source:', input.source || 'personal');
       
       const { data, error } = await ctx.supabase
         .from('courses')
@@ -68,6 +83,7 @@ const createProcedure = publicProcedure
           hole_pars: input.holePars,
           stroke_indices: input.strokeIndices,
           is_public: input.isPublic || false,
+          source: input.source || 'personal',
         })
         .select()
         .single();
@@ -86,6 +102,7 @@ const createProcedure = publicProcedure
         strokeIndices: data.stroke_indices,
         memberId: data.member_id,
         isPublic: data.is_public,
+        source: data.source,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };
@@ -138,6 +155,7 @@ const updateProcedure = publicProcedure
         strokeIndices: data.stroke_indices,
         memberId: data.member_id,
         isPublic: data.is_public,
+        source: data.source,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };
