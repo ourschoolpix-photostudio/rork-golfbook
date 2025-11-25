@@ -63,6 +63,14 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       setCoursePar(course.par.toString());
       setHolePars(course.holePars.map((p: number) => p.toString()));
       setShowCourseSelector(false);
+      
+      if (course.strokeIndices && course.strokeIndices.length === 18 && gameType === 'wolf') {
+        const updatedPlayers = players.map(p => ({
+          ...p,
+          strokeMode: 'auto' as const,
+        }));
+        setPlayers(updatedPlayers);
+      }
     }
   };
 
@@ -483,6 +491,39 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
                         <Text style={styles.strokesHelpText}>
                           Total: {parseInt(player.strokesASide, 10) * 2 || 0} strokes ({parseInt(player.strokesASide, 10) || 0} per 9)
                         </Text>
+                        {courseHasStrokeIndices && parseInt(player.strokesASide, 10) > 0 && (() => {
+                          const strokesPerSide = parseInt(player.strokesASide, 10);
+                          const frontNineIndices = selectedCourse!.strokeIndices.slice(0, 9);
+                          const backNineIndices = selectedCourse!.strokeIndices.slice(9, 18);
+                          
+                          const sortedFront = frontNineIndices
+                            .map((si: number, idx: number) => ({ holeNum: idx + 1, strokeIndex: si }))
+                            .sort((a: { holeNum: number; strokeIndex: number }, b: { holeNum: number; strokeIndex: number }) => a.strokeIndex - b.strokeIndex)
+                            .slice(0, Math.min(strokesPerSide, 9))
+                            .map((h: { holeNum: number; strokeIndex: number }) => h.holeNum);
+                          
+                          const sortedBack = backNineIndices
+                            .map((si: number, idx: number) => ({ holeNum: idx + 10, strokeIndex: si }))
+                            .sort((a: { holeNum: number; strokeIndex: number }, b: { holeNum: number; strokeIndex: number }) => a.strokeIndex - b.strokeIndex)
+                            .slice(0, Math.min(strokesPerSide, 9))
+                            .map((h: { holeNum: number; strokeIndex: number }) => h.holeNum);
+                          
+                          return (
+                            <View style={styles.strokeHolesDisplay}>
+                              <Text style={styles.strokeHolesLabel}>Stroke Holes:</Text>
+                              <View style={styles.strokeHolesLists}>
+                                <View style={styles.strokeHolesSide}>
+                                  <Text style={styles.strokeHolesSideLabel}>Front:</Text>
+                                  <Text style={styles.strokeHolesNumbers}>{sortedFront.join(', ')}</Text>
+                                </View>
+                                <View style={styles.strokeHolesSide}>
+                                  <Text style={styles.strokeHolesSideLabel}>Back:</Text>
+                                  <Text style={styles.strokeHolesNumbers}>{sortedBack.join(', ')}</Text>
+                                </View>
+                              </View>
+                            </View>
+                          );
+                        })()}
                       </View>
                     </View>
                   )}
@@ -1062,5 +1103,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700' as const,
     color: '#fff',
+  },
+  strokeHolesDisplay: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#f0f8f0',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#1B5E20',
+  },
+  strokeHolesLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#1B5E20',
+    marginBottom: 6,
+  },
+  strokeHolesLists: {
+    gap: 4,
+  },
+  strokeHolesSide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  strokeHolesSideLabel: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    color: '#666',
+    minWidth: 40,
+  },
+  strokeHolesNumbers: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: '#1B5E20',
+    flex: 1,
   },
 });

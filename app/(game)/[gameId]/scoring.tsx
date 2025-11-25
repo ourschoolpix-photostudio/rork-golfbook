@@ -277,9 +277,27 @@ export default function GameScoringScreen() {
         return strokesUsedOnHole[playerIndex] || false;
       }
       
-      const strokesNeeded = player.strokesReceived;
-      const holeStrokeIndex = game.strokeIndices[holeIndex];
-      return holeStrokeIndex <= strokesNeeded;
+      if (isWolf) {
+        const strokesPerSide = player.strokesReceived;
+        const isFrontNine = holeIndex < 9;
+        const holeStrokeIndex = game.strokeIndices[holeIndex];
+        
+        if (isFrontNine) {
+          const frontNineIndices = game.strokeIndices.slice(0, 9);
+          const sortedFrontIndices = [...frontNineIndices].sort((a, b) => a - b);
+          const frontCutoff = sortedFrontIndices[Math.min(strokesPerSide - 1, 8)];
+          return holeStrokeIndex <= frontCutoff;
+        } else {
+          const backNineIndices = game.strokeIndices.slice(9, 18);
+          const sortedBackIndices = [...backNineIndices].sort((a, b) => a - b);
+          const backCutoff = sortedBackIndices[Math.min(strokesPerSide - 1, 8)];
+          return holeStrokeIndex <= backCutoff;
+        }
+      } else {
+        const strokesNeeded = player.strokesReceived;
+        const holeStrokeIndex = game.strokeIndices[holeIndex];
+        return holeStrokeIndex <= strokesNeeded;
+      }
     }
     
     return false;
@@ -661,6 +679,7 @@ export default function GameScoringScreen() {
     if (isWolf && (wolfPartner !== null || isLoneWolf)) {
       savewolfPartnership();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wolfPartner, isLoneWolf]);
 
   if (!game) {
@@ -762,7 +781,19 @@ export default function GameScoringScreen() {
           <Text style={styles.holeLabel}>HOLE</Text>
           <Text style={styles.holeNumber}>{currentHole}</Text>
           {game.strokeIndices && game.strokeIndices.length === 18 && (
-            <Text style={styles.strokeIndexLabel}>Stroke Index: {game.strokeIndices[currentHole - 1]}</Text>
+            <View style={styles.strokeIndexContainer}>
+              <Text style={styles.strokeIndexLabel}>SI: {game.strokeIndices[currentHole - 1]}</Text>
+              {isWolf && (() => {
+                const isFrontNine = currentHole <= 9;
+                const indices = isFrontNine ? game.strokeIndices.slice(0, 9) : game.strokeIndices.slice(9, 18);
+                const sortedIndices = [...indices].sort((a, b) => a - b);
+                return (
+                  <Text style={styles.strokeIndexHelpText}>
+                    {isFrontNine ? 'Front' : 'Back'} Hardest: {sortedIndices.slice(0, Math.min(5, sortedIndices.length)).join(', ')}
+                  </Text>
+                );
+              })()}
+            </View>
           )}
         </View>
 
@@ -1203,10 +1234,19 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#1B5E20',
   },
+  strokeIndexContainer: {
+    alignItems: 'center',
+    marginTop: 2,
+  },
   strokeIndexLabel: {
     fontSize: 10,
     fontWeight: '600' as const,
     color: '#666',
+  },
+  strokeIndexHelpText: {
+    fontSize: 8,
+    fontWeight: '500' as const,
+    color: '#999',
     marginTop: 2,
   },
   scrollContent: {
