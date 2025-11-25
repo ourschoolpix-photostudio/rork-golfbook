@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,15 +11,27 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { trpc } from '@/lib/trpc';
 
 export default function GameScoringScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
-  const { getGame, completeGame } = useGames();
+  const { completeGame } = useGames();
+  const { currentUser } = useAuth();
 
-  const [game, setGame] = useState(getGame(gameId));
+  const gameQuery = trpc.games.getAll.useQuery(
+    { memberId: currentUser?.id || '' },
+    { enabled: !!currentUser?.id, refetchInterval: false }
+  );
+
+  const game = useMemo(() => {
+    if (gameQuery.data) {
+      return gameQuery.data.find(g => g.id === gameId);
+    }
+    return undefined;
+  }, [gameQuery.data, gameId]);
   const [currentHole, setCurrentHole] = useState<number>(1);
   const [holeScores, setHoleScores] = useState<{ [playerIndex: number]: { [hole: number]: number } }>({});
   const [strokesUsedOnHole, setStrokesUsedOnHole] = useState<{ [playerIndex: number]: boolean }>({});
@@ -244,9 +256,8 @@ export default function GameScoringScreen() {
       }
 
       await updateGameMutation.mutateAsync(updateData);
+      await gameQuery.refetch();
 
-      const updatedGame = getGame(gameId);
-      setGame(updatedGame);
       console.log('[GameScoring] Saved all scores');
       Alert.alert('Success', 'All scores have been saved!');
     } catch (error) {
@@ -341,6 +352,24 @@ export default function GameScoringScreen() {
           <View style={styles.teamScoreBox}>
             <Text style={styles.teamLabel}>Team 2</Text>
             <Text style={styles.teamScore}>{game.teamScores.team2}</Text>
+          </View>
+        </View>
+      )}
+
+      {isTeamMatchPlay && game.holeResults && (
+        <View style={styles.holeResultIndicator}>
+          <Text style={styles.holeResultLabel}>Hole {currentHole} Result:</Text>
+          <View style={[
+            styles.holeResultBadge,
+            game.holeResults[currentHole - 1] === 'team1' && styles.holeResultTeam1,
+            game.holeResults[currentHole - 1] === 'team2' && styles.holeResultTeam2,
+            game.holeResults[currentHole - 1] === 'tie' && styles.holeResultTie,
+          ]}>
+            <Text style={styles.holeResultText}>
+              {game.holeResults[currentHole - 1] === 'team1' && 'Team 1 Wins'}
+              {game.holeResults[currentHole - 1] === 'team2' && 'Team 2 Wins'}
+              {game.holeResults[currentHole - 1] === 'tie' && 'Tie'}
+            </Text>
           </View>
         </View>
       )}
@@ -814,5 +843,40 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 16,
+  },
+  holeResultIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#f9f9f9',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    gap: 12,
+  },
+  holeResultLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  holeResultBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+  },
+  holeResultTeam1: {
+    backgroundColor: '#2196F3',
+  },
+  holeResultTeam2: {
+    backgroundColor: '#FF9800',
+  },
+  holeResultTie: {
+    backgroundColor: '#9E9E9E',
+  },
+  holeResultText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#fff',
   },
 });
