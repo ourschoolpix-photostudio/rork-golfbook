@@ -521,20 +521,19 @@ export default function GameScoringScreen() {
         });
         const isTie = game.holeResults[currentHole - 1] === 'tie';
         const showGreenTie = isTie && hasAnyScores;
+        const holeResult = game.holeResults[currentHole - 1];
         
         return (
           <View style={styles.holeResultIndicator}>
             <Text style={styles.holeResultLabel}>Hole {currentHole} Result:</Text>
             <View style={[
               styles.holeResultBadge,
-              game.holeResults[currentHole - 1] === 'team1' && styles.holeResultTeam1,
-              game.holeResults[currentHole - 1] === 'team2' && styles.holeResultTeam2,
+              holeResult === 'team1' && styles.holeResultTeam1,
+              holeResult === 'team2' && styles.holeResultTeam2,
               isTie && (showGreenTie ? styles.holeResultTieActive : styles.holeResultTie),
             ]}>
               <Text style={styles.holeResultText}>
-                {game.holeResults[currentHole - 1] === 'team1' && 'Team 1 Wins'}
-                {game.holeResults[currentHole - 1] === 'team2' && 'Team 2 Wins'}
-                {isTie && 'Tie'}
+                {holeResult === 'team1' ? 'Team 1 Wins' : holeResult === 'team2' ? 'Team 2 Wins' : 'Tie'}
               </Text>
             </View>
           </View>
