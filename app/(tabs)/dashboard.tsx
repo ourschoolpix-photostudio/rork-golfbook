@@ -38,6 +38,10 @@ export default function DashboardScreen() {
     staleTime: 0,
   });
 
+  const membersQuery = trpc.members.getAll.useQuery(undefined, {
+    enabled: !!currentUser,
+  });
+
   useFocusEffect(
     useCallback(() => {
       console.log('📱 Dashboard - Screen focused, refetching data...');
@@ -46,10 +50,6 @@ export default function DashboardScreen() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
-
-  const membersQuery = trpc.members.getAll.useQuery(undefined, {
-    enabled: !!currentUser,
-  });
 
   useEffect(() => {
     if (eventsQuery.data) {
