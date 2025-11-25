@@ -22,7 +22,7 @@ const gameSchema = z.object({
   createdAt: z.string(),
   status: z.enum(['in-progress', 'completed']),
   completedAt: z.string().optional(),
-  gameType: z.enum(['individual-net', 'team-match-play']).optional(),
+  gameType: z.enum(['individual-net', 'team-match-play', 'wolf', 'niners']).optional(),
   matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
   teamScores: z.object({ team1: z.number(), team2: z.number() }).optional(),
   holeResults: z.array(z.enum(['team1', 'team2', 'tie'])).optional(),
@@ -77,7 +77,7 @@ const createProcedure = publicProcedure
     holePars: z.array(z.number()),
     strokeIndices: z.array(z.number()).optional(),
     players: z.array(playerSchema),
-    gameType: z.enum(['individual-net', 'team-match-play']).optional(),
+    gameType: z.enum(['individual-net', 'team-match-play', 'wolf', 'niners']).optional(),
     matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
   }))
   .mutation(async ({ ctx, input }) => {

@@ -197,7 +197,7 @@ export interface PersonalGame {
   createdAt: string;
   completedAt?: string;
   status: 'in-progress' | 'completed';
-  gameType?: 'individual-net' | 'team-match-play';
+  gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners';
   matchPlayScoringType?: 'best-ball' | 'alternate-ball';
   teamScores?: { team1: number; team2: number };
   holeResults?: ('team1' | 'team2' | 'tie')[];

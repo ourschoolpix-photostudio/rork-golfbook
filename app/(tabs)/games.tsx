@@ -34,7 +34,7 @@ export default function GamesScreen() {
     coursePar: number,
     holePars: number[],
     players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
-    gameType?: 'individual-net' | 'team-match-play',
+    gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
     strokeIndices?: number[]
   ) => {

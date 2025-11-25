@@ -24,7 +24,7 @@ interface CreateGameModalProps {
     coursePar: number,
     holePars: number[],
     players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
-    gameType?: 'individual-net' | 'team-match-play',
+    gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
     strokeIndices?: number[]
   ) => Promise<void>;
@@ -37,7 +37,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
   const [courseName, setCourseName] = useState<string>('');
   const [coursePar, setCoursePar] = useState<string>('72');
   const [holePars, setHolePars] = useState<string[]>(new Array(18).fill(''));
-  const [gameType, setGameType] = useState<'individual-net' | 'team-match-play'>('individual-net');
+  const [gameType, setGameType] = useState<'individual-net' | 'team-match-play' | 'wolf' | 'niners'>('individual-net');
   const [matchPlayScoringType, setMatchPlayScoringType] = useState<'best-ball' | 'alternate-ball'>('best-ball');
   const [players, setPlayers] = useState<{ name: string; handicap: string; strokesReceived: string; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[]>([
     { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
@@ -200,6 +200,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       setHolePars(new Array(18).fill(''));
       setGameType('individual-net');
       setMatchPlayScoringType('best-ball');
+      setMatchPlayScoringType('best-ball');
       setPlayers([
         { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
         { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
@@ -258,6 +259,36 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
                     gameType === 'team-match-play' && styles.gameTypeButtonTextActive,
                   ]}>
                     Team Match Play
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.gameTypeSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.gameTypeButton,
+                    gameType === 'wolf' && styles.gameTypeButtonActive,
+                  ]}
+                  onPress={() => setGameType('wolf')}
+                >
+                  <Text style={[
+                    styles.gameTypeButtonText,
+                    gameType === 'wolf' && styles.gameTypeButtonTextActive,
+                  ]}>
+                    Wolf
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.gameTypeButton,
+                    gameType === 'niners' && styles.gameTypeButtonActive,
+                  ]}
+                  onPress={() => setGameType('niners')}
+                >
+                  <Text style={[
+                    styles.gameTypeButtonText,
+                    gameType === 'niners' && styles.gameTypeButtonTextActive,
+                  ]}>
+                    Niners
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -583,6 +614,7 @@ const styles = StyleSheet.create({
   gameTypeSelector: {
     flexDirection: 'row',
     gap: 8,
+    marginBottom: 8,
   },
   gameTypeButton: {
     flex: 1,
