@@ -27,7 +27,14 @@ export default function GameScorecardScreen() {
     );
   }
 
+  const isWolf = game.gameType === 'wolf';
+
   const sortedPlayers = [...game.players].sort((a, b) => {
+    if (isWolf) {
+      if ((a.wolfPoints || 0) === 0) return 1;
+      if ((b.wolfPoints || 0) === 0) return -1;
+      return (b.wolfPoints || 0) - (a.wolfPoints || 0);
+    }
     if (a.totalScore === 0) return 1;
     if (b.totalScore === 0) return -1;
     return a.totalScore - b.totalScore;
@@ -71,32 +78,42 @@ export default function GameScorecardScreen() {
         </View>
 
         <View style={styles.leaderboardSection}>
-          <Text style={styles.sectionTitle}>Final Scores</Text>
+          <Text style={styles.sectionTitle}>{isWolf ? 'Wolf Points Leaderboard' : 'Final Scores'}</Text>
           {sortedPlayers.map((player, index) => {
             const scoreDiff = player.totalScore > 0 ? player.totalScore - game.coursePar : 0;
             const scoreDiffText = scoreDiff === 0 ? 'E' : scoreDiff > 0 ? `+${scoreDiff}` : String(scoreDiff);
+            const wolfPoints = player.wolfPoints || 0;
 
             return (
               <View key={index} style={styles.playerCard}>
                 <View style={styles.playerRank}>
-                  <Text style={styles.rankText}>{player.totalScore > 0 ? index + 1 : '-'}</Text>
+                  <Text style={styles.rankText}>
+                    {isWolf ? (wolfPoints > 0 ? index + 1 : '-') : (player.totalScore > 0 ? index + 1 : '-')}
+                  </Text>
                 </View>
                 <View style={styles.playerCardInfo}>
                   <Text style={styles.playerCardName}>{player.name}</Text>
                   <Text style={styles.playerCardHandicap}>HDC: {player.handicap}</Text>
                 </View>
-                <View style={styles.playerCardScores}>
-                  <Text style={styles.playerCardTotal}>{player.totalScore > 0 ? player.totalScore : '-'}</Text>
-                  {player.totalScore > 0 && (
-                    <Text style={[
-                      styles.playerCardDiff,
-                      scoreDiff === 0 && styles.scoreDiffEven,
-                      scoreDiff < 0 && styles.scoreDiffUnder,
-                    ]}>
-                      {scoreDiffText}
-                    </Text>
-                  )}
-                </View>
+                {isWolf ? (
+                  <View style={styles.playerCardScores}>
+                    <Text style={styles.playerCardTotal}>{wolfPoints > 0 ? wolfPoints : '-'}</Text>
+                    <Text style={styles.playerCardDiff}>points</Text>
+                  </View>
+                ) : (
+                  <View style={styles.playerCardScores}>
+                    <Text style={styles.playerCardTotal}>{player.totalScore > 0 ? player.totalScore : '-'}</Text>
+                    {player.totalScore > 0 && (
+                      <Text style={[
+                        styles.playerCardDiff,
+                        scoreDiff === 0 && styles.scoreDiffEven,
+                        scoreDiff < 0 && styles.scoreDiffUnder,
+                      ]}>
+                        {scoreDiffText}
+                      </Text>
+                    )}
+                  </View>
+                )}
               </View>
             );
           })}

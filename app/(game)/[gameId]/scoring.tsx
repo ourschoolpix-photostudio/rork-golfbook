@@ -448,6 +448,28 @@ export default function GameScoringScreen() {
     return calculateWolfPointsForHole(currentHole);
   };
 
+  const getTotalWolfPoints = (playerIndex: number): number => {
+    if (!isWolf || !game) return 0;
+    let totalPoints = 0;
+    for (let hole = 1; hole <= 18; hole++) {
+      const holePoints = calculateWolfPointsForHole(hole);
+      totalPoints += holePoints[playerIndex] || 0;
+    }
+    return totalPoints;
+  };
+
+  const getHoleByHolePoints = (playerIndex: number): { [hole: number]: number } => {
+    if (!isWolf || !game) return {};
+    const pointsByHole: { [hole: number]: number } = {};
+    for (let hole = 1; hole <= 18; hole++) {
+      const holePoints = calculateWolfPointsForHole(hole);
+      if (holePoints[playerIndex]) {
+        pointsByHole[hole] = holePoints[playerIndex];
+      }
+    }
+    return pointsByHole;
+  };
+
   const handleSaveAllScores = async () => {
     if (!game || isSaving) return;
 
@@ -686,6 +708,23 @@ export default function GameScoringScreen() {
         </View>
       )}
 
+      {isWolf && (
+        <View style={styles.wolfPointsHeader}>
+          <Text style={styles.wolfPointsHeaderTitle}>Wolf Points</Text>
+          <View style={styles.wolfPointsGrid}>
+            {game.players.map((player: PersonalGamePlayer, idx: number) => {
+              const totalPoints = getTotalWolfPoints(idx);
+              return (
+                <View key={idx} style={styles.wolfPointsPlayerBox}>
+                  <Text style={styles.wolfPointsPlayerName} numberOfLines={1}>{player.name}</Text>
+                  <Text style={styles.wolfPointsPlayerTotal}>{totalPoints}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
       {isTeamMatchPlay && game.holeResults && (() => {
         if (!game.holeResults) return null;
         
@@ -881,9 +920,9 @@ export default function GameScoringScreen() {
                       </View>
                       <View style={styles.playerStats}>
                         <Text style={styles.playerHandicap}>HDC: {player.handicap}</Text>
-                        {player.wolfPoints !== undefined && (
+                        {isWolf && (
                           <Text style={styles.playerWolfPoints}>
-                            • Points: {player.wolfPoints}
+                            • Pts: {getTotalWolfPoints(playerIndex)}
                           </Text>
                         )}
                       </View>
@@ -992,6 +1031,33 @@ export default function GameScoringScreen() {
               </View>
             );
           })
+        )}
+
+        {isWolf && (
+          <View style={styles.pointsBreakdownSection}>
+            <Text style={styles.pointsBreakdownTitle}>Points Breakdown (Hole-by-Hole)</Text>
+            {game.players.map((player: PersonalGamePlayer, idx: number) => {
+              const holePoints = getHoleByHolePoints(idx);
+              const totalPoints = getTotalWolfPoints(idx);
+              if (Object.keys(holePoints).length === 0) return null;
+              return (
+                <View key={idx} style={styles.pointsBreakdownCard}>
+                  <View style={styles.pointsBreakdownHeader}>
+                    <Text style={styles.pointsBreakdownPlayerName}>{player.name}</Text>
+                    <Text style={styles.pointsBreakdownTotal}>Total: {totalPoints}</Text>
+                  </View>
+                  <View style={styles.pointsBreakdownHoles}>
+                    {Object.entries(holePoints).map(([hole, points]) => (
+                      <View key={hole} style={styles.pointsBreakdownHole}>
+                        <Text style={styles.pointsBreakdownHoleNumber}>H{hole}</Text>
+                        <Text style={styles.pointsBreakdownHolePoints}>+{points}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         )}
 
         {allComplete && (
@@ -1435,5 +1501,109 @@ const styles = StyleSheet.create({
   },
   soloButtonTextActive: {
     color: '#b45309',
+  },
+  wolfPointsHeader: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  wolfPointsHeaderTitle: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#666',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  wolfPointsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: 8,
+  },
+  wolfPointsPlayerBox: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: 6,
+  },
+  wolfPointsPlayerName: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginBottom: 3,
+  },
+  wolfPointsPlayerTotal: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#f59e0b',
+  },
+  pointsBreakdownSection: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  pointsBreakdownTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  pointsBreakdownCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  pointsBreakdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  pointsBreakdownPlayerName: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+  },
+  pointsBreakdownTotal: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#f59e0b',
+  },
+  pointsBreakdownHoles: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  pointsBreakdownHole: {
+    backgroundColor: '#e8f5e9',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#10b981',
+    alignItems: 'center',
+    minWidth: 42,
+  },
+  pointsBreakdownHoleNumber: {
+    fontSize: 9,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginBottom: 1,
+  },
+  pointsBreakdownHolePoints: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#10b981',
   },
 });
