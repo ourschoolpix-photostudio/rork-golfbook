@@ -126,7 +126,7 @@ export function AddEventModal({
   const [showCourseDropdown2, setShowCourseDropdown2] = useState(false);
   const [showCourseDropdown3, setShowCourseDropdown3] = useState(false);
   
-  const coursesQuery = trpc.courses.getAll.useQuery({ source: 'admin' });
+  const coursesQuery = trpc.courses.getAll.useQuery({ memberId: '', source: 'admin' });
   const adminCourses = coursesQuery.data || [];
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   
