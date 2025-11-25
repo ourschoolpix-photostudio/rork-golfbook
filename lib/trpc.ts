@@ -24,7 +24,7 @@ export const trpcClient = trpc.createClient({
         return Promise.race([
           fetch(url, options),
           new Promise<Response>((_, reject) =>
-            setTimeout(() => reject(new Error('Request timeout')), 10000)
+            setTimeout(() => reject(new Error('Request timeout')), 60000)
           ),
         ]);
       },

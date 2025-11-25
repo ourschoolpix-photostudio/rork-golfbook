@@ -263,19 +263,27 @@ export const normalizeAllMemberNamesProcedure = publicProcedure
       updated_at: new Date().toISOString(),
     }));
 
-    for (const update of updates) {
+    let successCount = 0;
+    const batchSize = 50;
+    
+    for (let i = 0; i < updates.length; i += batchSize) {
+      const batch = updates.slice(i, i + batchSize);
+      
       const { error: updateError } = await supabase
         .from('members')
-        .update(update)
-        .eq('id', update.id);
+        .upsert(batch, { onConflict: 'id' });
 
       if (updateError) {
-        console.error(`❌ Error updating member ${update.id}:`, updateError);
+        console.error(`❌ Error updating batch ${i / batchSize + 1}:`, updateError);
+        throw new Error(`Failed to update members: ${updateError.message}`);
       }
+      
+      successCount += batch.length;
+      console.log(`✅ Updated batch ${i / batchSize + 1}: ${successCount}/${updates.length} members`);
     }
 
-    console.log(`✅ Normalized ${updates.length} member names`);
-    return { success: true, count: updates.length };
+    console.log(`✅ Normalized ${successCount} member names`);
+    return { success: true, count: successCount };
   });
 
 export default {
