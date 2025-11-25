@@ -532,9 +532,13 @@ export default function GameScoringScreen() {
               holeResult === 'team2' && styles.holeResultTeam2,
               isTie && (showGreenTie ? styles.holeResultTieActive : styles.holeResultTie),
             ]}>
-              <Text style={styles.holeResultText}>
-                {holeResult === 'team1' ? 'Team 1 Wins' : holeResult === 'team2' ? 'Team 2 Wins' : 'Tie'}
-              </Text>
+              {holeResult === 'team1' ? (
+                <Text style={styles.holeResultText}>Team 1 Wins</Text>
+              ) : holeResult === 'team2' ? (
+                <Text style={styles.holeResultText}>Team 2 Wins</Text>
+              ) : (
+                <Text style={styles.holeResultText}>Tie</Text>
+              )}
             </View>
           </View>
         );
