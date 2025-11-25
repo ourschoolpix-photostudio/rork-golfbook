@@ -3,14 +3,16 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { storageService } from '@/utils/storage';
 import { Member } from '@/types';
+import { trpc } from '@/lib/trpc';
 
 export default function ImportMembersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [importData, setImportData] = useState('');
   const [importing, setImporting] = useState(false);
+
+  const createMemberMutation = trpc.members.create.useMutation();
 
   const parseAndImportMembers = async () => {
     try {
@@ -90,15 +92,35 @@ export default function ImportMembersScreen() {
 
       console.log('Importing members:', newMembers);
 
+      let successCount = 0;
+      let errorCount = 0;
+
       for (const member of newMembers) {
-        await storageService.addMember(member);
+        try {
+          await createMemberMutation.mutateAsync(member);
+          successCount++;
+          console.log(`✅ Imported member ${successCount}/${newMembers.length}: ${member.name}`);
+        } catch (error) {
+          errorCount++;
+          console.error(`❌ Failed to import member: ${member.name}`, error);
+        }
       }
 
       console.log('Members saved successfully');
-      Alert.alert('Success', `${newMembers.length} members imported successfully!`);
+      if (errorCount > 0) {
+        Alert.alert(
+          'Partial Success', 
+          `${successCount} members imported successfully!\n${errorCount} members failed to import.`,
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } else {
+        Alert.alert(
+          'Success', 
+          `${successCount} members imported successfully!`,
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      }
       setImportData('');
-
-      router.back();
     } catch (error) {
       console.error('Import error:', error);
       Alert.alert('Error', `Failed to import members: ${error}`);
