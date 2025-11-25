@@ -39,11 +39,11 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
   const [holePars, setHolePars] = useState<string[]>(new Array(18).fill(''));
   const [gameType, setGameType] = useState<'individual-net' | 'team-match-play' | 'wolf' | 'niners'>('individual-net');
   const [matchPlayScoringType, setMatchPlayScoringType] = useState<'best-ball' | 'alternate-ball'>('best-ball');
-  const [players, setPlayers] = useState<{ name: string; handicap: string; strokesReceived: string; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[]>([
-    { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
-    { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
-    { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
-    { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
+  const [players, setPlayers] = useState<{ name: string; handicap: string; strokesReceived: string; strokesASide: string; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[]>([
+    { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+    { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+    { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+    { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
   ]);
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
 
@@ -112,6 +112,14 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
     }
   };
 
+  const handlePlayerStrokesASideChange = (index: number, value: string) => {
+    if (value === '' || /^\d+$/.test(value)) {
+      const updated = [...players];
+      updated[index] = { ...updated[index], strokesASide: value };
+      setPlayers(updated);
+    }
+  };
+
   const handleStrokeModeChange = (index: number, mode: 'manual' | 'auto' | 'all-but-par3') => {
     const updated = [...players];
     updated[index] = { ...updated[index], strokeMode: mode };
@@ -171,7 +179,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
     const parsedPlayers = activePlayers.map(p => ({
       name: p.name.trim(),
       handicap: parseFloat(p.handicap) || 0,
-      strokesReceived: parseInt(p.strokesReceived, 10) || 0,
+      strokesReceived: gameType === 'wolf' ? parseInt(p.strokesASide, 10) || 0 : parseInt(p.strokesReceived, 10) || 0,
       strokeMode: p.strokeMode || 'manual',
       teamId: gameType === 'team-match-play' ? p.teamId : undefined,
     }));
@@ -202,10 +210,10 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       setMatchPlayScoringType('best-ball');
       setMatchPlayScoringType('best-ball');
       setPlayers([
-        { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
-        { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
-        { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
-        { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
       ]);
       onClose();
     } catch (error) {
@@ -455,6 +463,27 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
                       onChangeText={(value) => handlePlayerHandicapChange(index, value)}
                     />
                   </View>
+                  
+                  {gameType === 'wolf' && player.name.trim() !== '' && (
+                    <View style={styles.playerExtras}>
+                      <View style={styles.strokesConfigSection}>
+                        <View style={styles.strokesSelector}>
+                          <Text style={styles.extraLabel}>Strokes a Side:</Text>
+                          <TextInput
+                            style={styles.strokesInput}
+                            placeholder="0"
+                            placeholderTextColor="#999"
+                            keyboardType="number-pad"
+                            value={player.strokesASide}
+                            onChangeText={(value) => handlePlayerStrokesASideChange(index, value)}
+                          />
+                        </View>
+                        <Text style={styles.strokesHelpText}>
+                          Total: {parseInt(player.strokesASide, 10) * 2 || 0} strokes ({parseInt(player.strokesASide, 10) || 0} per 9)
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                   
                   {gameType === 'team-match-play' && player.name.trim() !== '' && (
                     <View style={styles.playerExtras}>
@@ -875,6 +904,11 @@ const styles = StyleSheet.create({
   },
   strokesConfigSection: {
     flex: 1,
+  },
+  strokesHelpText: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 4,
   },
   strokeModeSelector: {
     marginTop: 8,
