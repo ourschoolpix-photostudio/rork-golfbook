@@ -85,7 +85,13 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setEditingCourse(course);
     setCourseName(course.name);
     setHolePars(course.holePars.map(p => p.toString()));
-    setStrokeIndices((course.strokeIndices || []).map(s => s.toString()));
+    const indices = new Array(18).fill('');
+    if (course.strokeIndices && course.strokeIndices.length === 18) {
+      course.strokeIndices.forEach((si, i) => {
+        indices[i] = si.toString();
+      });
+    }
+    setStrokeIndices(indices);
   };
 
   const handleSave = async () => {
