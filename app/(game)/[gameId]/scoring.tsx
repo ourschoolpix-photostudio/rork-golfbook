@@ -40,6 +40,7 @@ export default function GameScoringScreen() {
   const [initialLoadDone, setInitialLoadDone] = useState<boolean>(false);
   const [wolfPartner, setWolfPartner] = useState<number | null>(null);
   const [isLoneWolf, setIsLoneWolf] = useState<boolean>(false);
+  const [isQuad, setIsQuad] = useState<boolean>(false);
 
   const updateGameMutation = trpc.games.update.useMutation();
 
@@ -402,6 +403,8 @@ export default function GameScoringScreen() {
     const wolfPlayerIndex = partnership.wolfPlayerIndex;
     const partnerPlayerIndex = partnership.partnerPlayerIndex;
     const isLoneWolfGame = partnership.isLoneWolf;
+    const isQuadHole = partnership.isQuad || false;
+    const quadMultiplier = isQuadHole ? 4 : 1;
 
     const allScoresEntered = game.players.every((_: PersonalGamePlayer, idx: number) => {
       const score = holeScores[idx]?.[hole];
@@ -423,13 +426,13 @@ export default function GameScoringScreen() {
       const bestOtherScore = Math.min(...othersScores);
 
       if (wolfScore < bestOtherScore) {
-        return { [wolfPlayerIndex]: 4 };
+        return { [wolfPlayerIndex]: 4 * quadMultiplier };
       } else if (wolfScore > bestOtherScore) {
         const points: { [playerIndex: number]: number } = {};
         playerScoresForHole
           .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex)
           .forEach((p: { playerIndex: number; netScore: number }) => {
-            points[p.playerIndex] = 2;
+            points[p.playerIndex] = 2 * quadMultiplier;
           });
         return points;
       }
@@ -446,13 +449,13 @@ export default function GameScoringScreen() {
       const othersBest = Math.min(...othersScores);
 
       if (wolfTeamBest < othersBest) {
-        return { [wolfPlayerIndex]: 1, [partnerPlayerIndex]: 1 };
+        return { [wolfPlayerIndex]: 1 * quadMultiplier, [partnerPlayerIndex]: 1 * quadMultiplier };
       } else if (wolfTeamBest > othersBest) {
         const points: { [playerIndex: number]: number } = {};
         playerScoresForHole
           .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.playerIndex !== partnerPlayerIndex)
           .forEach((p: { playerIndex: number; netScore: number }) => {
-            points[p.playerIndex] = 1;
+            points[p.playerIndex] = 1 * quadMultiplier;
           });
         return points;
       }
@@ -623,9 +626,11 @@ export default function GameScoringScreen() {
     if (isWolf && currentWolfPartnership) {
       setWolfPartner(currentWolfPartnership.partnerPlayerIndex);
       setIsLoneWolf(currentWolfPartnership.isLoneWolf);
+      setIsQuad(currentWolfPartnership.isQuad || false);
     } else {
       setWolfPartner(null);
       setIsLoneWolf(false);
+      setIsQuad(false);
     }
   }, [isWolf, currentWolfPartnership]);
 
@@ -653,6 +658,11 @@ export default function GameScoringScreen() {
     });
   };
 
+  const handleToggleQuad = async () => {
+    if (!isWolf || currentHole < 16) return;
+    setIsQuad(prev => !prev);
+  };
+
   const savewolfPartnership = async () => {
     if (!game || !isWolf) return;
 
@@ -661,6 +671,7 @@ export default function GameScoringScreen() {
       wolfPlayerIndex: currentWolfPlayerIndex,
       partnerPlayerIndex: wolfPartner,
       isLoneWolf,
+      isQuad: currentHole >= 16 ? isQuad : false,
     };
 
     try {
@@ -676,11 +687,11 @@ export default function GameScoringScreen() {
   };
 
   useEffect(() => {
-    if (isWolf && (wolfPartner !== null || isLoneWolf)) {
+    if (isWolf && (wolfPartner !== null || isLoneWolf || (currentHole >= 16 && isQuad))) {
       savewolfPartnership();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wolfPartner, isLoneWolf]);
+  }, [wolfPartner, isLoneWolf, isQuad]);
 
   if (!game) {
     return (
@@ -1014,14 +1025,26 @@ export default function GameScoringScreen() {
                 </TouchableOpacity>
 
                 {isCurrentWolf && (
-                  <TouchableOpacity
-                    style={[styles.soloButton, isLoneWolf && styles.soloButtonActive]}
-                    onPress={handleToggleSolo}
-                  >
-                    <Text style={[styles.soloButtonText, isLoneWolf && styles.soloButtonTextActive]}>
-                      {isLoneWolf ? '✓ Going Solo (4 pts)' : 'Go Solo'}
-                    </Text>
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity
+                      style={[styles.soloButton, isLoneWolf && styles.soloButtonActive]}
+                      onPress={handleToggleSolo}
+                    >
+                      <Text style={[styles.soloButtonText, isLoneWolf && styles.soloButtonTextActive]}>
+                        {isLoneWolf ? '✓ Going Solo (4 pts)' : 'Go Solo'}
+                      </Text>
+                    </TouchableOpacity>
+                    {currentHole >= 16 && (
+                      <TouchableOpacity
+                        style={[styles.quadButton, isQuad && styles.quadButtonActive]}
+                        onPress={handleToggleQuad}
+                      >
+                        <Text style={[styles.quadButtonText, isQuad && styles.quadButtonTextActive]}>
+                          {isQuad ? '✓ Quad Active (4x)' : 'Activate Quad (4x)'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
               </View>
             );
@@ -1583,6 +1606,28 @@ const styles = StyleSheet.create({
   },
   soloButtonTextActive: {
     color: '#b45309',
+  },
+  quadButton: {
+    marginTop: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#dc2626',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  quadButtonActive: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#dc2626',
+  },
+  quadButtonText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#dc2626',
+  },
+  quadButtonTextActive: {
+    color: '#991b1b',
   },
   wolfPointsHeader: {
     backgroundColor: '#fff',
