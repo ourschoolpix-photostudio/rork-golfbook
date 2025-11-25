@@ -1499,27 +1499,27 @@ const styles = StyleSheet.create({
     color: '#1B5E20',
   },
   strokeHoleIndicator: {
-    marginTop: 8,
+    marginTop: 4,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 5,
-    backgroundColor: '#e8f5e9',
+    backgroundColor: '#2e7d32',
     borderWidth: 1.5,
     borderColor: '#1B5E20',
     alignSelf: 'center',
   },
   strokeHoleIndicatorActive: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: '#2e7d32',
     borderColor: '#1B5E20',
   },
   strokeHoleIndicatorText: {
     fontSize: 11,
     fontWeight: '700' as const,
-    color: '#1B5E20',
+    color: '#fff',
     textAlign: 'center',
   },
   strokeHoleIndicatorTextActive: {
-    color: '#1B5E20',
+    color: '#fff',
   },
   wolfCard: {
     backgroundColor: '#fffbea',
