@@ -602,9 +602,39 @@ export default function GameScoringScreen() {
 
   const currentWolfPlayerIndex = useMemo(() => {
     if (!isWolf || !game || !game.wolfOrder || game.wolfOrder.length === 0) return -1;
+    
+    if (currentHole >= 16) {
+      const playerPoints = game.players.map((player: PersonalGamePlayer, idx: number) => {
+        let totalPoints = 0;
+        for (let hole = 1; hole < currentHole; hole++) {
+          const holePoints = calculateWolfPointsForHole(hole);
+          totalPoints += holePoints[idx] || 0;
+        }
+        return { idx, totalPoints };
+      });
+
+      const minPoints = Math.min(...playerPoints.map((p: { idx: number; totalPoints: number }) => p.totalPoints));
+      const playersWithMinPoints = playerPoints.filter((p: { idx: number; totalPoints: number }) => p.totalPoints === minPoints);
+
+      if (playersWithMinPoints.length === 1) {
+        return playersWithMinPoints[0].idx;
+      } else {
+        const wolfOrderIndex = (currentHole - 1) % game.wolfOrder.length;
+        
+        for (let i = 0; i < game.wolfOrder.length; i++) {
+          const checkIndex = (wolfOrderIndex + i) % game.wolfOrder.length;
+          const playerIdx = game.wolfOrder[checkIndex];
+          if (playersWithMinPoints.some((p: { idx: number; totalPoints: number }) => p.idx === playerIdx)) {
+            return playerIdx;
+          }
+        }
+        return playersWithMinPoints[0].idx;
+      }
+    }
+    
     const wolfOrderIndex = (currentHole - 1) % game.wolfOrder.length;
     return game.wolfOrder[wolfOrderIndex];
-  }, [isWolf, game, currentHole]);
+  }, [isWolf, game, currentHole, holeScores]);
 
   const sortedPlayersForWolf = useMemo(() => {
     if (!isWolf || !game || currentWolfPlayerIndex === -1) return game?.players || [];
