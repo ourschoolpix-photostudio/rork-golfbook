@@ -39,7 +39,7 @@ export default function GameScoringScreen() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [initialLoadDone, setInitialLoadDone] = useState<boolean>(false);
   const [wolfPartner, setWolfPartner] = useState<number | null>(null);
-  const [isLoneWolf, setIsLoneWolf] = useState<boolean>(false);
+  const [, setIsLoneWolf] = useState<boolean>(false);
 
   const updateGameMutation = trpc.games.update.useMutation();
 
@@ -375,6 +375,79 @@ export default function GameScoringScreen() {
     return game.players.every((_: PersonalGamePlayer, playerIndex: number) => isPlayerScoringComplete(playerIndex));
   };
 
+  const calculateWolfPointsForHole = (hole: number): { [playerIndex: number]: number } => {
+    if (!game || !isWolf) return {};
+
+    const partnership = game.wolfPartnerships?.[hole];
+    if (!partnership) return {};
+
+    const wolfPlayerIndex = partnership.wolfPlayerIndex;
+    const partnerPlayerIndex = partnership.partnerPlayerIndex;
+    const isLoneWolfGame = partnership.isLoneWolf;
+
+    const allScoresEntered = game.players.every((_: PersonalGamePlayer, idx: number) => {
+      const score = holeScores[idx]?.[hole];
+      return score && score > 0;
+    });
+
+    if (!allScoresEntered) return {};
+
+    const playerScoresForHole = game.players.map((player: PersonalGamePlayer, idx: number) => {
+      const grossScore = holeScores[idx]?.[hole] || 0;
+      const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, idx, hole - 1);
+      const netScore = receivesStroke ? grossScore - 1 : grossScore;
+      return { playerIndex: idx, netScore };
+    });
+
+    if (isLoneWolfGame) {
+      const wolfScore = playerScoresForHole.find((p: { playerIndex: number; netScore: number }) => p.playerIndex === wolfPlayerIndex)?.netScore || 999;
+      const othersScores = playerScoresForHole.filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex).map((p: { playerIndex: number; netScore: number }) => p.netScore);
+      const bestOtherScore = Math.min(...othersScores);
+
+      if (wolfScore < bestOtherScore) {
+        return { [wolfPlayerIndex]: 3 };
+      } else if (wolfScore > bestOtherScore) {
+        const points: { [playerIndex: number]: number } = {};
+        playerScoresForHole
+          .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.netScore === bestOtherScore)
+          .forEach((p: { playerIndex: number; netScore: number }) => {
+            points[p.playerIndex] = 1;
+          });
+        return points;
+      }
+      return {};
+    } else if (partnerPlayerIndex !== null) {
+      const wolfTeamScores = playerScoresForHole
+        .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex === wolfPlayerIndex || p.playerIndex === partnerPlayerIndex)
+        .map((p: { playerIndex: number; netScore: number }) => p.netScore);
+      const othersScores = playerScoresForHole
+        .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.playerIndex !== partnerPlayerIndex)
+        .map((p: { playerIndex: number; netScore: number }) => p.netScore);
+
+      const wolfTeamBest = Math.min(...wolfTeamScores);
+      const othersBest = Math.min(...othersScores);
+
+      if (wolfTeamBest < othersBest) {
+        return { [wolfPlayerIndex]: 1, [partnerPlayerIndex]: 1 };
+      } else if (wolfTeamBest > othersBest) {
+        const points: { [playerIndex: number]: number } = {};
+        playerScoresForHole
+          .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.playerIndex !== partnerPlayerIndex && p.netScore === othersBest)
+          .forEach((p: { playerIndex: number; netScore: number }) => {
+            points[p.playerIndex] = 1;
+          });
+        return points;
+      }
+      return {};
+    }
+
+    return {};
+  };
+
+  const getWolfPointsWonForCurrentHole = (): { [playerIndex: number]: number } => {
+    return calculateWolfPointsForHole(currentHole);
+  };
+
   const handleSaveAllScores = async () => {
     if (!game || isSaving) return;
 
@@ -394,11 +467,21 @@ export default function GameScoringScreen() {
           strokesUsed[currentHole - 1] = 1;
         }
         
+        let wolfPoints = player.wolfPoints || 0;
+        if (isWolf) {
+          wolfPoints = 0;
+          for (let hole = 1; hole <= 18; hole++) {
+            const holePoints = calculateWolfPointsForHole(hole);
+            wolfPoints += holePoints[playerIndex] || 0;
+          }
+        }
+        
         return {
           ...player,
           scores,
           totalScore: scores.reduce((sum, score) => sum + score, 0),
           strokesUsed,
+          wolfPoints,
         };
       });
 
@@ -724,6 +807,12 @@ export default function GameScoringScreen() {
             const isCurrentWolf = playerIndex === currentWolfPlayerIndex;
             const isPartner = wolfPartner === playerIndex;
 
+            const allScoresEntered = game.players.every((_: PersonalGamePlayer, idx: number) => {
+              const score = holeScores[idx]?.[currentHole];
+              return score && score > 0;
+            });
+            const pointsWon = allScoresEntered ? getWolfPointsWonForCurrentHole()[playerIndex] || 0 : 0;
+
             return (
               <TouchableOpacity
                 key={playerIndex}
@@ -741,6 +830,9 @@ export default function GameScoringScreen() {
                       <Text style={styles.playerName}>{player.name}</Text>
                       {isCurrentWolf && <Text style={styles.wolfBadge}>WOLF</Text>}
                       {isPartner && <Text style={styles.partnerBadge}>PARTNER</Text>}
+                      {pointsWon > 0 && allScoresEntered && (
+                        <Text style={styles.pointsWonBadge}>+{pointsWon}</Text>
+                      )}
                     </View>
                     <View style={styles.playerStats}>
                       <Text style={styles.playerHandicap}>HDC: {player.handicap}</Text>
@@ -1242,5 +1334,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500' as const,
     color: '#f59e0b',
+  },
+  pointsWonBadge: {
+    fontSize: 9,
+    fontWeight: '700' as const,
+    color: '#fff',
+    backgroundColor: '#10b981',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
 });
