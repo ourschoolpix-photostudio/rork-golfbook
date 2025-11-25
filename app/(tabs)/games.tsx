@@ -181,7 +181,7 @@ export default function GamesScreen() {
                 <Text style={styles.emptyText}>No games recorded yet</Text>
                 <Text style={styles.emptyDescription}>
                   This screen is for your personal games only and does not affect any tournament results.
-                  Use it to track your own scores, monitor your progress, and maintain a historical record of all the rounds you{"'"} ve played with friends.
+                  Use it to track your own scores, monitor your progress, and maintain a historical record of all the rounds you&apos;ve played with friends.
                 </Text>
                 <Text style={styles.emptySubtext}>Tap the + button to create your first game</Text>
               </View>
