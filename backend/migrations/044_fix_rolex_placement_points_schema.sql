@@ -11,16 +11,16 @@ BEGIN
         ALTER TABLE organization_settings DROP COLUMN rolex_placement_points;
     END IF;
     
-    -- Add it back fresh
+    -- Add it back fresh using array_fill instead of subquery
     ALTER TABLE organization_settings 
-    ADD COLUMN rolex_placement_points TEXT[] DEFAULT ARRAY(SELECT '' FROM generate_series(1, 30))::TEXT[];
+    ADD COLUMN rolex_placement_points TEXT[] DEFAULT array_fill(''::text, ARRAY[30]);
     
     COMMENT ON COLUMN organization_settings.rolex_placement_points IS 'Array of 30 Rolex point values for tournament placement (1st through 30th place)';
 END $$;
 
 -- Ensure the existing row has the default array value
 UPDATE organization_settings
-SET rolex_placement_points = ARRAY(SELECT '' FROM generate_series(1, 30))::TEXT[]
+SET rolex_placement_points = array_fill(''::text, ARRAY[30])
 WHERE rolex_placement_points IS NULL OR array_length(rolex_placement_points, 1) IS NULL;
 
 -- Verify the columns exist
