@@ -783,16 +783,6 @@ export default function GameScoringScreen() {
           {game.strokeIndices && game.strokeIndices.length === 18 && (
             <View style={styles.strokeIndexContainer}>
               <Text style={styles.strokeIndexLabel}>Difficulty: {game.strokeIndices[currentHole - 1]}</Text>
-              {isWolf && (() => {
-                const isFrontNine = currentHole <= 9;
-                const indices = isFrontNine ? game.strokeIndices.slice(0, 9) : game.strokeIndices.slice(9, 18);
-                const sortedIndices = [...indices].sort((a, b) => a - b);
-                return (
-                  <Text style={styles.strokeIndexHelpText}>
-                    {isFrontNine ? 'Front' : 'Back'} Hardest: {sortedIndices.slice(0, Math.min(5, sortedIndices.length)).join(', ')}
-                  </Text>
-                );
-              })()}
             </View>
           )}
         </View>
