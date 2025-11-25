@@ -345,7 +345,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
                   <View style={styles.emptyState}>
                     <Text style={styles.emptyText}>No courses saved yet</Text>
                     <Text style={styles.emptyDescription}>
-                      Create courses to save time when creating games. You won&apos;t have to enter hole pars every time!
+                      Create courses to save time when creating games. You won't have to enter hole pars every time!
                     </Text>
                   </View>
                 ) : (
