@@ -30,6 +30,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const membersQuery = trpc.members.getAll.useQuery();
 
+  useEffect(() => {
+    if (membersQuery.error) {
+      console.error('❌ [AuthContext] Failed to fetch members:', membersQuery.error);
+    }
+    if (membersQuery.data) {
+      console.log('✅ [AuthContext] Successfully fetched members:', membersQuery.data.length);
+    }
+    if (membersQuery.isLoading) {
+      console.log('⏳ [AuthContext] Loading members...');
+    }
+  }, [membersQuery.data, membersQuery.error, membersQuery.isLoading]);
+
   const createMemberMutation = trpc.members.create.useMutation({
     onSuccess: () => {
       membersQuery.refetch();

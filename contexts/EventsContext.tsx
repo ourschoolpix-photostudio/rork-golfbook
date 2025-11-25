@@ -1,10 +1,22 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Event, EventRegistration, Grouping, Score, EventRolexPoints, FinancialRecord } from '@/types';
 import { trpc } from '@/lib/trpc';
 
 export const [EventsProvider, useEvents] = createContextHook(() => {
   const eventsQuery = trpc.events.getAll.useQuery();
+
+  useEffect(() => {
+    if (eventsQuery.error) {
+      console.error('❌ [EventsContext] Failed to fetch events:', eventsQuery.error);
+    }
+    if (eventsQuery.data) {
+      console.log('✅ [EventsContext] Successfully fetched events:', eventsQuery.data.length);
+    }
+    if (eventsQuery.isLoading) {
+      console.log('⏳ [EventsContext] Loading events...');
+    }
+  }, [eventsQuery.data, eventsQuery.error, eventsQuery.isLoading]);
 
   const createEventMutation = trpc.events.create.useMutation({
     onSuccess: () => {
