@@ -37,13 +37,13 @@ export default function GameScoringScreen() {
   const [holeScores, setHoleScores] = useState<{ [playerIndex: number]: { [hole: number]: number } }>({});
   const [strokesUsedOnHole, setStrokesUsedOnHole] = useState<{ [playerIndex: number]: boolean }>({});
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [initialLoadDone, setInitialLoadDone] = useState<boolean>(false);
 
   const updateGameMutation = trpc.games.update.useMutation();
 
   useEffect(() => {
-    if (game) {
+    if (game && !initialLoadDone) {
       const scoresMap: { [playerIndex: number]: { [hole: number]: number } } = {};
-      const strokesMap: { [playerIndex: number]: boolean } = {};
       
       game.players.forEach((player: PersonalGamePlayer, playerIndex: number) => {
         scoresMap[playerIndex] = {};
@@ -52,30 +52,80 @@ export default function GameScoringScreen() {
             scoresMap[playerIndex][holeIndex + 1] = score;
           }
         });
-        
+      });
+      
+      setHoleScores(scoresMap);
+      setInitialLoadDone(true);
+      console.log('[GameScoring] Initial load - Loaded scores:', scoresMap);
+    }
+  }, [game, initialLoadDone]);
+
+  useEffect(() => {
+    if (game) {
+      const strokesMap: { [playerIndex: number]: boolean } = {};
+      game.players.forEach((player: PersonalGamePlayer, playerIndex: number) => {
         if (player.strokesUsed && player.strokesUsed[currentHole - 1] === 1) {
           strokesMap[playerIndex] = true;
         }
       });
-      
-      setHoleScores(scoresMap);
       setStrokesUsedOnHole(strokesMap);
-      console.log('[GameScoring] Loaded scores:', scoresMap);
     }
   }, [game, currentHole]);
 
-  const handlePreviousHole = () => {
+  const handlePreviousHole = async () => {
+    await saveCurrentHoleScores();
     setCurrentHole(prev => {
       if (prev === 1) return 18;
       return prev - 1;
     });
   };
 
-  const handleNextHole = () => {
+  const handleNextHole = async () => {
+    await saveCurrentHoleScores();
     setCurrentHole(prev => {
       if (prev === 18) return 1;
       return prev + 1;
     });
+  };
+
+  const saveCurrentHoleScores = async () => {
+    if (!game || isSaving) return;
+
+    try {
+      const updatedPlayers = game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
+        const playerScores = holeScores[playerIndex] || {};
+        const scores = Array.from({ length: 18 }, (_, i) => playerScores[i + 1] || 0);
+        
+        const strokesUsed = player.strokesUsed ? [...player.strokesUsed] : new Array(18).fill(0);
+        strokesUsed[currentHole - 1] = strokesUsedOnHole[playerIndex] ? 1 : 0;
+        
+        return {
+          ...player,
+          scores,
+          totalScore: scores.reduce((sum: number, score: number) => sum + score, 0),
+          strokesUsed,
+        };
+      });
+
+      let updateData: any = { gameId, players: updatedPlayers };
+
+      if (game.gameType === 'team-match-play') {
+        const holeResults = game.holeResults || new Array(18).fill('tie');
+        holeResults[currentHole - 1] = calculateHoleResult();
+        
+        const team1Wins = holeResults.filter((r: string) => r === 'team1').length;
+        const team2Wins = holeResults.filter((r: string) => r === 'team2').length;
+        
+        updateData.holeResults = holeResults;
+        updateData.teamScores = { team1: team1Wins, team2: team2Wins };
+      }
+
+      await updateGameMutation.mutateAsync(updateData);
+      await gameQuery.refetch();
+      console.log('[GameScoring] Auto-saved scores for hole', currentHole);
+    } catch (error) {
+      console.error('[GameScoring] Error auto-saving scores:', error);
+    }
   };
 
   const handleScoreChange = (playerIndex: number, delta: number) => {
@@ -148,15 +198,19 @@ export default function GameScoringScreen() {
     const team1Players = game.players.filter((p: PersonalGamePlayer) => p.teamId === 1);
     const team2Players = game.players.filter((p: PersonalGamePlayer) => p.teamId === 2);
 
-    const team1NetScores = team1Players.map((_: PersonalGamePlayer, idx: number) => {
-      const playerIndex = game.players.findIndex((p: PersonalGamePlayer) => p === team1Players[idx]);
-      return getNetScore(playerIndex);
-    }).filter((s: number) => s > 0);
+    const team1NetScores = team1Players
+      .map((player: PersonalGamePlayer) => {
+        const playerIndex = game.players.findIndex((p: PersonalGamePlayer) => p === player);
+        return getNetScore(playerIndex);
+      })
+      .filter((s: number) => s > 0);
 
-    const team2NetScores = team2Players.map((_: PersonalGamePlayer, idx: number) => {
-      const playerIndex = game.players.findIndex((p: PersonalGamePlayer) => p === team2Players[idx]);
-      return getNetScore(playerIndex);
-    }).filter((s: number) => s > 0);
+    const team2NetScores = team2Players
+      .map((player: PersonalGamePlayer) => {
+        const playerIndex = game.players.findIndex((p: PersonalGamePlayer) => p === player);
+        return getNetScore(playerIndex);
+      })
+      .filter((s: number) => s > 0);
 
     if (team1NetScores.length === 0 || team2NetScores.length === 0) {
       return 'tie';
