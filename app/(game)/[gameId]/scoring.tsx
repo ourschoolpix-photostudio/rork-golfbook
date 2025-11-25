@@ -515,6 +515,8 @@ export default function GameScoringScreen() {
       )}
 
       {isTeamMatchPlay && game.holeResults && (() => {
+        if (!game.holeResults) return null;
+        
         const hasAnyScores = game.players.some((player: PersonalGamePlayer, idx: number) => {
           const score = holeScores[idx]?.[currentHole];
           return score && score > 0;
