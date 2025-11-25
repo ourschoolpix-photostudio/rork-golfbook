@@ -255,31 +255,32 @@ export const normalizeAllMemberNamesProcedure = publicProcedure
       return { success: true, count: 0 };
     }
 
-    const updates = members.map(member => ({
-      id: member.id,
-      name: toProperCase(member.name),
-      full_name: member.full_name ? toProperCase(member.full_name) : member.full_name,
-      username: member.username ? toProperCase(member.username) : member.username,
-      updated_at: new Date().toISOString(),
-    }));
-
     let successCount = 0;
     const batchSize = 50;
     
-    for (let i = 0; i < updates.length; i += batchSize) {
-      const batch = updates.slice(i, i + batchSize);
+    for (let i = 0; i < members.length; i += batchSize) {
+      const batch = members.slice(i, i + batchSize);
       
-      const { error: updateError } = await supabase
-        .from('members')
-        .upsert(batch, { onConflict: 'id' });
+      for (const member of batch) {
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({
+            name: toProperCase(member.name),
+            full_name: member.full_name ? toProperCase(member.full_name) : member.full_name,
+            username: member.username ? toProperCase(member.username) : member.username,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', member.id);
 
-      if (updateError) {
-        console.error(`❌ Error updating batch ${i / batchSize + 1}:`, updateError);
-        throw new Error(`Failed to update members: ${updateError.message}`);
+        if (updateError) {
+          console.error(`❌ Error updating member ${member.id}:`, updateError);
+          throw new Error(`Failed to update members: ${updateError.message}`);
+        }
+        
+        successCount++;
       }
       
-      successCount += batch.length;
-      console.log(`✅ Updated batch ${i / batchSize + 1}: ${successCount}/${updates.length} members`);
+      console.log(`✅ Updated batch ${i / batchSize + 1}: ${successCount}/${members.length} members`);
     }
 
     console.log(`✅ Normalized ${successCount} member names`);
