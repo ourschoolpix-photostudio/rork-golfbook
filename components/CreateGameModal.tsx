@@ -23,7 +23,9 @@ interface CreateGameModalProps {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number }[]
+    players: { name: string; handicap: number; strokesReceived?: number; teamId?: 1 | 2 }[],
+    gameType?: 'individual-net' | 'team-match-play',
+    matchPlayScoringType?: 'best-ball' | 'alternate-ball'
   ) => Promise<void>;
 }
 
@@ -34,11 +36,13 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
   const [courseName, setCourseName] = useState<string>('');
   const [coursePar, setCoursePar] = useState<string>('72');
   const [holePars, setHolePars] = useState<string[]>(new Array(18).fill(''));
-  const [players, setPlayers] = useState<{ name: string; handicap: string }[]>([
-    { name: '', handicap: '' },
-    { name: '', handicap: '' },
-    { name: '', handicap: '' },
-    { name: '', handicap: '' },
+  const [gameType, setGameType] = useState<'individual-net' | 'team-match-play'>('individual-net');
+  const [matchPlayScoringType, setMatchPlayScoringType] = useState<'best-ball' | 'alternate-ball'>('best-ball');
+  const [players, setPlayers] = useState<{ name: string; handicap: string; strokesReceived: string; teamId?: 1 | 2 }[]>([
+    { name: '', handicap: '', strokesReceived: '0' },
+    { name: '', handicap: '', strokesReceived: '0' },
+    { name: '', handicap: '', strokesReceived: '0' },
+    { name: '', handicap: '', strokesReceived: '0' },
   ]);
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
 
@@ -96,6 +100,20 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
     }
   };
 
+  const handlePlayerStrokesChange = (index: number, value: string) => {
+    if (value === '' || /^\d+$/.test(value)) {
+      const updated = [...players];
+      updated[index] = { ...updated[index], strokesReceived: value };
+      setPlayers(updated);
+    }
+  };
+
+  const handleTeamAssignment = (index: number, teamId: 1 | 2) => {
+    const updated = [...players];
+    updated[index] = { ...updated[index], teamId };
+    setPlayers(updated);
+  };
+
   const handleSave = async () => {
     if (!courseName.trim()) {
       Alert.alert('Error', 'Please enter a course name');
@@ -120,24 +138,61 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       return;
     }
 
+    if (gameType === 'team-match-play') {
+      if (activePlayers.length < 2) {
+        Alert.alert('Error', 'Team match play requires at least 2 players');
+        return;
+      }
+
+      const team1Players = activePlayers.filter(p => p.teamId === 1);
+      const team2Players = activePlayers.filter(p => p.teamId === 2);
+
+      if (team1Players.length === 0 || team2Players.length === 0) {
+        Alert.alert('Error', 'Both teams must have at least one player');
+        return;
+      }
+
+      if (team1Players.length !== team2Players.length) {
+        Alert.alert('Error', 'Both teams must have the same number of players');
+        return;
+      }
+    }
+
     const parsedPlayers = activePlayers.map(p => ({
       name: p.name.trim(),
       handicap: parseFloat(p.handicap) || 0,
+      strokesReceived: parseInt(p.strokesReceived, 10) || 0,
+      teamId: gameType === 'team-match-play' ? p.teamId : undefined,
     }));
 
-    console.log('[CreateGameModal] Creating game:', { courseName, par, parsedPlayers });
+    console.log('[CreateGameModal] Creating game:', { 
+      courseName, 
+      par, 
+      parsedPlayers, 
+      gameType,
+      matchPlayScoringType: gameType === 'team-match-play' ? matchPlayScoringType : undefined,
+    });
 
     try {
-      await onSave(courseName, par, parsedHolePars, parsedPlayers);
+      await onSave(
+        courseName, 
+        par, 
+        parsedHolePars, 
+        parsedPlayers,
+        gameType,
+        gameType === 'team-match-play' ? matchPlayScoringType : undefined
+      );
       setSelectedCourseId(null);
       setCourseName('');
       setCoursePar('72');
       setHolePars(new Array(18).fill(''));
+      setGameType('individual-net');
+      setMatchPlayScoringType('best-ball');
       setPlayers([
-        { name: '', handicap: '' },
-        { name: '', handicap: '' },
-        { name: '', handicap: '' },
-        { name: '', handicap: '' },
+        { name: '', handicap: '', strokesReceived: '0' },
+        { name: '', handicap: '', strokesReceived: '0' },
+        { name: '', handicap: '', strokesReceived: '0' },
+        { name: '', handicap: '', strokesReceived: '0' },
       ]);
       onClose();
     } catch (error) {
@@ -162,6 +217,82 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Game Type</Text>
+              <View style={styles.gameTypeSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.gameTypeButton,
+                    gameType === 'individual-net' && styles.gameTypeButtonActive,
+                  ]}
+                  onPress={() => setGameType('individual-net')}
+                >
+                  <Text style={[
+                    styles.gameTypeButtonText,
+                    gameType === 'individual-net' && styles.gameTypeButtonTextActive,
+                  ]}>
+                    Individual Net Score
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.gameTypeButton,
+                    gameType === 'team-match-play' && styles.gameTypeButtonActive,
+                  ]}
+                  onPress={() => setGameType('team-match-play')}
+                >
+                  <Text style={[
+                    styles.gameTypeButtonText,
+                    gameType === 'team-match-play' && styles.gameTypeButtonTextActive,
+                  ]}>
+                    Team Match Play
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {gameType === 'team-match-play' && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Match Play Scoring Type</Text>
+                <View style={styles.matchPlayTypeSelector}>
+                  <TouchableOpacity
+                    style={[
+                      styles.matchPlayTypeCard,
+                      matchPlayScoringType === 'best-ball' && styles.matchPlayTypeCardActive,
+                    ]}
+                    onPress={() => setMatchPlayScoringType('best-ball')}
+                  >
+                    <Text style={[
+                      styles.matchPlayTypeTitle,
+                      matchPlayScoringType === 'best-ball' && styles.matchPlayTypeTitleActive,
+                    ]}>
+                      Best Ball
+                    </Text>
+                    <Text style={styles.matchPlayTypeDescription}>
+                      Best score from either team member wins the hole
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.matchPlayTypeCard,
+                      matchPlayScoringType === 'alternate-ball' && styles.matchPlayTypeCardActive,
+                    ]}
+                    onPress={() => setMatchPlayScoringType('alternate-ball')}
+                  >
+                    <Text style={[
+                      styles.matchPlayTypeTitle,
+                      matchPlayScoringType === 'alternate-ball' && styles.matchPlayTypeTitleActive,
+                    ]}>
+                      Alternate Ball
+                    </Text>
+                    <Text style={styles.matchPlayTypeDescription}>
+                      If any 2 players tie, other players determine winner
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Course Information</Text>
               
@@ -262,23 +393,74 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Players</Text>
               {players.map((player, index) => (
-                <View key={index} style={styles.playerRow}>
-                  <Text style={styles.playerNumber}>{index + 1}.</Text>
-                  <TextInput
-                    style={[styles.input, styles.playerNameInput]}
-                    placeholder={`Player ${index + 1} Name`}
-                    placeholderTextColor="#999"
-                    value={player.name}
-                    onChangeText={(value) => handlePlayerNameChange(index, value)}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.handicapInput]}
-                    placeholder="HDC"
-                    placeholderTextColor="#999"
-                    keyboardType="decimal-pad"
-                    value={player.handicap}
-                    onChangeText={(value) => handlePlayerHandicapChange(index, value)}
-                  />
+                <View key={index}>
+                  <View style={styles.playerRow}>
+                    <Text style={styles.playerNumber}>{index + 1}.</Text>
+                    <TextInput
+                      style={[styles.input, styles.playerNameInput]}
+                      placeholder={`Player ${index + 1} Name`}
+                      placeholderTextColor="#999"
+                      value={player.name}
+                      onChangeText={(value) => handlePlayerNameChange(index, value)}
+                    />
+                    <TextInput
+                      style={[styles.input, styles.handicapInput]}
+                      placeholder="HDC"
+                      placeholderTextColor="#999"
+                      keyboardType="decimal-pad"
+                      value={player.handicap}
+                      onChangeText={(value) => handlePlayerHandicapChange(index, value)}
+                    />
+                  </View>
+                  
+                  {gameType === 'team-match-play' && player.name.trim() !== '' && (
+                    <View style={styles.playerExtras}>
+                      <View style={styles.teamSelector}>
+                        <Text style={styles.extraLabel}>Team:</Text>
+                        <TouchableOpacity
+                          style={[
+                            styles.teamButton,
+                            styles.team1Button,
+                            player.teamId === 1 && styles.teamButtonActive,
+                          ]}
+                          onPress={() => handleTeamAssignment(index, 1)}
+                        >
+                          <Text style={[
+                            styles.teamButtonText,
+                            player.teamId === 1 && styles.teamButtonTextActive,
+                          ]}>
+                            Team 1
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.teamButton,
+                            styles.team2Button,
+                            player.teamId === 2 && styles.teamButtonActive,
+                          ]}
+                          onPress={() => handleTeamAssignment(index, 2)}
+                        >
+                          <Text style={[
+                            styles.teamButtonText,
+                            player.teamId === 2 && styles.teamButtonTextActive,
+                          ]}>
+                            Team 2
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.strokesSelector}>
+                        <Text style={styles.extraLabel}>Strokes:</Text>
+                        <TextInput
+                          style={styles.strokesInput}
+                          placeholder="0"
+                          placeholderTextColor="#999"
+                          keyboardType="number-pad"
+                          value={player.strokesReceived}
+                          onChangeText={(value) => handlePlayerStrokesChange(index, value)}
+                        />
+                      </View>
+                    </View>
+                  )}
                 </View>
               ))}
             </View>
@@ -337,6 +519,62 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#374151',
     marginBottom: 12,
+  },
+  gameTypeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  gameTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  gameTypeButtonActive: {
+    borderColor: '#1B5E20',
+    backgroundColor: '#f0f8f0',
+  },
+  gameTypeButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+    textAlign: 'center',
+  },
+  gameTypeButtonTextActive: {
+    color: '#1B5E20',
+  },
+  matchPlayTypeSelector: {
+    gap: 12,
+  },
+  matchPlayTypeCard: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  matchPlayTypeCardActive: {
+    borderColor: '#1B5E20',
+    backgroundColor: '#f0f8f0',
+  },
+  matchPlayTypeTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#374151',
+    marginBottom: 4,
+  },
+  matchPlayTypeTitleActive: {
+    color: '#1B5E20',
+  },
+  matchPlayTypeDescription: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 16,
   },
   input: {
     borderWidth: 1,
@@ -463,7 +701,7 @@ const styles = StyleSheet.create({
   playerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   playerNumber: {
     fontSize: 14,
@@ -480,6 +718,68 @@ const styles = StyleSheet.create({
   handicapInput: {
     width: 70,
     marginBottom: 0,
+  },
+  playerExtras: {
+    flexDirection: 'row',
+    marginLeft: 28,
+    marginBottom: 16,
+    gap: 12,
+  },
+  teamSelector: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  extraLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  teamButton: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  team1Button: {
+    borderColor: '#2196F3',
+    backgroundColor: '#fff',
+  },
+  team2Button: {
+    borderColor: '#FF9800',
+    backgroundColor: '#fff',
+  },
+  teamButtonActive: {
+    backgroundColor: '#e3f2fd',
+  },
+  teamButtonText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#666',
+  },
+  teamButtonTextActive: {
+    color: '#1a1a1a',
+  },
+  strokesSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  strokesInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    width: 50,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+    textAlign: 'center',
+    backgroundColor: '#fff',
   },
   footer: {
     flexDirection: 'row',

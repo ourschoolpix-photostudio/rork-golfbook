@@ -6,6 +6,9 @@ const playerSchema = z.object({
   handicap: z.number(),
   scores: z.array(z.number()),
   totalScore: z.number(),
+  strokesReceived: z.number().optional(),
+  teamId: z.union([z.literal(1), z.literal(2)]).optional(),
+  strokesUsed: z.array(z.number()).optional(),
 });
 
 const gameSchema = z.object({
@@ -17,6 +20,10 @@ const gameSchema = z.object({
   createdAt: z.string(),
   status: z.enum(['in-progress', 'completed']),
   completedAt: z.string().optional(),
+  gameType: z.enum(['individual-net', 'team-match-play']).optional(),
+  matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
+  teamScores: z.object({ team1: z.number(), team2: z.number() }).optional(),
+  holeResults: z.array(z.enum(['team1', 'team2', 'tie'])).optional(),
 });
 
 const getAllProcedure = publicProcedure
@@ -45,6 +52,10 @@ const getAllProcedure = publicProcedure
         createdAt: game.created_at,
         status: game.status,
         completedAt: game.completed_at,
+        gameType: game.game_type,
+        matchPlayScoringType: game.match_play_scoring_type,
+        teamScores: game.team_scores,
+        holeResults: game.hole_results,
       }));
 
       console.log('[Games tRPC] Fetched games:', games.length);
@@ -62,6 +73,8 @@ const createProcedure = publicProcedure
     coursePar: z.number(),
     holePars: z.array(z.number()),
     players: z.array(playerSchema),
+    gameType: z.enum(['individual-net', 'team-match-play']).optional(),
+    matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
@@ -76,6 +89,10 @@ const createProcedure = publicProcedure
           hole_pars: input.holePars,
           players: input.players,
           status: 'in-progress',
+          game_type: input.gameType || 'individual-net',
+          match_play_scoring_type: input.matchPlayScoringType,
+          team_scores: input.gameType === 'team-match-play' ? { team1: 0, team2: 0 } : null,
+          hole_results: input.gameType === 'team-match-play' ? new Array(18).fill('tie') : null,
         })
         .select()
         .single();
@@ -94,6 +111,10 @@ const createProcedure = publicProcedure
         players: data.players,
         createdAt: data.created_at,
         status: data.status,
+        gameType: data.game_type,
+        matchPlayScoringType: data.match_play_scoring_type,
+        teamScores: data.team_scores,
+        holeResults: data.hole_results,
       };
     } catch (error) {
       console.error('[Games tRPC] Error in create:', error);
@@ -106,6 +127,8 @@ const updateProcedure = publicProcedure
     gameId: z.string(),
     players: z.array(playerSchema).optional(),
     status: z.enum(['in-progress', 'completed']).optional(),
+    teamScores: z.object({ team1: z.number(), team2: z.number() }).optional(),
+    holeResults: z.array(z.enum(['team1', 'team2', 'tie'])).optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
@@ -113,6 +136,8 @@ const updateProcedure = publicProcedure
       
       const updateData: any = {};
       if (input.players) updateData.players = input.players;
+      if (input.teamScores) updateData.team_scores = input.teamScores;
+      if (input.holeResults) updateData.hole_results = input.holeResults;
       if (input.status) {
         updateData.status = input.status;
         if (input.status === 'completed') {
@@ -143,6 +168,10 @@ const updateProcedure = publicProcedure
         createdAt: data.created_at,
         status: data.status,
         completedAt: data.completed_at,
+        gameType: data.game_type,
+        matchPlayScoringType: data.match_play_scoring_type,
+        teamScores: data.team_scores,
+        holeResults: data.hole_results,
       };
     } catch (error) {
       console.error('[Games tRPC] Error in update:', error);

@@ -34,7 +34,9 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number }[]
+    players: { name: string; handicap: number; strokesReceived?: number; teamId?: 1 | 2 }[],
+    gameType?: 'individual-net' | 'team-match-play',
+    matchPlayScoringType?: 'best-ball' | 'alternate-ball'
   ): Promise<string> => {
     if (!currentUser?.id) {
       throw new Error('User must be logged in to create a game');
@@ -50,7 +52,12 @@ export const [GamesProvider, useGames] = createContextHook(() => {
         handicap: p.handicap,
         scores: new Array(18).fill(0),
         totalScore: 0,
+        strokesReceived: p.strokesReceived || 0,
+        teamId: p.teamId,
+        strokesUsed: new Array(18).fill(0),
       })),
+      gameType: gameType || 'individual-net',
+      matchPlayScoringType,
     });
     console.log('[GamesContext] Created game:', result.id);
     await gamesQuery.refetch();

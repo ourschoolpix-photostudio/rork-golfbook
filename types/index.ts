@@ -181,6 +181,9 @@ export interface PersonalGamePlayer {
   handicap: number;
   scores: number[];
   totalScore: number;
+  strokesReceived?: number;
+  teamId?: 1 | 2;
+  strokesUsed?: number[];
 }
 
 export interface PersonalGame {
@@ -192,6 +195,10 @@ export interface PersonalGame {
   createdAt: string;
   completedAt?: string;
   status: 'in-progress' | 'completed';
+  gameType?: 'individual-net' | 'team-match-play';
+  matchPlayScoringType?: 'best-ball' | 'alternate-ball';
+  teamScores?: { team1: number; team2: number };
+  holeResults?: ('team1' | 'team2' | 'tie')[];
 }
 
 export interface RegistrationNotification {

@@ -9,23 +9,29 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
+import { trpc } from '@/lib/trpc';
 
 export default function GameScoringScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
-  const { getGame, updateGameScores, completeGame } = useGames();
+  const { getGame, completeGame } = useGames();
 
   const [game, setGame] = useState(getGame(gameId));
   const [currentHole, setCurrentHole] = useState<number>(1);
   const [holeScores, setHoleScores] = useState<{ [playerIndex: number]: { [hole: number]: number } }>({});
+  const [strokesUsedOnHole, setStrokesUsedOnHole] = useState<{ [playerIndex: number]: boolean }>({});
   const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const updateGameMutation = trpc.games.update.useMutation();
 
   useEffect(() => {
     if (game) {
       const scoresMap: { [playerIndex: number]: { [hole: number]: number } } = {};
+      const strokesMap: { [playerIndex: number]: boolean } = {};
+      
       game.players.forEach((player, playerIndex) => {
         scoresMap[playerIndex] = {};
         player.scores.forEach((score, holeIndex) => {
@@ -33,11 +39,17 @@ export default function GameScoringScreen() {
             scoresMap[playerIndex][holeIndex + 1] = score;
           }
         });
+        
+        if (player.strokesUsed && player.strokesUsed[currentHole - 1] === 1) {
+          strokesMap[playerIndex] = true;
+        }
       });
+      
       setHoleScores(scoresMap);
+      setStrokesUsedOnHole(strokesMap);
       console.log('[GameScoring] Loaded scores:', scoresMap);
     }
-  }, [game]);
+  }, [game, currentHole]);
 
   const handlePreviousHole = () => {
     setCurrentHole(prev => {
@@ -102,6 +114,79 @@ export default function GameScoringScreen() {
     }
   };
 
+  const toggleStroke = (playerIndex: number) => {
+    setStrokesUsedOnHole(prev => ({
+      ...prev,
+      [playerIndex]: !prev[playerIndex],
+    }));
+  };
+
+  const getNetScore = (playerIndex: number): number => {
+    const grossScore = holeScores[playerIndex]?.[currentHole] || 0;
+    if (grossScore === 0) return 0;
+    
+    const strokeUsed = strokesUsedOnHole[playerIndex] || false;
+    return strokeUsed ? grossScore - 1 : grossScore;
+  };
+
+  const calculateHoleResult = (): 'team1' | 'team2' | 'tie' => {
+    if (!game || game.gameType !== 'team-match-play') return 'tie';
+
+    const team1Players = game.players.filter(p => p.teamId === 1);
+    const team2Players = game.players.filter(p => p.teamId === 2);
+
+    const team1NetScores = team1Players.map((_, idx) => {
+      const playerIndex = game.players.findIndex(p => p === team1Players[idx]);
+      return getNetScore(playerIndex);
+    }).filter(s => s > 0);
+
+    const team2NetScores = team2Players.map((_, idx) => {
+      const playerIndex = game.players.findIndex(p => p === team2Players[idx]);
+      return getNetScore(playerIndex);
+    }).filter(s => s > 0);
+
+    if (team1NetScores.length === 0 || team2NetScores.length === 0) {
+      return 'tie';
+    }
+
+    if (game.matchPlayScoringType === 'best-ball') {
+      const team1Best = Math.min(...team1NetScores);
+      const team2Best = Math.min(...team2NetScores);
+      
+      if (team1Best < team2Best) return 'team1';
+      if (team2Best < team1Best) return 'team2';
+      return 'tie';
+    } else {
+      team1NetScores.sort((a, b) => a - b);
+      team2NetScores.sort((a, b) => a - b);
+
+      const hasAnyTie = team1NetScores.some((score, idx) => score === team2NetScores[idx]);
+      
+      if (hasAnyTie) {
+        const remainingTeam1 = team1NetScores.filter((score, idx) => score !== team2NetScores[idx]);
+        const remainingTeam2 = team2NetScores.filter((score, idx) => score !== team1NetScores[idx]);
+        
+        if (remainingTeam1.length === 0 || remainingTeam2.length === 0) {
+          return 'tie';
+        }
+        
+        const team1Best = Math.min(...remainingTeam1);
+        const team2Best = Math.min(...remainingTeam2);
+        
+        if (team1Best < team2Best) return 'team1';
+        if (team2Best < team1Best) return 'team2';
+      } else {
+        const team1Best = Math.min(...team1NetScores);
+        const team2Best = Math.min(...team2NetScores);
+        
+        if (team1Best < team2Best) return 'team1';
+        if (team2Best < team1Best) return 'team2';
+      }
+      
+      return 'tie';
+    }
+  };
+
   const getTotalScore = (playerIndex: number): number => {
     const playerScores = holeScores[playerIndex] || {};
     return Object.values(playerScores).reduce((sum, score) => sum + score, 0);
@@ -123,11 +208,42 @@ export default function GameScoringScreen() {
 
     setIsSaving(true);
     try {
-      for (let playerIndex = 0; playerIndex < game.players.length; playerIndex++) {
+      const updatedPlayers = game.players.map((player, playerIndex) => {
         const playerScores = holeScores[playerIndex] || {};
         const scores = Array.from({ length: 18 }, (_, i) => playerScores[i + 1] || 0);
-        await updateGameScores(gameId, playerIndex, scores);
+        
+        const strokesUsed = new Array(18).fill(0);
+        for (let i = 0; i < 18; i++) {
+          if (player.strokesUsed && player.strokesUsed[i] === 1) {
+            strokesUsed[i] = 1;
+          }
+        }
+        if (strokesUsedOnHole[playerIndex] && currentHole) {
+          strokesUsed[currentHole - 1] = 1;
+        }
+        
+        return {
+          ...player,
+          scores,
+          totalScore: scores.reduce((sum, score) => sum + score, 0),
+          strokesUsed,
+        };
+      });
+
+      let updateData: any = { gameId, players: updatedPlayers };
+
+      if (game.gameType === 'team-match-play') {
+        const holeResults = game.holeResults || new Array(18).fill('tie');
+        holeResults[currentHole - 1] = calculateHoleResult();
+        
+        const team1Wins = holeResults.filter(r => r === 'team1').length;
+        const team2Wins = holeResults.filter(r => r === 'team2').length;
+        
+        updateData.holeResults = holeResults;
+        updateData.teamScores = { team1: team1Wins, team2: team2Wins };
       }
+
+      await updateGameMutation.mutateAsync(updateData);
 
       const updatedGame = getGame(gameId);
       setGame(updatedGame);
@@ -190,6 +306,7 @@ export default function GameScoringScreen() {
   }
 
   const allComplete = areAllPlayersComplete();
+  const isTeamMatchPlay = game.gameType === 'team-match-play';
 
   return (
     <>
@@ -200,7 +317,9 @@ export default function GameScoringScreen() {
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>{game.courseName}</Text>
-          <Text style={styles.headerSubtitle}>Par {game.coursePar}</Text>
+          <Text style={styles.headerSubtitle}>
+            {isTeamMatchPlay ? 'Team Match Play' : 'Individual Net'} • Par {game.coursePar}
+          </Text>
         </View>
         <TouchableOpacity
           style={styles.completeButton}
@@ -209,6 +328,22 @@ export default function GameScoringScreen() {
           <Check size={20} color="#fff" />
         </TouchableOpacity>
       </View>
+
+      {isTeamMatchPlay && game.teamScores && (
+        <View style={styles.matchPlayScoreboard}>
+          <View style={styles.teamScoreBox}>
+            <Text style={styles.teamLabel}>Team 1</Text>
+            <Text style={styles.teamScore}>{game.teamScores.team1}</Text>
+          </View>
+          <View style={styles.matchPlayDivider}>
+            <Trophy size={20} color="#FFD700" />
+          </View>
+          <View style={styles.teamScoreBox}>
+            <Text style={styles.teamLabel}>Team 2</Text>
+            <Text style={styles.teamScore}>{game.teamScores.team2}</Text>
+          </View>
+        </View>
+      )}
 
       <View style={styles.holeNavigator}>
         <TouchableOpacity style={styles.holeNavBtn} onPress={handlePreviousHole}>
@@ -226,54 +361,149 @@ export default function GameScoringScreen() {
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {game.players.map((player, playerIndex) => {
-          const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
-          const totalScore = getTotalScore(playerIndex);
-          const holePar = game.holePars[currentHole - 1];
-          const hasScore = currentScore > 0;
-          const isScoringComplete = isPlayerScoringComplete(playerIndex);
+        {isTeamMatchPlay ? (
+          <>
+            {[1, 2].map(teamId => {
+              const teamPlayers = game.players
+                .map((player, idx) => ({ player, idx }))
+                .filter(({ player }) => player.teamId === teamId);
+              
+              return (
+                <View key={teamId} style={styles.teamSection}>
+                  <View style={[
+                    styles.teamHeader,
+                    teamId === 1 ? styles.team1Header : styles.team2Header,
+                  ]}>
+                    <Text style={styles.teamHeaderText}>Team {teamId}</Text>
+                  </View>
+                  
+                  {teamPlayers.map(({ player, idx: playerIndex }) => {
+                    const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
+                    const totalScore = getTotalScore(playerIndex);
+                    const holePar = game.holePars[currentHole - 1];
+                    const hasScore = currentScore > 0;
+                    const isScoringComplete = isPlayerScoringComplete(playerIndex);
+                    const netScore = getNetScore(playerIndex);
+                    const strokeUsed = strokesUsedOnHole[playerIndex] || false;
 
-          return (
-            <View key={playerIndex} style={styles.playerCard}>
-              <View style={styles.playerHeader}>
-                <View style={styles.playerInfo}>
-                  <Text style={styles.playerName}>{player.name}</Text>
-                  <Text style={styles.playerHandicap}>HDC: {player.handicap}</Text>
+                    return (
+                      <View key={playerIndex} style={styles.playerCard}>
+                        <View style={styles.playerHeader}>
+                          <View style={styles.playerInfo}>
+                            <Text style={styles.playerName}>{player.name}</Text>
+                            <View style={styles.playerStats}>
+                              <Text style={styles.playerHandicap}>HDC: {player.handicap}</Text>
+                              {player.strokesReceived && player.strokesReceived > 0 && (
+                                <Text style={styles.playerStrokes}>
+                                  • Strokes: {player.strokesReceived}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                          <View style={styles.totalScoreBox}>
+                            <Text style={styles.totalLabel}>Total</Text>
+                            <Text style={styles.totalScore}>{totalScore > 0 ? totalScore : 0}</Text>
+                          </View>
+                        </View>
+
+                        <View style={styles.scoreControls}>
+                          <TouchableOpacity
+                            style={styles.minusButton}
+                            onPress={() => handleScoreChange(playerIndex, -1)}
+                          >
+                            <Text style={styles.buttonSymbol}>−</Text>
+                          </TouchableOpacity>
+
+                          <View style={styles.scoreDisplayContainer}>
+                            <TouchableOpacity 
+                              style={[styles.scoreDisplay, isScoringComplete && styles.scoreDisplayComplete]}
+                              onPress={() => handleSetPar(playerIndex)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={[styles.scoreValue, hasScore && styles.scoreValueActive]}>
+                                {hasScore ? currentScore : holePar}
+                              </Text>
+                            </TouchableOpacity>
+                            {hasScore && netScore !== currentScore && (
+                              <Text style={styles.netScoreLabel}>Net: {netScore}</Text>
+                            )}
+                          </View>
+
+                          <TouchableOpacity
+                            style={styles.plusButton}
+                            onPress={() => handleScoreChange(playerIndex, 1)}
+                          >
+                            <Text style={styles.buttonSymbol}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        {player.strokesReceived && player.strokesReceived > 0 && (
+                          <TouchableOpacity
+                            style={[styles.strokeButton, strokeUsed && styles.strokeButtonActive]}
+                            onPress={() => toggleStroke(playerIndex)}
+                          >
+                            <Text style={[styles.strokeButtonText, strokeUsed && styles.strokeButtonTextActive]}>
+                              {strokeUsed ? '✓ Stroke Used' : 'Use Stroke'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
-                <View style={styles.totalScoreBox}>
-                  <Text style={styles.totalLabel}>Total</Text>
-                  <Text style={styles.totalScore}>{totalScore > 0 ? totalScore : 0}</Text>
+              );
+            })}
+          </>
+        ) : (
+          game.players.map((player, playerIndex) => {
+            const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
+            const totalScore = getTotalScore(playerIndex);
+            const holePar = game.holePars[currentHole - 1];
+            const hasScore = currentScore > 0;
+            const isScoringComplete = isPlayerScoringComplete(playerIndex);
+
+            return (
+              <View key={playerIndex} style={styles.playerCard}>
+                <View style={styles.playerHeader}>
+                  <View style={styles.playerInfo}>
+                    <Text style={styles.playerName}>{player.name}</Text>
+                    <Text style={styles.playerHandicap}>HDC: {player.handicap}</Text>
+                  </View>
+                  <View style={styles.totalScoreBox}>
+                    <Text style={styles.totalLabel}>Total</Text>
+                    <Text style={styles.totalScore}>{totalScore > 0 ? totalScore : 0}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.scoreControls}>
+                  <TouchableOpacity
+                    style={styles.minusButton}
+                    onPress={() => handleScoreChange(playerIndex, -1)}
+                  >
+                    <Text style={styles.buttonSymbol}>−</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={[styles.scoreDisplay, isScoringComplete && styles.scoreDisplayComplete]}
+                    onPress={() => handleSetPar(playerIndex)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.scoreValue, hasScore && styles.scoreValueActive]}>
+                      {hasScore ? currentScore : holePar}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.plusButton}
+                    onPress={() => handleScoreChange(playerIndex, 1)}
+                  >
+                    <Text style={styles.buttonSymbol}>+</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-
-              <View style={styles.scoreControls}>
-                <TouchableOpacity
-                  style={styles.minusButton}
-                  onPress={() => handleScoreChange(playerIndex, -1)}
-                >
-                  <Text style={styles.buttonSymbol}>−</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={[styles.scoreDisplay, isScoringComplete && styles.scoreDisplayComplete]}
-                  onPress={() => handleSetPar(playerIndex)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.scoreValue, hasScore && styles.scoreValueActive]}>
-                    {hasScore ? currentScore : holePar}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.plusButton}
-                  onPress={() => handleScoreChange(playerIndex, 1)}
-                >
-                  <Text style={styles.buttonSymbol}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })}
+            );
+          })
+        )}
 
         {allComplete && (
           <TouchableOpacity 
@@ -330,6 +560,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  matchPlayScoreboard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  teamScoreBox: {
+    alignItems: 'center',
+  },
+  teamLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginBottom: 4,
+  },
+  teamScore: {
+    fontSize: 32,
+    fontWeight: '700' as const,
+    color: '#1B5E20',
+  },
+  matchPlayDivider: {
+    paddingHorizontal: 20,
+  },
   errorText: {
     fontSize: 16,
     color: '#999',
@@ -372,6 +629,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+  teamSection: {
+    marginBottom: 16,
+  },
+  teamHeader: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  team1Header: {
+    backgroundColor: '#2196F3',
+  },
+  team2Header: {
+    backgroundColor: '#FF9800',
+  },
+  teamHeaderText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#fff',
+    textAlign: 'center',
+  },
   playerCard: {
     backgroundColor: '#fff',
     borderRadius: 10,
@@ -400,10 +678,19 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     marginBottom: 2,
   },
+  playerStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   playerHandicap: {
     fontSize: 11,
     fontWeight: '500' as const,
     color: '#999',
+  },
+  playerStrokes: {
+    fontSize: 11,
+    fontWeight: '500' as const,
+    color: '#1B5E20',
   },
   totalScoreBox: {
     alignItems: 'center',
@@ -450,6 +737,9 @@ const styles = StyleSheet.create({
     fontWeight: '400' as const,
     color: '#fff',
   },
+  scoreDisplayContainer: {
+    alignItems: 'center',
+  },
   scoreDisplay: {
     width: 60,
     height: 60,
@@ -471,6 +761,34 @@ const styles = StyleSheet.create({
   },
   scoreValueActive: {
     color: '#2196F3',
+  },
+  netScoreLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#1B5E20',
+    marginTop: 4,
+  },
+  strokeButton: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#1B5E20',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  strokeButtonActive: {
+    backgroundColor: '#e8f5e9',
+    borderColor: '#1B5E20',
+  },
+  strokeButtonText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#666',
+  },
+  strokeButtonTextActive: {
+    color: '#1B5E20',
   },
   saveButton: {
     backgroundColor: '#1B5E20',
