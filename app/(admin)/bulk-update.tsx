@@ -30,7 +30,7 @@ export default function BulkUpdateScreen() {
   const handleUpdateTournamentFlights = async () => {
     Alert.alert(
       'Update Tournament Flights',
-      'This will update all members\' tournament flights based on their handicaps:\n\n• 10.1+ = Flight B\n• 10.0 and below = Flight A\n\nProceed?',
+      'This will update all members\' tournament flights based on their handicaps:\n\n• 11.0+ = Flight B\n• 10.9 and below = Flight A\n\nProceed?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -51,7 +51,7 @@ export default function BulkUpdateScreen() {
 
               for (const member of members) {
                 const handicap = member.handicap || 0;
-                const newFlight: 'A' | 'B' = handicap > 10 ? 'B' : 'A';
+                const newFlight: 'A' | 'B' = handicap >= 11 ? 'B' : 'A';
                 const oldFlight = member.flight || '';
 
                 if (oldFlight !== newFlight) {
@@ -241,7 +241,7 @@ export default function BulkUpdateScreen() {
     {
       id: 'tournament-flights',
       title: 'Update Tournament Flights',
-      description: 'Update all tournament flights based on handicaps (10.1+ = B, 10.0 and below = A)',
+      description: 'Update all tournament flights based on handicaps (11.0+ = B, 10.9 and below = A)',
       icon: 'golf',
       action: handleUpdateTournamentFlights,
     },
