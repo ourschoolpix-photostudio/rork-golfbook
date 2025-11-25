@@ -621,7 +621,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
                     />
                   </View>
                   <Text style={styles.bettingHelpText}>
-                    {`Example: ${bettingAmount || '0'} = ${bettingAmount || '0'} front, ${bettingAmount || '0'} back, ${bettingAmount || '0'} overall = ${(parseFloat(bettingAmount) * 3 || 0).toFixed(2)} total per player`}
+                    Example: ${bettingAmount || '0'} = ${bettingAmount || '0'} front, ${bettingAmount || '0'} back, ${bettingAmount || '0'} overall = ${(parseFloat(bettingAmount) * 3 || 0).toFixed(2)} total per player
                   </Text>
                 </View>
               )}

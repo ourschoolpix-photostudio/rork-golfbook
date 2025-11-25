@@ -681,7 +681,7 @@ export default function GameScoringScreen() {
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>{game.courseName}</Text>
           <Text style={styles.headerSubtitle}>
-            {isTeamMatchPlay ? 'Team Match Play' : 'Individual Net'} • Par {game.coursePar}
+            {isTeamMatchPlay ? 'Team Match Play' : isWolf ? 'Wolf' : 'Individual Net'} • Par {game.coursePar}
           </Text>
         </View>
         <TouchableOpacity
