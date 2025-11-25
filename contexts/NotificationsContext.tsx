@@ -6,10 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const [NotificationsProvider, useNotifications] = createContextHook(() => {
   const { currentUser } = useAuth();
+  const memberId = currentUser?.id;
+  const isUserLoggedIn = !!memberId;
 
   const notificationsQuery = trpc.notifications.getAll.useQuery(
-    { memberId: currentUser?.id },
-    { enabled: !!currentUser?.id }
+    { memberId },
+    { enabled: isUserLoggedIn }
   );
 
   const createNotificationMutation = trpc.notifications.create.useMutation({
@@ -45,7 +47,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
   const addNotification = useCallback(
     async (notification: Omit<RegistrationNotification, 'id' | 'isRead' | 'createdAt'>) => {
       await createNotificationMutation.mutateAsync({
-        memberId: currentUser?.id,
+        memberId,
         eventId: notification.eventId,
         type: notification.type as any,
         title: notification.title,
@@ -53,7 +55,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
         metadata: notification.metadata,
       });
     },
-    [currentUser, createNotificationMutation]
+    [memberId, createNotificationMutation]
   );
 
   const markAsRead = useCallback(
@@ -71,14 +73,14 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
   );
 
   const markAllAsRead = useCallback(async () => {
-    await markAllAsReadMutation.mutateAsync({ memberId: currentUser?.id });
-  }, [currentUser, markAllAsReadMutation]);
+    await markAllAsReadMutation.mutateAsync({ memberId });
+  }, [memberId, markAllAsReadMutation]);
 
   const clearAll = useCallback(async () => {
-    await clearAllMutation.mutateAsync({ memberId: currentUser?.id });
-  }, [currentUser, clearAllMutation]);
+    await clearAllMutation.mutateAsync({ memberId });
+  }, [memberId, clearAllMutation]);
 
-  const notifications = notificationsQuery.data || [];
+  const notifications = useMemo(() => notificationsQuery.data || [], [notificationsQuery.data]);
   const isLoading = notificationsQuery.isLoading;
   const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 

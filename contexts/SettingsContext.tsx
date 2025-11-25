@@ -45,9 +45,6 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
     },
   });
 
-  const orgInfo = settingsQuery.data || DEFAULT_ORG_INFO;
-  const isLoading = settingsQuery.isLoading;
-
   const refreshOrganizationInfo = useCallback(async () => {
     await settingsQuery.refetch();
   }, [settingsQuery]);
@@ -55,6 +52,9 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
   const updateOrganizationInfo = useCallback(async (updates: Partial<OrganizationInfo>) => {
     await updateSettingsMutation.mutateAsync(updates);
   }, [updateSettingsMutation]);
+
+  const orgInfo = useMemo(() => settingsQuery.data || DEFAULT_ORG_INFO, [settingsQuery.data]);
+  const isLoading = settingsQuery.isLoading;
 
   return useMemo(() => ({
     orgInfo,

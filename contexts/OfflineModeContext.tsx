@@ -2,8 +2,6 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import NetInfo from '@react-native-community/netinfo';
-import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/contexts/AuthContext';
 
 const STORAGE_KEYS = {
   OFFLINE_MODE: '@golf_offline_mode',
@@ -152,19 +150,22 @@ export const [OfflineModeProvider, useOfflineMode] = createContextHook(() => {
     setLastSyncTime(time);
   }, []);
 
-  const hasPendingChanges = useMemo(() => {
-    return pendingOperations.length > 0;
-  }, [pendingOperations]);
+  const hasPendingChanges = useMemo(
+    () => pendingOperations.length > 0,
+    [pendingOperations.length]
+  );
 
-  const getOperationsByEvent = useCallback((eventId: string) => {
-    return pendingOperations.filter(op => op.eventId === eventId);
-  }, [pendingOperations]);
+  const getOperationsByEvent = useCallback(
+    (eventId: string) => pendingOperations.filter(op => op.eventId === eventId),
+    [pendingOperations]
+  );
 
-  const shouldUseOfflineMode = useMemo(() => {
-    return isOfflineMode || !isConnected;
-  }, [isOfflineMode, isConnected]);
+  const shouldUseOfflineMode = useMemo(
+    () => isOfflineMode || !isConnected,
+    [isOfflineMode, isConnected]
+  );
 
-  return useMemo(() => ({
+  const contextValue = useMemo(() => ({
     isOfflineMode,
     isConnected,
     shouldUseOfflineMode,
@@ -200,7 +201,8 @@ export const [OfflineModeProvider, useOfflineMode] = createContextHook(() => {
     updateOfflineCache,
     getCachedData,
     getOperationsByEvent,
-    setIsSyncing,
     setPendingSyncTime,
   ]);
+
+  return contextValue;
 });

@@ -30,12 +30,6 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     },
   });
 
-  const unregisterMutation = trpc.events.unregister.useMutation({
-    onSuccess: () => {
-      eventsQuery.refetch();
-    },
-  });
-
   const addEvent = useCallback(async (event: Event) => {
     const eventWithDefaults = {
       ...event,
@@ -79,7 +73,11 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     console.log('updateScore - using sync system');
   }, []);
 
-  const createFinancialMutation = trpc.financials.create.useMutation();
+  const createFinancialMutation = trpc.financials.create.useMutation({
+    onSuccess: () => {
+      eventsQuery.refetch();
+    },
+  });
 
   const addFinancial = useCallback(async (financial: FinancialRecord) => {
     await createFinancialMutation.mutateAsync(financial);
@@ -89,12 +87,12 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     console.log('updateEventPoints not yet implemented for backend');
   }, []);
 
-  const events = eventsQuery.data || [];
-  const registrations: EventRegistration[] = [];
-  const groupings: Grouping[] = [];
-  const scores: Score[] = [];
-  const eventPoints: EventRolexPoints[] = [];
-  const financials: FinancialRecord[] = [];
+  const events = useMemo(() => eventsQuery.data || [], [eventsQuery.data]);
+  const registrations: EventRegistration[] = useMemo(() => [], []);
+  const groupings: Grouping[] = useMemo(() => [], []);
+  const scores: Score[] = useMemo(() => [], []);
+  const eventPoints: EventRolexPoints[] = useMemo(() => [], []);
+  const financials: FinancialRecord[] = useMemo(() => [], []);
   const isLoading = eventsQuery.isLoading;
 
   return useMemo(() => ({

@@ -6,10 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const [GamesProvider, useGames] = createContextHook(() => {
   const { currentUser } = useAuth();
+  const memberId = currentUser?.id || '';
+  const isUserLoggedIn = !!currentUser?.id;
 
   const gamesQuery = trpc.games.getAll.useQuery(
-    { memberId: currentUser?.id || '' },
-    { enabled: !!currentUser?.id }
+    { memberId },
+    { enabled: isUserLoggedIn }
   );
 
   const createGameMutation = trpc.games.create.useMutation({
@@ -39,12 +41,12 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
     strokeIndices?: number[]
   ): Promise<string> => {
-    if (!currentUser?.id) {
+    if (!memberId) {
       throw new Error('User must be logged in to create a game');
     }
 
     const gameData: any = {
-      memberId: currentUser.id,
+      memberId,
       courseName,
       coursePar,
       holePars,
@@ -74,7 +76,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     await gamesQuery.refetch();
     console.log('[GamesContext] Refetched games after creation');
     return result.id;
-  }, [currentUser, createGameMutation, gamesQuery]);
+  }, [memberId, createGameMutation, gamesQuery]);
 
   const updateGameScores = useCallback(async (
     gameId: string,
@@ -113,23 +115,25 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     console.log('[GamesContext] Deleted game:', gameId);
   }, [deleteGameMutation]);
 
-  const getGame = useCallback((gameId: string): PersonalGame | undefined => {
-    return gamesQuery.data?.find(g => g.id === gameId);
-  }, [gamesQuery.data]);
-
-  const games = gamesQuery.data || [];
+  const games = useMemo(() => gamesQuery.data || [], [gamesQuery.data]);
   const isLoading = gamesQuery.isLoading;
 
-  const inProgressGames = useMemo(() => {
-    return games.filter(g => g.status === 'in-progress');
-  }, [games]);
+  const inProgressGames = useMemo(() => 
+    games.filter(g => g.status === 'in-progress'),
+    [games]
+  );
 
-  const completedGames = useMemo(() => {
-    return games.filter(g => g.status === 'completed').sort((a, b) => {
+  const completedGames = useMemo(() => 
+    games.filter(g => g.status === 'completed').sort((a, b) => {
       const timeA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
       const timeB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
       return timeB - timeA;
-    });
+    }),
+    [games]
+  );
+
+  const getGame = useCallback((gameId: string): PersonalGame | undefined => {
+    return games.find(g => g.id === gameId);
   }, [games]);
 
   return useMemo(() => ({

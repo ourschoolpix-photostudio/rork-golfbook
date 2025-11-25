@@ -53,12 +53,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   }, []);
 
   useEffect(() => {
-    if (membersQuery.data && membersQuery.data.length === 0 && !createMemberMutation.isPending && !hasInitializedAdmin) {
+    const shouldInitializeAdmin = 
+      membersQuery.data && 
+      membersQuery.data.length === 0 && 
+      !createMemberMutation.isPending && 
+      !hasInitializedAdmin;
+
+    if (shouldInitializeAdmin) {
       console.log('AuthContext - No members found, creating default admin');
       setHasInitializedAdmin(true);
       createMemberMutation.mutate(DEFAULT_MEMBER);
     }
-  }, [membersQuery.data, hasInitializedAdmin]);
+  }, [membersQuery.data, hasInitializedAdmin, createMemberMutation]);
 
   const loadCurrentUser = async () => {
     try {
@@ -138,7 +144,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, [currentUser, logout, deleteMemberMutation]);
 
-  const members = membersQuery.data || [];
+  const members = useMemo(() => membersQuery.data || [], [membersQuery.data]);
 
   return useMemo(() => ({
     members,
