@@ -52,8 +52,17 @@ export default function DashboardScreen() {
   );
 
   useEffect(() => {
+    console.log('🔄 Dashboard - eventsQuery state:', {
+      isLoading: eventsQuery.isLoading,
+      isError: eventsQuery.isError,
+      error: eventsQuery.error,
+      dataLength: eventsQuery.data?.length ?? 'no data',
+      status: eventsQuery.status
+    });
+    
     if (eventsQuery.data) {
       console.log('✅ Dashboard - Events from backend:', eventsQuery.data.length);
+      console.log('📋 Dashboard - Event IDs:', eventsQuery.data.map(e => e.id));
       const sortedEvents = [...eventsQuery.data].sort((a, b) => {
         const dateA = a.date ? new Date(a.date).getTime() : 0;
         const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -61,10 +70,21 @@ export default function DashboardScreen() {
       });
       setEvents(sortedEvents);
       setIsLoadingEvents(false);
+    } else if (eventsQuery.isError) {
+      console.error('❌ Dashboard - Failed to fetch events:', eventsQuery.error);
+      setIsLoadingEvents(false);
     }
-  }, [eventsQuery.data]);
+  }, [eventsQuery.data, eventsQuery.isError, eventsQuery.error, eventsQuery.isLoading, eventsQuery.status]);
 
   useEffect(() => {
+    console.log('🔄 Dashboard - membersQuery state:', {
+      isLoading: membersQuery.isLoading,
+      isError: membersQuery.isError,
+      error: membersQuery.error,
+      dataLength: membersQuery.data?.length ?? 'no data',
+      currentUserId: currentUser?.id
+    });
+    
     if (currentUser && membersQuery.data) {
       const memberProfile = membersQuery.data.find(
         (m: Member) => m.id === currentUser.id
@@ -72,7 +92,7 @@ export default function DashboardScreen() {
       console.log('Dashboard - Found profile:', memberProfile);
       setUserProfile(memberProfile || null);
     }
-  }, [currentUser, membersQuery.data]);
+  }, [currentUser, membersQuery.data, membersQuery.isError, membersQuery.error, membersQuery.isLoading]);
 
   const handleLogout = async () => {
     await logout();
@@ -293,8 +313,22 @@ export default function DashboardScreen() {
             <ActivityIndicator size="large" color="#007AFF" />
             <Text style={styles.loadingText}>Loading events...</Text>
           </View>
+        ) : eventsQuery.isError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>❌ Error Loading Events</Text>
+            <Text style={styles.errorText}>{String(eventsQuery.error)}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => eventsQuery.refetch()}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         ) : events.length === 0 ? (
-          <Text style={styles.emptyText}>No events created yet</Text>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No events created yet</Text>
+            <Text style={styles.emptySubtext}>Events will appear here once created by admin</Text>
+          </View>
         ) : (
           <FlatList
             scrollEnabled={false}
@@ -575,5 +609,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#FF3B30',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+  },
+  emptySubtext: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
