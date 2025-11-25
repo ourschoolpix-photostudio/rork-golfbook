@@ -1013,15 +1013,15 @@ export default function GameScoringScreen() {
                       <Text style={styles.buttonSymbol}>+</Text>
                     </TouchableOpacity>
                   </View>
-                </TouchableOpacity>
 
-                {player.strokesReceived && player.strokesReceived > 0 && (
-                  <View style={[styles.strokeIndicator, receivesStroke && styles.strokeIndicatorActive]}>
-                    <Text style={[styles.strokeIndicatorText, receivesStroke && styles.strokeIndicatorTextActive]}>
-                      {receivesStroke ? '✓ Stroke Applied' : 'No Stroke'}
-                    </Text>
-                  </View>
-                )}
+                  {player.strokesReceived && player.strokesReceived > 0 && receivesStroke && (
+                    <View style={[styles.strokeHoleIndicator, receivesStroke && styles.strokeHoleIndicatorActive]}>
+                      <Text style={[styles.strokeHoleIndicatorText, receivesStroke && styles.strokeHoleIndicatorTextActive]}>
+                        Stroke Hole
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
 
                 {isCurrentWolf && (
                   <TouchableOpacity
@@ -1496,6 +1496,29 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   strokeIndicatorTextActive: {
+    color: '#1B5E20',
+  },
+  strokeHoleIndicator: {
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 5,
+    backgroundColor: '#e8f5e9',
+    borderWidth: 1.5,
+    borderColor: '#1B5E20',
+    alignSelf: 'center',
+  },
+  strokeHoleIndicatorActive: {
+    backgroundColor: '#e8f5e9',
+    borderColor: '#1B5E20',
+  },
+  strokeHoleIndicatorText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#1B5E20',
+    textAlign: 'center',
+  },
+  strokeHoleIndicatorTextActive: {
     color: '#1B5E20',
   },
   wolfCard: {
