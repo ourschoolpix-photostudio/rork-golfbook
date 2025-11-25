@@ -21,18 +21,20 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   visible,
   onClose,
 }) => {
-  const { notifications, markAsRead, deleteNotification, markAllAsRead, clearAll } = useNotifications();
+  const { notifications, deleteNotification, markAllAsRead, clearAll } = useNotifications();
   const router = useRouter();
 
   useEffect(() => {
     if (visible) {
       markAllAsRead();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  const handleNotificationPress = (eventId: string) => {
+  const handleNotificationPress = (eventId: string | undefined) => {
+    if (!eventId) return;
     onClose();
-    router.push(`/(event)/${eventId}/registration`);
+    router.push(`/(event)/${eventId}/registration` as any);
   };
 
   const formatDate = (isoDate: string) => {

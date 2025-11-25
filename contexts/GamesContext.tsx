@@ -1,10 +1,31 @@
-import createContextHook from '@nkzw/create-context-hook';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, createContext, useContext, ReactNode } from 'react';
 import { PersonalGame } from '@/types';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 
-export const [GamesProvider, useGames] = createContextHook(() => {
+type GamesContextType = {
+  games: PersonalGame[];
+  inProgressGames: PersonalGame[];
+  completedGames: PersonalGame[];
+  isLoading: boolean;
+  createGame: (
+    courseName: string,
+    coursePar: number,
+    holePars: number[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
+    gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
+    matchPlayScoringType?: 'best-ball' | 'alternate-ball',
+    strokeIndices?: number[]
+  ) => Promise<string>;
+  updateGameScores: (gameId: string, playerIndex: number, scores: number[]) => Promise<void>;
+  completeGame: (gameId: string) => Promise<void>;
+  deleteGame: (gameId: string) => Promise<void>;
+  getGame: (gameId: string) => PersonalGame | undefined;
+};
+
+const GamesContext = createContext<GamesContextType | undefined>(undefined);
+
+export function GamesProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
   const memberId = currentUser?.id || '';
   const isUserLoggedIn = !!currentUser?.id;
@@ -136,7 +157,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     return games.find(g => g.id === gameId);
   }, [games]);
 
-  return useMemo(() => ({
+  const value = useMemo(() => ({
     games,
     inProgressGames,
     completedGames,
@@ -147,4 +168,18 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     deleteGame,
     getGame,
   }), [games, inProgressGames, completedGames, isLoading, createGame, updateGameScores, completeGame, deleteGame, getGame]);
-});
+
+  return (
+    <GamesContext.Provider value={value}>
+      {children}
+    </GamesContext.Provider>
+  );
+}
+
+export function useGames(): GamesContextType {
+  const context = useContext(GamesContext);
+  if (!context) {
+    throw new Error('useGames must be used within GamesProvider');
+  }
+  return context;
+}

@@ -1,10 +1,22 @@
-import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, createContext, useContext, ReactNode } from 'react';
 import { RegistrationNotification } from '@/types';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 
-export const [NotificationsProvider, useNotifications] = createContextHook(() => {
+type NotificationsContextType = {
+  notifications: RegistrationNotification[];
+  unreadCount: number;
+  isLoading: boolean;
+  addNotification: (notification: Omit<RegistrationNotification, 'id' | 'isRead' | 'createdAt'>) => Promise<void>;
+  markAsRead: (notificationId: string) => Promise<void>;
+  deleteNotification: (notificationId: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  clearAll: () => Promise<void>;
+};
+
+const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
+
+export function NotificationsProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
   const memberId = currentUser?.id;
   const isUserLoggedIn = !!memberId;
@@ -84,7 +96,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
   const isLoading = notificationsQuery.isLoading;
   const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 
-  return useMemo(() => ({
+  const value = useMemo(() => ({
     notifications,
     unreadCount,
     isLoading,
@@ -94,4 +106,18 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
     markAllAsRead,
     clearAll,
   }), [notifications, unreadCount, isLoading, addNotification, markAsRead, deleteNotification, markAllAsRead, clearAll]);
-});
+
+  return (
+    <NotificationsContext.Provider value={value}>
+      {children}
+    </NotificationsContext.Provider>
+  );
+}
+
+export function useNotifications(): NotificationsContextType {
+  const context = useContext(NotificationsContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within NotificationsProvider');
+  }
+  return context;
+}
