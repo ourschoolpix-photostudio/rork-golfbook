@@ -117,7 +117,12 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     }
 
     const parsedStrokeIndices = strokeIndices
-      .map(si => si.trim() ? parseInt(si, 10) : null)
+      .map(si => {
+        const trimmed = si.trim();
+        if (!trimmed) return null;
+        const parsed = parseInt(trimmed, 10);
+        return isNaN(parsed) ? null : parsed;
+      })
       .filter((si): si is number => si !== null);
 
     if (parsedStrokeIndices.length > 0) {
@@ -231,7 +236,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     updated[index] = value;
     setStrokeIndices(updated);
 
-    if (value.length >= 1 && index < 17) {
+    if (value.length === 2 && index < 17) {
       setTimeout(() => {
         strokeIndexInputRefs.current[index + 1]?.focus();
       }, 50);
