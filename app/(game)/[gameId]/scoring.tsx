@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { PersonalGamePlayer } from '@/types';
 import { trpc } from '@/lib/trpc';
 
 export default function GameScoringScreen() {
@@ -44,9 +45,9 @@ export default function GameScoringScreen() {
       const scoresMap: { [playerIndex: number]: { [hole: number]: number } } = {};
       const strokesMap: { [playerIndex: number]: boolean } = {};
       
-      game.players.forEach((player, playerIndex) => {
+      game.players.forEach((player: PersonalGamePlayer, playerIndex: number) => {
         scoresMap[playerIndex] = {};
-        player.scores.forEach((score, holeIndex) => {
+        player.scores.forEach((score: number, holeIndex: number) => {
           if (score > 0) {
             scoresMap[playerIndex][holeIndex + 1] = score;
           }
@@ -144,18 +145,18 @@ export default function GameScoringScreen() {
   const calculateHoleResult = (): 'team1' | 'team2' | 'tie' => {
     if (!game || game.gameType !== 'team-match-play') return 'tie';
 
-    const team1Players = game.players.filter(p => p.teamId === 1);
-    const team2Players = game.players.filter(p => p.teamId === 2);
+    const team1Players = game.players.filter((p: PersonalGamePlayer) => p.teamId === 1);
+    const team2Players = game.players.filter((p: PersonalGamePlayer) => p.teamId === 2);
 
-    const team1NetScores = team1Players.map((_, idx) => {
-      const playerIndex = game.players.findIndex(p => p === team1Players[idx]);
+    const team1NetScores = team1Players.map((_: PersonalGamePlayer, idx: number) => {
+      const playerIndex = game.players.findIndex((p: PersonalGamePlayer) => p === team1Players[idx]);
       return getNetScore(playerIndex);
-    }).filter(s => s > 0);
+    }).filter((s: number) => s > 0);
 
-    const team2NetScores = team2Players.map((_, idx) => {
-      const playerIndex = game.players.findIndex(p => p === team2Players[idx]);
+    const team2NetScores = team2Players.map((_: PersonalGamePlayer, idx: number) => {
+      const playerIndex = game.players.findIndex((p: PersonalGamePlayer) => p === team2Players[idx]);
       return getNetScore(playerIndex);
-    }).filter(s => s > 0);
+    }).filter((s: number) => s > 0);
 
     if (team1NetScores.length === 0 || team2NetScores.length === 0) {
       return 'tie';
@@ -169,14 +170,14 @@ export default function GameScoringScreen() {
       if (team2Best < team1Best) return 'team2';
       return 'tie';
     } else {
-      team1NetScores.sort((a, b) => a - b);
-      team2NetScores.sort((a, b) => a - b);
+      team1NetScores.sort((a: number, b: number) => a - b);
+      team2NetScores.sort((a: number, b: number) => a - b);
 
-      const hasAnyTie = team1NetScores.some((score, idx) => score === team2NetScores[idx]);
+      const hasAnyTie = team1NetScores.some((score: number, idx: number) => score === team2NetScores[idx]);
       
       if (hasAnyTie) {
-        const remainingTeam1 = team1NetScores.filter((score, idx) => score !== team2NetScores[idx]);
-        const remainingTeam2 = team2NetScores.filter((score, idx) => score !== team1NetScores[idx]);
+        const remainingTeam1 = team1NetScores.filter((score: number, idx: number) => score !== team2NetScores[idx]);
+        const remainingTeam2 = team2NetScores.filter((score: number, idx: number) => score !== team1NetScores[idx]);
         
         if (remainingTeam1.length === 0 || remainingTeam2.length === 0) {
           return 'tie';
@@ -212,7 +213,7 @@ export default function GameScoringScreen() {
 
   const areAllPlayersComplete = (): boolean => {
     if (!game) return false;
-    return game.players.every((_, playerIndex) => isPlayerScoringComplete(playerIndex));
+    return game.players.every((_: PersonalGamePlayer, playerIndex: number) => isPlayerScoringComplete(playerIndex));
   };
 
   const handleSaveAllScores = async () => {
@@ -220,7 +221,7 @@ export default function GameScoringScreen() {
 
     setIsSaving(true);
     try {
-      const updatedPlayers = game.players.map((player, playerIndex) => {
+      const updatedPlayers = game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
         const playerScores = holeScores[playerIndex] || {};
         const scores = Array.from({ length: 18 }, (_, i) => playerScores[i + 1] || 0);
         
@@ -248,8 +249,8 @@ export default function GameScoringScreen() {
         const holeResults = game.holeResults || new Array(18).fill('tie');
         holeResults[currentHole - 1] = calculateHoleResult();
         
-        const team1Wins = holeResults.filter(r => r === 'team1').length;
-        const team2Wins = holeResults.filter(r => r === 'team2').length;
+        const team1Wins = holeResults.filter((r: string) => r === 'team1').length;
+        const team2Wins = holeResults.filter((r: string) => r === 'team2').length;
         
         updateData.holeResults = holeResults;
         updateData.teamScores = { team1: team1Wins, team2: team2Wins };
@@ -271,8 +272,8 @@ export default function GameScoringScreen() {
   const handleCompleteGame = () => {
     if (!game) return;
 
-    const allPlayersScored = game.players.every(p => {
-      return p.scores.some(s => s > 0);
+    const allPlayersScored = game.players.every((p: PersonalGamePlayer) => {
+      return p.scores.some((s: number) => s > 0);
     });
 
     if (!allPlayersScored) {
@@ -394,8 +395,8 @@ export default function GameScoringScreen() {
           <>
             {[1, 2].map(teamId => {
               const teamPlayers = game.players
-                .map((player, idx) => ({ player, idx }))
-                .filter(({ player }) => player.teamId === teamId);
+                .map((player: PersonalGamePlayer, idx: number) => ({ player, idx }))
+                .filter(({ player }: { player: PersonalGamePlayer; idx: number }) => player.teamId === teamId);
               
               return (
                 <View key={teamId} style={styles.teamSection}>
@@ -406,7 +407,7 @@ export default function GameScoringScreen() {
                     <Text style={styles.teamHeaderText}>Team {teamId}</Text>
                   </View>
                   
-                  {teamPlayers.map(({ player, idx: playerIndex }) => {
+                  {teamPlayers.map(({ player, idx: playerIndex }: { player: PersonalGamePlayer; idx: number }) => {
                     const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
                     const totalScore = getTotalScore(playerIndex);
                     const holePar = game.holePars[currentHole - 1];
@@ -484,7 +485,7 @@ export default function GameScoringScreen() {
             })}
           </>
         ) : (
-          game.players.map((player, playerIndex) => {
+          game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
             const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
             const totalScore = getTotalScore(playerIndex);
             const holePar = game.holePars[currentHole - 1];
