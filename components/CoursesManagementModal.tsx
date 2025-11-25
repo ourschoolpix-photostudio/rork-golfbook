@@ -22,6 +22,8 @@ interface Course {
   par: number;
   holePars: number[];
   strokeIndices?: number[];
+  slopeRating?: number;
+  courseRating?: number;
   memberId: string;
   isPublic: boolean;
 }
@@ -38,6 +40,8 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
   const [courseName, setCourseName] = useState<string>('');
   const [holePars, setHolePars] = useState<string[]>(new Array(18).fill(''));
   const [strokeIndices, setStrokeIndices] = useState<string[]>(new Array(18).fill(''));
+  const [slopeRating, setSlopeRating] = useState<string>('');
+  const [courseRating, setCourseRating] = useState<string>('');
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
   const strokeIndexInputRefs = React.useRef<(TextInput | null)[]>([]);
 
@@ -72,6 +76,8 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setCourseName('');
     setHolePars(new Array(18).fill(''));
     setStrokeIndices(new Array(18).fill(''));
+    setSlopeRating('');
+    setCourseRating('');
   };
 
   const handleStartCreate = () => {
@@ -79,6 +85,8 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setCourseName('');
     setHolePars(new Array(18).fill(''));
     setStrokeIndices(new Array(18).fill(''));
+    setSlopeRating('');
+    setCourseRating('');
   };
 
   const handleStartEdit = (course: Course) => {
@@ -92,6 +100,8 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
       });
     }
     setStrokeIndices(indices);
+    setSlopeRating(course.slopeRating ? course.slopeRating.toString() : '');
+    setCourseRating(course.courseRating ? course.courseRating.toString() : '');
   };
 
   const handleSave = async () => {
@@ -128,6 +138,19 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
       }
     }
 
+    const parsedSlopeRating = slopeRating.trim() ? parseFloat(slopeRating) : undefined;
+    const parsedCourseRating = courseRating.trim() ? parseFloat(courseRating) : undefined;
+
+    if (parsedSlopeRating !== undefined && (isNaN(parsedSlopeRating) || parsedSlopeRating < 55 || parsedSlopeRating > 155)) {
+      Alert.alert('Error', 'Slope rating must be between 55 and 155');
+      return;
+    }
+
+    if (parsedCourseRating !== undefined && (isNaN(parsedCourseRating) || parsedCourseRating < 60 || parsedCourseRating > 80)) {
+      Alert.alert('Error', 'Course rating must be between 60 and 80');
+      return;
+    }
+
     const totalPar = parsedHolePars.reduce((sum, par) => sum + par, 0);
 
     try {
@@ -138,6 +161,8 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
           par: totalPar,
           holePars: parsedHolePars,
           strokeIndices: parsedStrokeIndices.length === 18 ? parsedStrokeIndices : undefined,
+          slopeRating: parsedSlopeRating,
+          courseRating: parsedCourseRating,
         });
         console.log('[CoursesManagementModal] Updated course:', editingCourse.id);
       } else {
@@ -147,6 +172,8 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
           par: totalPar,
           holePars: parsedHolePars,
           strokeIndices: parsedStrokeIndices.length === 18 ? parsedStrokeIndices : undefined,
+          slopeRating: parsedSlopeRating,
+          courseRating: parsedCourseRating,
           isPublic: false,
           source: 'admin',
         });
@@ -279,6 +306,34 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
                 </View>
 
                 <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Course Rating & Slope (Optional)</Text>
+                  <View style={styles.ratingRow}>
+                    <View style={styles.ratingInput}>
+                      <Text style={styles.ratingLabel}>Course Rating</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="e.g., 72.3"
+                        placeholderTextColor="#999"
+                        keyboardType="decimal-pad"
+                        value={courseRating}
+                        onChangeText={setCourseRating}
+                      />
+                    </View>
+                    <View style={styles.ratingInput}>
+                      <Text style={styles.ratingLabel}>Slope Rating</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="e.g., 113"
+                        placeholderTextColor="#999"
+                        keyboardType="decimal-pad"
+                        value={slopeRating}
+                        onChangeText={setSlopeRating}
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Stroke Indices (Optional)</Text>
                   <Text style={styles.sectionDescription}>
                     Enter difficulty index for each hole (1-18, where 1 = hardest hole).
@@ -345,7 +400,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
                   <View style={styles.emptyState}>
                     <Text style={styles.emptyText}>No courses saved yet</Text>
                     <Text style={styles.emptyDescription}>
-                      Create courses to save time when creating games. You won't have to enter hole pars every time!
+                      Create courses to save time when creating games. You will not have to enter hole pars every time!
                     </Text>
                   </View>
                 ) : (
@@ -355,6 +410,13 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
                         <View style={styles.courseInfo}>
                           <Text style={styles.courseName}>{course.name}</Text>
                           <Text style={styles.coursePar}>Par {course.par}</Text>
+                          {(course.courseRating || course.slopeRating) && (
+                            <Text style={styles.courseDetails}>
+                              {course.courseRating ? `Rating: ${course.courseRating}` : ''}
+                              {course.courseRating && course.slopeRating ? ' • ' : ''}
+                              {course.slopeRating ? `Slope: ${course.slopeRating}` : ''}
+                            </Text>
+                          )}
                         </View>
                         <View style={styles.courseActions}>
                           <TouchableOpacity
@@ -609,5 +671,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: '#1B5E20',
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  ratingInput: {
+    flex: 1,
+  },
+  ratingLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginBottom: 8,
+  },
+  courseDetails: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
 });
