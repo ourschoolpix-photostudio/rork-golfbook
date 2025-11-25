@@ -12,6 +12,12 @@ const playerSchema = z.object({
   strokesUsed: z.array(z.number()).optional(),
 });
 
+const wolfPartnershipSchema = z.object({
+  wolfPlayerIndex: z.number(),
+  partnerPlayerIndex: z.number().nullable(),
+  isLoneWolf: z.boolean(),
+});
+
 const gameSchema = z.object({
   id: z.string(),
   courseName: z.string(),
@@ -26,6 +32,16 @@ const gameSchema = z.object({
   matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
   teamScores: z.object({ team1: z.number(), team2: z.number() }).optional(),
   holeResults: z.array(z.enum(['team1', 'team2', 'tie'])).optional(),
+  wolfOrder: z.array(z.number()).optional(),
+  wolfPartnerships: z.record(z.string(), wolfPartnershipSchema).optional(),
+  wolfScores: z.record(z.string(), z.object({ players: z.array(z.number()) })).optional(),
+  wolfRules: z.object({
+    wolfGoesLast: z.boolean(),
+    loneWolfMultiplier: z.number(),
+    winningTeamPoints: z.number(),
+    losingTeamPoints: z.number(),
+    tiePoints: z.number(),
+  }).optional(),
 });
 
 const getAllProcedure = publicProcedure
@@ -59,6 +75,10 @@ const getAllProcedure = publicProcedure
         matchPlayScoringType: game.match_play_scoring_type,
         teamScores: game.team_scores,
         holeResults: game.hole_results,
+        wolfOrder: game.wolf_order,
+        wolfPartnerships: game.wolf_partnerships,
+        wolfScores: game.wolf_scores,
+        wolfRules: game.wolf_rules,
       }));
 
       console.log('[Games tRPC] Fetched games:', games.length);
@@ -79,26 +99,42 @@ const createProcedure = publicProcedure
     players: z.array(playerSchema),
     gameType: z.enum(['individual-net', 'team-match-play', 'wolf', 'niners']).optional(),
     matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
+    wolfOrder: z.array(z.number()).optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
       console.log('[Games tRPC] Creating game:', input.courseName);
       
+      const insertData: any = {
+        member_id: input.memberId,
+        course_name: input.courseName,
+        course_par: input.coursePar,
+        hole_pars: input.holePars,
+        stroke_indices: input.strokeIndices && input.strokeIndices.length > 0 ? input.strokeIndices : null,
+        players: input.players,
+        status: 'in-progress',
+        game_type: input.gameType || 'individual-net',
+        match_play_scoring_type: input.matchPlayScoringType,
+        team_scores: input.gameType === 'team-match-play' ? { team1: 0, team2: 0 } : null,
+        hole_results: input.gameType === 'team-match-play' ? new Array(18).fill('tie') : null,
+      };
+
+      if (input.gameType === 'wolf') {
+        insertData.wolf_order = input.wolfOrder || [];
+        insertData.wolf_partnerships = {};
+        insertData.wolf_scores = {};
+        insertData.wolf_rules = {
+          wolfGoesLast: true,
+          loneWolfMultiplier: 2,
+          winningTeamPoints: 1,
+          losingTeamPoints: -1,
+          tiePoints: 0,
+        };
+      }
+
       const { data, error } = await ctx.supabase
         .from('personal_games')
-        .insert({
-          member_id: input.memberId,
-          course_name: input.courseName,
-          course_par: input.coursePar,
-          hole_pars: input.holePars,
-          stroke_indices: input.strokeIndices && input.strokeIndices.length > 0 ? input.strokeIndices : null,
-          players: input.players,
-          status: 'in-progress',
-          game_type: input.gameType || 'individual-net',
-          match_play_scoring_type: input.matchPlayScoringType,
-          team_scores: input.gameType === 'team-match-play' ? { team1: 0, team2: 0 } : null,
-          hole_results: input.gameType === 'team-match-play' ? new Array(18).fill('tie') : null,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -121,6 +157,10 @@ const createProcedure = publicProcedure
         matchPlayScoringType: data.match_play_scoring_type,
         teamScores: data.team_scores,
         holeResults: data.hole_results,
+        wolfOrder: data.wolf_order,
+        wolfPartnerships: data.wolf_partnerships,
+        wolfScores: data.wolf_scores,
+        wolfRules: data.wolf_rules,
       };
     } catch (error) {
       console.error('[Games tRPC] Error in create:', error);
@@ -135,6 +175,13 @@ const updateProcedure = publicProcedure
     status: z.enum(['in-progress', 'completed']).optional(),
     teamScores: z.object({ team1: z.number(), team2: z.number() }).optional(),
     holeResults: z.array(z.enum(['team1', 'team2', 'tie'])).optional(),
+    wolfOrder: z.array(z.number()).optional(),
+    wolfPartnerships: z.record(z.string(), z.object({
+      wolfPlayerIndex: z.number(),
+      partnerPlayerIndex: z.number().nullable(),
+      isLoneWolf: z.boolean(),
+    })).optional(),
+    wolfScores: z.record(z.string(), z.object({ players: z.array(z.number()) })).optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
@@ -144,6 +191,9 @@ const updateProcedure = publicProcedure
       if (input.players) updateData.players = input.players;
       if (input.teamScores) updateData.team_scores = input.teamScores;
       if (input.holeResults) updateData.hole_results = input.holeResults;
+      if (input.wolfOrder) updateData.wolf_order = input.wolfOrder;
+      if (input.wolfPartnerships) updateData.wolf_partnerships = input.wolfPartnerships;
+      if (input.wolfScores) updateData.wolf_scores = input.wolfScores;
       if (input.status) {
         updateData.status = input.status;
         if (input.status === 'completed') {
@@ -179,6 +229,10 @@ const updateProcedure = publicProcedure
         matchPlayScoringType: data.match_play_scoring_type,
         teamScores: data.team_scores,
         holeResults: data.hole_results,
+        wolfOrder: data.wolf_order,
+        wolfPartnerships: data.wolf_partnerships,
+        wolfScores: data.wolf_scores,
+        wolfRules: data.wolf_rules,
       };
     } catch (error) {
       console.error('[Games tRPC] Error in update:', error);
