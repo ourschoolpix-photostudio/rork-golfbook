@@ -91,7 +91,7 @@ const createProcedure = publicProcedure
           course_name: input.courseName,
           course_par: input.coursePar,
           hole_pars: input.holePars,
-          stroke_indices: input.strokeIndices,
+          stroke_indices: input.strokeIndices && input.strokeIndices.length > 0 ? input.strokeIndices : null,
           players: input.players,
           status: 'in-progress',
           game_type: input.gameType || 'individual-net',

@@ -192,7 +192,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
         parsedPlayers,
         gameType,
         gameType === 'team-match-play' ? matchPlayScoringType : undefined,
-        selectedCourse?.strokeIndices || []
+        selectedCourse?.strokeIndices && selectedCourse.strokeIndices.length > 0 ? selectedCourse.strokeIndices : []
       );
       setSelectedCourseId(null);
       setCourseName('');
