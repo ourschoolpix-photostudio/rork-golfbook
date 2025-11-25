@@ -266,6 +266,12 @@ export default function DashboardScreen() {
           </View>
         </View>
         <View style={styles.headerActions}>
+          <TouchableOpacity 
+            onPress={() => router.push('/debug-data' as any)} 
+            style={[styles.logoutButton, { backgroundColor: '#FF9500', marginBottom: 8 }]}
+          >
+            <Text style={styles.logoutText}>Debug</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
             <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
