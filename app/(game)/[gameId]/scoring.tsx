@@ -426,13 +426,15 @@ export default function GameScoringScreen() {
       const bestOtherScore = Math.min(...othersScores);
 
       if (wolfScore < bestOtherScore) {
-        return { [wolfPlayerIndex]: 4 * quadMultiplier };
+        const wolfPoints = isQuadHole ? 16 : 4;
+        return { [wolfPlayerIndex]: wolfPoints };
       } else if (wolfScore > bestOtherScore) {
         const points: { [playerIndex: number]: number } = {};
+        const otherPoints = isQuadHole ? 8 : 2;
         playerScoresForHole
           .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex)
           .forEach((p: { playerIndex: number; netScore: number }) => {
-            points[p.playerIndex] = 2 * quadMultiplier;
+            points[p.playerIndex] = otherPoints;
           });
         return points;
       }
@@ -1031,7 +1033,7 @@ export default function GameScoringScreen() {
                       onPress={handleToggleSolo}
                     >
                       <Text style={[styles.soloButtonText, isLoneWolf && styles.soloButtonTextActive]}>
-                        {isLoneWolf ? '✓ Going Solo (4 pts)' : 'Go Solo'}
+                        {isLoneWolf ? (isQuad ? '✓ Going Solo (16 pts)' : '✓ Going Solo (4 pts)') : 'Go Solo'}
                       </Text>
                     </TouchableOpacity>
                     {currentHole >= 16 && (
