@@ -411,23 +411,32 @@ export default function GameScoringScreen() {
         </View>
       )}
 
-      {isTeamMatchPlay && game.holeResults && (
-        <View style={styles.holeResultIndicator}>
-          <Text style={styles.holeResultLabel}>Hole {currentHole} Result:</Text>
-          <View style={[
-            styles.holeResultBadge,
-            game.holeResults[currentHole - 1] === 'team1' && styles.holeResultTeam1,
-            game.holeResults[currentHole - 1] === 'team2' && styles.holeResultTeam2,
-            game.holeResults[currentHole - 1] === 'tie' && styles.holeResultTie,
-          ]}>
-            <Text style={styles.holeResultText}>
-              {game.holeResults[currentHole - 1] === 'team1' && 'Team 1 Wins'}
-              {game.holeResults[currentHole - 1] === 'team2' && 'Team 2 Wins'}
-              {game.holeResults[currentHole - 1] === 'tie' && 'Tie'}
-            </Text>
+      {isTeamMatchPlay && game.holeResults && (() => {
+        const hasAnyScores = game.players.some((player: PersonalGamePlayer, idx: number) => {
+          const score = holeScores[idx]?.[currentHole];
+          return score && score > 0;
+        });
+        const isTie = game.holeResults[currentHole - 1] === 'tie';
+        const showGreenTie = isTie && hasAnyScores;
+        
+        return (
+          <View style={styles.holeResultIndicator}>
+            <Text style={styles.holeResultLabel}>Hole {currentHole} Result:</Text>
+            <View style={[
+              styles.holeResultBadge,
+              game.holeResults[currentHole - 1] === 'team1' && styles.holeResultTeam1,
+              game.holeResults[currentHole - 1] === 'team2' && styles.holeResultTeam2,
+              isTie && (showGreenTie ? styles.holeResultTieActive : styles.holeResultTie),
+            ]}>
+              <Text style={styles.holeResultText}>
+                {game.holeResults[currentHole - 1] === 'team1' && 'Team 1 Wins'}
+                {game.holeResults[currentHole - 1] === 'team2' && 'Team 2 Wins'}
+                {isTie && 'Tie'}
+              </Text>
+            </View>
           </View>
-        </View>
-      )}
+        );
+      })()}
 
       <View style={styles.holeNavigator}>
         <TouchableOpacity style={styles.holeNavBtn} onPress={handlePreviousHole}>
@@ -928,6 +937,9 @@ const styles = StyleSheet.create({
   },
   holeResultTie: {
     backgroundColor: '#9E9E9E',
+  },
+  holeResultTieActive: {
+    backgroundColor: '#4CAF50',
   },
   holeResultText: {
     fontSize: 12,
