@@ -649,20 +649,58 @@ export default function GameScoringScreen() {
   };
 
   const handleToggleSolo = async () => {
-    if (!isWolf) return;
+    if (!isWolf || !game) return;
     
-    setIsLoneWolf(prev => {
-      const newValue = !prev;
-      if (newValue) {
-        setWolfPartner(null);
-      }
-      return newValue;
-    });
+    const newIsLoneWolf = !isLoneWolf;
+    setIsLoneWolf(newIsLoneWolf);
+    if (newIsLoneWolf) {
+      setWolfPartner(null);
+    }
+    
+    const updatedWolfPartnerships = { ...(game.wolfPartnerships || {}) };
+    updatedWolfPartnerships[currentHole] = {
+      wolfPlayerIndex: currentWolfPlayerIndex,
+      partnerPlayerIndex: newIsLoneWolf ? null : wolfPartner,
+      isLoneWolf: newIsLoneWolf,
+      isQuad: currentHole >= 16 ? isQuad : false,
+    };
+
+    try {
+      await updateGameMutation.mutateAsync({
+        gameId,
+        wolfPartnerships: updatedWolfPartnerships,
+      });
+      await gameQuery.refetch();
+      console.log('[GameScoring] Saved wolf partnership (solo toggle) for hole', currentHole);
+    } catch (error) {
+      console.error('[GameScoring] Error saving wolf partnership (solo toggle):', error);
+    }
   };
 
   const handleToggleQuad = async () => {
-    if (!isWolf || currentHole < 16) return;
-    setIsQuad(prev => !prev);
+    if (!isWolf || currentHole < 16 || !game) return;
+    
+    const newIsQuad = !isQuad;
+    setIsQuad(newIsQuad);
+    
+    const updatedWolfPartnerships = { ...(game.wolfPartnerships || {}) };
+    updatedWolfPartnerships[currentHole] = {
+      wolfPlayerIndex: currentWolfPlayerIndex,
+      partnerPlayerIndex: wolfPartner,
+      isLoneWolf,
+      isQuad: newIsQuad,
+    };
+
+    try {
+      await updateGameMutation.mutateAsync({
+        gameId,
+        wolfPartnerships: updatedWolfPartnerships,
+      });
+      await gameQuery.refetch();
+      console.log('[GameScoring] Saved wolf partnership (quad toggle) for hole', currentHole);
+    } catch (error) {
+      console.error('[GameScoring] Error saving wolf partnership (quad toggle):', error);
+    }
   };
 
   const savewolfPartnership = async () => {
@@ -689,11 +727,11 @@ export default function GameScoringScreen() {
   };
 
   useEffect(() => {
-    if (isWolf && (wolfPartner !== null || isLoneWolf || (currentHole >= 16 && isQuad))) {
+    if (isWolf && wolfPartner !== null && !isLoneWolf) {
       savewolfPartnership();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wolfPartner, isLoneWolf, isQuad]);
+  }, [wolfPartner]);
 
   if (!game) {
     return (
