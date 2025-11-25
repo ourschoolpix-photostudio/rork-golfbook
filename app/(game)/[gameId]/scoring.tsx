@@ -39,7 +39,7 @@ export default function GameScoringScreen() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [initialLoadDone, setInitialLoadDone] = useState<boolean>(false);
   const [wolfPartner, setWolfPartner] = useState<number | null>(null);
-  const [, setIsLoneWolf] = useState<boolean>(false);
+  const [isLoneWolf, setIsLoneWolf] = useState<boolean>(false);
 
   const updateGameMutation = trpc.games.update.useMutation();
 
@@ -405,13 +405,13 @@ export default function GameScoringScreen() {
       const bestOtherScore = Math.min(...othersScores);
 
       if (wolfScore < bestOtherScore) {
-        return { [wolfPlayerIndex]: 3 };
+        return { [wolfPlayerIndex]: 4 };
       } else if (wolfScore > bestOtherScore) {
         const points: { [playerIndex: number]: number } = {};
         playerScoresForHole
-          .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.netScore === bestOtherScore)
+          .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex)
           .forEach((p: { playerIndex: number; netScore: number }) => {
-            points[p.playerIndex] = 1;
+            points[p.playerIndex] = 2;
           });
         return points;
       }
@@ -432,7 +432,7 @@ export default function GameScoringScreen() {
       } else if (wolfTeamBest > othersBest) {
         const points: { [playerIndex: number]: number } = {};
         playerScoresForHole
-          .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.playerIndex !== partnerPlayerIndex && p.netScore === othersBest)
+          .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.playerIndex !== partnerPlayerIndex)
           .forEach((p: { playerIndex: number; netScore: number }) => {
             points[p.playerIndex] = 1;
           });
@@ -594,10 +594,52 @@ export default function GameScoringScreen() {
     
     if (wolfPartner === playerIndex) {
       setWolfPartner(null);
+      setIsLoneWolf(false);
     } else {
       setWolfPartner(playerIndex);
+      setIsLoneWolf(false);
     }
   };
+
+  const handleToggleSolo = async () => {
+    if (!isWolf) return;
+    
+    setIsLoneWolf(prev => {
+      const newValue = !prev;
+      if (newValue) {
+        setWolfPartner(null);
+      }
+      return newValue;
+    });
+  };
+
+  const savewolfPartnership = async () => {
+    if (!game || !isWolf) return;
+
+    const updatedWolfPartnerships = { ...(game.wolfPartnerships || {}) };
+    updatedWolfPartnerships[currentHole] = {
+      wolfPlayerIndex: currentWolfPlayerIndex,
+      partnerPlayerIndex: wolfPartner,
+      isLoneWolf,
+    };
+
+    try {
+      await updateGameMutation.mutateAsync({
+        gameId,
+        wolfPartnerships: updatedWolfPartnerships,
+      });
+      await gameQuery.refetch();
+      console.log('[GameScoring] Saved wolf partnership for hole', currentHole);
+    } catch (error) {
+      console.error('[GameScoring] Error saving wolf partnership:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (isWolf && (wolfPartner !== null || isLoneWolf)) {
+      savewolfPartnership();
+    }
+  }, [wolfPartner, isLoneWolf]);
 
   if (!game) {
     return (
@@ -812,69 +854,93 @@ export default function GameScoringScreen() {
               return score && score > 0;
             });
             const pointsWon = allScoresEntered ? getWolfPointsWonForCurrentHole()[playerIndex] || 0 : 0;
+            const isOtherTeam = !isCurrentWolf && !isPartner && wolfPartner !== null;
 
             return (
-              <TouchableOpacity
-                key={playerIndex}
-                style={[
-                  styles.playerCard,
-                  isCurrentWolf && styles.wolfCard,
-                  isPartner && styles.partnerCard,
-                ]}
-                onPress={() => !isCurrentWolf && handleWolfPartnerSelect(playerIndex)}
-                activeOpacity={isCurrentWolf ? 1 : 0.7}
-              >
-                <View style={styles.playerHeader}>
-                  <View style={styles.playerInfo}>
-                    <View style={styles.playerNameRow}>
-                      <Text style={styles.playerName}>{player.name}</Text>
-                      {isCurrentWolf && <Text style={styles.wolfBadge}>WOLF</Text>}
-                      {isPartner && <Text style={styles.partnerBadge}>PARTNER</Text>}
-                      {pointsWon > 0 && allScoresEntered && (
-                        <Text style={styles.pointsWonBadge}>+{pointsWon}</Text>
-                      )}
+              <View key={playerIndex}>
+                <TouchableOpacity
+                  style={[
+                    styles.playerCard,
+                    isCurrentWolf && styles.wolfCard,
+                    isPartner && styles.partnerCard,
+                    isOtherTeam && styles.otherTeamCard,
+                  ]}
+                  onPress={() => !isCurrentWolf && handleWolfPartnerSelect(playerIndex)}
+                  activeOpacity={isCurrentWolf ? 1 : 0.7}
+                  disabled={isCurrentWolf}
+                >
+                  <View style={styles.playerHeader}>
+                    <View style={styles.playerInfo}>
+                      <View style={styles.playerNameRow}>
+                        <Text style={styles.playerName}>{player.name}</Text>
+                        {isCurrentWolf && <Text style={styles.wolfBadge}>WOLF</Text>}
+                        {isPartner && <Text style={styles.partnerBadge}>PARTNER</Text>}
+                        {pointsWon > 0 && allScoresEntered && (
+                          <Text style={styles.pointsWonBadge}>+{pointsWon}</Text>
+                        )}
+                      </View>
+                      <View style={styles.playerStats}>
+                        <Text style={styles.playerHandicap}>HDC: {player.handicap}</Text>
+                        {player.wolfPoints !== undefined && (
+                          <Text style={styles.playerWolfPoints}>
+                            • Points: {player.wolfPoints}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                    <View style={styles.playerStats}>
-                      <Text style={styles.playerHandicap}>HDC: {player.handicap}</Text>
-                      {player.wolfPoints !== undefined && (
-                        <Text style={styles.playerWolfPoints}>
-                          • Points: {player.wolfPoints}
-                        </Text>
-                      )}
+                    <View style={styles.totalScoreBox}>
+                      <Text style={styles.totalLabel}>Total</Text>
+                      <Text style={styles.totalScore}>{totalScore > 0 ? totalScore : 0}</Text>
                     </View>
                   </View>
-                  <View style={styles.totalScoreBox}>
-                    <Text style={styles.totalLabel}>Total</Text>
-                    <Text style={styles.totalScore}>{totalScore > 0 ? totalScore : 0}</Text>
-                  </View>
-                </View>
 
-                <View style={styles.scoreControls}>
+                  <View style={styles.scoreControls}>
+                    <TouchableOpacity
+                      style={styles.minusButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleScoreChange(playerIndex, -1);
+                      }}
+                    >
+                      <Text style={styles.buttonSymbol}>−</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={[styles.scoreDisplay, isScoringComplete && styles.scoreDisplayComplete]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleSetPar(playerIndex);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.scoreValue, hasScore && styles.scoreValueActive]}>
+                        {hasScore ? currentScore : holePar}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.plusButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleScoreChange(playerIndex, 1);
+                      }}
+                    >
+                      <Text style={styles.buttonSymbol}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+
+                {isCurrentWolf && (
                   <TouchableOpacity
-                    style={styles.minusButton}
-                    onPress={() => handleScoreChange(playerIndex, -1)}
+                    style={[styles.soloButton, isLoneWolf && styles.soloButtonActive]}
+                    onPress={handleToggleSolo}
                   >
-                    <Text style={styles.buttonSymbol}>−</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity 
-                    style={[styles.scoreDisplay, isScoringComplete && styles.scoreDisplayComplete]}
-                    onPress={() => handleSetPar(playerIndex)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.scoreValue, hasScore && styles.scoreValueActive]}>
-                      {hasScore ? currentScore : holePar}
+                    <Text style={[styles.soloButtonText, isLoneWolf && styles.soloButtonTextActive]}>
+                      {isLoneWolf ? '✓ Going Solo (4 pts)' : 'Go Solo'}
                     </Text>
                   </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.plusButton}
-                    onPress={() => handleScoreChange(playerIndex, 1)}
-                  >
-                    <Text style={styles.buttonSymbol}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
+                )}
+              </View>
             );
           })
         ) : (
@@ -1343,5 +1409,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+  },
+  otherTeamCard: {
+    backgroundColor: '#f0f9ff',
+    borderColor: '#0ea5e9',
+  },
+  soloButton: {
+    marginTop: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#f59e0b',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  soloButtonActive: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+  },
+  soloButtonText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#f59e0b',
+  },
+  soloButtonTextActive: {
+    color: '#b45309',
   },
 });
