@@ -228,6 +228,56 @@ export const deleteMemberProcedure = publicProcedure
     return { success: true };
   });
 
+function toProperCase(str: string): string {
+  if (!str) return str;
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+export const normalizeAllMemberNamesProcedure = publicProcedure
+  .mutation(async () => {
+    console.log('✏️ Normalizing all member names...');
+    
+    const { data: members, error: fetchError } = await supabase
+      .from('members')
+      .select('*');
+
+    if (fetchError) {
+      console.error('❌ Error fetching members for normalization:', fetchError);
+      throw new Error(`Failed to fetch members: ${fetchError.message}`);
+    }
+
+    if (!members || members.length === 0) {
+      console.log('ℹ️ No members to normalize');
+      return { success: true, count: 0 };
+    }
+
+    const updates = members.map(member => ({
+      id: member.id,
+      name: toProperCase(member.name),
+      full_name: member.full_name ? toProperCase(member.full_name) : member.full_name,
+      username: member.username ? toProperCase(member.username) : member.username,
+      updated_at: new Date().toISOString(),
+    }));
+
+    for (const update of updates) {
+      const { error: updateError } = await supabase
+        .from('members')
+        .update(update)
+        .eq('id', update.id);
+
+      if (updateError) {
+        console.error(`❌ Error updating member ${update.id}:`, updateError);
+      }
+    }
+
+    console.log(`✅ Normalized ${updates.length} member names`);
+    return { success: true, count: updates.length };
+  });
+
 export default {
   getAll: getAllMembersProcedure,
   get: getMemberProcedure,
@@ -235,4 +285,5 @@ export default {
   create: createMemberProcedure,
   update: updateMemberProcedure,
   delete: deleteMemberProcedure,
+  normalizeAllNames: normalizeAllMemberNamesProcedure,
 };

@@ -16,7 +16,6 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AdminFooter } from '@/components/AdminFooter';
-import { storageService } from '@/utils/storage';
 import * as ImagePicker from 'expo-image-picker';
 import { photoService } from '@/utils/photoService';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -85,6 +84,7 @@ export default function SettingsScreen() {
 
   const settingsQuery = trpc.settings.getSettings.useQuery();
   const updateSettingsMutation = trpc.settings.updateSettings.useMutation();
+  const normalizeNamesMutation = trpc.members.normalizeAllNames.useMutation();
 
   useEffect(() => {
     if (settingsQuery.data) {
@@ -188,7 +188,7 @@ export default function SettingsScreen() {
   const handleNormalizeNames = async () => {
     Alert.alert(
       'Normalize Member Names',
-      'This will convert all member names to proper case (first letter capitalized). Continue?',
+      'This will convert all member names to proper case (first letter capitalized) in the backend database. Continue?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -196,8 +196,11 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               setIsNormalizing(true);
-              await storageService.normalizeAllMemberNames();
-              Alert.alert('Success', 'All member names have been normalized to proper case.');
+              const result = await normalizeNamesMutation.mutateAsync();
+              Alert.alert(
+                'Success', 
+                `Normalized ${result.count} member names to proper case in the database.`
+              );
             } catch (error) {
               console.error('Error normalizing names:', error);
               Alert.alert('Error', 'Failed to normalize member names.');
