@@ -21,6 +21,7 @@ interface Course {
   name: string;
   par: number;
   holePars: number[];
+  strokeIndices?: number[];
   memberId: string;
   isPublic: boolean;
 }
@@ -36,7 +37,9 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [courseName, setCourseName] = useState<string>('');
   const [holePars, setHolePars] = useState<string[]>(new Array(18).fill(''));
+  const [strokeIndices, setStrokeIndices] = useState<string[]>(new Array(18).fill(''));
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
+  const strokeIndexInputRefs = React.useRef<(TextInput | null)[]>([]);
 
   const coursesQuery = trpc.courses.getAll.useQuery(
     { memberId: currentUser?.id || '' },
@@ -68,18 +71,21 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setEditingCourse(null);
     setCourseName('');
     setHolePars(new Array(18).fill(''));
+    setStrokeIndices(new Array(18).fill(''));
   };
 
   const handleStartCreate = () => {
     setIsCreating(true);
     setCourseName('');
     setHolePars(new Array(18).fill(''));
+    setStrokeIndices(new Array(18).fill(''));
   };
 
   const handleStartEdit = (course: Course) => {
     setEditingCourse(course);
     setCourseName(course.name);
     setHolePars(course.holePars.map(p => p.toString()));
+    setStrokeIndices((course.strokeIndices || []).map(s => s.toString()));
   };
 
   const handleSave = async () => {
@@ -94,6 +100,28 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
       return;
     }
 
+    const parsedStrokeIndices = strokeIndices
+      .map(si => si.trim() ? parseInt(si, 10) : null)
+      .filter((si): si is number => si !== null);
+
+    if (parsedStrokeIndices.length > 0) {
+      if (parsedStrokeIndices.some(si => isNaN(si) || si < 1 || si > 18)) {
+        Alert.alert('Error', 'Stroke indices must be between 1 and 18');
+        return;
+      }
+
+      const uniqueIndices = new Set(parsedStrokeIndices);
+      if (uniqueIndices.size !== parsedStrokeIndices.length) {
+        Alert.alert('Error', 'Stroke indices must be unique');
+        return;
+      }
+
+      if (parsedStrokeIndices.length !== 18) {
+        Alert.alert('Error', 'Please enter stroke indices for all 18 holes or leave them all empty');
+        return;
+      }
+    }
+
     const totalPar = parsedHolePars.reduce((sum, par) => sum + par, 0);
 
     try {
@@ -103,6 +131,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
           name: courseName,
           par: totalPar,
           holePars: parsedHolePars,
+          strokeIndices: parsedStrokeIndices.length === 18 ? parsedStrokeIndices : undefined,
         });
         console.log('[CoursesManagementModal] Updated course:', editingCourse.id);
       } else {
@@ -111,6 +140,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
           name: courseName,
           par: totalPar,
           holePars: parsedHolePars,
+          strokeIndices: parsedStrokeIndices.length === 18 ? parsedStrokeIndices : undefined,
           isPublic: false,
         });
         console.log('[CoursesManagementModal] Created course');
@@ -155,6 +185,21 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     if (value.length === 1 && index < 17) {
       setTimeout(() => {
         holeInputRefs.current[index + 1]?.focus();
+      }, 50);
+    }
+  };
+
+  const handleStrokeIndexChange = (index: number, value: string) => {
+    if (value.length > 2) {
+      return;
+    }
+    const updated = [...strokeIndices];
+    updated[index] = value;
+    setStrokeIndices(updated);
+
+    if (value.length >= 1 && index < 17) {
+      setTimeout(() => {
+        strokeIndexInputRefs.current[index + 1]?.focus();
       }, 50);
     }
   };
@@ -224,6 +269,40 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
                   <Text style={styles.totalPar}>
                     Total Par: {holePars.reduce((sum, p) => sum + (parseInt(p, 10) || 0), 0)}
                   </Text>
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Stroke Indices (Optional)</Text>
+                  <Text style={styles.sectionDescription}>
+                    Enter difficulty index for each hole (1-18, where 1 = hardest hole).
+                    Leave empty if not needed.
+                  </Text>
+                  <View style={styles.holeParsGrid}>
+                    {[0, 1, 2].map((rowIndex) => (
+                      <View key={rowIndex} style={styles.holeParsRow}>
+                        {strokeIndices.slice(rowIndex * 6, rowIndex * 6 + 6).map((strokeIndex, colIndex) => {
+                          const index = rowIndex * 6 + colIndex;
+                          return (
+                            <View key={index} style={styles.holePar}>
+                              <Text style={styles.holeLabel}>{index + 1}</Text>
+                              <TextInput
+                                ref={(ref) => {
+                                  strokeIndexInputRefs.current[index] = ref;
+                                }}
+                                style={styles.holeInput}
+                                keyboardType="number-pad"
+                                value={strokeIndex}
+                                onChangeText={(value) => handleStrokeIndexChange(index, value)}
+                                maxLength={2}
+                                placeholder="-"
+                                placeholderTextColor="#ccc"
+                              />
+                            </View>
+                          );
+                        })}
+                      </View>
+                    ))}
+                  </View>
                 </View>
 
                 <View style={styles.buttonRow}>
@@ -355,6 +434,12 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#374151',
     marginBottom: 12,
+  },
+  sectionDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 12,
+    lineHeight: 18,
   },
   input: {
     borderWidth: 1,
