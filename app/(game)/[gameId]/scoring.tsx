@@ -761,6 +761,9 @@ export default function GameScoringScreen() {
         <View style={styles.holeIndicator}>
           <Text style={styles.holeLabel}>HOLE</Text>
           <Text style={styles.holeNumber}>{currentHole}</Text>
+          {game.strokeIndices && game.strokeIndices.length === 18 && (
+            <Text style={styles.strokeIndexLabel}>Stroke Index: {game.strokeIndices[currentHole - 1]}</Text>
+          )}
         </View>
 
         <TouchableOpacity style={styles.holeNavBtn} onPress={handleNextHole}>
@@ -894,6 +897,8 @@ export default function GameScoringScreen() {
             });
             const pointsWon = allScoresEntered ? getWolfPointsWonForCurrentHole()[playerIndex] || 0 : 0;
             const isOtherTeam = !isCurrentWolf && !isPartner && wolfPartner !== null;
+            const netScore = getNetScore(playerIndex);
+            const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, playerIndex, currentHole - 1);
 
             return (
               <View key={playerIndex}>
@@ -920,6 +925,11 @@ export default function GameScoringScreen() {
                       </View>
                       <View style={styles.playerStats}>
                         <Text style={styles.playerHandicap}>HDC: {player.handicap}</Text>
+                        {player.strokesReceived && player.strokesReceived > 0 && (
+                          <Text style={styles.playerStrokes}>
+                            • Strokes: {player.strokesReceived} a side
+                          </Text>
+                        )}
                         {isWolf && (
                           <Text style={styles.playerWolfPoints}>
                             • Pts: {getTotalWolfPoints(playerIndex)}
@@ -944,18 +954,23 @@ export default function GameScoringScreen() {
                       <Text style={styles.buttonSymbol}>−</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
-                      style={[styles.scoreDisplay, isScoringComplete && styles.scoreDisplayComplete]}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleSetPar(playerIndex);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.scoreValue, hasScore && styles.scoreValueActive]}>
-                        {hasScore ? currentScore : holePar}
-                      </Text>
-                    </TouchableOpacity>
+                    <View style={styles.scoreDisplayContainer}>
+                      <TouchableOpacity 
+                        style={[styles.scoreDisplay, isScoringComplete && styles.scoreDisplayComplete]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleSetPar(playerIndex);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.scoreValue, hasScore && styles.scoreValueActive]}>
+                          {hasScore ? currentScore : holePar}
+                        </Text>
+                      </TouchableOpacity>
+                      {hasScore && netScore !== currentScore && (
+                        <Text style={styles.netScoreLabel}>Net: {netScore}</Text>
+                      )}
+                    </View>
 
                     <TouchableOpacity
                       style={styles.plusButton}
@@ -968,6 +983,14 @@ export default function GameScoringScreen() {
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
+
+                {player.strokesReceived && player.strokesReceived > 0 && (
+                  <View style={[styles.strokeIndicator, receivesStroke && styles.strokeIndicatorActive]}>
+                    <Text style={[styles.strokeIndicatorText, receivesStroke && styles.strokeIndicatorTextActive]}>
+                      {receivesStroke ? '✓ Stroke Applied' : 'No Stroke'}
+                    </Text>
+                  </View>
+                )}
 
                 {isCurrentWolf && (
                   <TouchableOpacity
@@ -1179,6 +1202,12 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '700' as const,
     color: '#1B5E20',
+  },
+  strokeIndexLabel: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginTop: 2,
   },
   scrollContent: {
     paddingHorizontal: 8,
