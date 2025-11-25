@@ -31,6 +31,7 @@ const getAllProcedure = publicProcedure
         name: course.name,
         par: course.par,
         holePars: course.hole_pars,
+        strokeIndices: course.stroke_indices,
         memberId: course.member_id,
         isPublic: course.is_public,
         createdAt: course.created_at,
@@ -51,6 +52,7 @@ const createProcedure = publicProcedure
     name: z.string(),
     par: z.number(),
     holePars: z.array(z.number()),
+    strokeIndices: z.array(z.number()).optional(),
     isPublic: z.boolean().optional(),
   }))
   .mutation(async ({ ctx, input }) => {
@@ -64,6 +66,7 @@ const createProcedure = publicProcedure
           name: input.name,
           par: input.par,
           hole_pars: input.holePars,
+          stroke_indices: input.strokeIndices,
           is_public: input.isPublic || false,
         })
         .select()
@@ -80,6 +83,7 @@ const createProcedure = publicProcedure
         name: data.name,
         par: data.par,
         holePars: data.hole_pars,
+        strokeIndices: data.stroke_indices,
         memberId: data.member_id,
         isPublic: data.is_public,
         createdAt: data.created_at,
@@ -97,6 +101,7 @@ const updateProcedure = publicProcedure
     name: z.string().optional(),
     par: z.number().optional(),
     holePars: z.array(z.number()).optional(),
+    strokeIndices: z.array(z.number()).optional(),
     isPublic: z.boolean().optional(),
   }))
   .mutation(async ({ ctx, input }) => {
@@ -109,6 +114,7 @@ const updateProcedure = publicProcedure
       if (input.name) updateData.name = input.name;
       if (input.par) updateData.par = input.par;
       if (input.holePars) updateData.hole_pars = input.holePars;
+      if (input.strokeIndices !== undefined) updateData.stroke_indices = input.strokeIndices;
       if (input.isPublic !== undefined) updateData.is_public = input.isPublic;
 
       const { data, error } = await ctx.supabase
@@ -129,6 +135,7 @@ const updateProcedure = publicProcedure
         name: data.name,
         par: data.par,
         holePars: data.hole_pars,
+        strokeIndices: data.stroke_indices,
         memberId: data.member_id,
         isPublic: data.is_public,
         createdAt: data.created_at,

@@ -34,9 +34,10 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number; strokesReceived?: number; teamId?: 1 | 2 }[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
     gameType?: 'individual-net' | 'team-match-play',
-    matchPlayScoringType?: 'best-ball' | 'alternate-ball'
+    matchPlayScoringType?: 'best-ball' | 'alternate-ball',
+    strokeIndices?: number[]
   ): Promise<string> => {
     if (!currentUser?.id) {
       throw new Error('User must be logged in to create a game');
@@ -47,12 +48,14 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       courseName,
       coursePar,
       holePars,
+      strokeIndices,
       players: players.map(p => ({
         name: p.name,
         handicap: p.handicap,
         scores: new Array(18).fill(0),
         totalScore: 0,
         strokesReceived: p.strokesReceived || 0,
+        strokeMode: p.strokeMode || 'manual',
         teamId: p.teamId,
         strokesUsed: new Array(18).fill(0),
       })),

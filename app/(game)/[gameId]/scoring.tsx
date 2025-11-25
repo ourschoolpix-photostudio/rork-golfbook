@@ -184,12 +184,44 @@ export default function GameScoringScreen() {
     }));
   };
 
+  const shouldPlayerReceiveStrokeOnHole = (player: PersonalGamePlayer, playerIndex: number, holeIndex: number): boolean => {
+    if (!player.strokesReceived || player.strokesReceived === 0) return false;
+    
+    const strokeMode = player.strokeMode || 'manual';
+    
+    if (strokeMode === 'manual') {
+      return strokesUsedOnHole[playerIndex] || false;
+    }
+    
+    if (strokeMode === 'all-but-par3') {
+      const holePar = game?.holePars[holeIndex];
+      if (!holePar) return false;
+      return holePar !== 3;
+    }
+    
+    if (strokeMode === 'auto') {
+      if (!game?.strokeIndices || game.strokeIndices.length !== 18) {
+        return strokesUsedOnHole[playerIndex] || false;
+      }
+      
+      const strokesNeeded = player.strokesReceived;
+      const holeStrokeIndex = game.strokeIndices[holeIndex];
+      return holeStrokeIndex <= strokesNeeded;
+    }
+    
+    return false;
+  };
+
   const getNetScore = (playerIndex: number): number => {
     const grossScore = holeScores[playerIndex]?.[currentHole] || 0;
     if (grossScore === 0) return 0;
     
-    const strokeUsed = strokesUsedOnHole[playerIndex] || false;
-    return strokeUsed ? grossScore - 1 : grossScore;
+    if (!game) return grossScore;
+    const player = game.players[playerIndex];
+    if (!player) return grossScore;
+    
+    const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, playerIndex, currentHole - 1);
+    return receivesStroke ? grossScore - 1 : grossScore;
   };
 
   const calculateHoleResult = (): 'team1' | 'team2' | 'tie' => {
@@ -530,16 +562,31 @@ export default function GameScoringScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        {player.strokesReceived && player.strokesReceived > 0 && (
-                          <TouchableOpacity
-                            style={[styles.strokeButton, strokeUsed && styles.strokeButtonActive]}
-                            onPress={() => toggleStroke(playerIndex)}
-                          >
-                            <Text style={[styles.strokeButtonText, strokeUsed && styles.strokeButtonTextActive]}>
-                              {strokeUsed ? '✓ Stroke Used' : 'Use Stroke'}
-                            </Text>
-                          </TouchableOpacity>
-                        )}
+                        {player.strokesReceived && player.strokesReceived > 0 && (() => {
+                          const strokeMode = player.strokeMode || 'manual';
+                          const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, playerIndex, currentHole - 1);
+                          
+                          if (strokeMode === 'manual') {
+                            return (
+                              <TouchableOpacity
+                                style={[styles.strokeButton, strokeUsed && styles.strokeButtonActive]}
+                                onPress={() => toggleStroke(playerIndex)}
+                              >
+                                <Text style={[styles.strokeButtonText, strokeUsed && styles.strokeButtonTextActive]}>
+                                  {strokeUsed ? '✓ Stroke Used' : 'Use Stroke'}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          } else {
+                            return (
+                              <View style={[styles.strokeIndicator, receivesStroke && styles.strokeIndicatorActive]}>
+                                <Text style={[styles.strokeIndicatorText, receivesStroke && styles.strokeIndicatorTextActive]}>
+                                  {receivesStroke ? '✓ Stroke Applied' : 'No Stroke'}
+                                </Text>
+                              </View>
+                            );
+                          }
+                        })()}
                       </View>
                     );
                   })}
@@ -945,5 +992,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700' as const,
     color: '#fff',
+  },
+  strokeIndicator: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+  },
+  strokeIndicatorActive: {
+    backgroundColor: '#e8f5e9',
+    borderColor: '#1B5E20',
+  },
+  strokeIndicatorText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#999',
+  },
+  strokeIndicatorTextActive: {
+    color: '#1B5E20',
   },
 });

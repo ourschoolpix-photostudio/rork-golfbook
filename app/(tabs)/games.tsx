@@ -33,12 +33,13 @@ export default function GamesScreen() {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number; strokesReceived?: number; teamId?: 1 | 2 }[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
     gameType?: 'individual-net' | 'team-match-play',
-    matchPlayScoringType?: 'best-ball' | 'alternate-ball'
+    matchPlayScoringType?: 'best-ball' | 'alternate-ball',
+    strokeIndices?: number[]
   ) => {
     try {
-      const gameId = await createGame(courseName, coursePar, holePars, players, gameType, matchPlayScoringType);
+      const gameId = await createGame(courseName, coursePar, holePars, players, gameType, matchPlayScoringType, strokeIndices);
       console.log('[GamesScreen] Game created:', gameId);
       router.push(`/(game)/${gameId}/scoring` as any);
     } catch (error) {

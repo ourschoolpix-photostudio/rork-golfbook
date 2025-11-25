@@ -184,6 +184,7 @@ export interface PersonalGamePlayer {
   strokesReceived?: number;
   teamId?: 1 | 2;
   strokesUsed?: number[];
+  strokeMode?: 'manual' | 'auto' | 'all-but-par3';
 }
 
 export interface PersonalGame {
@@ -191,6 +192,7 @@ export interface PersonalGame {
   courseName: string;
   coursePar: number;
   holePars: number[];
+  strokeIndices?: number[];
   players: PersonalGamePlayer[];
   createdAt: string;
   completedAt?: string;
@@ -218,6 +220,7 @@ export interface Course {
   name: string;
   par: number;
   holePars: number[];
+  strokeIndices?: number[];
   memberId?: string;
   isPublic: boolean;
   createdAt: string;

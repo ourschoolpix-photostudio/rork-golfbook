@@ -23,9 +23,10 @@ interface CreateGameModalProps {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number; strokesReceived?: number; teamId?: 1 | 2 }[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
     gameType?: 'individual-net' | 'team-match-play',
-    matchPlayScoringType?: 'best-ball' | 'alternate-ball'
+    matchPlayScoringType?: 'best-ball' | 'alternate-ball',
+    strokeIndices?: number[]
   ) => Promise<void>;
 }
 
@@ -38,11 +39,11 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
   const [holePars, setHolePars] = useState<string[]>(new Array(18).fill(''));
   const [gameType, setGameType] = useState<'individual-net' | 'team-match-play'>('individual-net');
   const [matchPlayScoringType, setMatchPlayScoringType] = useState<'best-ball' | 'alternate-ball'>('best-ball');
-  const [players, setPlayers] = useState<{ name: string; handicap: string; strokesReceived: string; teamId?: 1 | 2 }[]>([
-    { name: '', handicap: '', strokesReceived: '0' },
-    { name: '', handicap: '', strokesReceived: '0' },
-    { name: '', handicap: '', strokesReceived: '0' },
-    { name: '', handicap: '', strokesReceived: '0' },
+  const [players, setPlayers] = useState<{ name: string; handicap: string; strokesReceived: string; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[]>([
+    { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
+    { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
+    { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
+    { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
   ]);
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
 
@@ -63,6 +64,9 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       setShowCourseSelector(false);
     }
   };
+
+  const selectedCourse = courses.find(c => c.id === selectedCourseId);
+  const courseHasStrokeIndices = selectedCourse?.strokeIndices && selectedCourse.strokeIndices.length === 18;
 
   const handleClearCourse = () => {
     setSelectedCourseId(null);
@@ -106,6 +110,12 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       updated[index] = { ...updated[index], strokesReceived: value };
       setPlayers(updated);
     }
+  };
+
+  const handleStrokeModeChange = (index: number, mode: 'manual' | 'auto' | 'all-but-par3') => {
+    const updated = [...players];
+    updated[index] = { ...updated[index], strokeMode: mode };
+    setPlayers(updated);
   };
 
   const handleTeamAssignment = (index: number, teamId: 1 | 2) => {
@@ -162,6 +172,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       name: p.name.trim(),
       handicap: parseFloat(p.handicap) || 0,
       strokesReceived: parseInt(p.strokesReceived, 10) || 0,
+      strokeMode: p.strokeMode || 'manual',
       teamId: gameType === 'team-match-play' ? p.teamId : undefined,
     }));
 
@@ -180,7 +191,8 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
         parsedHolePars, 
         parsedPlayers,
         gameType,
-        gameType === 'team-match-play' ? matchPlayScoringType : undefined
+        gameType === 'team-match-play' ? matchPlayScoringType : undefined,
+        selectedCourse?.strokeIndices
       );
       setSelectedCourseId(null);
       setCourseName('');
@@ -189,10 +201,10 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       setGameType('individual-net');
       setMatchPlayScoringType('best-ball');
       setPlayers([
-        { name: '', handicap: '', strokesReceived: '0' },
-        { name: '', handicap: '', strokesReceived: '0' },
-        { name: '', handicap: '', strokesReceived: '0' },
-        { name: '', handicap: '', strokesReceived: '0' },
+        { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokeMode: 'manual' },
       ]);
       onClose();
     } catch (error) {
@@ -448,16 +460,64 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
                           </Text>
                         </TouchableOpacity>
                       </View>
-                      <View style={styles.strokesSelector}>
-                        <Text style={styles.extraLabel}>Strokes:</Text>
-                        <TextInput
-                          style={styles.strokesInput}
-                          placeholder="0"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          value={player.strokesReceived}
-                          onChangeText={(value) => handlePlayerStrokesChange(index, value)}
-                        />
+                      <View style={styles.strokesConfigSection}>
+                        <View style={styles.strokesSelector}>
+                          <Text style={styles.extraLabel}>Strokes:</Text>
+                          <TextInput
+                            style={styles.strokesInput}
+                            placeholder="0"
+                            placeholderTextColor="#999"
+                            keyboardType="number-pad"
+                            value={player.strokesReceived}
+                            onChangeText={(value) => handlePlayerStrokesChange(index, value)}
+                          />
+                        </View>
+                        {parseInt(player.strokesReceived, 10) > 0 && (
+                          <View style={styles.strokeModeSelector}>
+                            <Text style={styles.strokeModeLabel}>Stroke Mode:</Text>
+                            <View style={styles.strokeModeButtons}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.strokeModeButton,
+                                  player.strokeMode === 'manual' && styles.strokeModeButtonActive,
+                                ]}
+                                onPress={() => handleStrokeModeChange(index, 'manual')}
+                              >
+                                <Text style={[
+                                  styles.strokeModeButtonText,
+                                  player.strokeMode === 'manual' && styles.strokeModeButtonTextActive,
+                                ]}>Manual</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[
+                                  styles.strokeModeButton,
+                                  player.strokeMode === 'auto' && styles.strokeModeButtonActive,
+                                  !courseHasStrokeIndices && styles.strokeModeButtonDisabled,
+                                ]}
+                                onPress={() => courseHasStrokeIndices && handleStrokeModeChange(index, 'auto')}
+                                disabled={!courseHasStrokeIndices}
+                              >
+                                <Text style={[
+                                  styles.strokeModeButtonText,
+                                  player.strokeMode === 'auto' && styles.strokeModeButtonTextActive,
+                                  !courseHasStrokeIndices && styles.strokeModeButtonTextDisabled,
+                                ]}>Auto</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[
+                                  styles.strokeModeButton,
+                                  player.strokeMode === 'all-but-par3' && styles.strokeModeButtonActive,
+                                ]}
+                                onPress={() => handleStrokeModeChange(index, 'all-but-par3')}
+                              >
+                                <Text style={[
+                                  styles.strokeModeButtonText,
+                                  player.strokeMode === 'all-but-par3' && styles.strokeModeButtonTextActive,
+                                ]}>All But Par 3</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        )}
                       </View>
                     </View>
                   )}
@@ -780,6 +840,51 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     textAlign: 'center',
     backgroundColor: '#fff',
+  },
+  strokesConfigSection: {
+    flex: 1,
+  },
+  strokeModeSelector: {
+    marginTop: 8,
+  },
+  strokeModeLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginBottom: 6,
+  },
+  strokeModeButtons: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  strokeModeButton: {
+    flex: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  strokeModeButtonActive: {
+    borderColor: '#1B5E20',
+    backgroundColor: '#e8f5e9',
+  },
+  strokeModeButtonDisabled: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#e0e0e0',
+  },
+  strokeModeButtonText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  strokeModeButtonTextActive: {
+    color: '#1B5E20',
+  },
+  strokeModeButtonTextDisabled: {
+    color: '#ccc',
   },
   footer: {
     flexDirection: 'row',
