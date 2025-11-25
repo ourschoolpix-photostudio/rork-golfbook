@@ -430,7 +430,7 @@ export default function GameScoringScreen() {
         return { [wolfPlayerIndex]: wolfPoints };
       } else if (wolfScore > bestOtherScore) {
         const points: { [playerIndex: number]: number } = {};
-        const otherPoints = isQuadHole ? 8 : 2;
+        const otherPoints = isQuadHole ? 4 : 2;
         playerScoresForHole
           .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex)
           .forEach((p: { playerIndex: number; netScore: number }) => {
@@ -451,13 +451,15 @@ export default function GameScoringScreen() {
       const othersBest = Math.min(...othersScores);
 
       if (wolfTeamBest < othersBest) {
-        return { [wolfPlayerIndex]: 1 * quadMultiplier, [partnerPlayerIndex]: 1 * quadMultiplier };
+        const teamPoints = isQuadHole ? 8 : 1;
+        return { [wolfPlayerIndex]: teamPoints, [partnerPlayerIndex]: teamPoints };
       } else if (wolfTeamBest > othersBest) {
         const points: { [playerIndex: number]: number } = {};
+        const otherPoints = isQuadHole ? 4 : 1;
         playerScoresForHole
           .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.playerIndex !== partnerPlayerIndex)
           .forEach((p: { playerIndex: number; netScore: number }) => {
-            points[p.playerIndex] = 1 * quadMultiplier;
+            points[p.playerIndex] = otherPoints;
           });
         return points;
       }
