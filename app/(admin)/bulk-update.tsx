@@ -27,6 +27,82 @@ export default function BulkUpdateScreen() {
   const [loading, setLoading] = useState(false);
   const { members, updateMember } = useAuth();
 
+  const handleUpdateTournamentFlights = async () => {
+    Alert.alert(
+      'Update Tournament Flights',
+      'This will update all members\' tournament flights based on their handicaps:\n\n• 10.1+ = Flight B\n• 10.0 and below = Flight A\n\nProceed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Update',
+          style: 'default',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              console.log('[Bulk Update] Starting tournament flight update');
+
+              const updates: Array<{ 
+                id: string; 
+                name: string; 
+                handicap: number; 
+                oldFlight: string; 
+                newFlight: 'A' | 'B';
+              }> = [];
+
+              for (const member of members) {
+                const handicap = member.handicap || 0;
+                const newFlight: 'A' | 'B' = handicap > 10 ? 'B' : 'A';
+                const oldFlight = member.flight || '';
+
+                if (oldFlight !== newFlight) {
+                  updates.push({
+                    id: member.id,
+                    name: member.name,
+                    handicap,
+                    oldFlight,
+                    newFlight,
+                  });
+                }
+              }
+
+              if (updates.length === 0) {
+                Alert.alert('No Updates Needed', 'All members already have correct tournament flights.');
+                return;
+              }
+
+              console.log(`[Bulk Update] Found ${updates.length} members needing updates`);
+
+              for (const update of updates) {
+                const member = members.find(m => m.id === update.id);
+                if (member) {
+                  const updatedMember: Member = {
+                    ...member,
+                    flight: update.newFlight,
+                  };
+                  await updateMember(member.id, updatedMember);
+                  console.log(
+                    `[Bulk Update] ${update.name}: ${update.oldFlight || 'none'} -> ${update.newFlight} (HC: ${update.handicap})`
+                  );
+                }
+              }
+
+              Alert.alert(
+                'Success',
+                `Updated ${updates.length} member(s) tournament flight assignments.`,
+                [{ text: 'OK' }]
+              );
+            } catch (error) {
+              console.error('[Bulk Update] Error updating tournament flights:', error);
+              Alert.alert('Error', 'Failed to update tournament flights. Please try again.');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleUpdateRolexFlights = async () => {
     Alert.alert(
       'Update Rolex Flights',
@@ -162,6 +238,13 @@ export default function BulkUpdateScreen() {
 
 
   const operations: UpdateOperation[] = [
+    {
+      id: 'tournament-flights',
+      title: 'Update Tournament Flights',
+      description: 'Update all tournament flights based on handicaps (10.1+ = B, 10.0 and below = A)',
+      icon: 'golf',
+      action: handleUpdateTournamentFlights,
+    },
     {
       id: 'rolex-flights',
       title: 'Update Rolex Flights',
