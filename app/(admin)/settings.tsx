@@ -47,20 +47,18 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export default function SettingsScreen() {
   const router = useRouter();
   const { refreshOrganizationInfo } = useSettings();
-  const [isNormalizing, setIsNormalizing] = useState(false);
+
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [expandedSections, setExpandedSections] = useState<{
     organization: boolean;
     paypal: boolean;
-    dataManagement: boolean;
     rolexPoints: boolean;
     courses: boolean;
   }>({
     organization: false,
     paypal: false,
-    dataManagement: false,
     rolexPoints: false,
     courses: false,
   });
@@ -84,7 +82,7 @@ export default function SettingsScreen() {
 
   const settingsQuery = trpc.settings.getSettings.useQuery();
   const updateSettingsMutation = trpc.settings.updateSettings.useMutation();
-  const normalizeNamesMutation = trpc.members.normalizeAllNames.useMutation();
+
 
   useEffect(() => {
     if (settingsQuery.data) {
@@ -185,33 +183,7 @@ export default function SettingsScreen() {
     );
   };
 
-  const handleNormalizeNames = async () => {
-    Alert.alert(
-      'Normalize Member Names',
-      'This will convert all member names to proper case (first letter capitalized) in the backend database. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Normalize',
-          onPress: async () => {
-            try {
-              setIsNormalizing(true);
-              const result = await normalizeNamesMutation.mutateAsync();
-              Alert.alert(
-                'Success', 
-                `Normalized ${result.count} member names to proper case in the database.`
-              );
-            } catch (error) {
-              console.error('Error normalizing names:', error);
-              Alert.alert('Error', 'Failed to normalize member names.');
-            } finally {
-              setIsNormalizing(false);
-            }
-          },
-        },
-      ]
-    );
-  };
+
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -711,42 +683,7 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('dataManagement')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <Ionicons name="server" size={22} color="#007AFF" />
-              <Text style={styles.sectionTitle}>Data Management</Text>
-            </View>
-            <Ionicons
-              name={expandedSections.dataManagement ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color="#007AFF"
-            />
-          </TouchableOpacity>
-          
-          {expandedSections.dataManagement && (
-            <View style={styles.sectionContent}>
-          
-          <TouchableOpacity
-            style={[styles.actionButton, isNormalizing && styles.actionButtonDisabled]}
-            onPress={handleNormalizeNames}
-            disabled={isNormalizing}
-          >
-            <Ionicons name="text" size={20} color="#fff" />
-            <Text style={styles.actionButtonText}>
-              {isNormalizing ? 'Normalizing...' : 'Normalize Member Names'}
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.actionDescription}>
-            Convert all member names to proper case (first letter capitalized)
-          </Text>
-            </View>
-          )}
-        </View>
+
       </ScrollView>
 
       <AdminFooter />

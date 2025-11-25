@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AdminFooter } from '@/components/AdminFooter';
 import { Member } from '@/types';
 import { bulkUpdateMembers, BulkUpdateFields } from '@/utils/bulk-update';
+import { trpc } from '@/lib/trpc';
 
 type UpdateOperation = {
   id: string;
@@ -25,7 +26,9 @@ type UpdateOperation = {
 
 export default function BulkUpdateScreen() {
   const [loading, setLoading] = useState(false);
+  const [isNormalizing, setIsNormalizing] = useState(false);
   const { members, updateMember } = useAuth();
+  const normalizeNamesMutation = trpc.members.normalizeAllNames.useMutation();
 
   const handleUpdateTournamentFlights = async () => {
     Alert.alert(
@@ -235,6 +238,34 @@ export default function BulkUpdateScreen() {
     );
   };
 
+  const handleNormalizeNames = async () => {
+    Alert.alert(
+      'Normalize Member Names',
+      'This will convert all member names to proper case (first letter capitalized) in the backend database. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Normalize',
+          onPress: async () => {
+            try {
+              setIsNormalizing(true);
+              const result = await normalizeNamesMutation.mutateAsync();
+              Alert.alert(
+                'Success', 
+                `Normalized ${result.count} member names to proper case in the database.`
+              );
+            } catch (error) {
+              console.error('Error normalizing names:', error);
+              Alert.alert('Error', 'Failed to normalize member names.');
+            } finally {
+              setIsNormalizing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
 
 
   const operations: UpdateOperation[] = [
@@ -274,7 +305,13 @@ export default function BulkUpdateScreen() {
       icon: 'refresh',
       action: handleResetRolexPoints,
     },
-
+    {
+      id: 'normalize-names',
+      title: 'Normalize Member Names',
+      description: 'Convert all member names to proper case (first letter capitalized) in database',
+      icon: 'text',
+      action: handleNormalizeNames,
+    },
   ];
 
   const totalMembers = members.length;
@@ -293,7 +330,7 @@ export default function BulkUpdateScreen() {
             key={operation.id}
             style={styles.operationCard}
             onPress={operation.action}
-            disabled={loading}
+            disabled={loading || isNormalizing}
           >
             <View style={styles.operationIconContainer}>
               <Ionicons name={operation.icon} size={28} color="#2563eb" />
@@ -306,10 +343,10 @@ export default function BulkUpdateScreen() {
           </TouchableOpacity>
         ))}
 
-        {loading && (
+        {(loading || isNormalizing) && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="#2563eb" />
-            <Text style={styles.loadingText}>Processing...</Text>
+            <Text style={styles.loadingText}>{isNormalizing ? 'Normalizing...' : 'Processing...'}</Text>
           </View>
         )}
       </ScrollView>
