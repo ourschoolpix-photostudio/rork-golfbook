@@ -87,39 +87,46 @@ export const updateSettingsProcedure = publicProcedure
     try {
       console.log('[Settings] Updating settings:', { ...input, paypalClientSecret: input.paypalClientSecret ? '[REDACTED]' : '' });
 
+      const updateData: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (input.name !== undefined) updateData.name = input.name;
+      if (input.address !== undefined) updateData.address = input.address;
+      if (input.city !== undefined) updateData.city = input.city;
+      if (input.state !== undefined) updateData.state = input.state;
+      if (input.zipCode !== undefined) updateData.zip_code = input.zipCode;
+      if (input.phone !== undefined) updateData.phone = input.phone;
+      if (input.zellePhone !== undefined) updateData.zelle_phone = input.zellePhone;
+      if (input.logoUrl !== undefined) updateData.logo_url = input.logoUrl;
+      if (input.paypalClientId !== undefined) updateData.paypal_client_id = input.paypalClientId;
+      if (input.paypalClientSecret !== undefined) updateData.paypal_client_secret = input.paypalClientSecret;
+      if (input.paypalMode !== undefined) updateData.paypal_mode = input.paypalMode;
+      if (input.rolexPlacementPoints !== undefined) updateData.rolex_placement_points = input.rolexPlacementPoints;
+      if (input.rolexAttendancePoints !== undefined) updateData.rolex_attendance_points = input.rolexAttendancePoints;
+      if (input.rolexBonusPoints !== undefined) updateData.rolex_bonus_points = input.rolexBonusPoints;
+
+      console.log('[Settings] Update data prepared:', { ...updateData, paypal_client_secret: updateData.paypal_client_secret ? '[REDACTED]' : undefined });
+
       const { error } = await supabase
         .from('organization_settings')
-        .update({
-          name: input.name,
-          address: input.address,
-          city: input.city,
-          state: input.state,
-          zip_code: input.zipCode,
-          phone: input.phone,
-          zelle_phone: input.zellePhone,
-          logo_url: input.logoUrl,
-          paypal_client_id: input.paypalClientId,
-          paypal_client_secret: input.paypalClientSecret,
-          paypal_mode: input.paypalMode,
-          rolex_placement_points: input.rolexPlacementPoints,
-          rolex_attendance_points: input.rolexAttendancePoints,
-          rolex_bonus_points: input.rolexBonusPoints,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', SETTINGS_ID);
 
       if (error) {
         console.error('[Settings] Error updating settings:', error);
-        throw new Error('Failed to update settings');
+        console.error('[Settings] Error details:', JSON.stringify(error, null, 2));
+        throw new Error(`Failed to update settings: ${error.message}`);
       }
 
       console.log('[Settings] ✅ Settings updated successfully');
       console.log('[Settings] PayPal mode is now:', input.paypalMode);
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Settings] Exception updating settings:', error);
-      throw new Error('Failed to update settings');
+      const message = error?.message || 'Failed to update settings';
+      throw new Error(message);
     }
   });
 

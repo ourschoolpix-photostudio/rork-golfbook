@@ -121,9 +121,10 @@ export default function SettingsScreen() {
       await refreshOrganizationInfo();
       
       Alert.alert('Success', 'Organization information saved successfully to database.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving organization info:', error);
-      Alert.alert('Error', 'Failed to save organization information.');
+      const errorMessage = error?.message || 'Failed to save organization information.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsSaving(false);
     }
