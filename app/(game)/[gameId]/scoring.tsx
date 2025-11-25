@@ -88,6 +88,49 @@ export default function GameScoringScreen() {
     });
   };
 
+  const saveScoresAndUpdateResult = async () => {
+    if (!game || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      const updatedPlayers = game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
+        const playerScores = holeScores[playerIndex] || {};
+        const scores = Array.from({ length: 18 }, (_, i) => playerScores[i + 1] || 0);
+        
+        const strokesUsed = player.strokesUsed ? [...player.strokesUsed] : new Array(18).fill(0);
+        strokesUsed[currentHole - 1] = strokesUsedOnHole[playerIndex] ? 1 : 0;
+        
+        return {
+          ...player,
+          scores,
+          totalScore: scores.reduce((sum: number, score: number) => sum + score, 0),
+          strokesUsed,
+        };
+      });
+
+      let updateData: any = { gameId, players: updatedPlayers };
+
+      if (game.gameType === 'team-match-play') {
+        const holeResults = game.holeResults || new Array(18).fill('tie');
+        holeResults[currentHole - 1] = calculateHoleResult();
+        
+        const team1Wins = holeResults.filter((r: string) => r === 'team1').length;
+        const team2Wins = holeResults.filter((r: string) => r === 'team2').length;
+        
+        updateData.holeResults = holeResults;
+        updateData.teamScores = { team1: team1Wins, team2: team2Wins };
+      }
+
+      await updateGameMutation.mutateAsync(updateData);
+      await gameQuery.refetch();
+      console.log('[GameScoring] Auto-calculated and saved team score for hole', currentHole);
+    } catch (error) {
+      console.error('[GameScoring] Error auto-saving scores:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const saveCurrentHoleScores = async () => {
     if (!game || isSaving) return;
 
@@ -128,7 +171,7 @@ export default function GameScoringScreen() {
     }
   };
 
-  const handleScoreChange = (playerIndex: number, delta: number) => {
+  const handleScoreChange = async (playerIndex: number, delta: number) => {
     if (!game) return;
 
     const holePar = game.holePars[currentHole - 1];
@@ -142,38 +185,66 @@ export default function GameScoringScreen() {
     }
     newScore = Math.max(1, newScore);
 
-    setHoleScores(prev => ({
-      ...prev,
+    const updatedScores = {
+      ...holeScores,
       [playerIndex]: {
-        ...(prev[playerIndex] || {}),
+        ...(holeScores[playerIndex] || {}),
         [currentHole]: newScore,
       },
-    }));
+    };
+
+    setHoleScores(updatedScores);
+
+    if (game.gameType === 'team-match-play') {
+      const allPlayersHaveScores = game.players.every((_: PersonalGamePlayer, idx: number) => {
+        const score = updatedScores[idx]?.[currentHole];
+        return score && score > 0;
+      });
+
+      if (allPlayersHaveScores) {
+        setTimeout(() => {
+          saveScoresAndUpdateResult();
+        }, 300);
+      }
+    }
   };
 
-  const handleSetPar = (playerIndex: number) => {
+  const handleSetPar = async (playerIndex: number) => {
     if (!game) return;
 
     const holePar = game.holePars[currentHole - 1];
     const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
 
+    let updatedScores: { [playerIndex: number]: { [hole: number]: number } };
     if (currentScore === holePar) {
-      setHoleScores(prev => {
-        const newScores = { ...prev };
-        if (newScores[playerIndex]) {
-          newScores[playerIndex] = { ...newScores[playerIndex] };
-          delete newScores[playerIndex][currentHole];
-        }
-        return newScores;
-      });
+      updatedScores = { ...holeScores };
+      if (updatedScores[playerIndex]) {
+        updatedScores[playerIndex] = { ...updatedScores[playerIndex] };
+        delete updatedScores[playerIndex][currentHole];
+      }
+      setHoleScores(updatedScores);
     } else {
-      setHoleScores(prev => ({
-        ...prev,
+      updatedScores = {
+        ...holeScores,
         [playerIndex]: {
-          ...(prev[playerIndex] || {}),
+          ...(holeScores[playerIndex] || {}),
           [currentHole]: holePar,
         },
-      }));
+      };
+      setHoleScores(updatedScores);
+
+      if (game.gameType === 'team-match-play') {
+        const allPlayersHaveScores = game.players.every((_: PersonalGamePlayer, idx: number) => {
+          const score = updatedScores[idx]?.[currentHole];
+          return score && score > 0;
+        });
+
+        if (allPlayersHaveScores) {
+          setTimeout(() => {
+            saveScoresAndUpdateResult();
+          }, 300);
+        }
+      }
     }
   };
 
