@@ -33,6 +33,13 @@ const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 5,
       retry: 1,
       refetchOnWindowFocus: false,
+      networkMode: 'offlineFirst',
+    },
+    mutations: {
+      networkMode: 'offlineFirst',
+      onError: (error) => {
+        console.error('[QueryClient] Mutation error:', error);
+      },
     },
   },
 });
@@ -40,6 +47,7 @@ const queryClient = new QueryClient({
 function RootLayoutNav() {
   const { isLoading: authLoading } = useAuth();
   const [isHydrated, setIsHydrated] = useState(Platform.OS === 'web');
+  const [timeoutReached, setTimeoutReached] = useState(false);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -48,12 +56,21 @@ function RootLayoutNav() {
   }, [isHydrated]);
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      console.log('[RootLayoutNav] Hydration timeout reached, forcing render');
+      setTimeoutReached(true);
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
     if (!authLoading && Platform.OS !== 'web' && isHydrated) {
       SplashScreen.hideAsync();
     }
   }, [authLoading, isHydrated]);
 
-  if (!isHydrated || authLoading) {
+  if (!isHydrated || (authLoading && !timeoutReached)) {
     return <View style={styles.loading} />;
   }
 

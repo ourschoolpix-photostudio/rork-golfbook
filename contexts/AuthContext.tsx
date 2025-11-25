@@ -64,7 +64,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     try {
       setIsLoading(true);
       
-      const currentUserData = await AsyncStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      const loadPromise = AsyncStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('AsyncStorage timeout')), 2000)
+      );
+
+      const currentUserData = await Promise.race([loadPromise, timeoutPromise]) as string | null;
 
       if (currentUserData) {
         const user = JSON.parse(currentUserData);
