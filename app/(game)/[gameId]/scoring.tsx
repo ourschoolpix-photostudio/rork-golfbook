@@ -1037,7 +1037,9 @@ export default function GameScoringScreen() {
                       </View>
                       {isWolf && (
                         <View style={styles.playerPointsRow}>
-                          <Text style={styles.playerWolfPointsLabel}>Points Earned: <Text style={styles.playerWolfPointsValue}>{getTotalWolfPoints(playerIndex)}</Text></Text>
+                          <Text style={styles.playerWolfPointsLabel}>
+                            Points Earned: <Text style={styles.playerWolfPointsValue}>{getTotalWolfPoints(playerIndex)}</Text>
+                          </Text>
                         </View>
                       )}
                     </View>
