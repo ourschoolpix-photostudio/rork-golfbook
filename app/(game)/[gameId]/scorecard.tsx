@@ -150,14 +150,15 @@ export default function GameScorecardScreen() {
                   </Text>
                 </View>
                 <View style={styles.playerCardInfo}>
-                  <Text style={styles.playerCardName}>{player.name}</Text>
+                  <View style={styles.playerCardNameRow}>
+                    <Text style={styles.playerCardName}>{player.name}</Text>
+                    {!isWolf && player.totalScore > 0 && (
+                      <Text style={styles.playerCardStrokesAside}>{player.totalScore} strokes</Text>
+                    )}
+                  </View>
                   <Text style={styles.playerCardHandicap}>HDC: {player.handicap}</Text>
-                  {isWolf ? (
+                  {isWolf && (
                     <Text style={styles.playerCardPoints}>{wolfPoints > 0 ? `${wolfPoints} points` : '0 points'}</Text>
-                  ) : (
-                    player.totalScore > 0 && (
-                      <Text style={styles.playerCardPoints}>{player.totalScore} strokes</Text>
-                    )
                   )}
                 </View>
                 {isWolf && game.dollarAmount && dollarAmount !== 0 ? (
@@ -347,11 +348,21 @@ const styles = StyleSheet.create({
   playerCardInfo: {
     flex: 1,
   },
+  playerCardNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   playerCardName: {
     fontSize: 16,
     fontWeight: '700' as const,
     color: '#1a1a1a',
-    marginBottom: 4,
+  },
+  playerCardStrokesAside: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
   },
   playerCardHandicap: {
     fontSize: 12,
