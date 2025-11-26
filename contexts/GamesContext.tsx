@@ -12,11 +12,16 @@ type GamesContextType = {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2; memberId?: string }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
     strokeIndices?: number[],
-    dollarAmount?: number
+    dollarAmount?: number,
+    front9Bet?: number,
+    back9Bet?: number,
+    overallBet?: number,
+    potBet?: number,
+    potPlayers?: { name: string; handicap: number; memberId?: string }[]
   ) => Promise<string>;
   updateGame: (gameId: string, updates: Partial<{
     courseName: string;
@@ -68,11 +73,16 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2; memberId?: string }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
     strokeIndices?: number[],
-    dollarAmount?: number
+    dollarAmount?: number,
+    front9Bet?: number,
+    back9Bet?: number,
+    overallBet?: number,
+    potBet?: number,
+    potPlayers?: { name: string; handicap: number; memberId?: string }[]
   ): Promise<string> => {
     if (!memberId) {
       throw new Error('User must be logged in to create a game');
@@ -93,11 +103,17 @@ export function GamesProvider({ children }: { children: ReactNode }) {
         strokeMode: p.strokeMode || 'manual',
         teamId: p.teamId,
         strokesUsed: new Array(18).fill(0),
-        wolfPoints: gameType === 'wolf' ? 0 : undefined,
+        wolfPoints: gameType === 'wolf' || gameType === 'niners' ? 0 : undefined,
+        memberId: p.memberId,
       })),
       gameType: gameType || 'individual-net',
       matchPlayScoringType,
       dollarAmount,
+      front9Bet,
+      back9Bet,
+      overallBet,
+      potBet,
+      potPlayers,
     };
 
     if (gameType === 'wolf') {

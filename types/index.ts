@@ -186,6 +186,13 @@ export interface PersonalGamePlayer {
   strokesUsed?: number[];
   strokeMode?: 'manual' | 'auto' | 'all-but-par3';
   wolfPoints?: number;
+  memberId?: string;
+}
+
+export interface PotPlayer {
+  name: string;
+  handicap: number;
+  memberId?: string;
 }
 
 export interface PersonalGame {
@@ -205,6 +212,11 @@ export interface PersonalGame {
   wolfOrder?: number[];
   wolfPartnerships?: { [hole: string]: { wolfPlayerIndex: number; partnerPlayerIndex: number | null; isLoneWolf: boolean; isQuad?: boolean } };
   dollarAmount?: number;
+  front9Bet?: number;
+  back9Bet?: number;
+  overallBet?: number;
+  potBet?: number;
+  potPlayers?: PotPlayer[];
 }
 
 export interface RegistrationNotification {

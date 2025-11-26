@@ -24,11 +24,16 @@ interface CreateGameModalProps {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2; memberId?: string }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
     strokeIndices?: number[],
-    dollarAmount?: number
+    dollarAmount?: number,
+    front9Bet?: number,
+    back9Bet?: number,
+    overallBet?: number,
+    potBet?: number,
+    potPlayers?: { name: string; handicap: number; memberId?: string }[]
   ) => Promise<void>;
   editingGame?: PersonalGame | null;
 }
@@ -49,8 +54,15 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
     { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
   ]);
   const [bettingAmount, setBettingAmount] = useState<string>('');
+  const [front9Bet, setFront9Bet] = useState<string>('');
+  const [back9Bet, setBack9Bet] = useState<string>('');
+  const [overallBet, setOverallBet] = useState<string>('');
+  const [potBet, setPotBet] = useState<string>('');
+  const [potPlayers, setPotPlayers] = useState<{ name: string; handicap: string; memberId?: string }[]>([]);
   const [showMemberPicker, setShowMemberPicker] = useState<boolean>(false);
+  const [showPotPlayerPicker, setShowPotPlayerPicker] = useState<boolean>(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [selectedPotMemberIds, setSelectedPotMemberIds] = useState<string[]>([]);
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
 
   const coursesQuery = trpc.courses.getAll.useQuery(
