@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PersonalGamePlayer } from '@/types';
 import { trpc } from '@/lib/trpc';
 import * as WolfHelper from '@/utils/wolfHelper';
+import * as NinersHelper from '@/utils/ninersHelper';
 
 export default function GameScoringScreen() {
   const router = useRouter();
@@ -81,6 +82,7 @@ export default function GameScoringScreen() {
   
   const isTeamMatchPlay = game?.gameType === 'team-match-play';
   const isWolf = game?.gameType === 'wolf';
+  const isNiners = game?.gameType === 'niners';
 
   useEffect(() => {
     if (game && !initialLoadDone) {
@@ -217,6 +219,9 @@ export default function GameScoringScreen() {
       if (includeWolfPoints && isWolf) {
         wolfPoints = WolfHelper.getTotalWolfPoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
       }
+      if (includeWolfPoints && isNiners) {
+        wolfPoints = NinersHelper.getTotalNinersPoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+      }
       
       return {
         ...player,
@@ -241,7 +246,7 @@ export default function GameScoringScreen() {
     }
 
     return updateData;
-  }, [game, gameId, holeScores, currentHole, strokesUsedOnHole, isWolf, calculateHoleResult, shouldPlayerReceiveStrokeOnHole]);
+  }, [game, gameId, holeScores, currentHole, strokesUsedOnHole, isWolf, isNiners, calculateHoleResult, shouldPlayerReceiveStrokeOnHole]);
 
   const saveScoresAndUpdateResult = async () => {
     if (!game || isSaving) return;
@@ -391,15 +396,34 @@ export default function GameScoringScreen() {
     return calculateWolfPointsForHole(currentHole);
   }, [calculateWolfPointsForHole, currentHole]);
 
+  const calculateNinersPointsForHole = useCallback((hole: number): { [playerIndex: number]: number } => {
+    if (!game || !isNiners) return {};
+    return NinersHelper.calculateNinersPointsForHole(hole, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+  }, [game, isNiners, holeScores, shouldPlayerReceiveStrokeOnHole]);
+
+  const getNinersPointsWonForCurrentHole = useCallback((): { [playerIndex: number]: number } => {
+    return calculateNinersPointsForHole(currentHole);
+  }, [calculateNinersPointsForHole, currentHole]);
+
   const getTotalWolfPoints = useCallback((playerIndex: number): number => {
     if (!isWolf || !game || playerIndex < 0 || playerIndex >= game.players.length) return 0;
     return WolfHelper.getTotalWolfPoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
   }, [isWolf, game, holeScores, shouldPlayerReceiveStrokeOnHole]);
 
+  const getTotalNinersPoints = useCallback((playerIndex: number): number => {
+    if (!isNiners || !game || playerIndex < 0 || playerIndex >= game.players.length) return 0;
+    return NinersHelper.getTotalNinersPoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+  }, [isNiners, game, holeScores, shouldPlayerReceiveStrokeOnHole]);
+
   const getHoleByHolePoints = useCallback((playerIndex: number): { [hole: number]: number } => {
-    if (!isWolf || !game || playerIndex < 0 || playerIndex >= game.players.length) return {};
-    return WolfHelper.getHoleByHolePoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
-  }, [isWolf, game, holeScores, shouldPlayerReceiveStrokeOnHole]);
+    if (isWolf && game && playerIndex >= 0 && playerIndex < game.players.length) {
+      return WolfHelper.getHoleByHolePoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+    }
+    if (isNiners && game && playerIndex >= 0 && playerIndex < game.players.length) {
+      return NinersHelper.getHoleByHolePoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+    }
+    return {};
+  }, [isWolf, isNiners, game, holeScores, shouldPlayerReceiveStrokeOnHole]);
 
   const handleSaveAllScores = async () => {
     if (!game || isSaving) return;
@@ -614,7 +638,7 @@ export default function GameScoringScreen() {
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>{game.courseName}</Text>
           <Text style={styles.headerSubtitle}>
-            {isTeamMatchPlay ? 'Team Match Play' : isWolf ? 'Wolf' : 'Individual Net'} • Par {game.coursePar}
+            {isTeamMatchPlay ? 'Team Match Play' : isWolf ? 'Wolf' : isNiners ? 'Niners' : 'Individual Net'} • Par {game.coursePar}
           </Text>
         </View>
         <TouchableOpacity
@@ -647,6 +671,23 @@ export default function GameScoringScreen() {
           <View style={styles.wolfPointsGrid}>
             {game.players.map((player: PersonalGamePlayer, idx: number) => {
               const totalPoints = getTotalWolfPoints(idx);
+              return (
+                <View key={idx} style={styles.wolfPointsPlayerBox}>
+                  <Text style={styles.wolfPointsPlayerName} numberOfLines={1}>{player.name}</Text>
+                  <Text style={styles.wolfPointsPlayerTotal}>{String(totalPoints)}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {isNiners && (
+        <View style={styles.wolfPointsHeader}>
+          <Text style={styles.wolfPointsHeaderTitle}>Niners Points</Text>
+          <View style={styles.wolfPointsGrid}>
+            {game.players.map((player: PersonalGamePlayer, idx: number) => {
+              const totalPoints = getTotalNinersPoints(idx);
               return (
                 <View key={idx} style={styles.wolfPointsPlayerBox}>
                   <Text style={styles.wolfPointsPlayerName} numberOfLines={1}>{player.name}</Text>
@@ -954,6 +995,93 @@ export default function GameScoringScreen() {
               </View>
             );
           })
+        ) : isNiners ? (
+          game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
+            const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
+            const totalScore = getTotalScore(playerIndex);
+            const holePar = game.holePars[currentHole - 1];
+            const hasScore = currentScore > 0;
+            const isScoringComplete = isPlayerScoringComplete(playerIndex);
+            const netScore = getNetScore(playerIndex);
+            const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, playerIndex, currentHole - 1);
+
+            const allScoresEntered = game.players.every((_: PersonalGamePlayer, idx: number) => {
+              const score = holeScores[idx]?.[currentHole];
+              return score && score > 0;
+            });
+            const pointsWon = allScoresEntered ? getNinersPointsWonForCurrentHole()[playerIndex] || 0 : 0;
+
+            return (
+              <View key={playerIndex} style={styles.playerCard}>
+                <View style={styles.playerHeader}>
+                  <View style={styles.playerInfo}>
+                    <View style={styles.playerNameRow}>
+                      <Text style={styles.playerName}>{player.name}</Text>
+                      {pointsWon > 0 && allScoresEntered && (
+                        <Text style={styles.pointsWonBadge}>+{pointsWon}</Text>
+                      )}
+                    </View>
+                    <View style={styles.playerStats}>
+                      <Text style={styles.playerHandicap}>HDC: {player.handicap}</Text>
+                      {player.strokesReceived && player.strokesReceived > 0 && (
+                        <Text style={styles.playerStrokes}>
+                          • Strokes: {player.strokesReceived} a side
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.playerPointsRow}>
+                      <Text style={styles.playerWolfPointsLabel}>
+                        Points Earned: <Text style={styles.playerWolfPointsValue}>{String(getTotalNinersPoints(playerIndex))}</Text>
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.totalScoreBox}>
+                    <Text style={styles.totalLabel}>Total</Text>
+                    <Text style={styles.totalScore}>{totalScore > 0 ? totalScore : 0}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.scoreControls}>
+                  <TouchableOpacity
+                    style={styles.minusButton}
+                    onPress={() => handleScoreChange(playerIndex, -1)}
+                  >
+                    <Text style={styles.buttonSymbol}>−</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.scoreDisplayContainer}>
+                    <TouchableOpacity 
+                      style={[styles.scoreDisplay, isScoringComplete && styles.scoreDisplayComplete]}
+                      onPress={() => handleSetPar(playerIndex)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.scoreValue, hasScore && styles.scoreValueActive]}>
+                        {hasScore ? currentScore : holePar}
+                      </Text>
+                    </TouchableOpacity>
+                    {hasScore && netScore !== currentScore && (
+                      <Text style={styles.netScoreLabel}>Net: {netScore}</Text>
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.plusButton}
+                    onPress={() => handleScoreChange(playerIndex, 1)}
+                  >
+                    <Text style={styles.buttonSymbol}>+</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {player.strokesReceived && player.strokesReceived > 0 && receivesStroke && (
+                  <View style={[styles.strokeHoleIndicator, receivesStroke && styles.strokeHoleIndicatorActive]}>
+                    <Text style={[styles.strokeHoleIndicatorText, receivesStroke && styles.strokeHoleIndicatorTextActive]}>
+                      Stroke Hole
+                    </Text>
+                  </View>
+                )}
+              </View>
+            );
+          })
         ) : (
           game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
             const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
@@ -1005,12 +1133,12 @@ export default function GameScoringScreen() {
           })
         )}
 
-        {isWolf && (
+        {(isWolf || isNiners) && (
           <View style={styles.pointsBreakdownSection}>
             <Text style={styles.pointsBreakdownTitle}>Points Breakdown (Hole-by-Hole)</Text>
             {game.players.map((player: PersonalGamePlayer, idx: number) => {
               const holePoints = getHoleByHolePoints(idx);
-              const totalPoints = getTotalWolfPoints(idx);
+              const totalPoints = isWolf ? getTotalWolfPoints(idx) : getTotalNinersPoints(idx);
               if (Object.keys(holePoints).length === 0) return null;
               return (
                 <View key={idx} style={styles.pointsBreakdownCard}>
