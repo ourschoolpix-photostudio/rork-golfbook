@@ -59,6 +59,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
   const [overallBet, setOverallBet] = useState<string>('');
   const [potBet, setPotBet] = useState<string>('');
   const [potPlayers, setPotPlayers] = useState<{ name: string; handicap: string; memberId?: string }[]>([]);
+  const [addedMainPlayersToPot, setAddedMainPlayersToPot] = useState<boolean>(false);
   const [showMemberPicker, setShowMemberPicker] = useState<boolean>(false);
   const [showPotPlayerPicker, setShowPotPlayerPicker] = useState<boolean>(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
@@ -124,8 +125,16 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
         { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
       ]);
       setBettingAmount('');
+      setFront9Bet('');
+      setBack9Bet('');
+      setOverallBet('');
+      setPotBet('');
+      setPotPlayers([]);
       setSelectedMemberIds([]);
+      setSelectedPotMemberIds([]);
       setShowMemberPicker(false);
+      setShowPotPlayerPicker(false);
+      setAddedMainPlayersToPot(false);
     }
   }, [editingGame, visible, members]);
 
@@ -271,6 +280,27 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
     updatedIds.splice(index, 1);
     setSelectedMemberIds(updatedIds);
   };
+
+  React.useEffect(() => {
+    if (potBet && parseFloat(potBet) > 0 && !addedMainPlayersToPot) {
+      const activePlayers = players.filter(p => p.name.trim() !== '');
+      if (activePlayers.length > 0) {
+        const mainPlayersAsPotPlayers = activePlayers.map(p => ({
+          name: p.name,
+          handicap: p.handicap,
+          memberId: selectedMemberIds[players.indexOf(p)],
+        }));
+        setPotPlayers(mainPlayersAsPotPlayers);
+        const mainPlayerMemberIds = activePlayers
+          .map(p => selectedMemberIds[players.indexOf(p)])
+          .filter(id => id);
+        setSelectedPotMemberIds(mainPlayerMemberIds);
+        setAddedMainPlayersToPot(true);
+      }
+    } else if (!potBet || parseFloat(potBet) === 0) {
+      setAddedMainPlayersToPot(false);
+    }
+  }, [potBet, players, selectedMemberIds, addedMainPlayersToPot]);
 
   const handleSelectPotPlayer = (memberId: string) => {
     const member = members.find(m => m.id === memberId);
@@ -1019,7 +1049,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
                         ) : (
                           <ScrollView style={styles.memberPickerList} nestedScrollEnabled>
                             {members
-                              .filter(m => !selectedPotMemberIds.includes(m.id) && !selectedMemberIds.includes(m.id))
+                              .filter(m => !selectedPotMemberIds.includes(m.id))
                               .map(member => (
                                 <TouchableOpacity
                                   key={member.id}
