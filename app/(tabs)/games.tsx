@@ -63,18 +63,26 @@ export default function GamesScreen() {
     if (!editingGame) return;
     
     try {
+      const updatedPlayers = players.map((p, idx) => {
+        const existingPlayer = editingGame.players[idx];
+        return {
+          name: p.name,
+          handicap: p.handicap,
+          scores: existingPlayer?.scores || new Array(18).fill(0),
+          totalScore: existingPlayer?.totalScore || 0,
+          strokesReceived: p.strokesReceived || 0,
+          strokeMode: p.strokeMode || 'manual',
+          teamId: p.teamId,
+          strokesUsed: existingPlayer?.strokesUsed || new Array(18).fill(0),
+          wolfPoints: gameType === 'wolf' ? (existingPlayer?.wolfPoints || 0) : undefined,
+        };
+      });
+
       await updateGame(editingGame.id, {
         courseName,
         coursePar,
         holePars,
-        players: players.map((p, idx) => ({
-          ...editingGame.players[idx],
-          name: p.name,
-          handicap: p.handicap,
-          strokesReceived: p.strokesReceived || 0,
-          strokeMode: p.strokeMode || 'manual',
-          teamId: p.teamId,
-        })),
+        players: updatedPlayers,
         gameType,
         matchPlayScoringType,
         strokeIndices,
