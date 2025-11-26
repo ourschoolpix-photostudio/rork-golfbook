@@ -71,7 +71,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
         name: p.name,
         handicap: p.handicap.toString(),
         strokesReceived: (p.strokesReceived || 0).toString(),
-        strokesASide: editingGame.gameType === 'wolf' ? (p.strokesReceived || 0).toString() : '0',
+        strokesASide: (editingGame.gameType === 'wolf' || editingGame.gameType === 'niners') ? (p.strokesReceived || 0).toString() : '0',
         strokeMode: p.strokeMode || 'manual',
         teamId: p.teamId,
       }));
@@ -107,7 +107,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
       setHolePars(course.holePars.map((p: number) => p.toString()));
       setShowCourseSelector(false);
       
-      if (course.strokeIndices && course.strokeIndices.length === 18 && gameType === 'wolf') {
+      if (course.strokeIndices && course.strokeIndices.length === 18 && (gameType === 'wolf' || gameType === 'niners')) {
         const updatedPlayers = players.map(p => ({
           ...p,
           strokeMode: 'auto' as const,
@@ -196,7 +196,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
       return;
     }
 
-    const parsedHolePars = holePars.map(hp => parseInt(hp, 10));
+    const parsedHolePars = holePars.map(hp => parseInt(hp, 10) || 4);
     if (parsedHolePars.some(p => isNaN(p) || p < 3 || p > 6)) {
       Alert.alert('Error', 'All hole pars must be between 3 and 6');
       return;
@@ -231,7 +231,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
     const parsedPlayers = activePlayers.map(p => ({
       name: p.name.trim(),
       handicap: parseFloat(p.handicap) || 0,
-      strokesReceived: gameType === 'wolf' ? parseInt(p.strokesASide, 10) || 0 : parseInt(p.strokesReceived, 10) || 0,
+      strokesReceived: (gameType === 'wolf' || gameType === 'niners') ? parseInt(p.strokesASide, 10) || 0 : parseInt(p.strokesReceived, 10) || 0,
       strokeMode: p.strokeMode || 'manual',
       teamId: gameType === 'team-match-play' ? p.teamId : undefined,
     }));
@@ -506,7 +506,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
                     />
                   </View>
                   
-                  {gameType === 'wolf' && player.name.trim() !== '' && (
+                  {(gameType === 'wolf' || gameType === 'niners') && player.name.trim() !== '' && (
                     <View style={styles.playerExtras}>
                       <View style={styles.strokesConfigSection}>
                         <View style={styles.strokesSelector}>
@@ -527,30 +527,42 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
                           const strokesPerSide = parseInt(player.strokesASide, 10);
                           const frontNineIndices = selectedCourse!.strokeIndices.slice(0, 9);
                           const backNineIndices = selectedCourse!.strokeIndices.slice(9, 18);
+                          const frontNinePars = holePars.slice(0, 9).map(p => parseInt(p, 10) || 4);
+                          const backNinePars = holePars.slice(9, 18).map(p => parseInt(p, 10) || 4);
                           
                           const sortedFront = frontNineIndices
-                            .map((si: number, idx: number) => ({ holeNum: idx + 1, strokeIndex: si }))
-                            .sort((a: { holeNum: number; strokeIndex: number }, b: { holeNum: number; strokeIndex: number }) => a.strokeIndex - b.strokeIndex)
+                            .map((si: number, idx: number) => ({ 
+                              holeNum: idx + 1, 
+                              strokeIndex: si,
+                              par: frontNinePars[idx]
+                            }))
+                            .filter((h: { holeNum: number; strokeIndex: number; par: number }) => h.par !== 3)
+                            .sort((a: { holeNum: number; strokeIndex: number; par: number }, b: { holeNum: number; strokeIndex: number; par: number }) => a.strokeIndex - b.strokeIndex)
                             .slice(0, Math.min(strokesPerSide, 9))
-                            .map((h: { holeNum: number; strokeIndex: number }) => h.holeNum);
+                            .map((h: { holeNum: number; strokeIndex: number; par: number }) => h.holeNum);
                           
                           const sortedBack = backNineIndices
-                            .map((si: number, idx: number) => ({ holeNum: idx + 10, strokeIndex: si }))
-                            .sort((a: { holeNum: number; strokeIndex: number }, b: { holeNum: number; strokeIndex: number }) => a.strokeIndex - b.strokeIndex)
+                            .map((si: number, idx: number) => ({ 
+                              holeNum: idx + 10, 
+                              strokeIndex: si,
+                              par: backNinePars[idx]
+                            }))
+                            .filter((h: { holeNum: number; strokeIndex: number; par: number }) => h.par !== 3)
+                            .sort((a: { holeNum: number; strokeIndex: number; par: number }, b: { holeNum: number; strokeIndex: number; par: number }) => a.strokeIndex - b.strokeIndex)
                             .slice(0, Math.min(strokesPerSide, 9))
-                            .map((h: { holeNum: number; strokeIndex: number }) => h.holeNum);
+                            .map((h: { holeNum: number; strokeIndex: number; par: number }) => h.holeNum);
                           
                           return (
                             <View style={styles.strokeHolesDisplay}>
-                              <Text style={styles.strokeHolesLabel}>Stroke Holes:</Text>
+                              <Text style={styles.strokeHolesLabel}>Stroke Holes (No Par 3s):</Text>
                               <View style={styles.strokeHolesLists}>
                                 <View style={styles.strokeHolesSide}>
                                   <Text style={styles.strokeHolesSideLabel}>Front:</Text>
-                                  <Text style={styles.strokeHolesNumbers}>{sortedFront.join(', ')}</Text>
+                                  <Text style={styles.strokeHolesNumbers}>{sortedFront.length > 0 ? sortedFront.join(', ') : 'None'}</Text>
                                 </View>
                                 <View style={styles.strokeHolesSide}>
                                   <Text style={styles.strokeHolesSideLabel}>Back:</Text>
-                                  <Text style={styles.strokeHolesNumbers}>{sortedBack.join(', ')}</Text>
+                                  <Text style={styles.strokeHolesNumbers}>{sortedBack.length > 0 ? sortedBack.join(', ') : 'None'}</Text>
                                 </View>
                               </View>
                             </View>

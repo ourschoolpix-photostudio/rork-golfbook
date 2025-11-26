@@ -54,8 +54,27 @@ export default function GameScoringScreen() {
     if (strokeMode === 'manual') {
       return strokesUsedOnHole[playerIndex] || false;
     } else {
-      const holeStrokeIndex = game.strokeIndices[holeIndex];
-      return holeStrokeIndex <= player.strokesReceived;
+      const isWolfOrNiners = game.gameType === 'wolf' || game.gameType === 'niners';
+      const holePar = game.holePars[holeIndex];
+      
+      if (isWolfOrNiners && holePar === 3) {
+        return false;
+      }
+      
+      const strokesPerNine = player.strokesReceived;
+      const isFrontNine = holeIndex < 9;
+      const nineHoles = isFrontNine ? game.holePars.slice(0, 9) : game.holePars.slice(9, 18);
+      const nineStrokeIndices = isFrontNine ? game.strokeIndices.slice(0, 9) : game.strokeIndices.slice(9, 18);
+      const holeIndexInNine = isFrontNine ? holeIndex : holeIndex - 9;
+      
+      const sortedHoles = nineStrokeIndices
+        .map((si: number, idx: number) => ({ idx, strokeIndex: si, par: nineHoles[idx] }))
+        .filter((h: { idx: number; strokeIndex: number; par: number }) => isWolfOrNiners ? h.par !== 3 : true)
+        .sort((a: { idx: number; strokeIndex: number; par: number }, b: { idx: number; strokeIndex: number; par: number }) => a.strokeIndex - b.strokeIndex)
+        .slice(0, Math.min(strokesPerNine, 9))
+        .map((h: { idx: number; strokeIndex: number; par: number }) => h.idx);
+      
+      return sortedHoles.includes(holeIndexInNine);
     }
   }, [game, strokesUsedOnHole]);
 
