@@ -659,7 +659,7 @@ export default function GameScoringScreen() {
               return (
                 <View key={idx} style={styles.wolfPointsPlayerBox}>
                   <Text style={styles.wolfPointsPlayerName} numberOfLines={1}>{player.name}</Text>
-                  <Text style={styles.wolfPointsPlayerTotal}>{String(totalPoints)}</Text>
+                  <Text style={styles.wolfPointsPlayerTotal}>{totalPoints ?? 0}</Text>
                 </View>
               );
             })}
@@ -676,7 +676,7 @@ export default function GameScoringScreen() {
               return (
                 <View key={idx} style={styles.wolfPointsPlayerBox}>
                   <Text style={styles.wolfPointsPlayerName} numberOfLines={1}>{player.name}</Text>
-                  <Text style={styles.wolfPointsPlayerTotal}>{String(totalPoints)}</Text>
+                  <Text style={styles.wolfPointsPlayerTotal}>{totalPoints ?? 0}</Text>
                 </View>
               );
             })}
@@ -895,7 +895,7 @@ export default function GameScoringScreen() {
                       {isWolf && (
                         <View style={styles.playerPointsRow}>
                           <Text style={styles.playerWolfPointsLabel}>
-                            Points Earned: <Text style={styles.playerWolfPointsValue}>{String(getTotalWolfPoints(playerIndex))}</Text>
+                            Points Earned: <Text style={styles.playerWolfPointsValue}>{getTotalWolfPoints(playerIndex) ?? 0}</Text>
                           </Text>
                         </View>
                       )}
@@ -1016,7 +1016,7 @@ export default function GameScoringScreen() {
                     </View>
                     <View style={styles.playerPointsRow}>
                       <Text style={styles.playerWolfPointsLabel}>
-                        Points Earned: <Text style={styles.playerWolfPointsValue}>{String(getTotalNinersPoints(playerIndex))}</Text>
+                        Points Earned: <Text style={styles.playerWolfPointsValue}>{getTotalNinersPoints(playerIndex) ?? 0}</Text>
                       </Text>
                     </View>
                   </View>
@@ -1129,13 +1129,13 @@ export default function GameScoringScreen() {
                 <View key={idx} style={styles.pointsBreakdownCard}>
                   <View style={styles.pointsBreakdownHeader}>
                     <Text style={styles.pointsBreakdownPlayerName}>{player.name}</Text>
-                    <Text style={styles.pointsBreakdownTotal}>Total: {String(totalPoints)}</Text>
+                    <Text style={styles.pointsBreakdownTotal}>Total: {totalPoints ?? 0}</Text>
                   </View>
                   <View style={styles.pointsBreakdownHoles}>
                     {Object.entries(holePoints).map(([hole, points]) => (
                       <View key={hole} style={styles.pointsBreakdownHole}>
                         <Text style={styles.pointsBreakdownHoleNumber}>H{hole}</Text>
-                        <Text style={styles.pointsBreakdownHolePoints}>+{String(points)}</Text>
+                        <Text style={styles.pointsBreakdownHolePoints}>+{points ?? 0}</Text>
                       </View>
                     ))}
                   </View>
