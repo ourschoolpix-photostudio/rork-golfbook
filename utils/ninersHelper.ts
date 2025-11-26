@@ -97,7 +97,6 @@ export function getHoleByHolePoints(
 
 type PlayerPayment = { name: string; points: number; dollarAmount: number; index: number };
 type Transaction = { from: string; to: string; amount: number };
-type Balance = { name: string; balance: number; index: number };
 
 export function calculatePayments(game: any): {
   playerPayments: PlayerPayment[];
@@ -112,29 +111,65 @@ export function calculatePayments(game: any): {
     return { name: player.name, points, dollarAmount, index: idx };
   });
 
-  const totalPayout = playerPayments.reduce((sum: number, p: PlayerPayment) => sum + p.dollarAmount, 0);
-  const avgPayout = totalPayout / playerPayments.length;
-
-  const balances = playerPayments.map((p: PlayerPayment): Balance => ({
-    name: p.name,
-    balance: p.dollarAmount - avgPayout,
-    index: p.index
-  }));
-
-  const creditors = balances.filter((b: Balance) => b.balance > 0).sort((a: Balance, b: Balance) => b.balance - a.balance);
-  const debtors = balances.filter((b: Balance) => b.balance < 0).sort((a: Balance, b: Balance) => a.balance - b.balance);
-
   const transactions: Transaction[] = [];
+
+  for (let i = 0; i < playerPayments.length; i++) {
+    for (let j = i + 1; j < playerPayments.length; j++) {
+      const diff = playerPayments[i].dollarAmount - playerPayments[j].dollarAmount;
+      if (Math.abs(diff) > 0.01) {
+        if (diff > 0) {
+          transactions.push({
+            from: playerPayments[j].name,
+            to: playerPayments[i].name,
+            amount: Math.round(diff * 100) / 100
+          });
+        } else {
+          transactions.push({
+            from: playerPayments[i].name,
+            to: playerPayments[j].name,
+            amount: Math.round(Math.abs(diff) * 100) / 100
+          });
+        }
+      }
+    }
+  }
+
+  const simplifiedTransactions = simplifyTransactions(transactions);
+
+  return { playerPayments, transactions: simplifiedTransactions };
+}
+
+function simplifyTransactions(transactions: Transaction[]): Transaction[] {
+  const balances: { [name: string]: number } = {};
+
+  transactions.forEach(t => {
+    if (!balances[t.from]) balances[t.from] = 0;
+    if (!balances[t.to]) balances[t.to] = 0;
+    balances[t.from] -= t.amount;
+    balances[t.to] += t.amount;
+  });
+
+  const creditors = Object.entries(balances)
+    .filter(([_, balance]) => balance > 0.01)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, balance]) => ({ name, balance }));
+
+  const debtors = Object.entries(balances)
+    .filter(([_, balance]) => balance < -0.01)
+    .sort((a, b) => a[1] - b[1])
+    .map(([name, balance]) => ({ name, balance: -balance }));
+
+  const simplified: Transaction[] = [];
   let i = 0;
   let j = 0;
 
   while (i < creditors.length && j < debtors.length) {
     const creditor = creditors[i];
     const debtor = debtors[j];
-    const amount = Math.min(creditor.balance, Math.abs(debtor.balance));
+    const amount = Math.min(creditor.balance, debtor.balance);
 
     if (amount > 0.01) {
-      transactions.push({
+      simplified.push({
         from: debtor.name,
         to: creditor.name,
         amount: Math.round(amount * 100) / 100
@@ -142,11 +177,11 @@ export function calculatePayments(game: any): {
     }
 
     creditor.balance -= amount;
-    debtor.balance += amount;
+    debtor.balance -= amount;
 
-    if (Math.abs(creditor.balance) < 0.01) i++;
-    if (Math.abs(debtor.balance) < 0.01) j++;
+    if (creditor.balance < 0.01) i++;
+    if (debtor.balance < 0.01) j++;
   }
 
-  return { playerPayments, transactions };
+  return simplified;
 }

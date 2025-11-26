@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Edit } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
 import * as NinersHelper from '@/utils/ninersHelper';
+import * as WolfHelper from '@/utils/wolfHelper';
 
 export default function GameScorecardScreen() {
   const router = useRouter();
@@ -31,56 +32,7 @@ export default function GameScorecardScreen() {
   const isWolf = game.gameType === 'wolf';
   const isNiners = game.gameType === 'niners';
 
-  const calculatePayments = () => {
-    if (!isWolf || !game.dollarAmount) return null;
-
-    const dollarPerPoint = game.dollarAmount;
-    const playerPayments = game.players.map((player, idx) => {
-      const points = player.wolfPoints || 0;
-      const dollarAmount = points * dollarPerPoint;
-      return { name: player.name, points, dollarAmount, index: idx };
-    });
-
-    const totalPayout = playerPayments.reduce((sum, p) => sum + p.dollarAmount, 0);
-    const avgPayout = totalPayout / playerPayments.length;
-
-    const balances = playerPayments.map(p => ({
-      name: p.name,
-      balance: p.dollarAmount - avgPayout,
-      index: p.index
-    }));
-
-    const creditors = balances.filter(b => b.balance > 0).sort((a, b) => b.balance - a.balance);
-    const debtors = balances.filter(b => b.balance < 0).sort((a, b) => a.balance - b.balance);
-
-    const transactions: { from: string; to: string; amount: number }[] = [];
-    let i = 0;
-    let j = 0;
-
-    while (i < creditors.length && j < debtors.length) {
-      const creditor = creditors[i];
-      const debtor = debtors[j];
-      const amount = Math.min(creditor.balance, Math.abs(debtor.balance));
-
-      if (amount > 0.01) {
-        transactions.push({
-          from: debtor.name,
-          to: creditor.name,
-          amount: Math.round(amount * 100) / 100
-        });
-      }
-
-      creditor.balance -= amount;
-      debtor.balance += amount;
-
-      if (Math.abs(creditor.balance) < 0.01) i++;
-      if (Math.abs(debtor.balance) < 0.01) j++;
-    }
-
-    return { playerPayments, transactions };
-  };
-
-  const paymentData = isWolf ? calculatePayments() : isNiners ? NinersHelper.calculatePayments(game) : null;
+  const paymentData = isWolf ? WolfHelper.calculatePayments(game) : isNiners ? NinersHelper.calculatePayments(game) : null;
 
   const sortedPlayers = [...game.players].sort((a, b) => {
     if (isWolf || isNiners) {
