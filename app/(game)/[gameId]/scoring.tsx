@@ -1034,12 +1034,13 @@ export default function GameScoringScreen() {
                             • Strokes: {player.strokesReceived} a side
                           </Text>
                         )}
-                        {isWolf && (
-                          <Text style={styles.playerWolfPoints}>
-                            • Pts: {getTotalWolfPoints(playerIndex)}
-                          </Text>
-                        )}
                       </View>
+                      {isWolf && (
+                        <View style={styles.playerPointsRow}>
+                          <Text style={styles.playerWolfPointsLabel}>Points Earned: </Text>
+                          <Text style={styles.playerWolfPointsValue}>{getTotalWolfPoints(playerIndex)}</Text>
+                        </View>
+                      )}
                     </View>
                     <View style={styles.totalScoreBox}>
                       <Text style={styles.totalLabel}>Total</Text>
@@ -1639,9 +1640,19 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
   },
-  playerWolfPoints: {
+  playerPointsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  playerWolfPointsLabel: {
     fontSize: 11,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  playerWolfPointsValue: {
+    fontSize: 11,
+    fontWeight: '700' as const,
     color: '#f59e0b',
   },
   pointsWonBadge: {
