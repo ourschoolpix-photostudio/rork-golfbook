@@ -152,31 +152,31 @@ export default function GameScorecardScreen() {
                 <View style={styles.playerCardInfo}>
                   <Text style={styles.playerCardName}>{player.name}</Text>
                   <Text style={styles.playerCardHandicap}>HDC: {player.handicap}</Text>
-                  {isWolf && game.dollarAmount && dollarAmount !== 0 && (
-                    <Text style={[styles.playerCardDollar, dollarAmount > 0 ? styles.dollarPositive : styles.dollarNegative]}>
-                      ${dollarAmount.toFixed(2)}
-                    </Text>
+                  {isWolf ? (
+                    <Text style={styles.playerCardPoints}>{wolfPoints > 0 ? `${wolfPoints} points` : '0 points'}</Text>
+                  ) : (
+                    player.totalScore > 0 && (
+                      <Text style={styles.playerCardPoints}>{player.totalScore} strokes</Text>
+                    )
                   )}
                 </View>
-                {isWolf ? (
+                {isWolf && game.dollarAmount && dollarAmount !== 0 ? (
                   <View style={styles.playerCardScores}>
-                    <Text style={styles.playerCardTotal}>{wolfPoints > 0 ? wolfPoints : '-'}</Text>
-                    <Text style={styles.playerCardDiff}>points</Text>
+                    <Text style={[styles.playerCardTotal, dollarAmount > 0 ? styles.dollarPositive : styles.dollarNegative]}>
+                      ${dollarAmount.toFixed(2)}
+                    </Text>
                   </View>
-                ) : (
+                ) : !isWolf && player.totalScore > 0 ? (
                   <View style={styles.playerCardScores}>
-                    <Text style={styles.playerCardTotal}>{player.totalScore > 0 ? player.totalScore : '-'}</Text>
-                    {player.totalScore > 0 && (
-                      <Text style={[
-                        styles.playerCardDiff,
-                        scoreDiff === 0 && styles.scoreDiffEven,
-                        scoreDiff < 0 && styles.scoreDiffUnder,
-                      ]}>
-                        {scoreDiffText}
-                      </Text>
-                    )}
+                    <Text style={[
+                      styles.playerCardDiff,
+                      scoreDiff === 0 && styles.scoreDiffEven,
+                      scoreDiff < 0 && styles.scoreDiffUnder,
+                    ]}>
+                      {scoreDiffText}
+                    </Text>
                   </View>
-                )}
+                ) : null}
               </View>
             );
           })}
@@ -356,6 +356,12 @@ const styles = StyleSheet.create({
   playerCardHandicap: {
     fontSize: 12,
     color: '#666',
+    marginBottom: 2,
+  },
+  playerCardPoints: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#1B5E20',
   },
   playerCardScores: {
     alignItems: 'flex-end',
