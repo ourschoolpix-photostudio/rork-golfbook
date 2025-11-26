@@ -272,6 +272,63 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
     setSelectedMemberIds(updatedIds);
   };
 
+  const handleSelectPotPlayer = (memberId: string) => {
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
+
+    const updated = [...potPlayers];
+    updated.push({
+      name: member.name,
+      handicap: (member.handicap || 0).toString(),
+      memberId,
+    });
+    setPotPlayers(updated);
+
+    const updatedIds = [...selectedPotMemberIds];
+    updatedIds.push(memberId);
+    setSelectedPotMemberIds(updatedIds);
+  };
+
+  const handlePotPlayerNameChange = (index: number, value: string) => {
+    const updated = [...potPlayers];
+    updated[index] = { ...updated[index], name: value };
+    setPotPlayers(updated);
+    
+    const currentMemberId = selectedPotMemberIds[index];
+    if (currentMemberId && value.trim() !== '') {
+      const member = members.find(m => m.id === currentMemberId);
+      if (member && member.name !== value) {
+        const updatedIds = [...selectedPotMemberIds];
+        updatedIds[index] = '';
+        setSelectedPotMemberIds(updatedIds);
+      }
+    }
+  };
+
+  const handlePotPlayerHandicapChange = (index: number, value: string) => {
+    if (value === '' || /^\d*\.?\d{0,1}$/.test(value)) {
+      const updated = [...potPlayers];
+      updated[index] = { ...updated[index], handicap: value };
+      setPotPlayers(updated);
+    }
+  };
+
+  const handleRemovePotPlayer = (index: number) => {
+    const updated = [...potPlayers];
+    updated.splice(index, 1);
+    setPotPlayers(updated);
+
+    const updatedIds = [...selectedPotMemberIds];
+    updatedIds.splice(index, 1);
+    setSelectedPotMemberIds(updatedIds);
+  };
+
+  const handleAddPotPlayer = () => {
+    const updated = [...potPlayers];
+    updated.push({ name: '', handicap: '', memberId: undefined });
+    setPotPlayers(updated);
+  };
+
   const handleSave = async () => {
     if (!courseName.trim()) {
       Alert.alert('Error', 'Please enter a course name');
@@ -333,6 +390,17 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
     });
 
     const parsedBettingAmount = bettingAmount && bettingAmount.trim() !== '' ? parseFloat(bettingAmount) : undefined;
+    const parsedFront9Bet = front9Bet && front9Bet.trim() !== '' ? parseFloat(front9Bet) : undefined;
+    const parsedBack9Bet = back9Bet && back9Bet.trim() !== '' ? parseFloat(back9Bet) : undefined;
+    const parsedOverallBet = overallBet && overallBet.trim() !== '' ? parseFloat(overallBet) : undefined;
+    const parsedPotBet = potBet && potBet.trim() !== '' ? parseFloat(potBet) : undefined;
+    const parsedPotPlayers = potPlayers
+      .filter(p => p.name.trim() !== '')
+      .map(p => ({
+        name: p.name.trim(),
+        handicap: parseFloat(p.handicap) || 0,
+        memberId: p.memberId,
+      }));
 
     try {
       await onSave(
@@ -343,7 +411,12 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
         gameType,
         gameType === 'team-match-play' ? matchPlayScoringType : undefined,
         selectedCourse?.strokeIndices && selectedCourse.strokeIndices.length > 0 ? selectedCourse.strokeIndices : undefined,
-        parsedBettingAmount
+        parsedBettingAmount,
+        parsedFront9Bet,
+        parsedBack9Bet,
+        parsedOverallBet,
+        parsedPotBet,
+        parsedPotPlayers.length > 0 ? parsedPotPlayers : undefined
       );
       onClose();
     } catch (error) {
@@ -831,6 +904,62 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
                     />
                   </View>
                 </View>
+              ) : gameType === 'niners' ? (
+                <View>
+                  <Text style={styles.bettingDescription}>
+                    Amount per player per point
+                  </Text>
+                  <View style={styles.bettingRow}>
+                    <Text style={styles.bettingLabel}>$ Per Point:</Text>
+                    <TextInput
+                      style={styles.bettingInput}
+                      placeholder="0.00"
+                      placeholderTextColor="#999"
+                      keyboardType="decimal-pad"
+                      value={bettingAmount}
+                      onChangeText={setBettingAmount}
+                    />
+                  </View>
+                </View>
+              ) : gameType === 'individual-net' ? (
+                <View>
+                  <Text style={styles.bettingDescription}>
+                    Amount per player for each bet type
+                  </Text>
+                  <View style={styles.bettingRow}>
+                    <Text style={styles.bettingLabel}>Front 9:</Text>
+                    <TextInput
+                      style={styles.bettingInput}
+                      placeholder="0.00"
+                      placeholderTextColor="#999"
+                      keyboardType="decimal-pad"
+                      value={front9Bet}
+                      onChangeText={setFront9Bet}
+                    />
+                  </View>
+                  <View style={styles.bettingRow}>
+                    <Text style={styles.bettingLabel}>Back 9:</Text>
+                    <TextInput
+                      style={styles.bettingInput}
+                      placeholder="0.00"
+                      placeholderTextColor="#999"
+                      keyboardType="decimal-pad"
+                      value={back9Bet}
+                      onChangeText={setBack9Bet}
+                    />
+                  </View>
+                  <View style={styles.bettingRow}>
+                    <Text style={styles.bettingLabel}>Overall:</Text>
+                    <TextInput
+                      style={styles.bettingInput}
+                      placeholder="0.00"
+                      placeholderTextColor="#999"
+                      keyboardType="decimal-pad"
+                      value={overallBet}
+                      onChangeText={setOverallBet}
+                    />
+                  </View>
+                </View>
               ) : (
                 <View>
                   <Text style={styles.bettingDescription}>
@@ -847,11 +976,109 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
                       onChangeText={setBettingAmount}
                     />
                   </View>
-                  <Text style={styles.bettingHelpText}>
-                    Example: ${bettingAmount || '0'} = ${bettingAmount || '0'} front, ${bettingAmount || '0'} back, ${bettingAmount || '0'} overall = ${(parseFloat(bettingAmount) * 3 || 0).toFixed(2)} total per player
-                  </Text>
                 </View>
               )}
+
+              <View style={styles.potBetSection}>
+                <Text style={styles.potBetTitle}>Pot Bet (Optional)</Text>
+                <Text style={styles.potBetDescription}>
+                  Add a pot bet where additional players can join without being on the scorecard
+                </Text>
+                <View style={styles.bettingRow}>
+                  <Text style={styles.bettingLabel}>Pot Amount:</Text>
+                  <TextInput
+                    style={styles.bettingInput}
+                    placeholder="0.00"
+                    placeholderTextColor="#999"
+                    keyboardType="decimal-pad"
+                    value={potBet}
+                    onChangeText={setPotBet}
+                  />
+                </View>
+
+                {potBet && parseFloat(potBet) > 0 && (
+                  <View style={styles.potPlayersSection}>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.potPlayersTitle}>Pot Players</Text>
+                      <TouchableOpacity
+                        style={styles.memberPickerButton}
+                        onPress={() => setShowPotPlayerPicker(!showPotPlayerPicker)}
+                      >
+                        <Users size={16} color="#1B5E20" />
+                        <Text style={styles.memberPickerButtonText}>Add from Members</Text>
+                        <ChevronDown size={16} color="#1B5E20" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {showPotPlayerPicker && (
+                      <View style={styles.memberPickerContainer}>
+                        {membersQuery.isLoading ? (
+                          <View style={styles.memberPickerLoading}>
+                            <ActivityIndicator size="small" color="#1B5E20" />
+                          </View>
+                        ) : (
+                          <ScrollView style={styles.memberPickerList} nestedScrollEnabled>
+                            {members
+                              .filter(m => !selectedPotMemberIds.includes(m.id) && !selectedMemberIds.includes(m.id))
+                              .map(member => (
+                                <TouchableOpacity
+                                  key={member.id}
+                                  style={styles.memberPickerItem}
+                                  onPress={() => handleSelectPotPlayer(member.id)}
+                                >
+                                  <View style={styles.memberPickerInfo}>
+                                    <Text style={styles.memberPickerName}>{member.name}</Text>
+                                    {member.handicap !== undefined && member.handicap !== null && (
+                                      <Text style={styles.memberPickerHandicap}>HDC: {member.handicap}</Text>
+                                    )}
+                                  </View>
+                                  <UserPlus size={18} color="#1B5E20" />
+                                </TouchableOpacity>
+                              ))}
+                          </ScrollView>
+                        )}
+                      </View>
+                    )}
+
+                    {potPlayers.map((potPlayer, index) => (
+                      <View key={index} style={styles.potPlayerRow}>
+                        <View style={styles.potPlayerBadge}>
+                          <Users size={14} color="#1B5E20" />
+                        </View>
+                        <TextInput
+                          style={[styles.input, styles.playerNameInput]}
+                          placeholder={`Pot Player ${index + 1} Name`}
+                          placeholderTextColor="#999"
+                          value={potPlayer.name}
+                          onChangeText={(value) => handlePotPlayerNameChange(index, value)}
+                        />
+                        <TextInput
+                          style={[styles.input, styles.handicapInput]}
+                          placeholder="HDC"
+                          placeholderTextColor="#999"
+                          keyboardType="decimal-pad"
+                          value={potPlayer.handicap}
+                          onChangeText={(value) => handlePotPlayerHandicapChange(index, value)}
+                        />
+                        <TouchableOpacity
+                          style={styles.removePlayerButton}
+                          onPress={() => handleRemovePotPlayer(index)}
+                        >
+                          <X size={18} color="#dc2626" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+
+                    <TouchableOpacity
+                      style={styles.addPotPlayerButton}
+                      onPress={handleAddPotPlayer}
+                    >
+                      <UserPlus size={16} color="#1B5E20" />
+                      <Text style={styles.addPotPlayerButtonText}>Add Custom Pot Player</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             </View>
           </ScrollView>
 
@@ -1400,5 +1627,61 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 6,
+  },
+  potBetSection: {
+    marginTop: 24,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5e5',
+  },
+  potBetTitle: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: '#374151',
+    marginBottom: 6,
+  },
+  potBetDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 12,
+  },
+  potPlayersSection: {
+    marginTop: 16,
+  },
+  potPlayersTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#374151',
+  },
+  potPlayerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  potPlayerBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e8f5e9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  addPotPlayerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#1B5E20',
+    backgroundColor: '#f0f8f0',
+    marginTop: 12,
+  },
+  addPotPlayerButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#1B5E20',
   },
 });
