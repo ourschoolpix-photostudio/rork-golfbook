@@ -75,6 +75,7 @@ export default function GameScorecardScreen() {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.infoCard}>
           <Text style={styles.courseName}>{game.courseName}</Text>
+          <Text style={styles.gameType}>{game.gameType ? game.gameType.charAt(0).toUpperCase() + game.gameType.slice(1) : 'Individual Net'}</Text>
           <Text style={styles.courseDate}>{formattedDate}</Text>
           <View style={styles.courseDetailsRow}>
             <View style={styles.courseDetail}>
@@ -85,6 +86,12 @@ export default function GameScorecardScreen() {
               <Text style={styles.courseDetailLabel}>Players</Text>
               <Text style={styles.courseDetailValue}>{game.players.length}</Text>
             </View>
+            {game.dollarAmount && (isWolf || isNiners) && (
+              <View style={styles.courseDetail}>
+                <Text style={styles.courseDetailLabel}>$/Point</Text>
+                <Text style={styles.courseDetailValue}>${game.dollarAmount.toFixed(2)}</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -239,6 +246,12 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#1a1a1a',
     marginBottom: 6,
+  },
+  gameType: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#1B5E20',
+    marginBottom: 4,
   },
   courseDate: {
     fontSize: 14,
