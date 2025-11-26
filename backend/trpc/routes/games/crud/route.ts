@@ -10,12 +10,14 @@ const playerSchema = z.object({
   strokeMode: z.enum(['manual', 'auto', 'all-but-par3']).optional(),
   teamId: z.union([z.literal(1), z.literal(2)]).optional(),
   strokesUsed: z.array(z.number()).optional(),
+  wolfPoints: z.number().optional(),
 });
 
 const wolfPartnershipSchema = z.object({
   wolfPlayerIndex: z.number(),
   partnerPlayerIndex: z.number().nullable(),
   isLoneWolf: z.boolean(),
+  isQuad: z.boolean().optional(),
 });
 
 const gameSchema = z.object({
@@ -180,6 +182,7 @@ const updateProcedure = publicProcedure
       wolfPlayerIndex: z.number(),
       partnerPlayerIndex: z.number().nullable(),
       isLoneWolf: z.boolean(),
+      isQuad: z.boolean().optional(),
     })).optional(),
     wolfScores: z.record(z.string(), z.object({ players: z.array(z.number()) })).optional(),
   }))

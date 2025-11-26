@@ -203,7 +203,7 @@ export interface PersonalGame {
   teamScores?: { team1: number; team2: number };
   holeResults?: ('team1' | 'team2' | 'tie')[];
   wolfOrder?: number[];
-  wolfPartnerships?: { [hole: number]: { wolfPlayerIndex: number; partnerPlayerIndex: number | null; isLoneWolf: boolean; isQuad?: boolean } };
+  wolfPartnerships?: { [hole: string]: { wolfPlayerIndex: number; partnerPlayerIndex: number | null; isLoneWolf: boolean; isQuad?: boolean } };
 }
 
 export interface RegistrationNotification {

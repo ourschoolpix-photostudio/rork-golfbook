@@ -397,7 +397,7 @@ export default function GameScoringScreen() {
   const calculateWolfPointsForHole = (hole: number): { [playerIndex: number]: number } => {
     if (!game || !isWolf) return {};
 
-    const partnership = game.wolfPartnerships?.[hole];
+    const partnership = game.wolfPartnerships?.[hole.toString()];
     if (!partnership) return {};
 
     const wolfPlayerIndex = partnership.wolfPlayerIndex;
@@ -653,7 +653,7 @@ export default function GameScoringScreen() {
 
   const currentWolfPartnership = useMemo(() => {
     if (!isWolf || !game || !game.wolfPartnerships) return null;
-    return game.wolfPartnerships[currentHole];
+    return game.wolfPartnerships[currentHole.toString()] || null;
   }, [isWolf, game, currentHole]);
 
   useEffect(() => {
@@ -690,7 +690,7 @@ export default function GameScoringScreen() {
     }
     
     const updatedWolfPartnerships = { ...(game.wolfPartnerships || {}) };
-    updatedWolfPartnerships[currentHole] = {
+    updatedWolfPartnerships[currentHole.toString()] = {
       wolfPlayerIndex: currentWolfPlayerIndex,
       partnerPlayerIndex: newIsLoneWolf ? null : wolfPartner,
       isLoneWolf: newIsLoneWolf,
@@ -716,7 +716,7 @@ export default function GameScoringScreen() {
     setIsQuad(newIsQuad);
     
     const updatedWolfPartnerships = { ...(game.wolfPartnerships || {}) };
-    updatedWolfPartnerships[currentHole] = {
+    updatedWolfPartnerships[currentHole.toString()] = {
       wolfPlayerIndex: currentWolfPlayerIndex,
       partnerPlayerIndex: wolfPartner,
       isLoneWolf,
@@ -739,7 +739,7 @@ export default function GameScoringScreen() {
     if (!game || !isWolf) return;
 
     const updatedWolfPartnerships = { ...(game.wolfPartnerships || {}) };
-    updatedWolfPartnerships[currentHole] = {
+    updatedWolfPartnerships[currentHole.toString()] = {
       wolfPlayerIndex: currentWolfPlayerIndex,
       partnerPlayerIndex: wolfPartner,
       isLoneWolf,
