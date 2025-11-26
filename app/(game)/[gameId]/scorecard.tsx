@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Edit } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
 
 export default function GameScorecardScreen() {
@@ -110,6 +110,12 @@ export default function GameScorecardScreen() {
           <Text style={styles.headerTitle}>Scorecard</Text>
           <Text style={styles.headerSubtitle}>{game.courseName}</Text>
         </View>
+        <TouchableOpacity 
+          onPress={() => router.push(`/(game)/${gameId}/scoring` as any)} 
+          style={styles.editButton}
+        >
+          <Edit size={20} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -425,6 +431,15 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 24,
+  },
+  editButton: {
+    padding: 4,
+    backgroundColor: '#1B5E20',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   playerCardDollar: {
     fontSize: 14,
