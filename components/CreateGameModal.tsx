@@ -46,6 +46,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
   const [coursePar, setCoursePar] = useState<string>('72');
   const [holePars, setHolePars] = useState<string[]>(new Array(18).fill(''));
   const [gameType, setGameType] = useState<'individual-net' | 'team-match-play' | 'wolf' | 'niners'>('individual-net');
+  const [useHandicaps, setUseHandicaps] = useState<boolean>(true);
   const [matchPlayScoringType, setMatchPlayScoringType] = useState<'best-ball' | 'alternate-ball'>('best-ball');
   const [players, setPlayers] = useState<{ name: string; handicap: string; strokesReceived: string; strokesASide: string; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[]>([
     { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
@@ -118,6 +119,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
       setHolePars(new Array(18).fill(''));
       setGameType('individual-net');
       setMatchPlayScoringType('best-ball');
+      setUseHandicaps(true);
       setPlayers([
         { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
         { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
@@ -485,7 +487,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
                     styles.gameTypeButtonText,
                     gameType === 'individual-net' && styles.gameTypeButtonTextActive,
                   ]}>
-                    Individual Net Score
+                    Individual Score
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -534,6 +536,33 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
                 </TouchableOpacity>
               </View>
             </View>
+
+            {gameType === 'individual-net' && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Handicap Settings</Text>
+                <View style={styles.handicapToggleContainer}>
+                  <TouchableOpacity
+                    style={[styles.handicapToggle, useHandicaps && styles.handicapToggleActive]}
+                    onPress={() => setUseHandicaps(true)}
+                  >
+                    <Text style={[styles.handicapToggleText, useHandicaps && styles.handicapToggleTextActive]}>
+                      Use Handicaps
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.handicapToggle, !useHandicaps && styles.handicapToggleActive]}
+                    onPress={() => setUseHandicaps(false)}
+                  >
+                    <Text style={[styles.handicapToggleText, !useHandicaps && styles.handicapToggleTextActive]}>
+                      Strokes Per Side
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.handicapDescription}>
+                  {useHandicaps ? 'Net scores will be calculated using player handicaps' : 'Manually assign strokes per side to each player'}
+                </Text>
+              </View>
+            )}
 
             {gameType === 'team-match-play' && (
               <View style={styles.section}>
@@ -751,7 +780,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
                     )}
                   </View>
                   
-                  {(gameType === 'wolf' || gameType === 'niners') && player.name.trim() !== '' && (
+                  {(gameType === 'wolf' || gameType === 'niners' || (gameType === 'individual-net' && !useHandicaps)) && player.name.trim() !== '' && (
                     <View style={styles.playerExtras}>
                       <View style={styles.strokesConfigSection}>
                         <View style={styles.strokesSelector}>
@@ -1713,5 +1742,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600' as const,
     color: '#1B5E20',
+  },
+  handicapToggleContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  handicapToggle: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  handicapToggleActive: {
+    borderColor: '#1B5E20',
+    backgroundColor: '#f0f8f0',
+  },
+  handicapToggleText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+    textAlign: 'center',
+  },
+  handicapToggleTextActive: {
+    color: '#1B5E20',
+  },
+  handicapDescription: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic' as const,
   },
 });
