@@ -12,7 +12,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { X, ChevronDown, BookOpen } from 'lucide-react-native';
+import { X, ChevronDown, BookOpen, Users, UserPlus } from 'lucide-react-native';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonalGame } from '@/types';
@@ -49,6 +49,8 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
     { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
   ]);
   const [bettingAmount, setBettingAmount] = useState<string>('');
+  const [showMemberPicker, setShowMemberPicker] = useState<boolean>(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
 
   const coursesQuery = trpc.courses.getAll.useQuery(
@@ -56,7 +58,13 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
     { enabled: !!currentUser?.id && visible }
   );
 
+  const membersQuery = trpc.members.getAll.useQuery(
+    undefined,
+    { enabled: visible }
+  );
+
   const courses = coursesQuery.data || [];
+  const members = React.useMemo(() => membersQuery.data || [], [membersQuery.data]);
 
   React.useEffect(() => {
     if (editingGame && visible) {
@@ -81,6 +89,15 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
       }
       
       setPlayers(mappedPlayers);
+      
+      const memberIds = mappedPlayers
+        .filter(p => p.name.trim() !== '')
+        .map(p => {
+          const member = members.find(m => m.name === p.name);
+          return member?.id;
+        })
+        .filter(id => id !== undefined) as string[];
+      setSelectedMemberIds(memberIds);
     } else if (!visible) {
       setSelectedCourseId(null);
       setCourseName('');
@@ -95,8 +112,10 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
         { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
       ]);
       setBettingAmount('');
+      setSelectedMemberIds([]);
+      setShowMemberPicker(false);
     }
-  }, [editingGame, visible]);
+  }, [editingGame, visible, members]);
 
   const handleSelectCourse = (courseId: string) => {
     const course = courses.find(c => c.id === courseId);
@@ -146,6 +165,16 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
     const updated = [...players];
     updated[index] = { ...updated[index], name: value };
     setPlayers(updated);
+    
+    const currentMemberId = selectedMemberIds[index];
+    if (currentMemberId && value.trim() !== '') {
+      const member = members.find(m => m.id === currentMemberId);
+      if (member && member.name !== value) {
+        const updatedIds = [...selectedMemberIds];
+        updatedIds[index] = '';
+        setSelectedMemberIds(updatedIds);
+      }
+    }
   };
 
   const handlePlayerHandicapChange = (index: number, value: string) => {
@@ -182,6 +211,53 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
     const updated = [...players];
     updated[index] = { ...updated[index], teamId };
     setPlayers(updated);
+  };
+
+  const handleSelectMember = (memberId: string) => {
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
+
+    let emptySlotIndex = players.findIndex(p => p.name.trim() === '');
+    if (emptySlotIndex === -1) {
+      emptySlotIndex = players.length;
+    }
+
+    const updated = [...players];
+    if (emptySlotIndex >= updated.length) {
+      updated.push({
+        name: member.name,
+        handicap: (member.handicap || 0).toString(),
+        strokesReceived: '0',
+        strokesASide: '0',
+        strokeMode: 'manual',
+      });
+    } else {
+      updated[emptySlotIndex] = {
+        name: member.name,
+        handicap: (member.handicap || 0).toString(),
+        strokesReceived: '0',
+        strokesASide: '0',
+        strokeMode: 'manual',
+      };
+    }
+    setPlayers(updated);
+
+    const updatedIds = [...selectedMemberIds];
+    updatedIds[emptySlotIndex] = memberId;
+    setSelectedMemberIds(updatedIds);
+  };
+
+  const handleRemovePlayer = (index: number) => {
+    const updated = [...players];
+    updated.splice(index, 1);
+    while (updated.length < 4) {
+      updated.push({ name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' });
+    }
+    setPlayers(updated);
+
+    const updatedIds = [...selectedMemberIds];
+    updatedIds.splice(index, 1);
+    setSelectedMemberIds(updatedIds);
   };
 
   const handleSave = async () => {
@@ -484,14 +560,60 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Players</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Players</Text>
+                <TouchableOpacity
+                  style={styles.memberPickerButton}
+                  onPress={() => setShowMemberPicker(!showMemberPicker)}
+                >
+                  <Users size={16} color="#1B5E20" />
+                  <Text style={styles.memberPickerButtonText}>Select from Members</Text>
+                  <ChevronDown size={16} color="#1B5E20" />
+                </TouchableOpacity>
+              </View>
+
+              {showMemberPicker && (
+                <View style={styles.memberPickerContainer}>
+                  {membersQuery.isLoading ? (
+                    <View style={styles.memberPickerLoading}>
+                      <ActivityIndicator size="small" color="#1B5E20" />
+                    </View>
+                  ) : (
+                    <ScrollView style={styles.memberPickerList} nestedScrollEnabled>
+                      {members
+                        .filter(m => !selectedMemberIds.includes(m.id))
+                        .map(member => (
+                          <TouchableOpacity
+                            key={member.id}
+                            style={styles.memberPickerItem}
+                            onPress={() => handleSelectMember(member.id)}
+                          >
+                            <View style={styles.memberPickerInfo}>
+                              <Text style={styles.memberPickerName}>{member.name}</Text>
+                              {member.handicap !== undefined && member.handicap !== null && (
+                                <Text style={styles.memberPickerHandicap}>HDC: {member.handicap}</Text>
+                              )}
+                            </View>
+                            <UserPlus size={18} color="#1B5E20" />
+                          </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                  )}
+                </View>
+              )}
+
               {players.map((player, index) => (
                 <View key={index}>
                   <View style={styles.playerRow}>
                     <Text style={styles.playerNumber}>{index + 1}.</Text>
+                    {selectedMemberIds[index] ? (
+                      <View style={styles.memberBadge}>
+                        <Users size={14} color="#1B5E20" />
+                      </View>
+                    ) : null}
                     <TextInput
                       style={[styles.input, styles.playerNameInput]}
-                      placeholder={`Player ${index + 1} Name`}
+                      placeholder={`Player ${index + 1} Name (or select from members)`}
                       placeholderTextColor="#999"
                       value={player.name}
                       onChangeText={(value) => handlePlayerNameChange(index, value)}
@@ -504,6 +626,14 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
                       value={player.handicap}
                       onChangeText={(value) => handlePlayerHandicapChange(index, value)}
                     />
+                    {player.name.trim() !== '' && (
+                      <TouchableOpacity
+                        style={styles.removePlayerButton}
+                        onPress={() => handleRemovePlayer(index)}
+                      >
+                        <X size={18} color="#dc2626" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                   
                   {(gameType === 'wolf' || gameType === 'niners') && player.name.trim() !== '' && (
@@ -1181,5 +1311,82 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#1B5E20',
     flex: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  memberPickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#1B5E20',
+    backgroundColor: '#f0f8f0',
+  },
+  memberPickerButtonText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#1B5E20',
+  },
+  memberPickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginBottom: 16,
+    maxHeight: 250,
+    backgroundColor: '#fff',
+  },
+  memberPickerLoading: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  memberPickerList: {
+    maxHeight: 250,
+  },
+  memberPickerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  memberPickerInfo: {
+    flex: 1,
+  },
+  memberPickerName: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  memberPickerHandicap: {
+    fontSize: 12,
+    color: '#666',
+  },
+  memberBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e8f5e9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  removePlayerButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fee',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
   },
 });
