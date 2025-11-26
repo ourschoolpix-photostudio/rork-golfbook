@@ -865,7 +865,7 @@ export default function GameScoringScreen() {
           <Text style={styles.holeNumber}>{currentHole}</Text>
           {game.strokeIndices && game.strokeIndices.length === 18 && (
             <View style={styles.strokeIndexContainer}>
-              <Text style={styles.strokeIndexLabel}>Difficulty: {game.strokeIndices[currentHole - 1]}</Text>
+              <Text style={styles.strokeIndexLabel}>{game.strokeIndices[currentHole - 1]}</Text>
             </View>
           )}
         </View>
