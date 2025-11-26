@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { useGames } from '@/contexts/GamesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonalGamePlayer } from '@/types';
 import { trpc } from '@/lib/trpc';
+import * as WolfHelper from '@/utils/wolfHelper';
 
 export default function GameScoringScreen() {
   const router = useRouter();
@@ -43,6 +44,19 @@ export default function GameScoringScreen() {
   const [isQuad, setIsQuad] = useState<boolean>(false);
 
   const updateGameMutation = trpc.games.update.useMutation();
+
+  const allComplete = useMemo(() => {
+    if (!game) return false;
+    return game.players.every((_: PersonalGamePlayer, playerIndex: number) => {
+      if (playerIndex < 0) return false;
+      const playerScores = holeScores[playerIndex] || {};
+      const scoredHoles = Object.keys(playerScores).filter(hole => playerScores[Number(hole)] > 0);
+      return scoredHoles.length === 18;
+    });
+  }, [game, holeScores]);
+  
+  const isTeamMatchPlay = game?.gameType === 'team-match-play';
+  const isWolf = game?.gameType === 'wolf';
 
   useEffect(() => {
     if (game && !initialLoadDone) {
@@ -91,232 +105,7 @@ export default function GameScoringScreen() {
     });
   };
 
-  const saveScoresAndUpdateResult = async () => {
-    if (!game || isSaving) return;
-
-    setIsSaving(true);
-    try {
-      const updatedPlayers = game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
-        const playerScores = holeScores[playerIndex] || {};
-        const scores = Array.from({ length: 18 }, (_, i) => playerScores[i + 1] || 0);
-        
-        const strokesUsed = player.strokesUsed ? [...player.strokesUsed] : new Array(18).fill(0);
-        strokesUsed[currentHole - 1] = strokesUsedOnHole[playerIndex] ? 1 : 0;
-        
-        return {
-          ...player,
-          scores,
-          totalScore: scores.reduce((sum: number, score: number) => sum + score, 0),
-          strokesUsed,
-        };
-      });
-
-      let updateData: any = { gameId, players: updatedPlayers };
-
-      if (game.gameType === 'team-match-play') {
-        const holeResults = game.holeResults || new Array(18).fill('tie');
-        holeResults[currentHole - 1] = calculateHoleResult();
-        
-        const team1Wins = holeResults.filter((r: string) => r === 'team1').length;
-        const team2Wins = holeResults.filter((r: string) => r === 'team2').length;
-        
-        updateData.holeResults = holeResults;
-        updateData.teamScores = { team1: team1Wins, team2: team2Wins };
-      }
-
-      await updateGameMutation.mutateAsync(updateData);
-      await gameQuery.refetch();
-      console.log('[GameScoring] Auto-calculated and saved team score for hole', currentHole);
-    } catch (error) {
-      console.error('[GameScoring] Error auto-saving scores:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const saveCurrentHoleScores = async () => {
-    if (!game || isSaving) return;
-
-    try {
-      const updatedPlayers = game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
-        const playerScores = holeScores[playerIndex] || {};
-        const scores = Array.from({ length: 18 }, (_, i) => playerScores[i + 1] || 0);
-        
-        const strokesUsed = player.strokesUsed ? [...player.strokesUsed] : new Array(18).fill(0);
-        strokesUsed[currentHole - 1] = strokesUsedOnHole[playerIndex] ? 1 : 0;
-        
-        return {
-          ...player,
-          scores,
-          totalScore: scores.reduce((sum: number, score: number) => sum + score, 0),
-          strokesUsed,
-        };
-      });
-
-      let updateData: any = { gameId, players: updatedPlayers };
-
-      if (game.gameType === 'team-match-play') {
-        const holeResults = game.holeResults || new Array(18).fill('tie');
-        holeResults[currentHole - 1] = calculateHoleResult();
-        
-        const team1Wins = holeResults.filter((r: string) => r === 'team1').length;
-        const team2Wins = holeResults.filter((r: string) => r === 'team2').length;
-        
-        updateData.holeResults = holeResults;
-        updateData.teamScores = { team1: team1Wins, team2: team2Wins };
-      }
-
-      await updateGameMutation.mutateAsync(updateData);
-      await gameQuery.refetch();
-      console.log('[GameScoring] Auto-saved scores for hole', currentHole);
-    } catch (error) {
-      console.error('[GameScoring] Error auto-saving scores:', error);
-    }
-  };
-
-  const handleScoreChange = async (playerIndex: number, delta: number) => {
-    if (!game) return;
-
-    const holePar = game.holePars[currentHole - 1];
-    const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
-    
-    let newScore: number;
-    if (currentScore === 0) {
-      newScore = holePar + delta;
-    } else {
-      newScore = currentScore + delta;
-    }
-    newScore = Math.max(1, newScore);
-
-    const updatedScores = {
-      ...holeScores,
-      [playerIndex]: {
-        ...(holeScores[playerIndex] || {}),
-        [currentHole]: newScore,
-      },
-    };
-
-    setHoleScores(updatedScores);
-
-    if (game.gameType === 'team-match-play') {
-      const allPlayersHaveScores = game.players.every((_: PersonalGamePlayer, idx: number) => {
-        const score = updatedScores[idx]?.[currentHole];
-        return score && score > 0;
-      });
-
-      if (allPlayersHaveScores) {
-        setTimeout(() => {
-          saveScoresAndUpdateResult();
-        }, 300);
-      }
-    }
-  };
-
-  const handleSetPar = async (playerIndex: number) => {
-    if (!game) return;
-
-    const holePar = game.holePars[currentHole - 1];
-    const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
-
-    let updatedScores: { [playerIndex: number]: { [hole: number]: number } };
-    if (currentScore === holePar) {
-      updatedScores = { ...holeScores };
-      if (updatedScores[playerIndex]) {
-        updatedScores[playerIndex] = { ...updatedScores[playerIndex] };
-        delete updatedScores[playerIndex][currentHole];
-      }
-      setHoleScores(updatedScores);
-    } else {
-      updatedScores = {
-        ...holeScores,
-        [playerIndex]: {
-          ...(holeScores[playerIndex] || {}),
-          [currentHole]: holePar,
-        },
-      };
-      setHoleScores(updatedScores);
-
-      if (game.gameType === 'team-match-play') {
-        const allPlayersHaveScores = game.players.every((_: PersonalGamePlayer, idx: number) => {
-          const score = updatedScores[idx]?.[currentHole];
-          return score && score > 0;
-        });
-
-        if (allPlayersHaveScores) {
-          setTimeout(() => {
-            saveScoresAndUpdateResult();
-          }, 300);
-        }
-      }
-    }
-  };
-
-  const toggleStroke = (playerIndex: number) => {
-    setStrokesUsedOnHole(prev => ({
-      ...prev,
-      [playerIndex]: !prev[playerIndex],
-    }));
-  };
-
-  const shouldPlayerReceiveStrokeOnHole = (player: PersonalGamePlayer, playerIndex: number, holeIndex: number): boolean => {
-    if (!player.strokesReceived || player.strokesReceived === 0) return false;
-    
-    const strokeMode = player.strokeMode || 'manual';
-    
-    if (strokeMode === 'manual') {
-      return strokesUsedOnHole[playerIndex] || false;
-    }
-    
-    if (strokeMode === 'all-but-par3') {
-      const holePar = game?.holePars[holeIndex];
-      if (!holePar) return false;
-      return holePar !== 3;
-    }
-    
-    if (strokeMode === 'auto') {
-      if (!game?.strokeIndices || game.strokeIndices.length !== 18) {
-        return strokesUsedOnHole[playerIndex] || false;
-      }
-      
-      if (isWolf) {
-        const strokesPerSide = player.strokesReceived;
-        const isFrontNine = holeIndex < 9;
-        const holeStrokeIndex = game.strokeIndices[holeIndex];
-        
-        if (isFrontNine) {
-          const frontNineIndices = game.strokeIndices.slice(0, 9);
-          const sortedFrontIndices = [...frontNineIndices].sort((a, b) => a - b);
-          const frontCutoff = sortedFrontIndices[Math.min(strokesPerSide - 1, 8)];
-          return holeStrokeIndex <= frontCutoff;
-        } else {
-          const backNineIndices = game.strokeIndices.slice(9, 18);
-          const sortedBackIndices = [...backNineIndices].sort((a, b) => a - b);
-          const backCutoff = sortedBackIndices[Math.min(strokesPerSide - 1, 8)];
-          return holeStrokeIndex <= backCutoff;
-        }
-      } else {
-        const strokesNeeded = player.strokesReceived;
-        const holeStrokeIndex = game.strokeIndices[holeIndex];
-        return holeStrokeIndex <= strokesNeeded;
-      }
-    }
-    
-    return false;
-  };
-
-  const getNetScore = (playerIndex: number): number => {
-    const grossScore = holeScores[playerIndex]?.[currentHole] || 0;
-    if (grossScore === 0) return 0;
-    
-    if (!game) return grossScore;
-    const player = game.players[playerIndex];
-    if (!player) return grossScore;
-    
-    const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, playerIndex, currentHole - 1);
-    return receivesStroke ? grossScore - 1 : grossScore;
-  };
-
-  const calculateHoleResult = (): 'team1' | 'team2' | 'tie' => {
+  const calculateHoleResult = useCallback((): 'team1' | 'team2' | 'tie' => {
     if (!game || game.gameType !== 'team-match-play') return 'tie';
 
     const team1Players = game.players.filter((p: PersonalGamePlayer) => p.teamId === 1);
@@ -325,14 +114,24 @@ export default function GameScoringScreen() {
     const team1NetScores = team1Players
       .map((player: PersonalGamePlayer) => {
         const playerIndex = game.players.findIndex((p: PersonalGamePlayer) => p === player);
-        return getNetScore(playerIndex);
+        if (playerIndex < 0 || playerIndex >= game.players.length) return 0;
+        if (currentHole < 1 || currentHole > 18) return 0;
+        const grossScore = holeScores[playerIndex]?.[currentHole] || 0;
+        if (grossScore === 0) return 0;
+        const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, playerIndex, currentHole - 1);
+        return receivesStroke ? grossScore - 1 : grossScore;
       })
       .filter((s: number) => s > 0);
 
     const team2NetScores = team2Players
       .map((player: PersonalGamePlayer) => {
         const playerIndex = game.players.findIndex((p: PersonalGamePlayer) => p === player);
-        return getNetScore(playerIndex);
+        if (playerIndex < 0 || playerIndex >= game.players.length) return 0;
+        if (currentHole < 1 || currentHole > 18) return 0;
+        const grossScore = holeScores[playerIndex]?.[currentHole] || 0;
+        if (grossScore === 0) return 0;
+        const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, playerIndex, currentHole - 1);
+        return receivesStroke ? grossScore - 1 : grossScore;
       })
       .filter((s: number) => s > 0);
 
@@ -376,174 +175,215 @@ export default function GameScoringScreen() {
       
       return 'tie';
     }
+  }, [game, currentHole, holeScores, shouldPlayerReceiveStrokeOnHole]);
+
+  const buildUpdateData = useCallback((includeWolfPoints: boolean = false) => {
+    if (!game) return null;
+
+    const updatedPlayers = game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
+      const playerScores = holeScores[playerIndex] || {};
+      const scores = Array.from({ length: 18 }, (_, i) => playerScores[i + 1] || 0);
+      
+      const strokesUsed = player.strokesUsed ? [...player.strokesUsed] : new Array(18).fill(0);
+      if (currentHole >= 1 && currentHole <= 18) {
+        strokesUsed[currentHole - 1] = strokesUsedOnHole[playerIndex] ? 1 : 0;
+      }
+      
+      let wolfPoints = player.wolfPoints || 0;
+      if (includeWolfPoints && isWolf) {
+        wolfPoints = WolfHelper.getTotalWolfPoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+      }
+      
+      return {
+        ...player,
+        scores,
+        totalScore: scores.reduce((sum: number, score: number) => sum + score, 0),
+        strokesUsed,
+        ...(includeWolfPoints && { wolfPoints }),
+      };
+    });
+
+    let updateData: any = { gameId, players: updatedPlayers };
+
+    if (game.gameType === 'team-match-play' && currentHole >= 1 && currentHole <= 18) {
+      const holeResults = game.holeResults || new Array(18).fill('tie');
+      holeResults[currentHole - 1] = calculateHoleResult();
+      
+      const team1Wins = holeResults.filter((r: string) => r === 'team1').length;
+      const team2Wins = holeResults.filter((r: string) => r === 'team2').length;
+      
+      updateData.holeResults = holeResults;
+      updateData.teamScores = { team1: team1Wins, team2: team2Wins };
+    }
+
+    return updateData;
+  }, [game, gameId, holeScores, currentHole, strokesUsedOnHole, isWolf, calculateHoleResult, shouldPlayerReceiveStrokeOnHole]);
+
+  const saveScoresAndUpdateResult = async () => {
+    if (!game || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      const updateData = buildUpdateData(false);
+      if (!updateData) return;
+
+      await updateGameMutation.mutateAsync(updateData);
+      await gameQuery.refetch();
+      console.log('[GameScoring] Auto-calculated and saved team score for hole', currentHole);
+    } catch (error) {
+      console.error('[GameScoring] Error auto-saving scores:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const getTotalScore = (playerIndex: number): number => {
+  const saveCurrentHoleScores = async () => {
+    if (!game || isSaving) return;
+
+    try {
+      const updateData = buildUpdateData(false);
+      if (!updateData) return;
+
+      await updateGameMutation.mutateAsync(updateData);
+      await gameQuery.refetch();
+      console.log('[GameScoring] Auto-saved scores for hole', currentHole);
+    } catch (error) {
+      console.error('[GameScoring] Error auto-saving scores:', error);
+    }
+  };
+
+  const handleScoreChange = async (playerIndex: number, delta: number) => {
+    if (!game || playerIndex < 0 || playerIndex >= game.players.length) return;
+    if (currentHole < 1 || currentHole > 18) return;
+
+    const holePar = game.holePars[currentHole - 1];
+    const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
+    
+    let newScore: number;
+    if (currentScore === 0) {
+      newScore = holePar + delta;
+    } else {
+      newScore = currentScore + delta;
+    }
+    newScore = Math.max(1, newScore);
+
+    const updatedScores = {
+      ...holeScores,
+      [playerIndex]: {
+        ...(holeScores[playerIndex] || {}),
+        [currentHole]: newScore,
+      },
+    };
+
+    setHoleScores(updatedScores);
+
+    if (game.gameType === 'team-match-play') {
+      const allPlayersHaveScores = game.players.every((_: PersonalGamePlayer, idx: number) => {
+        const score = updatedScores[idx]?.[currentHole];
+        return score && score > 0;
+      });
+
+      if (allPlayersHaveScores) {
+        setTimeout(() => {
+          saveScoresAndUpdateResult();
+        }, 300);
+      }
+    }
+  };
+
+  const handleSetPar = async (playerIndex: number) => {
+    if (!game || playerIndex < 0 || playerIndex >= game.players.length) return;
+    if (currentHole < 1 || currentHole > 18) return;
+
+    const holePar = game.holePars[currentHole - 1];
+    const currentScore = holeScores[playerIndex]?.[currentHole] || 0;
+
+    let updatedScores: { [playerIndex: number]: { [hole: number]: number } };
+    if (currentScore === holePar) {
+      updatedScores = { ...holeScores };
+      if (updatedScores[playerIndex]) {
+        updatedScores[playerIndex] = { ...updatedScores[playerIndex] };
+        delete updatedScores[playerIndex][currentHole];
+      }
+      setHoleScores(updatedScores);
+    } else {
+      updatedScores = {
+        ...holeScores,
+        [playerIndex]: {
+          ...(holeScores[playerIndex] || {}),
+          [currentHole]: holePar,
+        },
+      };
+      setHoleScores(updatedScores);
+
+      if (game.gameType === 'team-match-play') {
+        const allPlayersHaveScores = game.players.every((_: PersonalGamePlayer, idx: number) => {
+          const score = updatedScores[idx]?.[currentHole];
+          return score && score > 0;
+        });
+
+        if (allPlayersHaveScores) {
+          setTimeout(() => {
+            saveScoresAndUpdateResult();
+          }, 300);
+        }
+      }
+    }
+  };
+
+  const getNetScore = useCallback((playerIndex: number): number => {
+    if (!game || playerIndex < 0 || playerIndex >= game.players.length) return 0;
+    if (currentHole < 1 || currentHole > 18) return 0;
+
+    const grossScore = holeScores[playerIndex]?.[currentHole] || 0;
+    if (grossScore === 0) return 0;
+    
+    const player = game.players[playerIndex];
+    if (!player) return grossScore;
+    
+    const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, playerIndex, currentHole - 1);
+    return receivesStroke ? grossScore - 1 : grossScore;
+  }, [game, currentHole, holeScores, shouldPlayerReceiveStrokeOnHole]);
+
+  const getTotalScore = useCallback((playerIndex: number): number => {
+    if (playerIndex < 0) return 0;
     const playerScores = holeScores[playerIndex] || {};
     return Object.values(playerScores).reduce((sum, score) => sum + score, 0);
-  };
+  }, [holeScores]);
 
-  const isPlayerScoringComplete = (playerIndex: number): boolean => {
+  const isPlayerScoringComplete = useCallback((playerIndex: number): boolean => {
+    if (playerIndex < 0) return false;
     const playerScores = holeScores[playerIndex] || {};
     const scoredHoles = Object.keys(playerScores).filter(hole => playerScores[Number(hole)] > 0);
     return scoredHoles.length === 18;
-  };
+  }, [holeScores]);
 
-  const areAllPlayersComplete = (): boolean => {
-    if (!game) return false;
-    return game.players.every((_: PersonalGamePlayer, playerIndex: number) => isPlayerScoringComplete(playerIndex));
-  };
-
-  const calculateWolfPointsForHole = (hole: number): { [playerIndex: number]: number } => {
+  const calculateWolfPointsForHole = useCallback((hole: number): { [playerIndex: number]: number } => {
     if (!game || !isWolf) return {};
+    return WolfHelper.calculateWolfPointsForHole(hole, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+  }, [game, isWolf, holeScores, shouldPlayerReceiveStrokeOnHole]);
 
-    const partnership = game.wolfPartnerships?.[hole.toString()];
-    if (!partnership) return {};
-
-    const wolfPlayerIndex = partnership.wolfPlayerIndex;
-    const partnerPlayerIndex = partnership.partnerPlayerIndex;
-    const isLoneWolfGame = partnership.isLoneWolf;
-    const isQuadHole = partnership.isQuad || false;
-    const quadMultiplier = isQuadHole ? 4 : 1;
-
-    const allScoresEntered = game.players.every((_: PersonalGamePlayer, idx: number) => {
-      const score = holeScores[idx]?.[hole];
-      return score && score > 0;
-    });
-
-    if (!allScoresEntered) return {};
-
-    const playerScoresForHole = game.players.map((player: PersonalGamePlayer, idx: number) => {
-      const grossScore = holeScores[idx]?.[hole] || 0;
-      const receivesStroke = shouldPlayerReceiveStrokeOnHole(player, idx, hole - 1);
-      const netScore = receivesStroke ? grossScore - 1 : grossScore;
-      return { playerIndex: idx, netScore };
-    });
-
-    if (isLoneWolfGame) {
-      const wolfScore = playerScoresForHole.find((p: { playerIndex: number; netScore: number }) => p.playerIndex === wolfPlayerIndex)?.netScore || 999;
-      const othersScores = playerScoresForHole.filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex).map((p: { playerIndex: number; netScore: number }) => p.netScore);
-      const bestOtherScore = Math.min(...othersScores);
-
-      if (wolfScore < bestOtherScore) {
-        const wolfPoints = isQuadHole ? 16 : 4;
-        return { [wolfPlayerIndex]: wolfPoints };
-      } else if (wolfScore > bestOtherScore) {
-        const points: { [playerIndex: number]: number } = {};
-        const otherPoints = isQuadHole ? 4 : 2;
-        playerScoresForHole
-          .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex)
-          .forEach((p: { playerIndex: number; netScore: number }) => {
-            points[p.playerIndex] = otherPoints;
-          });
-        return points;
-      }
-      return {};
-    } else if (partnerPlayerIndex !== null) {
-      const wolfTeamScores = playerScoresForHole
-        .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex === wolfPlayerIndex || p.playerIndex === partnerPlayerIndex)
-        .map((p: { playerIndex: number; netScore: number }) => p.netScore);
-      const othersScores = playerScoresForHole
-        .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.playerIndex !== partnerPlayerIndex)
-        .map((p: { playerIndex: number; netScore: number }) => p.netScore);
-
-      const wolfTeamBest = Math.min(...wolfTeamScores);
-      const othersBest = Math.min(...othersScores);
-
-      if (wolfTeamBest < othersBest) {
-        const teamPoints = isQuadHole ? 8 : 1;
-        return { [wolfPlayerIndex]: teamPoints, [partnerPlayerIndex]: teamPoints };
-      } else if (wolfTeamBest > othersBest) {
-        const points: { [playerIndex: number]: number } = {};
-        const otherPoints = isQuadHole ? 4 : 1;
-        playerScoresForHole
-          .filter((p: { playerIndex: number; netScore: number }) => p.playerIndex !== wolfPlayerIndex && p.playerIndex !== partnerPlayerIndex)
-          .forEach((p: { playerIndex: number; netScore: number }) => {
-            points[p.playerIndex] = otherPoints;
-          });
-        return points;
-      }
-      return {};
-    }
-
-    return {};
-  };
-
-  const getWolfPointsWonForCurrentHole = (): { [playerIndex: number]: number } => {
+  const getWolfPointsWonForCurrentHole = useCallback((): { [playerIndex: number]: number } => {
     return calculateWolfPointsForHole(currentHole);
-  };
+  }, [calculateWolfPointsForHole, currentHole]);
 
-  const getTotalWolfPoints = (playerIndex: number): number => {
-    if (!isWolf || !game) return 0;
-    let totalPoints = 0;
-    for (let hole = 1; hole <= 18; hole++) {
-      const holePoints = calculateWolfPointsForHole(hole);
-      totalPoints += holePoints[playerIndex] || 0;
-    }
-    return totalPoints;
-  };
+  const getTotalWolfPoints = useCallback((playerIndex: number): number => {
+    if (!isWolf || !game || playerIndex < 0 || playerIndex >= game.players.length) return 0;
+    return WolfHelper.getTotalWolfPoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+  }, [isWolf, game, holeScores, shouldPlayerReceiveStrokeOnHole]);
 
-  const getHoleByHolePoints = (playerIndex: number): { [hole: number]: number } => {
-    if (!isWolf || !game) return {};
-    const pointsByHole: { [hole: number]: number } = {};
-    for (let hole = 1; hole <= 18; hole++) {
-      const holePoints = calculateWolfPointsForHole(hole);
-      if (holePoints[playerIndex]) {
-        pointsByHole[hole] = holePoints[playerIndex];
-      }
-    }
-    return pointsByHole;
-  };
+  const getHoleByHolePoints = useCallback((playerIndex: number): { [hole: number]: number } => {
+    if (!isWolf || !game || playerIndex < 0 || playerIndex >= game.players.length) return {};
+    return WolfHelper.getHoleByHolePoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+  }, [isWolf, game, holeScores, shouldPlayerReceiveStrokeOnHole]);
 
   const handleSaveAllScores = async () => {
     if (!game || isSaving) return;
 
     setIsSaving(true);
     try {
-      const updatedPlayers = game.players.map((player: PersonalGamePlayer, playerIndex: number) => {
-        const playerScores = holeScores[playerIndex] || {};
-        const scores = Array.from({ length: 18 }, (_, i) => playerScores[i + 1] || 0);
-        
-        const strokesUsed = new Array(18).fill(0);
-        for (let i = 0; i < 18; i++) {
-          if (player.strokesUsed && player.strokesUsed[i] === 1) {
-            strokesUsed[i] = 1;
-          }
-        }
-        if (strokesUsedOnHole[playerIndex] && currentHole) {
-          strokesUsed[currentHole - 1] = 1;
-        }
-        
-        let wolfPoints = player.wolfPoints || 0;
-        if (isWolf) {
-          wolfPoints = 0;
-          for (let hole = 1; hole <= 18; hole++) {
-            const holePoints = calculateWolfPointsForHole(hole);
-            wolfPoints += holePoints[playerIndex] || 0;
-          }
-        }
-        
-        return {
-          ...player,
-          scores,
-          totalScore: scores.reduce((sum, score) => sum + score, 0),
-          strokesUsed,
-          wolfPoints,
-        };
-      });
-
-      let updateData: any = { gameId, players: updatedPlayers };
-
-      if (game.gameType === 'team-match-play') {
-        const holeResults = game.holeResults || new Array(18).fill('tie');
-        holeResults[currentHole - 1] = calculateHoleResult();
-        
-        const team1Wins = holeResults.filter((r: string) => r === 'team1').length;
-        const team2Wins = holeResults.filter((r: string) => r === 'team2').length;
-        
-        updateData.holeResults = holeResults;
-        updateData.teamScores = { team1: team1Wins, team2: team2Wins };
-      }
+      const updateData = buildUpdateData(true);
+      if (!updateData) return;
 
       await updateGameMutation.mutateAsync(updateData);
       await gameQuery.refetch();
@@ -598,45 +438,12 @@ export default function GameScoringScreen() {
     }
   };
 
-  const allComplete = areAllPlayersComplete();
-  const isTeamMatchPlay = game?.gameType === 'team-match-play';
-  const isWolf = game?.gameType === 'wolf';
+
 
   const currentWolfPlayerIndex = useMemo(() => {
-    if (!isWolf || !game || !game.wolfOrder || game.wolfOrder.length === 0) return -1;
-    
-    if (currentHole >= 16) {
-      const playerPoints = game.players.map((player: PersonalGamePlayer, idx: number) => {
-        let totalPoints = 0;
-        for (let hole = 1; hole < currentHole; hole++) {
-          const holePoints = calculateWolfPointsForHole(hole);
-          totalPoints += holePoints[idx] || 0;
-        }
-        return { idx, totalPoints };
-      });
-
-      const minPoints = Math.min(...playerPoints.map((p: { idx: number; totalPoints: number }) => p.totalPoints));
-      const playersWithMinPoints = playerPoints.filter((p: { idx: number; totalPoints: number }) => p.totalPoints === minPoints);
-
-      if (playersWithMinPoints.length === 1) {
-        return playersWithMinPoints[0].idx;
-      } else {
-        const wolfOrderIndex = (currentHole - 1) % game.wolfOrder.length;
-        
-        for (let i = 0; i < game.wolfOrder.length; i++) {
-          const checkIndex = (wolfOrderIndex + i) % game.wolfOrder.length;
-          const playerIdx = game.wolfOrder[checkIndex];
-          if (playersWithMinPoints.some((p: { idx: number; totalPoints: number }) => p.idx === playerIdx)) {
-            return playerIdx;
-          }
-        }
-        return playersWithMinPoints[0].idx;
-      }
-    }
-    
-    const wolfOrderIndex = (currentHole - 1) % game.wolfOrder.length;
-    return game.wolfOrder[wolfOrderIndex];
-  }, [isWolf, game, currentHole, holeScores]);
+    if (!isWolf || !game) return -1;
+    return WolfHelper.determineCurrentWolf(currentHole, game, holeScores, shouldPlayerReceiveStrokeOnHole);
+  }, [isWolf, game, currentHole, holeScores, shouldPlayerReceiveStrokeOnHole]);
 
   const sortedPlayersForWolf = useMemo(() => {
     if (!isWolf || !game || currentWolfPlayerIndex === -1) return game?.players || [];
