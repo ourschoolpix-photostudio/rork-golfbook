@@ -216,10 +216,10 @@ export default function GameScoringScreen() {
       }
       
       let wolfPoints = player.wolfPoints || 0;
-      if (includeWolfPoints && isWolf) {
+      if (isWolf && (includeWolfPoints || true)) {
         wolfPoints = WolfHelper.getTotalWolfPoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
       }
-      if (includeWolfPoints && isNiners) {
+      if (isNiners && (includeWolfPoints || true)) {
         wolfPoints = NinersHelper.getTotalNinersPoints(playerIndex, game, holeScores, shouldPlayerReceiveStrokeOnHole);
       }
       
@@ -228,7 +228,7 @@ export default function GameScoringScreen() {
         scores,
         totalScore: scores.reduce((sum: number, score: number) => sum + score, 0),
         strokesUsed,
-        ...(includeWolfPoints && { wolfPoints }),
+        wolfPoints,
       };
     });
 
