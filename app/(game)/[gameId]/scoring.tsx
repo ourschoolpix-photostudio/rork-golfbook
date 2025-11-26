@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Trophy, BarChart3 } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonalGamePlayer } from '@/types';
@@ -456,7 +456,9 @@ export default function GameScoringScreen() {
       await gameQuery.refetch();
 
       console.log('[GameScoring] Saved all scores');
-      Alert.alert('Success', 'All scores have been saved!');
+      
+      await completeGame(gameId);
+      router.push(`/(game)/${gameId}/scorecard` as any);
     } catch (error) {
       console.error('[GameScoring] Error saving scores:', error);
       Alert.alert('Error', 'Failed to save scores');
@@ -465,44 +467,8 @@ export default function GameScoringScreen() {
     }
   };
 
-  const handleCompleteGame = () => {
-    if (!game) return;
-
-    const allPlayersScored = game.players.every((p: PersonalGamePlayer) => {
-      return p.scores.some((s: number) => s > 0);
-    });
-
-    if (!allPlayersScored) {
-      Alert.alert(
-        'Incomplete Scores',
-        'Some players have not started scoring. Complete the game anyway?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Complete',
-            onPress: async () => {
-              await completeGame(gameId);
-              router.push(`/(game)/${gameId}/scorecard` as any);
-            },
-          },
-        ]
-      );
-    } else {
-      Alert.alert(
-        'Complete Game',
-        'Mark this game as completed?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Complete',
-            onPress: async () => {
-              await completeGame(gameId);
-              router.push(`/(game)/${gameId}/scorecard` as any);
-            },
-          },
-        ]
-      );
-    }
+  const handleNavigateToSummary = () => {
+    router.push(`/(game)/${gameId}/scorecard` as any);
   };
 
 
@@ -661,10 +627,10 @@ export default function GameScoringScreen() {
           </Text>
         </View>
         <TouchableOpacity
-          style={styles.completeButton}
-          onPress={handleCompleteGame}
+          style={styles.summaryButton}
+          onPress={handleNavigateToSummary}
         >
-          <Check size={20} color="#fff" />
+          <BarChart3 size={20} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -1186,7 +1152,7 @@ export default function GameScoringScreen() {
             disabled={isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? 'Saving...' : 'SAVE ALL SCORES'}
+              {isSaving ? 'Saving...' : 'SAVE SCORES & COMPLETE GAME'}
             </Text>
           </TouchableOpacity>
         )}
@@ -1226,8 +1192,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#d1d5db',
   },
-  completeButton: {
-    backgroundColor: '#1B5E20',
+  summaryButton: {
+    backgroundColor: '#2196F3',
     width: 40,
     height: 40,
     borderRadius: 20,
