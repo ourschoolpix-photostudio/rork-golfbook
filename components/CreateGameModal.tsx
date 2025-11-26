@@ -26,7 +26,8 @@ interface CreateGameModalProps {
     players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
-    strokeIndices?: number[]
+    strokeIndices?: number[],
+    dollarAmount?: number
   ) => Promise<void>;
 }
 
@@ -201,6 +202,8 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       matchPlayScoringType: gameType === 'team-match-play' ? matchPlayScoringType : undefined,
     });
 
+    const parsedBettingAmount = bettingAmount && bettingAmount.trim() !== '' ? parseFloat(bettingAmount) : undefined;
+
     try {
       await onSave(
         courseName, 
@@ -209,7 +212,8 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
         parsedPlayers,
         gameType,
         gameType === 'team-match-play' ? matchPlayScoringType : undefined,
-        selectedCourse?.strokeIndices && selectedCourse.strokeIndices.length > 0 ? selectedCourse.strokeIndices : undefined
+        selectedCourse?.strokeIndices && selectedCourse.strokeIndices.length > 0 ? selectedCourse.strokeIndices : undefined,
+        parsedBettingAmount
       );
       setSelectedCourseId(null);
       setCourseName('');

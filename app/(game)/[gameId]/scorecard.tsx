@@ -29,6 +29,57 @@ export default function GameScorecardScreen() {
 
   const isWolf = game.gameType === 'wolf';
 
+  const calculatePayments = () => {
+    if (!isWolf || !game.dollarAmount) return null;
+
+    const dollarPerPoint = game.dollarAmount;
+    const playerPayments = game.players.map((player, idx) => {
+      const points = player.wolfPoints || 0;
+      const dollarAmount = points * dollarPerPoint;
+      return { name: player.name, points, dollarAmount, index: idx };
+    });
+
+    const totalPayout = playerPayments.reduce((sum, p) => sum + p.dollarAmount, 0);
+    const avgPayout = totalPayout / playerPayments.length;
+
+    const balances = playerPayments.map(p => ({
+      name: p.name,
+      balance: p.dollarAmount - avgPayout,
+      index: p.index
+    }));
+
+    const creditors = balances.filter(b => b.balance > 0).sort((a, b) => b.balance - a.balance);
+    const debtors = balances.filter(b => b.balance < 0).sort((a, b) => a.balance - b.balance);
+
+    const transactions: { from: string; to: string; amount: number }[] = [];
+    let i = 0;
+    let j = 0;
+
+    while (i < creditors.length && j < debtors.length) {
+      const creditor = creditors[i];
+      const debtor = debtors[j];
+      const amount = Math.min(creditor.balance, Math.abs(debtor.balance));
+
+      if (amount > 0.01) {
+        transactions.push({
+          from: debtor.name,
+          to: creditor.name,
+          amount: Math.round(amount * 100) / 100
+        });
+      }
+
+      creditor.balance -= amount;
+      debtor.balance += amount;
+
+      if (Math.abs(creditor.balance) < 0.01) i++;
+      if (Math.abs(debtor.balance) < 0.01) j++;
+    }
+
+    return { playerPayments, transactions };
+  };
+
+  const paymentData = calculatePayments();
+
   const sortedPlayers = [...game.players].sort((a, b) => {
     if (isWolf) {
       if ((a.wolfPoints || 0) === 0) return 1;
@@ -83,6 +134,7 @@ export default function GameScorecardScreen() {
             const scoreDiff = player.totalScore > 0 ? player.totalScore - game.coursePar : 0;
             const scoreDiffText = scoreDiff === 0 ? 'E' : scoreDiff > 0 ? `+${scoreDiff}` : String(scoreDiff);
             const wolfPoints = player.wolfPoints || 0;
+            const dollarAmount = isWolf && game.dollarAmount ? wolfPoints * game.dollarAmount : 0;
 
             return (
               <View key={index} style={styles.playerCard}>
@@ -94,6 +146,11 @@ export default function GameScorecardScreen() {
                 <View style={styles.playerCardInfo}>
                   <Text style={styles.playerCardName}>{player.name}</Text>
                   <Text style={styles.playerCardHandicap}>HDC: {player.handicap}</Text>
+                  {isWolf && game.dollarAmount && dollarAmount !== 0 && (
+                    <Text style={[styles.playerCardDollar, dollarAmount > 0 ? styles.dollarPositive : styles.dollarNegative]}>
+                      ${dollarAmount.toFixed(2)}
+                    </Text>
+                  )}
                 </View>
                 {isWolf ? (
                   <View style={styles.playerCardScores}>
@@ -118,6 +175,26 @@ export default function GameScorecardScreen() {
             );
           })}
         </View>
+
+        {isWolf && paymentData && paymentData.transactions.length > 0 && (
+          <View style={styles.paymentSection}>
+            <Text style={styles.sectionTitle}>Payment Settlement</Text>
+            <View style={styles.paymentSummaryCard}>
+              <Text style={styles.paymentSummaryTitle}>Most Efficient Way to Settle</Text>
+              <Text style={styles.paymentSummarySubtitle}>Minimized transactions</Text>
+              {paymentData.transactions.map((transaction, idx) => (
+                <View key={idx} style={styles.transactionRow}>
+                  <View style={styles.transactionInfo}>
+                    <Text style={styles.transactionFrom}>{transaction.from}</Text>
+                    <Text style={styles.transactionArrow}>→</Text>
+                    <Text style={styles.transactionTo}>{transaction.to}</Text>
+                  </View>
+                  <Text style={styles.transactionAmount}>${transaction.amount.toFixed(2)}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         <View style={styles.detailsSection}>
           <Text style={styles.sectionTitle}>Hole-by-Hole</Text>
@@ -348,5 +425,74 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 24,
+  },
+  playerCardDollar: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    marginTop: 4,
+  },
+  dollarPositive: {
+    color: '#34C759',
+  },
+  dollarNegative: {
+    color: '#FF3B30',
+  },
+  paymentSection: {
+    marginTop: 24,
+    marginHorizontal: 16,
+  },
+  paymentSummaryCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  paymentSummaryTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  paymentSummarySubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 16,
+  },
+  transactionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  transactionInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  transactionFrom: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#FF3B30',
+  },
+  transactionArrow: {
+    fontSize: 14,
+    color: '#999',
+  },
+  transactionTo: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#34C759',
+  },
+  transactionAmount: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1B5E20',
   },
 });

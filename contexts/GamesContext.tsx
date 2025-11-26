@@ -15,7 +15,8 @@ type GamesContextType = {
     players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
-    strokeIndices?: number[]
+    strokeIndices?: number[],
+    dollarAmount?: number
   ) => Promise<string>;
   updateGameScores: (gameId: string, playerIndex: number, scores: number[]) => Promise<void>;
   completeGame: (gameId: string) => Promise<void>;
@@ -60,7 +61,8 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
-    strokeIndices?: number[]
+    strokeIndices?: number[],
+    dollarAmount?: number
   ): Promise<string> => {
     if (!memberId) {
       throw new Error('User must be logged in to create a game');
@@ -85,6 +87,7 @@ export function GamesProvider({ children }: { children: ReactNode }) {
       })),
       gameType: gameType || 'individual-net',
       matchPlayScoringType,
+      dollarAmount,
     };
 
     if (gameType === 'wolf') {

@@ -204,6 +204,7 @@ export interface PersonalGame {
   holeResults?: ('team1' | 'team2' | 'tie')[];
   wolfOrder?: number[];
   wolfPartnerships?: { [hole: string]: { wolfPlayerIndex: number; partnerPlayerIndex: number | null; isLoneWolf: boolean; isQuad?: boolean } };
+  dollarAmount?: number;
 }
 
 export interface RegistrationNotification {

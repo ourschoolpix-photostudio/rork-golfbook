@@ -44,6 +44,7 @@ const gameSchema = z.object({
     losingTeamPoints: z.number(),
     tiePoints: z.number(),
   }).optional(),
+  dollarAmount: z.number().optional(),
 });
 
 const getAllProcedure = publicProcedure
@@ -81,6 +82,7 @@ const getAllProcedure = publicProcedure
         wolfPartnerships: game.wolf_partnerships,
         wolfScores: game.wolf_scores,
         wolfRules: game.wolf_rules,
+        dollarAmount: game.dollar_amount,
       }));
 
       console.log('[Games tRPC] Fetched games:', games.length);
@@ -102,6 +104,7 @@ const createProcedure = publicProcedure
     gameType: z.enum(['individual-net', 'team-match-play', 'wolf', 'niners']).optional(),
     matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
     wolfOrder: z.array(z.number()).optional(),
+    dollarAmount: z.number().optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
@@ -119,6 +122,7 @@ const createProcedure = publicProcedure
         match_play_scoring_type: input.matchPlayScoringType,
         team_scores: input.gameType === 'team-match-play' ? { team1: 0, team2: 0 } : null,
         hole_results: input.gameType === 'team-match-play' ? new Array(18).fill('tie') : null,
+        dollar_amount: input.dollarAmount,
       };
 
       if (input.gameType === 'wolf') {
