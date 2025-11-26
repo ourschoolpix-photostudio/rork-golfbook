@@ -94,3 +94,59 @@ export function getHoleByHolePoints(
   }
   return pointsByHole;
 }
+
+type PlayerPayment = { name: string; points: number; dollarAmount: number; index: number };
+type Transaction = { from: string; to: string; amount: number };
+type Balance = { name: string; balance: number; index: number };
+
+export function calculatePayments(game: any): {
+  playerPayments: PlayerPayment[];
+  transactions: Transaction[];
+} | null {
+  if (!game || game.gameType !== 'niners' || !game.dollarAmount) return null;
+
+  const dollarPerPoint = game.dollarAmount;
+  const playerPayments = game.players.map((player: PersonalGamePlayer, idx: number) => {
+    const points = player.wolfPoints || 0;
+    const dollarAmount = points * dollarPerPoint;
+    return { name: player.name, points, dollarAmount, index: idx };
+  });
+
+  const totalPayout = playerPayments.reduce((sum: number, p: PlayerPayment) => sum + p.dollarAmount, 0);
+  const avgPayout = totalPayout / playerPayments.length;
+
+  const balances = playerPayments.map((p: PlayerPayment): Balance => ({
+    name: p.name,
+    balance: p.dollarAmount - avgPayout,
+    index: p.index
+  }));
+
+  const creditors = balances.filter((b: Balance) => b.balance > 0).sort((a: Balance, b: Balance) => b.balance - a.balance);
+  const debtors = balances.filter((b: Balance) => b.balance < 0).sort((a: Balance, b: Balance) => a.balance - b.balance);
+
+  const transactions: Transaction[] = [];
+  let i = 0;
+  let j = 0;
+
+  while (i < creditors.length && j < debtors.length) {
+    const creditor = creditors[i];
+    const debtor = debtors[j];
+    const amount = Math.min(creditor.balance, Math.abs(debtor.balance));
+
+    if (amount > 0.01) {
+      transactions.push({
+        from: debtor.name,
+        to: creditor.name,
+        amount: Math.round(amount * 100) / 100
+      });
+    }
+
+    creditor.balance -= amount;
+    debtor.balance += amount;
+
+    if (Math.abs(creditor.balance) < 0.01) i++;
+    if (Math.abs(debtor.balance) < 0.01) j++;
+  }
+
+  return { playerPayments, transactions };
+}

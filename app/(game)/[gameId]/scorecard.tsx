@@ -10,6 +10,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Edit } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
+import * as NinersHelper from '@/utils/ninersHelper';
 
 export default function GameScorecardScreen() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function GameScorecardScreen() {
   }
 
   const isWolf = game.gameType === 'wolf';
+  const isNiners = game.gameType === 'niners';
 
   const calculatePayments = () => {
     if (!isWolf || !game.dollarAmount) return null;
@@ -78,10 +80,10 @@ export default function GameScorecardScreen() {
     return { playerPayments, transactions };
   };
 
-  const paymentData = calculatePayments();
+  const paymentData = isWolf ? calculatePayments() : isNiners ? NinersHelper.calculatePayments(game) : null;
 
   const sortedPlayers = [...game.players].sort((a, b) => {
-    if (isWolf) {
+    if (isWolf || isNiners) {
       if ((a.wolfPoints || 0) === 0) return 1;
       if ((b.wolfPoints || 0) === 0) return -1;
       return (b.wolfPoints || 0) - (a.wolfPoints || 0);
@@ -135,39 +137,39 @@ export default function GameScorecardScreen() {
         </View>
 
         <View style={styles.leaderboardSection}>
-          <Text style={styles.sectionTitle}>{isWolf ? 'Wolf Points Leaderboard' : 'Final Scores'}</Text>
+          <Text style={styles.sectionTitle}>{isWolf ? 'Wolf Points Leaderboard' : isNiners ? 'Niners Points Leaderboard' : 'Final Scores'}</Text>
           {sortedPlayers.map((player, index) => {
             const scoreDiff = player.totalScore > 0 ? player.totalScore - game.coursePar : 0;
             const scoreDiffText = scoreDiff === 0 ? 'E' : scoreDiff > 0 ? `+${scoreDiff}` : String(scoreDiff);
             const wolfPoints = player.wolfPoints || 0;
-            const dollarAmount = isWolf && game.dollarAmount ? wolfPoints * game.dollarAmount : 0;
+            const dollarAmount = (isWolf || isNiners) && game.dollarAmount ? wolfPoints * game.dollarAmount : 0;
 
             return (
               <View key={index} style={styles.playerCard}>
                 <View style={styles.playerRank}>
                   <Text style={styles.rankText}>
-                    {isWolf ? (wolfPoints > 0 ? index + 1 : '-') : (player.totalScore > 0 ? index + 1 : '-')}
+                    {(isWolf || isNiners) ? (wolfPoints > 0 ? index + 1 : '-') : (player.totalScore > 0 ? index + 1 : '-')}
                   </Text>
                 </View>
                 <View style={styles.playerCardInfo}>
                   <View style={styles.playerCardNameRow}>
                     <Text style={styles.playerCardName}>{player.name}</Text>
-                    {!isWolf && player.totalScore > 0 && (
+                    {!isWolf && !isNiners && player.totalScore > 0 && (
                       <Text style={styles.playerCardStrokesAside}>{player.totalScore} strokes</Text>
                     )}
                   </View>
                   <Text style={styles.playerCardHandicap}>HDC: {player.handicap}</Text>
-                  {isWolf && (
+                  {(isWolf || isNiners) && (
                     <Text style={styles.playerCardPoints}>{wolfPoints > 0 ? `${wolfPoints} points` : '0 points'}</Text>
                   )}
                 </View>
-                {isWolf && game.dollarAmount && dollarAmount !== 0 ? (
+                {(isWolf || isNiners) && game.dollarAmount && dollarAmount !== 0 ? (
                   <View style={styles.playerCardScores}>
                     <Text style={[styles.playerCardTotal, dollarAmount > 0 ? styles.dollarPositive : styles.dollarNegative]}>
                       ${dollarAmount.toFixed(2)}
                     </Text>
                   </View>
-                ) : !isWolf && player.totalScore > 0 ? (
+                ) : !isWolf && !isNiners && player.totalScore > 0 ? (
                   <View style={styles.playerCardScores}>
                     <Text style={[
                       styles.playerCardDiff,
@@ -183,7 +185,7 @@ export default function GameScorecardScreen() {
           })}
         </View>
 
-        {isWolf && paymentData && paymentData.transactions.length > 0 && (
+        {(isWolf || isNiners) && paymentData && paymentData.transactions.length > 0 && (
           <View style={styles.paymentSection}>
             <Text style={styles.sectionTitle}>Payment Settlement</Text>
             <View style={styles.paymentSummaryCard}>
