@@ -43,6 +43,30 @@ export default function GameScoringScreen() {
   const [isLoneWolf, setIsLoneWolf] = useState<boolean>(false);
   const [isQuad, setIsQuad] = useState<boolean>(false);
 
+  const shouldPlayerReceiveStrokeOnHole = useCallback((player: PersonalGamePlayer, playerIndex: number, holeIndex: number): boolean => {
+    if (!player.strokesReceived || player.strokesReceived === 0) return false;
+    if (!game || !game.strokeIndices || game.strokeIndices.length !== 18) return false;
+    if (holeIndex < 0 || holeIndex >= 18) return false;
+
+    const strokeMode = player.strokeMode || 'manual';
+    
+    if (strokeMode === 'manual') {
+      return strokesUsedOnHole[playerIndex] || false;
+    } else {
+      const holeStrokeIndex = game.strokeIndices[holeIndex];
+      return holeStrokeIndex <= player.strokesReceived;
+    }
+  }, [game, strokesUsedOnHole]);
+
+  const toggleStroke = useCallback((playerIndex: number) => {
+    if (playerIndex < 0 || !game || playerIndex >= game.players.length) return;
+    
+    setStrokesUsedOnHole(prev => ({
+      ...prev,
+      [playerIndex]: !prev[playerIndex],
+    }));
+  }, [game]);
+
   const updateGameMutation = trpc.games.update.useMutation();
 
   const allComplete = useMemo(() => {
