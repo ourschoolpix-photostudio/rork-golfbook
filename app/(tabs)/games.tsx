@@ -37,10 +37,11 @@ export default function GamesScreen() {
     players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
-    strokeIndices?: number[]
+    strokeIndices?: number[],
+    dollarAmount?: number
   ) => {
     try {
-      const gameId = await createGame(courseName, coursePar, holePars, players, gameType, matchPlayScoringType, strokeIndices);
+      const gameId = await createGame(courseName, coursePar, holePars, players, gameType, matchPlayScoringType, strokeIndices, dollarAmount);
       console.log('[GamesScreen] Game created:', gameId);
       router.push(`/(game)/${gameId}/scoring` as any);
     } catch (error) {
@@ -56,7 +57,8 @@ export default function GamesScreen() {
     players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
-    strokeIndices?: number[]
+    strokeIndices?: number[],
+    dollarAmount?: number
   ) => {
     if (!editingGame) return;
     
@@ -76,6 +78,7 @@ export default function GamesScreen() {
         gameType,
         matchPlayScoringType,
         strokeIndices,
+        dollarAmount,
       });
       console.log('[GamesScreen] Game updated:', editingGame.id);
       setEditingGame(null);

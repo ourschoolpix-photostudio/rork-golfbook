@@ -167,6 +167,7 @@ const createProcedure = publicProcedure
         wolfPartnerships: data.wolf_partnerships,
         wolfScores: data.wolf_scores,
         wolfRules: data.wolf_rules,
+        dollarAmount: data.dollar_amount,
       };
     } catch (error) {
       console.error('[Games tRPC] Error in create:', error);
@@ -195,6 +196,7 @@ const updateProcedure = publicProcedure
       isQuad: z.boolean().optional(),
     })).optional(),
     wolfScores: z.record(z.string(), z.object({ players: z.array(z.number()) })).optional(),
+    dollarAmount: z.number().optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
@@ -213,6 +215,7 @@ const updateProcedure = publicProcedure
       if (input.wolfOrder) updateData.wolf_order = input.wolfOrder;
       if (input.wolfPartnerships) updateData.wolf_partnerships = input.wolfPartnerships;
       if (input.wolfScores) updateData.wolf_scores = input.wolfScores;
+      if (input.dollarAmount !== undefined) updateData.dollar_amount = input.dollarAmount;
       if (input.status) {
         updateData.status = input.status;
         if (input.status === 'completed') {
@@ -252,6 +255,7 @@ const updateProcedure = publicProcedure
         wolfPartnerships: data.wolf_partnerships,
         wolfScores: data.wolf_scores,
         wolfRules: data.wolf_rules,
+        dollarAmount: data.dollar_amount,
       };
     } catch (error) {
       console.error('[Games tRPC] Error in update:', error);

@@ -26,6 +26,7 @@ type GamesContextType = {
     gameType: 'individual-net' | 'team-match-play' | 'wolf' | 'niners';
     matchPlayScoringType: 'best-ball' | 'alternate-ball';
     strokeIndices: number[];
+    dollarAmount: number;
   }>) => Promise<void>;
   updateGameScores: (gameId: string, playerIndex: number, scores: number[]) => Promise<void>;
   completeGame: (gameId: string) => Promise<void>;
@@ -143,6 +144,7 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     gameType: 'individual-net' | 'team-match-play' | 'wolf' | 'niners';
     matchPlayScoringType: 'best-ball' | 'alternate-ball';
     strokeIndices: number[];
+    dollarAmount: number;
   }>) => {
     const updateData: any = { gameId };
     if (updates.courseName) updateData.courseName = updates.courseName;
@@ -152,6 +154,7 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     if (updates.gameType) updateData.gameType = updates.gameType;
     if (updates.matchPlayScoringType) updateData.matchPlayScoringType = updates.matchPlayScoringType;
     if (updates.strokeIndices) updateData.strokeIndices = updates.strokeIndices;
+    if (updates.dollarAmount !== undefined) updateData.dollarAmount = updates.dollarAmount;
 
     await updateGameMutation.mutateAsync(updateData);
     console.log('[GamesContext] Updated game:', gameId);
