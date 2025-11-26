@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Plus, Play, Trophy, Trash2, BookOpen } from 'lucide-react-native';
+import { Plus, Play, Trophy, Trash2, BookOpen, Edit2 } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
 import CreateGameModal from '@/components/CreateGameModal';
 import CoursesManagementModal from '@/components/CoursesManagementModal';
@@ -19,8 +19,9 @@ import { PersonalGame } from '@/types';
 export default function GamesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { inProgressGames, completedGames, createGame, deleteGame } = useGames();
+  const { inProgressGames, completedGames, createGame, deleteGame, updateGame } = useGames();
   const [createModalVisible, setCreateModalVisible] = useState<boolean>(false);
+  const [editingGame, setEditingGame] = useState<PersonalGame | null>(null);
   const [coursesModalVisible, setCoursesModalVisible] = useState<boolean>(false);
 
   useFocusEffect(
@@ -45,6 +46,42 @@ export default function GamesScreen() {
     } catch (error) {
       console.error('[GamesScreen] Error creating game:', error);
       Alert.alert('Error', 'Failed to create game');
+    }
+  };
+
+  const handleEditGame = async (
+    courseName: string,
+    coursePar: number,
+    holePars: number[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
+    gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
+    matchPlayScoringType?: 'best-ball' | 'alternate-ball',
+    strokeIndices?: number[]
+  ) => {
+    if (!editingGame) return;
+    
+    try {
+      await updateGame(editingGame.id, {
+        courseName,
+        coursePar,
+        holePars,
+        players: players.map((p, idx) => ({
+          ...editingGame.players[idx],
+          name: p.name,
+          handicap: p.handicap,
+          strokesReceived: p.strokesReceived || 0,
+          strokeMode: p.strokeMode || 'manual',
+          teamId: p.teamId,
+        })),
+        gameType,
+        matchPlayScoringType,
+        strokeIndices,
+      });
+      console.log('[GamesScreen] Game updated:', editingGame.id);
+      setEditingGame(null);
+    } catch (error) {
+      console.error('[GamesScreen] Error updating game:', error);
+      Alert.alert('Error', 'Failed to update game');
     }
   };
 
@@ -99,15 +136,26 @@ export default function GamesScreen() {
             <Text style={styles.gameName}>{game.courseName}</Text>
             <Text style={styles.gameDate}>{formattedDate}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleDeleteGame(game.id, game.courseName);
-            }}
-          >
-            <Trash2 size={18} color="#FF3B30" />
-          </TouchableOpacity>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                setEditingGame(game);
+              }}
+            >
+              <Edit2 size={18} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleDeleteGame(game.id, game.courseName);
+              }}
+            >
+              <Trash2 size={18} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.gameDetails}>
@@ -204,6 +252,13 @@ export default function GamesScreen() {
           visible={createModalVisible}
           onClose={() => setCreateModalVisible(false)}
           onSave={handleCreateGame}
+        />
+
+        <CreateGameModal
+          visible={!!editingGame}
+          onClose={() => setEditingGame(null)}
+          onSave={handleEditGame}
+          editingGame={editingGame}
         />
 
         <CoursesManagementModal
@@ -311,6 +366,13 @@ const styles = StyleSheet.create({
   gameDate: {
     fontSize: 12,
     color: '#666',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  editButton: {
+    padding: 4,
   },
   deleteButton: {
     padding: 4,

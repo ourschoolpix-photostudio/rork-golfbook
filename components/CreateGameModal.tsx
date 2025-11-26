@@ -15,6 +15,7 @@ import {
 import { X, ChevronDown, BookOpen } from 'lucide-react-native';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
+import { PersonalGame } from '@/types';
 
 interface CreateGameModalProps {
   visible: boolean;
@@ -29,9 +30,10 @@ interface CreateGameModalProps {
     strokeIndices?: number[],
     dollarAmount?: number
   ) => Promise<void>;
+  editingGame?: PersonalGame | null;
 }
 
-export default function CreateGameModal({ visible, onClose, onSave }: CreateGameModalProps) {
+export default function CreateGameModal({ visible, onClose, onSave, editingGame }: CreateGameModalProps) {
   const { currentUser } = useAuth();
   const [showCourseSelector, setShowCourseSelector] = useState<boolean>(false);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -55,6 +57,46 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
   );
 
   const courses = coursesQuery.data || [];
+
+  React.useEffect(() => {
+    if (editingGame && visible) {
+      setCourseName(editingGame.courseName);
+      setCoursePar(editingGame.coursePar.toString());
+      setHolePars(editingGame.holePars.map(p => p.toString()));
+      setGameType(editingGame.gameType || 'individual-net');
+      setMatchPlayScoringType(editingGame.matchPlayScoringType || 'best-ball');
+      setBettingAmount(editingGame.dollarAmount?.toString() || '');
+      
+      const mappedPlayers = editingGame.players.map(p => ({
+        name: p.name,
+        handicap: p.handicap.toString(),
+        strokesReceived: (p.strokesReceived || 0).toString(),
+        strokesASide: editingGame.gameType === 'wolf' ? (p.strokesReceived || 0).toString() : '0',
+        strokeMode: p.strokeMode || 'manual',
+        teamId: p.teamId,
+      }));
+      
+      while (mappedPlayers.length < 4) {
+        mappedPlayers.push({ name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual', teamId: undefined });
+      }
+      
+      setPlayers(mappedPlayers);
+    } else if (!visible) {
+      setSelectedCourseId(null);
+      setCourseName('');
+      setCoursePar('72');
+      setHolePars(new Array(18).fill(''));
+      setGameType('individual-net');
+      setMatchPlayScoringType('best-ball');
+      setPlayers([
+        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
+      ]);
+      setBettingAmount('');
+    }
+  }, [editingGame, visible]);
 
   const handleSelectCourse = (courseId: string) => {
     const course = courses.find(c => c.id === courseId);
@@ -215,24 +257,10 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
         selectedCourse?.strokeIndices && selectedCourse.strokeIndices.length > 0 ? selectedCourse.strokeIndices : undefined,
         parsedBettingAmount
       );
-      setSelectedCourseId(null);
-      setCourseName('');
-      setCoursePar('72');
-      setHolePars(new Array(18).fill(''));
-      setGameType('individual-net');
-      setMatchPlayScoringType('best-ball');
-      setMatchPlayScoringType('best-ball');
-      setPlayers([
-        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
-        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
-        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
-        { name: '', handicap: '', strokesReceived: '0', strokesASide: '0', strokeMode: 'manual' },
-      ]);
-      setBettingAmount('');
       onClose();
     } catch (error) {
-      console.error('[CreateGameModal] Error creating game:', error);
-      Alert.alert('Error', 'Failed to create game');
+      console.error('[CreateGameModal] Error saving game:', error);
+      Alert.alert('Error', `Failed to ${editingGame ? 'update' : 'create'} game`);
     }
   };
 
@@ -245,7 +273,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
       >
         <View style={styles.modal}>
           <View style={styles.header}>
-            <Text style={styles.title}>Create New Game</Text>
+            <Text style={styles.title}>{editingGame ? 'Edit Game' : 'Create New Game'}</Text>
             <TouchableOpacity onPress={onClose}>
               <X size={24} color="#374151" />
             </TouchableOpacity>
@@ -678,7 +706,7 @@ export default function CreateGameModal({ visible, onClose, onSave }: CreateGame
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Create Game</Text>
+              <Text style={styles.saveButtonText}>{editingGame ? 'Save Changes' : 'Create Game'}</Text>
             </TouchableOpacity>
           </View>
         </View>

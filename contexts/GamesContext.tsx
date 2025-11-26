@@ -18,6 +18,15 @@ type GamesContextType = {
     strokeIndices?: number[],
     dollarAmount?: number
   ) => Promise<string>;
+  updateGame: (gameId: string, updates: Partial<{
+    courseName: string;
+    coursePar: number;
+    holePars: number[];
+    players: any[];
+    gameType: 'individual-net' | 'team-match-play' | 'wolf' | 'niners';
+    matchPlayScoringType: 'best-ball' | 'alternate-ball';
+    strokeIndices: number[];
+  }>) => Promise<void>;
   updateGameScores: (gameId: string, playerIndex: number, scores: number[]) => Promise<void>;
   completeGame: (gameId: string) => Promise<void>;
   deleteGame: (gameId: string) => Promise<void>;
@@ -126,6 +135,28 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     console.log('[GamesContext] Updated scores for game:', gameId);
   }, [gamesQuery.data, updateGameMutation]);
 
+  const updateGame = useCallback(async (gameId: string, updates: Partial<{
+    courseName: string;
+    coursePar: number;
+    holePars: number[];
+    players: any[];
+    gameType: 'individual-net' | 'team-match-play' | 'wolf' | 'niners';
+    matchPlayScoringType: 'best-ball' | 'alternate-ball';
+    strokeIndices: number[];
+  }>) => {
+    const updateData: any = { gameId };
+    if (updates.courseName) updateData.courseName = updates.courseName;
+    if (updates.coursePar) updateData.coursePar = updates.coursePar;
+    if (updates.holePars) updateData.holePars = updates.holePars;
+    if (updates.players) updateData.players = updates.players;
+    if (updates.gameType) updateData.gameType = updates.gameType;
+    if (updates.matchPlayScoringType) updateData.matchPlayScoringType = updates.matchPlayScoringType;
+    if (updates.strokeIndices) updateData.strokeIndices = updates.strokeIndices;
+
+    await updateGameMutation.mutateAsync(updateData);
+    console.log('[GamesContext] Updated game:', gameId);
+  }, [updateGameMutation]);
+
   const completeGame = useCallback(async (gameId: string) => {
     await updateGameMutation.mutateAsync({
       gameId,
@@ -166,11 +197,12 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     completedGames,
     isLoading,
     createGame,
+    updateGame,
     updateGameScores,
     completeGame,
     deleteGame,
     getGame,
-  }), [games, inProgressGames, completedGames, isLoading, createGame, updateGameScores, completeGame, deleteGame, getGame]);
+  }), [games, inProgressGames, completedGames, isLoading, createGame, updateGame, updateGameScores, completeGame, deleteGame, getGame]);
 
   return (
     <GamesContext.Provider value={value}>

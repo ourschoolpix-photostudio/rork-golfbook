@@ -177,8 +177,14 @@ const createProcedure = publicProcedure
 const updateProcedure = publicProcedure
   .input(z.object({
     gameId: z.string(),
+    courseName: z.string().optional(),
+    coursePar: z.number().optional(),
+    holePars: z.array(z.number()).optional(),
+    strokeIndices: z.array(z.number()).optional(),
     players: z.array(playerSchema).optional(),
     status: z.enum(['in-progress', 'completed']).optional(),
+    gameType: z.enum(['individual-net', 'team-match-play', 'wolf', 'niners']).optional(),
+    matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
     teamScores: z.object({ team1: z.number(), team2: z.number() }).optional(),
     holeResults: z.array(z.enum(['team1', 'team2', 'tie'])).optional(),
     wolfOrder: z.array(z.number()).optional(),
@@ -195,7 +201,13 @@ const updateProcedure = publicProcedure
       console.log('[Games tRPC] Updating game:', input.gameId);
       
       const updateData: any = {};
+      if (input.courseName) updateData.course_name = input.courseName;
+      if (input.coursePar) updateData.course_par = input.coursePar;
+      if (input.holePars) updateData.hole_pars = input.holePars;
+      if (input.strokeIndices !== undefined) updateData.stroke_indices = input.strokeIndices.length > 0 ? input.strokeIndices : null;
       if (input.players) updateData.players = input.players;
+      if (input.gameType) updateData.game_type = input.gameType;
+      if (input.matchPlayScoringType) updateData.match_play_scoring_type = input.matchPlayScoringType;
       if (input.teamScores) updateData.team_scores = input.teamScores;
       if (input.holeResults) updateData.hole_results = input.holeResults;
       if (input.wolfOrder) updateData.wolf_order = input.wolfOrder;
