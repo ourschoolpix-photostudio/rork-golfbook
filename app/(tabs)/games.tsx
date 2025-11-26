@@ -34,14 +34,35 @@ export default function GamesScreen() {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2; memberId?: string }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
     strokeIndices?: number[],
-    dollarAmount?: number
+    dollarAmount?: number,
+    front9Bet?: number,
+    back9Bet?: number,
+    overallBet?: number,
+    potBet?: number,
+    potPlayers?: { name: string; handicap: number; memberId?: string }[],
+    useHandicaps?: boolean
   ) => {
     try {
-      const gameId = await createGame(courseName, coursePar, holePars, players, gameType, matchPlayScoringType, strokeIndices, dollarAmount);
+      const gameId = await createGame(
+        courseName, 
+        coursePar, 
+        holePars, 
+        players, 
+        gameType, 
+        matchPlayScoringType, 
+        strokeIndices, 
+        dollarAmount,
+        front9Bet,
+        back9Bet,
+        overallBet,
+        potBet,
+        potPlayers,
+        useHandicaps
+      );
       console.log('[GamesScreen] Game created:', gameId);
       router.push(`/(game)/${gameId}/scoring` as any);
     } catch (error) {
@@ -54,11 +75,17 @@ export default function GamesScreen() {
     courseName: string,
     coursePar: number,
     holePars: number[],
-    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2 }[],
+    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2; memberId?: string }[],
     gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
     matchPlayScoringType?: 'best-ball' | 'alternate-ball',
     strokeIndices?: number[],
-    dollarAmount?: number
+    dollarAmount?: number,
+    front9Bet?: number,
+    back9Bet?: number,
+    overallBet?: number,
+    potBet?: number,
+    potPlayers?: { name: string; handicap: number; memberId?: string }[],
+    useHandicaps?: boolean
   ) => {
     if (!editingGame) return;
     

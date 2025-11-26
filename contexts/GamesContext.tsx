@@ -21,7 +21,8 @@ type GamesContextType = {
     back9Bet?: number,
     overallBet?: number,
     potBet?: number,
-    potPlayers?: { name: string; handicap: number; memberId?: string }[]
+    potPlayers?: { name: string; handicap: number; memberId?: string }[],
+    useHandicaps?: boolean
   ) => Promise<string>;
   updateGame: (gameId: string, updates: Partial<{
     courseName: string;
@@ -82,7 +83,8 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     back9Bet?: number,
     overallBet?: number,
     potBet?: number,
-    potPlayers?: { name: string; handicap: number; memberId?: string }[]
+    potPlayers?: { name: string; handicap: number; memberId?: string }[],
+    useHandicaps?: boolean
   ): Promise<string> => {
     if (!memberId) {
       throw new Error('User must be logged in to create a game');
@@ -114,6 +116,7 @@ export function GamesProvider({ children }: { children: ReactNode }) {
       overallBet,
       potBet,
       potPlayers,
+      useHandicaps: useHandicaps !== undefined ? useHandicaps : true,
     };
 
     if (gameType === 'wolf') {

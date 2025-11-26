@@ -33,7 +33,8 @@ interface CreateGameModalProps {
     back9Bet?: number,
     overallBet?: number,
     potBet?: number,
-    potPlayers?: { name: string; handicap: number; memberId?: string }[]
+    potPlayers?: { name: string; handicap: number; memberId?: string }[],
+    useHandicaps?: boolean
   ) => Promise<void>;
   editingGame?: PersonalGame | null;
 }
@@ -448,7 +449,8 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
         parsedBack9Bet,
         parsedOverallBet,
         parsedPotBet,
-        parsedPotPlayers.length > 0 ? parsedPotPlayers : undefined
+        parsedPotPlayers.length > 0 ? parsedPotPlayers : undefined,
+        gameType === 'individual-net' ? useHandicaps : undefined
       );
       onClose();
     } catch (error) {

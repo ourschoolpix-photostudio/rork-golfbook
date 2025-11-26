@@ -105,6 +105,16 @@ const createProcedure = publicProcedure
     matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
     wolfOrder: z.array(z.number()).optional(),
     dollarAmount: z.number().optional(),
+    front9Bet: z.number().optional(),
+    back9Bet: z.number().optional(),
+    overallBet: z.number().optional(),
+    potBet: z.number().optional(),
+    potPlayers: z.array(z.object({
+      name: z.string(),
+      handicap: z.number(),
+      memberId: z.string().optional(),
+    })).optional(),
+    useHandicaps: z.boolean().optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
@@ -123,6 +133,12 @@ const createProcedure = publicProcedure
         team_scores: input.gameType === 'team-match-play' ? { team1: 0, team2: 0 } : null,
         hole_results: input.gameType === 'team-match-play' ? new Array(18).fill('tie') : null,
         dollar_amount: input.dollarAmount,
+        front_9_bet: input.front9Bet,
+        back_9_bet: input.back9Bet,
+        overall_bet: input.overallBet,
+        pot_bet: input.potBet,
+        pot_players: input.potPlayers,
+        handicaps_enabled: input.useHandicaps !== undefined ? input.useHandicaps : true,
       };
 
       if (input.gameType === 'wolf') {
