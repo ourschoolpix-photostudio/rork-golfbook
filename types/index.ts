@@ -217,6 +217,7 @@ export interface PersonalGame {
   overallBet?: number;
   potBet?: number;
   potPlayers?: PotPlayer[];
+  useHandicaps?: boolean;
 }
 
 export interface RegistrationNotification {

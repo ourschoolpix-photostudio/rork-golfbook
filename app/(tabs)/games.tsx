@@ -114,6 +114,12 @@ export default function GamesScreen() {
         matchPlayScoringType,
         strokeIndices,
         dollarAmount,
+        front9Bet,
+        back9Bet,
+        overallBet,
+        potBet,
+        potPlayers,
+        useHandicaps,
       });
       console.log('[GamesScreen] Game updated:', editingGame.id);
       setEditingGame(null);

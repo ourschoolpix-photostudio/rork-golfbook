@@ -20,33 +20,6 @@ const wolfPartnershipSchema = z.object({
   isQuad: z.boolean().optional(),
 });
 
-const gameSchema = z.object({
-  id: z.string(),
-  courseName: z.string(),
-  coursePar: z.number(),
-  holePars: z.array(z.number()),
-  strokeIndices: z.array(z.number()).optional(),
-  players: z.array(playerSchema),
-  createdAt: z.string(),
-  status: z.enum(['in-progress', 'completed']),
-  completedAt: z.string().optional(),
-  gameType: z.enum(['individual-net', 'team-match-play', 'wolf', 'niners']).optional(),
-  matchPlayScoringType: z.enum(['best-ball', 'alternate-ball']).optional(),
-  teamScores: z.object({ team1: z.number(), team2: z.number() }).optional(),
-  holeResults: z.array(z.enum(['team1', 'team2', 'tie'])).optional(),
-  wolfOrder: z.array(z.number()).optional(),
-  wolfPartnerships: z.record(z.string(), wolfPartnershipSchema).optional(),
-  wolfScores: z.record(z.string(), z.object({ players: z.array(z.number()) })).optional(),
-  wolfRules: z.object({
-    wolfGoesLast: z.boolean(),
-    loneWolfMultiplier: z.number(),
-    winningTeamPoints: z.number(),
-    losingTeamPoints: z.number(),
-    tiePoints: z.number(),
-  }).optional(),
-  dollarAmount: z.number().optional(),
-});
-
 const getAllProcedure = publicProcedure
   .input(z.object({ memberId: z.string() }).optional())
   .query(async ({ ctx, input }) => {
@@ -83,6 +56,12 @@ const getAllProcedure = publicProcedure
         wolfScores: game.wolf_scores,
         wolfRules: game.wolf_rules,
         dollarAmount: game.dollar_amount,
+        front9Bet: game.front_9_bet,
+        back9Bet: game.back_9_bet,
+        overallBet: game.overall_bet,
+        potBet: game.pot_bet,
+        potPlayers: game.pot_players,
+        useHandicaps: game.handicaps_enabled,
       }));
 
       console.log('[Games tRPC] Fetched games:', games.length);
@@ -184,6 +163,12 @@ const createProcedure = publicProcedure
         wolfScores: data.wolf_scores,
         wolfRules: data.wolf_rules,
         dollarAmount: data.dollar_amount,
+        front9Bet: data.front_9_bet,
+        back9Bet: data.back_9_bet,
+        overallBet: data.overall_bet,
+        potBet: data.pot_bet,
+        potPlayers: data.pot_players,
+        useHandicaps: data.handicaps_enabled,
       };
     } catch (error) {
       console.error('[Games tRPC] Error in create:', error);
@@ -213,6 +198,16 @@ const updateProcedure = publicProcedure
     })).optional(),
     wolfScores: z.record(z.string(), z.object({ players: z.array(z.number()) })).optional(),
     dollarAmount: z.number().optional(),
+    front9Bet: z.number().optional(),
+    back9Bet: z.number().optional(),
+    overallBet: z.number().optional(),
+    potBet: z.number().optional(),
+    potPlayers: z.array(z.object({
+      name: z.string(),
+      handicap: z.number(),
+      memberId: z.string().optional(),
+    })).optional(),
+    useHandicaps: z.boolean().optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
@@ -232,6 +227,12 @@ const updateProcedure = publicProcedure
       if (input.wolfPartnerships) updateData.wolf_partnerships = input.wolfPartnerships;
       if (input.wolfScores) updateData.wolf_scores = input.wolfScores;
       if (input.dollarAmount !== undefined) updateData.dollar_amount = input.dollarAmount;
+      if (input.front9Bet !== undefined) updateData.front_9_bet = input.front9Bet;
+      if (input.back9Bet !== undefined) updateData.back_9_bet = input.back9Bet;
+      if (input.overallBet !== undefined) updateData.overall_bet = input.overallBet;
+      if (input.potBet !== undefined) updateData.pot_bet = input.potBet;
+      if (input.potPlayers) updateData.pot_players = input.potPlayers;
+      if (input.useHandicaps !== undefined) updateData.handicaps_enabled = input.useHandicaps;
       if (input.status) {
         updateData.status = input.status;
         if (input.status === 'completed') {
@@ -272,6 +273,12 @@ const updateProcedure = publicProcedure
         wolfScores: data.wolf_scores,
         wolfRules: data.wolf_rules,
         dollarAmount: data.dollar_amount,
+        front9Bet: data.front_9_bet,
+        back9Bet: data.back_9_bet,
+        overallBet: data.overall_bet,
+        potBet: data.pot_bet,
+        potPlayers: data.pot_players,
+        useHandicaps: data.handicaps_enabled,
       };
     } catch (error) {
       console.error('[Games tRPC] Error in update:', error);

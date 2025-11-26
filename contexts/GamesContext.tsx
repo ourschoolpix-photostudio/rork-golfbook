@@ -33,6 +33,12 @@ type GamesContextType = {
     matchPlayScoringType: 'best-ball' | 'alternate-ball';
     strokeIndices: number[];
     dollarAmount: number;
+    front9Bet: number;
+    back9Bet: number;
+    overallBet: number;
+    potBet: number;
+    potPlayers: { name: string; handicap: number; memberId?: string }[];
+    useHandicaps: boolean;
   }>) => Promise<void>;
   updateGameScores: (gameId: string, playerIndex: number, scores: number[]) => Promise<void>;
   completeGame: (gameId: string) => Promise<void>;
@@ -164,6 +170,12 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     matchPlayScoringType: 'best-ball' | 'alternate-ball';
     strokeIndices: number[];
     dollarAmount: number;
+    front9Bet: number;
+    back9Bet: number;
+    overallBet: number;
+    potBet: number;
+    potPlayers: { name: string; handicap: number; memberId?: string }[];
+    useHandicaps: boolean;
   }>) => {
     const updateData: any = { gameId };
     if (updates.courseName) updateData.courseName = updates.courseName;
@@ -174,6 +186,12 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     if (updates.matchPlayScoringType) updateData.matchPlayScoringType = updates.matchPlayScoringType;
     if (updates.strokeIndices) updateData.strokeIndices = updates.strokeIndices;
     if (updates.dollarAmount !== undefined) updateData.dollarAmount = updates.dollarAmount;
+    if (updates.front9Bet !== undefined) updateData.front9Bet = updates.front9Bet;
+    if (updates.back9Bet !== undefined) updateData.back9Bet = updates.back9Bet;
+    if (updates.overallBet !== undefined) updateData.overallBet = updates.overallBet;
+    if (updates.potBet !== undefined) updateData.potBet = updates.potBet;
+    if (updates.potPlayers) updateData.potPlayers = updates.potPlayers;
+    if (updates.useHandicaps !== undefined) updateData.useHandicaps = updates.useHandicaps;
 
     await updateGameMutation.mutateAsync(updateData);
     console.log('[GamesContext] Updated game:', gameId);

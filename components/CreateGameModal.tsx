@@ -87,8 +87,27 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
       setCoursePar(editingGame.coursePar.toString());
       setHolePars(editingGame.holePars.map(p => p.toString()));
       setGameType(editingGame.gameType || 'individual-net');
+      setUseHandicaps(editingGame.useHandicaps ?? true);
       setMatchPlayScoringType(editingGame.matchPlayScoringType || 'best-ball');
       setBettingAmount(editingGame.dollarAmount?.toString() || '');
+      setFront9Bet(editingGame.front9Bet?.toString() || '');
+      setBack9Bet(editingGame.back9Bet?.toString() || '');
+      setOverallBet(editingGame.overallBet?.toString() || '');
+      setPotBet(editingGame.potBet?.toString() || '');
+      
+      if (editingGame.potPlayers && editingGame.potPlayers.length > 0) {
+        const mappedPotPlayers = editingGame.potPlayers.map(pp => ({
+          name: pp.name,
+          handicap: pp.handicap.toString(),
+          memberId: pp.memberId,
+        }));
+        setPotPlayers(mappedPotPlayers);
+        const potMemberIds = mappedPotPlayers
+          .map(pp => pp.memberId)
+          .filter(id => id !== undefined) as string[];
+        setSelectedPotMemberIds(potMemberIds);
+        setAddedMainPlayersToPot(true);
+      }
       
       const mappedPlayers = editingGame.players.map(p => ({
         name: p.name,
