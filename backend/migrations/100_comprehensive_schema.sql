@@ -407,6 +407,25 @@ CREATE POLICY "Allow update for all users" ON organization_settings FOR UPDATE U
 -- ============================================================================
 -- 9. COURSES TABLE
 -- ============================================================================
+-- First, check if courses table exists with TEXT id and migrate if needed
+DO $
+BEGIN
+    -- Check if courses table exists with TEXT id
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'courses' AND column_name = 'id' AND data_type = 'text'
+    ) THEN
+        -- Drop foreign key constraints first if they exist
+        ALTER TABLE events DROP CONSTRAINT IF EXISTS events_day1_course_id_fkey;
+        ALTER TABLE events DROP CONSTRAINT IF EXISTS events_day2_course_id_fkey;
+        ALTER TABLE events DROP CONSTRAINT IF EXISTS events_day3_course_id_fkey;
+        
+        -- Temporarily drop the courses table and recreate with UUID
+        -- (safe because course data can be re-entered)
+        DROP TABLE IF EXISTS courses CASCADE;
+    END IF;
+END $;
+
 CREATE TABLE IF NOT EXISTS courses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
