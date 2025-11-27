@@ -241,6 +241,8 @@ const updateProcedure = publicProcedure
       }
       updateData.updated_at = new Date().toISOString();
 
+      console.log('[Games tRPC] Update data:', JSON.stringify(updateData, null, 2));
+      
       const { data, error } = await ctx.supabase
         .from('personal_games')
         .update(updateData)
@@ -250,7 +252,8 @@ const updateProcedure = publicProcedure
 
       if (error) {
         console.error('[Games tRPC] Error updating game:', error);
-        throw new Error(`Failed to update game: ${error.message}`);
+        console.error('[Games tRPC] Error details:', JSON.stringify(error, null, 2));
+        throw new Error(`Failed to update game: ${error.message} (Code: ${error.code})`);
       }
 
       console.log('[Games tRPC] Updated game:', data.id);
