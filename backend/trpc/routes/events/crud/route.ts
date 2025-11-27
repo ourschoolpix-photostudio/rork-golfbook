@@ -284,36 +284,41 @@ function mapDbToEvent(e: any, registeredPlayers: string[] = []): Event {
 
 export const getAllEventsProcedure = publicProcedure
   .query(async () => {
-    console.log('📥 Fetching all events from database...');
-    
-    const { data: eventsData, error } = await supabase
-      .from('events')
-      .select('*')
-      .order('date', { ascending: false });
+    try {
+      console.log('📥 Fetching all events from database...');
+      
+      const { data: eventsData, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('date', { ascending: false });
 
-    if (error) {
-      console.error('❌ Error fetching events:', error);
-      throw new Error(`Failed to fetch events: ${error.message}`);
-    }
-
-    const { data: registrationsData } = await supabase
-      .from('event_registrations')
-      .select('event_id, member_id');
-
-    const registrationsByEvent = new Map<string, string[]>();
-    (registrationsData || []).forEach(reg => {
-      if (!registrationsByEvent.has(reg.event_id)) {
-        registrationsByEvent.set(reg.event_id, []);
+      if (error) {
+        console.error('❌ Error fetching events:', error);
+        throw new Error(`Failed to fetch events: ${error.message}`);
       }
-      registrationsByEvent.get(reg.event_id)?.push(reg.member_id);
-    });
 
-    const events = (eventsData || []).map(e => 
-      mapDbToEvent(e, registrationsByEvent.get(e.id) || [])
-    );
+      const { data: registrationsData } = await supabase
+        .from('event_registrations')
+        .select('event_id, member_id');
 
-    console.log('✅ Fetched events:', events.length);
-    return events;
+      const registrationsByEvent = new Map<string, string[]>();
+      (registrationsData || []).forEach(reg => {
+        if (!registrationsByEvent.has(reg.event_id)) {
+          registrationsByEvent.set(reg.event_id, []);
+        }
+        registrationsByEvent.get(reg.event_id)?.push(reg.member_id);
+      });
+
+      const events = (eventsData || []).map(e => 
+        mapDbToEvent(e, registrationsByEvent.get(e.id) || [])
+      );
+
+      console.log('✅ Fetched events:', events.length);
+      return events;
+    } catch (error) {
+      console.error('❌ [getAllEventsProcedure] Unexpected error:', error);
+      throw new Error(`Failed to fetch events: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   });
 
 export const getEventProcedure = publicProcedure

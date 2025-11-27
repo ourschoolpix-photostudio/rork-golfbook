@@ -9,12 +9,15 @@ console.log('🔧 Supabase config:', {
   keyLength: supabaseAnonKey?.length,
   keyPrefix: supabaseAnonKey?.substring(0, 20) + '...',
   envUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-  envHasKey: !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+  envHasKey: !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  nodeEnv: process.env.NODE_ENV,
 });
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase configuration. Please restart the development server.');
+  console.error('❌ Missing Supabase configuration. Using fallback values.');
 }
+
+console.log('✅ Creating Supabase client...');
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   db: {
@@ -28,11 +31,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     headers: {
       'x-my-custom-header': 'golf-app',
     },
-    fetch: (url, options = {}) => {
-      return fetch(url, {
-        ...options,
-        signal: AbortSignal.timeout(15000),
-      });
+    fetch: async (url, options = {}) => {
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: AbortSignal.timeout(15000),
+        });
+        return response;
+      } catch (error) {
+        console.error('❌ Supabase fetch error:', error);
+        throw error;
+      }
     },
   },
   realtime: {
@@ -41,3 +50,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     },
   },
 });
+
+console.log('✅ Supabase client created successfully');

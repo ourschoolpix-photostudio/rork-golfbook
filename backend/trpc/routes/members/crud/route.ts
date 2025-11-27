@@ -106,22 +106,27 @@ function mapDbToMember(m: any): Member {
 
 export const getAllMembersProcedure = publicProcedure
   .query(async () => {
-    console.log('📥 Fetching all members from database...');
-    
-    const { data, error } = await supabase
-      .from('members')
-      .select('*')
-      .order('name');
+    try {
+      console.log('📥 Fetching all members from database...');
+      
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .order('name');
 
-    if (error) {
-      console.error('❌ Error fetching members:', error);
-      throw new Error(`Failed to fetch members: ${error.message}`);
+      if (error) {
+        console.error('❌ Error fetching members:', error);
+        throw new Error(`Failed to fetch members: ${error.message}`);
+      }
+
+      const members = (data || []).map(mapDbToMember);
+
+      console.log('✅ Fetched members:', members.length);
+      return members;
+    } catch (error) {
+      console.error('❌ [getAllMembersProcedure] Unexpected error:', error);
+      throw new Error(`Failed to fetch members: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    const members = (data || []).map(mapDbToMember);
-
-    console.log('✅ Fetched members:', members.length);
-    return members;
   });
 
 export const getMemberProcedure = publicProcedure
