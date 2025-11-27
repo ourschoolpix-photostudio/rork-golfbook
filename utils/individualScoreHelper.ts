@@ -1,4 +1,4 @@
-import { PersonalGame, PersonalGamePlayer, PotPlayer } from '@/types';
+import { PersonalGame, PersonalGamePlayer } from '@/types';
 
 export type IndividualScoreResult = {
   playerName: string;
@@ -16,6 +16,9 @@ export type IndividualScoreWinners = {
   front9Winner: number | null;
   back9Winner: number | null;
   overallWinner: number | null;
+  front9Winners: number[];
+  back9Winners: number[];
+  overallWinners: number[];
 };
 
 export type PlayerPayment = {
@@ -125,10 +128,14 @@ export function determineWinners(
   let front9Winner: number | null = null;
   let back9Winner: number | null = null;
   let overallWinner: number | null = null;
+  let front9Winners: number[] = [];
+  let back9Winners: number[] = [];
+  let overallWinners: number[] = [];
 
   if (validFront9.length > 0) {
     const minFront9 = Math.min(...validFront9.map(r => r.front9Net));
     const winners = validFront9.filter(r => r.front9Net === minFront9);
+    front9Winners = winners.map(w => w.playerIndex);
     if (winners.length === 1) {
       front9Winner = winners[0].playerIndex;
     }
@@ -137,6 +144,7 @@ export function determineWinners(
   if (validBack9.length > 0) {
     const minBack9 = Math.min(...validBack9.map(r => r.back9Net));
     const winners = validBack9.filter(r => r.back9Net === minBack9);
+    back9Winners = winners.map(w => w.playerIndex);
     if (winners.length === 1) {
       back9Winner = winners[0].playerIndex;
     }
@@ -145,12 +153,13 @@ export function determineWinners(
   if (validOverall.length > 0) {
     const minOverall = Math.min(...validOverall.map(r => r.overallNet));
     const winners = validOverall.filter(r => r.overallNet === minOverall);
+    overallWinners = winners.map(w => w.playerIndex);
     if (winners.length === 1) {
       overallWinner = winners[0].playerIndex;
     }
   }
 
-  return { front9Winner, back9Winner, overallWinner };
+  return { front9Winner, back9Winner, overallWinner, front9Winners, back9Winners, overallWinners };
 }
 
 export function calculatePayments(
@@ -187,7 +196,6 @@ export function calculatePayments(
     results.push(result);
   }
 
-  const allPlayers = [...game.players];
   const allPotPlayers = [
     ...game.players.map((p, idx) => ({ name: p.name, handicap: p.handicap, memberId: p.memberId, isMainPlayer: true, mainPlayerIndex: idx })),
     ...(game.potPlayers || []).map(p => ({ name: p.name, handicap: p.handicap, memberId: p.memberId, isMainPlayer: false, mainPlayerIndex: -1 })),
@@ -206,33 +214,41 @@ export function calculatePayments(
     let potAmount = 0;
 
     if (game.front9Bet && game.front9Bet > 0) {
-      if (winners.front9Winner === i) {
-        front9Amount = game.front9Bet * (numPlayersInGroup - 1);
-      } else if (winners.front9Winner !== null) {
+      if (winners.front9Winners.includes(i)) {
+        const losersCount = numPlayersInGroup - winners.front9Winners.length;
+        const eachWinnerGets = (game.front9Bet * losersCount) / winners.front9Winners.length;
+        front9Amount = eachWinnerGets;
+      } else if (winners.front9Winners.length > 0) {
         front9Amount = -game.front9Bet;
       }
     }
 
     if (game.back9Bet && game.back9Bet > 0) {
-      if (winners.back9Winner === i) {
-        back9Amount = game.back9Bet * (numPlayersInGroup - 1);
-      } else if (winners.back9Winner !== null) {
+      if (winners.back9Winners.includes(i)) {
+        const losersCount = numPlayersInGroup - winners.back9Winners.length;
+        const eachWinnerGets = (game.back9Bet * losersCount) / winners.back9Winners.length;
+        back9Amount = eachWinnerGets;
+      } else if (winners.back9Winners.length > 0) {
         back9Amount = -game.back9Bet;
       }
     }
 
     if (game.overallBet && game.overallBet > 0) {
-      if (winners.overallWinner === i) {
-        overallAmount = game.overallBet * (numPlayersInGroup - 1);
-      } else if (winners.overallWinner !== null) {
+      if (winners.overallWinners.includes(i)) {
+        const losersCount = numPlayersInGroup - winners.overallWinners.length;
+        const eachWinnerGets = (game.overallBet * losersCount) / winners.overallWinners.length;
+        overallAmount = eachWinnerGets;
+      } else if (winners.overallWinners.length > 0) {
         overallAmount = -game.overallBet;
       }
     }
 
     if (game.potBet && game.potBet > 0) {
-      if (winners.overallWinner === i) {
-        potAmount = game.potBet * (numPlayersInPot - 1);
-      } else if (winners.overallWinner !== null) {
+      if (winners.overallWinners.includes(i)) {
+        const losersCount = numPlayersInPot - winners.overallWinners.length;
+        const eachWinnerGets = (game.potBet * losersCount) / winners.overallWinners.length;
+        potAmount = eachWinnerGets;
+      } else if (winners.overallWinners.length > 0) {
         potAmount = -game.potBet;
       }
     }
@@ -255,7 +271,7 @@ export function calculatePayments(
     for (const potPlayer of game.potPlayers) {
       let potAmount = 0;
 
-      if (game.potBet && game.potBet > 0 && winners.overallWinner !== null) {
+      if (game.potBet && game.potBet > 0 && winners.overallWinners.length > 0) {
         potAmount = -game.potBet;
       }
 

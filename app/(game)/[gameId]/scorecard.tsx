@@ -157,55 +157,91 @@ export default function GameScorecardScreen() {
           <View style={styles.winnersSection}>
             <Text style={styles.sectionTitle}>Winners</Text>
             <View style={styles.winnersCard}>
-              {individualScoreData.winners.front9Winner !== null && game.front9Bet && game.front9Bet > 0 && (
+              {game.front9Bet && game.front9Bet > 0 && (
                 <View style={styles.winnerRow}>
                   <Text style={styles.winnerLabel}>Front 9:</Text>
-                  <Text style={styles.winnerName}>{game.players[individualScoreData.winners.front9Winner]?.name || 'N/A'}</Text>
-                  <Text style={styles.winnerAmount}>${game.front9Bet.toFixed(2)}</Text>
+                  {individualScoreData.winners.front9Winners.length === 1 ? (
+                    <>
+                      <Text style={styles.winnerName}>{game.players[individualScoreData.winners.front9Winner!]?.name || 'N/A'}</Text>
+                      <Text style={styles.winnerAmount}>${game.front9Bet.toFixed(2)}</Text>
+                    </>
+                  ) : individualScoreData.winners.front9Winners.length > 1 ? (
+                    <View style={styles.tiedWinnersContainer}>
+                      <Text style={styles.winnerTie}>
+                        {individualScoreData.winners.front9Winners.map(idx => game.players[idx]?.name).join(', ')} (Split)
+                      </Text>
+                      <Text style={styles.winnerAmount}>
+                        ${(game.front9Bet / individualScoreData.winners.front9Winners.length).toFixed(2)} ea
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.winnerTie}>Push</Text>
+                  )}
                 </View>
               )}
-              {individualScoreData.winners.front9Winner === null && game.front9Bet && game.front9Bet > 0 && (
-                <View style={styles.winnerRow}>
-                  <Text style={styles.winnerLabel}>Front 9:</Text>
-                  <Text style={styles.winnerTie}>Tie - Push</Text>
-                </View>
-              )}
-              {individualScoreData.winners.back9Winner !== null && game.back9Bet && game.back9Bet > 0 && (
+              {game.back9Bet && game.back9Bet > 0 && (
                 <View style={styles.winnerRow}>
                   <Text style={styles.winnerLabel}>Back 9:</Text>
-                  <Text style={styles.winnerName}>{game.players[individualScoreData.winners.back9Winner]?.name || 'N/A'}</Text>
-                  <Text style={styles.winnerAmount}>${game.back9Bet.toFixed(2)}</Text>
+                  {individualScoreData.winners.back9Winners.length === 1 ? (
+                    <>
+                      <Text style={styles.winnerName}>{game.players[individualScoreData.winners.back9Winner!]?.name || 'N/A'}</Text>
+                      <Text style={styles.winnerAmount}>${game.back9Bet.toFixed(2)}</Text>
+                    </>
+                  ) : individualScoreData.winners.back9Winners.length > 1 ? (
+                    <View style={styles.tiedWinnersContainer}>
+                      <Text style={styles.winnerTie}>
+                        {individualScoreData.winners.back9Winners.map(idx => game.players[idx]?.name).join(', ')} (Split)
+                      </Text>
+                      <Text style={styles.winnerAmount}>
+                        ${(game.back9Bet / individualScoreData.winners.back9Winners.length).toFixed(2)} ea
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.winnerTie}>Push</Text>
+                  )}
                 </View>
               )}
-              {individualScoreData.winners.back9Winner === null && game.back9Bet && game.back9Bet > 0 && (
-                <View style={styles.winnerRow}>
-                  <Text style={styles.winnerLabel}>Back 9:</Text>
-                  <Text style={styles.winnerTie}>Tie - Push</Text>
-                </View>
-              )}
-              {individualScoreData.winners.overallWinner !== null && game.overallBet && game.overallBet > 0 && (
+              {game.overallBet && game.overallBet > 0 && (
                 <View style={styles.winnerRow}>
                   <Text style={styles.winnerLabel}>Overall:</Text>
-                  <Text style={styles.winnerName}>{game.players[individualScoreData.winners.overallWinner]?.name || 'N/A'}</Text>
-                  <Text style={styles.winnerAmount}>${game.overallBet.toFixed(2)}</Text>
-                </View>
-              )}
-              {individualScoreData.winners.overallWinner === null && game.overallBet && game.overallBet > 0 && (
-                <View style={styles.winnerRow}>
-                  <Text style={styles.winnerLabel}>Overall:</Text>
-                  <Text style={styles.winnerTie}>Tie - Push</Text>
+                  {individualScoreData.winners.overallWinners.length === 1 ? (
+                    <>
+                      <Text style={styles.winnerName}>{game.players[individualScoreData.winners.overallWinner!]?.name || 'N/A'}</Text>
+                      <Text style={styles.winnerAmount}>${game.overallBet.toFixed(2)}</Text>
+                    </>
+                  ) : individualScoreData.winners.overallWinners.length > 1 ? (
+                    <View style={styles.tiedWinnersContainer}>
+                      <Text style={styles.winnerTie}>
+                        {individualScoreData.winners.overallWinners.map(idx => game.players[idx]?.name).join(', ')} (Split)
+                      </Text>
+                      <Text style={styles.winnerAmount}>
+                        ${(game.overallBet / individualScoreData.winners.overallWinners.length).toFixed(2)} ea
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.winnerTie}>Push</Text>
+                  )}
                 </View>
               )}
               {game.potBet && game.potBet > 0 && (
                 <View style={styles.winnerRow}>
                   <Text style={styles.winnerLabel}>Pot:</Text>
-                  {individualScoreData.winners.overallWinner !== null ? (
+                  {individualScoreData.winners.overallWinners.length === 1 ? (
                     <>
-                      <Text style={styles.winnerName}>{game.players[individualScoreData.winners.overallWinner]?.name || 'N/A'}</Text>
+                      <Text style={styles.winnerName}>{game.players[individualScoreData.winners.overallWinner!]?.name || 'N/A'}</Text>
                       <Text style={styles.winnerAmount}>${game.potBet.toFixed(2)}</Text>
                     </>
+                  ) : individualScoreData.winners.overallWinners.length > 1 ? (
+                    <View style={styles.tiedWinnersContainer}>
+                      <Text style={styles.winnerTie}>
+                        {individualScoreData.winners.overallWinners.map(idx => game.players[idx]?.name).join(', ')} (Split)
+                      </Text>
+                      <Text style={styles.winnerAmount}>
+                        ${(game.potBet / individualScoreData.winners.overallWinners.length).toFixed(2)} ea
+                      </Text>
+                    </View>
                   ) : (
-                    <Text style={styles.winnerTie}>Tie - Push</Text>
+                    <Text style={styles.winnerTie}>Push</Text>
                   )}
                 </View>
               )}
@@ -653,9 +689,15 @@ const styles = StyleSheet.create({
   },
   winnerTie: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
     color: '#999',
     fontStyle: 'italic' as const,
+  },
+  tiedWinnersContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });
