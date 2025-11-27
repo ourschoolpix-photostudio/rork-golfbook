@@ -12,6 +12,8 @@ import { ArrowLeft, Edit } from 'lucide-react-native';
 import { useGames } from '@/contexts/GamesContext';
 import * as NinersHelper from '@/utils/ninersHelper';
 import * as WolfHelper from '@/utils/wolfHelper';
+import * as IndividualScoreHelper from '@/utils/individualScoreHelper';
+import { PersonalGamePlayer } from '@/types';
 
 export default function GameScorecardScreen() {
   const router = useRouter();
@@ -31,8 +33,64 @@ export default function GameScorecardScreen() {
 
   const isWolf = game.gameType === 'wolf';
   const isNiners = game.gameType === 'niners';
+  const isIndividualScore = game.gameType === 'individual-net';
 
-  const paymentData = isWolf ? WolfHelper.calculatePayments(game) : isNiners ? NinersHelper.calculatePayments(game) : null;
+  const shouldPlayerReceiveStrokeOnHole = (player: PersonalGamePlayer, playerIndex: number, holeIndex: number): boolean => {
+    if (!player.strokesReceived || player.strokesReceived === 0) return false;
+    if (!game || !game.strokeIndices || game.strokeIndices.length !== 18) return false;
+    if (holeIndex < 0 || holeIndex >= 18) return false;
+
+    const strokeMode = player.strokeMode || 'manual';
+    
+    if (strokeMode === 'manual') {
+      if (!player.strokesUsed || !player.strokesUsed[holeIndex]) return false;
+      return player.strokesUsed[holeIndex] === 1;
+    } else {
+      const isWolfOrNiners = game.gameType === 'wolf' || game.gameType === 'niners';
+      const holePar = game.holePars[holeIndex];
+      
+      if (isWolfOrNiners && holePar === 3) {
+        return false;
+      }
+      
+      const strokesPerNine = player.strokesReceived;
+      const isFrontNine = holeIndex < 9;
+      const nineHoles = isFrontNine ? game.holePars.slice(0, 9) : game.holePars.slice(9, 18);
+      const nineStrokeIndices = isFrontNine ? game.strokeIndices.slice(0, 9) : game.strokeIndices.slice(9, 18);
+      const holeIndexInNine = isFrontNine ? holeIndex : holeIndex - 9;
+      
+      const sortedHoles = nineStrokeIndices
+        .map((si: number, idx: number) => ({ idx, strokeIndex: si, par: nineHoles[idx] }))
+        .filter((h: { idx: number; strokeIndex: number; par: number }) => isWolfOrNiners ? h.par !== 3 : true)
+        .sort((a: { idx: number; strokeIndex: number; par: number }, b: { idx: number; strokeIndex: number; par: number }) => a.strokeIndex - b.strokeIndex)
+        .slice(0, Math.min(strokesPerNine, 9))
+        .map((h: { idx: number; strokeIndex: number; par: number }) => h.idx);
+      
+      return sortedHoles.includes(holeIndexInNine);
+    }
+  };
+
+  const holeScores: { [playerIndex: number]: { [hole: number]: number } } = {};
+  game.players.forEach((player: PersonalGamePlayer, playerIndex: number) => {
+    holeScores[playerIndex] = {};
+    player.scores.forEach((score: number, holeIndex: number) => {
+      if (score > 0) {
+        holeScores[playerIndex][holeIndex + 1] = score;
+      }
+    });
+  });
+
+  const individualScoreData = isIndividualScore
+    ? IndividualScoreHelper.calculatePayments(game, holeScores, shouldPlayerReceiveStrokeOnHole)
+    : null;
+
+  const paymentData = isWolf
+    ? WolfHelper.calculatePayments(game)
+    : isNiners
+    ? NinersHelper.calculatePayments(game)
+    : isIndividualScore && individualScoreData
+    ? { transactions: individualScoreData.transactions }
+    : null;
 
   const sortedPlayers = [...game.players].sort((a, b) => {
     if (isWolf || isNiners) {
@@ -95,6 +153,66 @@ export default function GameScorecardScreen() {
           </View>
         </View>
 
+        {isIndividualScore && individualScoreData && (
+          <View style={styles.winnersSection}>
+            <Text style={styles.sectionTitle}>Winners</Text>
+            <View style={styles.winnersCard}>
+              {individualScoreData.winners.front9Winner !== null && game.front9Bet && game.front9Bet > 0 && (
+                <View style={styles.winnerRow}>
+                  <Text style={styles.winnerLabel}>Front 9:</Text>
+                  <Text style={styles.winnerName}>{game.players[individualScoreData.winners.front9Winner]?.name || 'N/A'}</Text>
+                  <Text style={styles.winnerAmount}>${game.front9Bet.toFixed(2)}</Text>
+                </View>
+              )}
+              {individualScoreData.winners.front9Winner === null && game.front9Bet && game.front9Bet > 0 && (
+                <View style={styles.winnerRow}>
+                  <Text style={styles.winnerLabel}>Front 9:</Text>
+                  <Text style={styles.winnerTie}>Tie - Push</Text>
+                </View>
+              )}
+              {individualScoreData.winners.back9Winner !== null && game.back9Bet && game.back9Bet > 0 && (
+                <View style={styles.winnerRow}>
+                  <Text style={styles.winnerLabel}>Back 9:</Text>
+                  <Text style={styles.winnerName}>{game.players[individualScoreData.winners.back9Winner]?.name || 'N/A'}</Text>
+                  <Text style={styles.winnerAmount}>${game.back9Bet.toFixed(2)}</Text>
+                </View>
+              )}
+              {individualScoreData.winners.back9Winner === null && game.back9Bet && game.back9Bet > 0 && (
+                <View style={styles.winnerRow}>
+                  <Text style={styles.winnerLabel}>Back 9:</Text>
+                  <Text style={styles.winnerTie}>Tie - Push</Text>
+                </View>
+              )}
+              {individualScoreData.winners.overallWinner !== null && game.overallBet && game.overallBet > 0 && (
+                <View style={styles.winnerRow}>
+                  <Text style={styles.winnerLabel}>Overall:</Text>
+                  <Text style={styles.winnerName}>{game.players[individualScoreData.winners.overallWinner]?.name || 'N/A'}</Text>
+                  <Text style={styles.winnerAmount}>${game.overallBet.toFixed(2)}</Text>
+                </View>
+              )}
+              {individualScoreData.winners.overallWinner === null && game.overallBet && game.overallBet > 0 && (
+                <View style={styles.winnerRow}>
+                  <Text style={styles.winnerLabel}>Overall:</Text>
+                  <Text style={styles.winnerTie}>Tie - Push</Text>
+                </View>
+              )}
+              {game.potBet && game.potBet > 0 && (
+                <View style={styles.winnerRow}>
+                  <Text style={styles.winnerLabel}>Pot:</Text>
+                  {individualScoreData.winners.overallWinner !== null ? (
+                    <>
+                      <Text style={styles.winnerName}>{game.players[individualScoreData.winners.overallWinner]?.name || 'N/A'}</Text>
+                      <Text style={styles.winnerAmount}>${game.potBet.toFixed(2)}</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.winnerTie}>Tie - Push</Text>
+                  )}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         <View style={styles.leaderboardSection}>
           <Text style={styles.sectionTitle}>{isWolf ? 'Wolf Points Leaderboard' : isNiners ? 'Niners Points Leaderboard' : 'Final Scores'}</Text>
           {sortedPlayers.map((player, index) => {
@@ -144,7 +262,7 @@ export default function GameScorecardScreen() {
           })}
         </View>
 
-        {(isWolf || isNiners) && paymentData && paymentData.transactions.length > 0 && (
+        {(isWolf || isNiners || isIndividualScore) && paymentData && paymentData.transactions.length > 0 && (
           <View style={styles.paymentSection}>
             <Text style={styles.sectionTitle}>Payment Settlement</Text>
             <View style={styles.paymentSummaryCard}>
@@ -493,5 +611,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700' as const,
     color: '#1B5E20',
+  },
+  winnersSection: {
+    marginTop: 24,
+    marginHorizontal: 16,
+  },
+  winnersCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  winnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  winnerLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#666',
+    width: 80,
+  },
+  winnerName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#1B5E20',
+  },
+  winnerAmount: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#34C759',
+  },
+  winnerTie: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#999',
+    fontStyle: 'italic' as const,
   },
 });
