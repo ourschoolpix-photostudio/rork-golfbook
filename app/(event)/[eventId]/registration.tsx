@@ -18,7 +18,7 @@ import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { registrationService } from '@/utils/registrationService';
-import { generateRegistrationPDF, generateRegistrationText } from '@/utils/pdfGenerator';
+import { generateRegistrationPDF, generateRegistrationText, generateCheckInPDF } from '@/utils/pdfGenerator';
 import * as Clipboard from 'expo-clipboard';
 import { Member, User, Event } from '@/types';
 import { EventPlayerModal } from '@/components/EventPlayerModal';
@@ -811,11 +811,29 @@ export default function EventRegistrationScreen() {
     }
   };
 
-  const handleOutputFormatSelected = async (format: 'pdf' | 'text') => {
+  const handleOutputFormatSelected = async (format: 'pdf' | 'text' | 'checkin') => {
     setOutputFormatModalVisible(false);
     const regs = registrationsQuery.data || [];
 
-    if (format === 'pdf') {
+    if (format === 'checkin') {
+      setIsGeneratingPDF(true);
+      try {
+        if (event) {
+          await generateCheckInPDF({
+            registrations: regs,
+            members: allMembers,
+            event,
+            useCourseHandicap,
+          });
+        }
+        console.log('[registration] ✅ Check-in PDF generated successfully');
+      } catch (error) {
+        console.error('[registration] ❌ Check-in PDF generation error:', error);
+        Alert.alert('Error', 'Failed to generate check-in PDF. Please try again.');
+      } finally {
+        setIsGeneratingPDF(false);
+      }
+    } else if (format === 'pdf') {
       setIsGeneratingPDF(true);
       try {
         if (event) {
@@ -1672,11 +1690,19 @@ export default function EventRegistrationScreen() {
 
             <View style={styles.paymentModalContent}>
               <TouchableOpacity
+                style={[styles.paymentMethodButton, { backgroundColor: '#FF9500' }]}
+                onPress={() => handleOutputFormatSelected('checkin')}
+              >
+                <Ionicons name="checkbox-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.paymentMethodButtonText}>Check-In PDF</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={styles.paymentMethodButton}
                 onPress={() => handleOutputFormatSelected('pdf')}
               >
                 <Ionicons name="document-text-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.paymentMethodButtonText}>PDF</Text>
+                <Text style={styles.paymentMethodButtonText}>Registration PDF</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

@@ -900,3 +900,328 @@ function buildRegistrationTextContent(
 
   return textContent;
 }
+
+export async function generateCheckInPDF(options: RegistrationPDFOptions): Promise<void> {
+  try {
+    console.log('[pdfGenerator] Starting check-in PDF generation...');
+    const { registrations, members, event } = options;
+    const htmlContent = buildCheckInHTMLContent(registrations, members, event);
+
+    if (Platform.OS === 'web') {
+      return generateWebCheckInPDF(htmlContent, event.name);
+    }
+
+    return generateNativeCheckInPDF(htmlContent, event.name);
+  } catch (error) {
+    console.error('[pdfGenerator] Check-in PDF error:', error);
+    throw error;
+  }
+}
+
+async function generateNativeCheckInPDF(
+  htmlContent: string,
+  eventName: string
+): Promise<void> {
+  try {
+    console.log('[pdfGenerator] Generating check-in PDF with expo-print...');
+    
+    const { uri } = await Print.printToFileAsync({
+      html: htmlContent,
+      base64: false,
+    });
+
+    console.log('[pdfGenerator] Check-in PDF created at:', uri);
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share Check-In List',
+        UTI: 'com.adobe.pdf',
+      });
+    }
+  } catch (error) {
+    console.error('[pdfGenerator] Native check-in PDF error:', error);
+    throw error;
+  }
+}
+
+function generateWebCheckInPDF(htmlContent: string, eventName: string): void {
+  try {
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${eventName.replace(/\s+/g, '-')}_check-in.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    console.log('[pdfGenerator] Web check-in download initiated');
+  } catch (error) {
+    console.error('[pdfGenerator] Web check-in error:', error);
+  }
+}
+
+function buildCheckInHTMLContent(
+  registrations: any[],
+  members: Member[],
+  event: Event
+): string {
+  const isSocial = event.type === 'social';
+  let playersHTML = '';
+  let itemNumber = 0;
+
+  if (isSocial) {
+    const sponsors = registrations
+      .filter(reg => reg.isSponsor)
+      .map(reg => ({ reg, member: members.find(m => m.id === reg.memberId) }))
+      .filter(item => item.member)
+      .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
+    
+    const nonSponsors = registrations
+      .filter(reg => !reg.isSponsor)
+      .map(reg => ({ reg, member: members.find(m => m.id === reg.memberId) }))
+      .filter(item => item.member)
+      .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
+
+    if (sponsors.length > 0) {
+      playersHTML += `
+        <div class="sponsor-section">
+          <div class="sponsor-header">Sponsors</div>
+      `;
+      
+      sponsors.forEach(({ member }) => {
+        if (!member) return;
+        itemNumber++;
+        playersHTML += `
+          <div class="check-in-row">
+            <div class="checkbox"></div>
+            <div class="player-number">${itemNumber}.</div>
+            <div class="player-name">${member.name}</div>
+          </div>
+        `;
+      });
+      
+      playersHTML += `
+        </div>
+      `;
+    }
+
+    nonSponsors.forEach(({ reg, member }) => {
+      if (!member) return;
+      
+      itemNumber++;
+      const guestNames = reg.guestNames ? reg.guestNames.split('\n').filter((n: string) => n.trim()) : [];
+      
+      playersHTML += `
+        <div class="check-in-row">
+          <div class="checkbox"></div>
+          <div class="player-number">${itemNumber}.</div>
+          <div class="player-name">${member.name}</div>
+        </div>
+      `;
+      
+      if (guestNames.length > 0) {
+        guestNames.forEach((guestName: string) => {
+          itemNumber++;
+          playersHTML += `
+            <div class="check-in-row guest-row">
+              <div class="checkbox"></div>
+              <div class="player-number">${itemNumber}.</div>
+              <div class="player-name">${member.name} - ${guestName}</div>
+            </div>
+          `;
+        });
+      }
+    });
+  } else {
+    const calculateTournamentFlight = (player: Member, reg: any): string => {
+      if (event.flightACutoff === undefined || event.flightBCutoff === undefined) {
+        return 'L';
+      }
+      
+      const handicap = reg?.adjustedHandicap && reg.adjustedHandicap !== '0' && reg.adjustedHandicap !== '' 
+        ? parseFloat(reg.adjustedHandicap) 
+        : (player.handicap ?? 0);
+      
+      if (handicap <= Number(event.flightACutoff)) return 'A';
+      if (handicap <= Number(event.flightBCutoff)) return 'B';
+      return 'C';
+    };
+    
+    const regsWithFlight = registrations
+      .map(reg => ({
+        reg,
+        member: members.find(m => m.id === reg.memberId),
+        flight: calculateTournamentFlight(members.find(m => m.id === reg.memberId)!, reg)
+      }))
+      .filter(item => item.member);
+    
+    const groupedByFlight: Record<string, typeof regsWithFlight> = {
+      A: [],
+      B: [],
+      C: [],
+      L: []
+    };
+    
+    regsWithFlight.forEach(item => {
+      if (item.flight in groupedByFlight) {
+        groupedByFlight[item.flight].push(item);
+      }
+    });
+
+    ['A', 'B', 'C', 'L'].forEach(flight => {
+      const flightRegs = groupedByFlight[flight];
+      if (flightRegs.length === 0) return;
+      
+      flightRegs.sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
+      
+      playersHTML += `
+        <div class="flight-separator">Flight ${flight} (${flightRegs.length})</div>
+      `;
+      
+      flightRegs.forEach(({ member }) => {
+        if (!member) return;
+        itemNumber++;
+        
+        playersHTML += `
+          <div class="check-in-row">
+            <div class="checkbox"></div>
+            <div class="player-number">${itemNumber}.</div>
+            <div class="player-name">${member.name}</div>
+          </div>
+        `;
+      });
+    });
+  }
+
+  const dateRange = event.endDate && event.endDate !== event.date 
+    ? `${event.date} - ${event.endDate}` 
+    : event.date;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${event.name} - Check-In List</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @page { size: letter; margin: 0.75in; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: white;
+      padding: 20px;
+      font-size: 12px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 3px solid #1B5E20;
+      padding-bottom: 15px;
+    }
+    .header-title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #1B5E20;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .header-subtitle {
+      font-size: 16px;
+      color: #666;
+      margin-top: 5px;
+    }
+    .header-date {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    .sponsor-section {
+      background: #FFF3E0;
+      border: 2px solid #FF9500;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 25px;
+    }
+    .sponsor-header {
+      font-size: 18px;
+      font-weight: 700;
+      color: #FF9500;
+      text-align: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #FF9500;
+    }
+    .flight-separator {
+      background: #E8F5E9;
+      padding: 12px 15px;
+      font-weight: bold;
+      font-size: 16px;
+      color: #1B5E20;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid #1B5E20;
+    }
+    .check-in-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 10px;
+      border-bottom: 1px solid #E0E0E0;
+      gap: 15px;
+      page-break-inside: avoid;
+    }
+    .check-in-row:hover {
+      background: #F5F5F5;
+    }
+    .guest-row {
+      padding-left: 25px;
+      background: #FAFAFA;
+    }
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #1B5E20;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .player-number {
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      min-width: 35px;
+      text-align: left;
+    }
+    .player-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      flex: 1;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #1B5E20;
+      text-align: center;
+    }
+    .footer-text {
+      font-size: 12px;
+      color: #666;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">${event.name}</div>
+    <div class="header-subtitle">Check-In List</div>
+    <div class="header-date">${dateRange}</div>
+    ${event.location ? `<div class="header-date">${event.location}</div>` : ''}
+  </div>
+  ${playersHTML}
+  <div class="footer">
+    <div class="footer-text">Total: ${itemNumber} ${isSocial ? 'attendees' : 'players'}</div>
+  </div>
+</body>
+</html>`;
+}
