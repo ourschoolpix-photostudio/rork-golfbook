@@ -1175,7 +1175,6 @@ function buildCheckInHTMLContent(
       background: #F5F5F5;
     }
     .guest-row {
-      padding-left: 25px;
       background: #FAFAFA;
     }
     .checkbox {
