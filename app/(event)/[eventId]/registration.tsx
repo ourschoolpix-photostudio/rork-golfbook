@@ -1450,11 +1450,7 @@ export default function EventRegistrationScreen() {
       />
 
       {addCustomGuestModalVisible && (
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={0}
-        >
+        <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback onPress={() => {
             Keyboard.dismiss();
             setAddCustomGuestModalVisible(false);
@@ -1463,9 +1459,9 @@ export default function EventRegistrationScreen() {
             setAddCustomGuestNames('');
             setAddCustomGuestIsSponsor(false);
           }}>
-            <View style={styles.modalOverlayInner}>
+            <View style={styles.centeredModalWrapper}>
               <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-                <View style={styles.modal}>
+                <View style={styles.addGuestModal}>
                   <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>Add Custom Guest</Text>
                     <TouchableOpacity onPress={() => {
@@ -1549,7 +1545,7 @@ export default function EventRegistrationScreen() {
               </TouchableWithoutFeedback>
             </View>
           </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
+        </View>
       )}
 
       {modalVisible && (
@@ -2428,7 +2424,25 @@ const styles = StyleSheet.create({
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centeredModalWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  addGuestModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   },
   modalOverlayInner: {
     flex: 1,
