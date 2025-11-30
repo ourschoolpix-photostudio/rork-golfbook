@@ -145,10 +145,10 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.container}>
+            <View style={styles.modal}>
               <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={styles.content}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  container: {
+  modal: {
     width: '90%',
     maxWidth: 600,
     backgroundColor: '#fff',
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
   scrollView: {},
-  content: {
+  scrollContent: {
     padding: 20,
   },
   section: {
