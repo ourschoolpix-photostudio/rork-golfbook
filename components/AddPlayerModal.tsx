@@ -146,22 +146,23 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
             <View style={styles.container}>
-              <View style={styles.header}>
-                <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
-                <TouchableOpacity 
-                  onPress={onClose}
-                  style={styles.closeIconButton}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <X size={20} color="#fff" strokeWidth={3} />
-                </TouchableOpacity>
-              </View>
               <ScrollView
-                style={styles.content}
+                style={styles.scrollView}
+                contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ paddingBottom: 20 }}
               >
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
+              <TouchableOpacity 
+                onPress={onClose}
+                style={styles.closeIconButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={20} color="#fff" strokeWidth={3} />
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.section}>
               <ProfilePhotoPicker
                 onPhotoPicked={setProfilePhotoUri}
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: -2 },
     elevation: 5,
     maxHeight: '80%',
   },
@@ -503,22 +504,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    marginBottom: 20,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#f0f0f0',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700' as const,
     color: '#1a1a1a',
   },
+  scrollView: {},
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    padding: 20,
   },
   section: {
     marginBottom: 16,
