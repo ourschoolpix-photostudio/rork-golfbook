@@ -299,8 +299,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modal: {
-    width: '100%',
-    maxHeight: '80%',
+    width: '90%',
+    maxWidth: 600,
     backgroundColor: '#fff',
     borderRadius: 16,
     shadowColor: '#000',
@@ -308,6 +308,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: -2 },
     elevation: 5,
+    maxHeight: '80%',
   },
   scrollView: {
     flex: 1,
