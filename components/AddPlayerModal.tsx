@@ -146,23 +146,22 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
             <View style={styles.modal}>
-              <View style={styles.header}>
-                <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
-                <TouchableOpacity 
-                  onPress={onClose}
-                  style={styles.closeIconButton}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <X size={20} color="#fff" strokeWidth={3} />
-                </TouchableOpacity>
-              </View>
-
               <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
+                <View style={styles.header}>
+                  <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
+                  <TouchableOpacity 
+                    onPress={onClose}
+                    style={styles.closeIconButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <X size={20} color="#fff" strokeWidth={3} />
+                  </TouchableOpacity>
+                </View>
                 <View style={styles.section}>
                   <ProfilePhotoPicker
                     onPhotoPicked={setProfilePhotoUri}
@@ -458,9 +457,8 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
                     </View>
                   </View>
                 )}
-              </ScrollView>
 
-              <View style={styles.buttonRow}>
+                <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={[styles.addButton, styles.buttonRowButton]}
                   onPress={handleAddPlayer}
@@ -474,6 +472,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
                   <Text style={styles.closeButtonText}>Close</Text>
                 </TouchableOpacity>
               </View>
+              </ScrollView>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -505,8 +504,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    marginBottom: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -519,7 +517,6 @@ const styles = StyleSheet.create({
   scrollView: {},
   scrollContent: {
     padding: 20,
-    paddingTop: 16,
   },
   section: {
     marginBottom: 16,
@@ -651,8 +648,8 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    padding: 20,
     paddingTop: 16,
+    marginTop: 4,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
     gap: 12,
