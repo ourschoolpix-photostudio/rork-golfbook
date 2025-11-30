@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
   Keyboard,
   TouchableWithoutFeedback,
@@ -158,17 +156,12 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
               <X size={20} color="#fff" strokeWidth={3} />
             </TouchableOpacity>
           </View>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardAvoid}
-            keyboardVerticalOffset={0}
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 20 }}
           >
-            <ScrollView
-              style={styles.content}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 20 }}
-            >
             <View style={styles.section}>
               <ProfilePhotoPicker
                 onPhotoPicked={setProfilePhotoUri}
@@ -478,8 +471,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
+          </ScrollView>
         </View>
       </TouchableWithoutFeedback>
     </Modal>
@@ -490,9 +482,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  keyboardAvoid: {
-    flex: 1,
   },
   header: {
     flexDirection: 'row',
