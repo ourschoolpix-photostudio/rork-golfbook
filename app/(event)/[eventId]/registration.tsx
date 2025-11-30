@@ -9,6 +9,10 @@ import {
   Image,
   Alert,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
@@ -1446,84 +1450,99 @@ export default function EventRegistrationScreen() {
       />
 
       {addCustomGuestModalVisible && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Custom Guest</Text>
-              <TouchableOpacity onPress={() => {
-                setAddCustomGuestModalVisible(false);
-                setAddCustomGuestName('');
-                setAddCustomGuestCount('');
-                setAddCustomGuestNames('');
-                setAddCustomGuestIsSponsor(false);
-              }}>
-                <Ionicons name="close" size={24} color="#1a1a1a" />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlayInner}>
+              <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                <View style={styles.modal}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Add Custom Guest</Text>
+                    <TouchableOpacity onPress={() => {
+                      Keyboard.dismiss();
+                      setAddCustomGuestModalVisible(false);
+                      setAddCustomGuestName('');
+                      setAddCustomGuestCount('');
+                      setAddCustomGuestNames('');
+                      setAddCustomGuestIsSponsor(false);
+                    }}>
+                      <Ionicons name="close" size={24} color="#1a1a1a" />
+                    </TouchableOpacity>
+                  </View>
 
-            <View style={styles.modalContent}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Guest Name</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={addCustomGuestName}
-                  onChangeText={setAddCustomGuestName}
-                  placeholder="Enter guest name"
-                  autoCapitalize="words"
-                />
-              </View>
+                  <ScrollView 
+                    style={styles.modalContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Guest Name</Text>
+                      <TextInput
+                        style={styles.textInput}
+                        value={addCustomGuestName}
+                        onChangeText={setAddCustomGuestName}
+                        placeholder="Enter guest name"
+                        autoCapitalize="words"
+                      />
+                    </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Number of Additional Guests</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={addCustomGuestCount}
-                  onChangeText={setAddCustomGuestCount}
-                  placeholder="0"
-                  keyboardType="number-pad"
-                />
-              </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Number of Additional Guests</Text>
+                      <TextInput
+                        style={styles.textInput}
+                        value={addCustomGuestCount}
+                        onChangeText={setAddCustomGuestCount}
+                        placeholder="0"
+                        keyboardType="number-pad"
+                      />
+                    </View>
 
-              {parseInt(addCustomGuestCount, 10) > 0 && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>
-                    Guest Name{parseInt(addCustomGuestCount, 10) > 1 ? 's' : ''}
-                  </Text>
-                  <TextInput
-                    style={[styles.textInput, styles.textInputMultiline]}
-                    value={addCustomGuestNames}
-                    onChangeText={setAddCustomGuestNames}
-                    placeholder={parseInt(addCustomGuestCount, 10) > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
-                    multiline
-                    numberOfLines={Math.min(parseInt(addCustomGuestCount, 10) || 1, 4)}
-                  />
+                    {parseInt(addCustomGuestCount, 10) > 0 && (
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>
+                          Guest Name{parseInt(addCustomGuestCount, 10) > 1 ? 's' : ''}
+                        </Text>
+                        <TextInput
+                          style={[styles.textInput, styles.textInputMultiline]}
+                          value={addCustomGuestNames}
+                          onChangeText={setAddCustomGuestNames}
+                          placeholder={parseInt(addCustomGuestCount, 10) > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
+                          multiline
+                          numberOfLines={Math.min(parseInt(addCustomGuestCount, 10) || 1, 4)}
+                        />
+                      </View>
+                    )}
+
+                    <TouchableOpacity
+                      style={styles.sponsorToggleRow}
+                      onPress={() => setAddCustomGuestIsSponsor(!addCustomGuestIsSponsor)}
+                    >
+                      <View style={[styles.sponsorCheckbox, addCustomGuestIsSponsor && styles.sponsorCheckboxActive]}>
+                        {addCustomGuestIsSponsor && (
+                          <Ionicons name="checkmark" size={16} color="#fff" />
+                        )}
+                      </View>
+                      <Text style={styles.sponsorLabel}>Sponsor</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+
+                  <View style={styles.modalFooter}>
+                    <TouchableOpacity
+                      style={[styles.bulkAddButton, { backgroundColor: '#9C27B0' }]}
+                      onPress={handleAddCustomGuest}
+                    >
+                      <Ionicons name="add-circle" size={18} color="#fff" />
+                      <Text style={styles.bulkAddButtonText}>Add Guest</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              )}
-
-              <TouchableOpacity
-                style={styles.sponsorToggleRow}
-                onPress={() => setAddCustomGuestIsSponsor(!addCustomGuestIsSponsor)}
-              >
-                <View style={[styles.sponsorCheckbox, addCustomGuestIsSponsor && styles.sponsorCheckboxActive]}>
-                  {addCustomGuestIsSponsor && (
-                    <Ionicons name="checkmark" size={16} color="#fff" />
-                  )}
-                </View>
-                <Text style={styles.sponsorLabel}>Sponsor</Text>
-              </TouchableOpacity>
+              </TouchableWithoutFeedback>
             </View>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.bulkAddButton, { backgroundColor: '#9C27B0' }]}
-                onPress={handleAddCustomGuest}
-              >
-                <Ionicons name="add-circle" size={18} color="#fff" />
-                <Text style={styles.bulkAddButtonText}>Add Guest</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       )}
 
       {modalVisible && (
@@ -2405,6 +2424,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingTop: 210,
   },
+  modalOverlayInner: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    paddingTop: 210,
+  },
   modal: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
@@ -2428,7 +2452,9 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingTop: 12,
+    paddingBottom: 16,
+    maxHeight: 400,
   },
   memberCard: {
     flexDirection: 'row',
