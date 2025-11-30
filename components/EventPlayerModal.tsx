@@ -122,10 +122,10 @@ export function EventPlayerModal({
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={[styles.modal, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+            <View style={[styles.modal, { marginTop: insets.top }]}>
               <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom }]}
                 scrollEnabled={true}
                 keyboardShouldPersistTaps="handled"
               >
@@ -296,12 +296,12 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   modal: {
     width: '100%',
-    maxHeight: '80%',
+    maxHeight: '75%',
     backgroundColor: '#fff',
     borderRadius: 12,
     shadowColor: '#000',
