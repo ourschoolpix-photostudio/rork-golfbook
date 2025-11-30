@@ -10,7 +10,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { Ionicons } from '@expo/vector-icons';
 import { Member, Event } from '@/types';
 import { Registration } from '@/utils/registrationService';
@@ -34,7 +34,6 @@ export function EventPlayerModal({
   onClose,
   onSave,
 }: EventPlayerModalProps) {
-  const insets = useSafeAreaInsets();
   const [currentHandicap, setCurrentHandicap] = useState('');
   const [adjustedHandicap, setAdjustedHandicap] = useState('');
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
@@ -125,7 +124,7 @@ export function EventPlayerModal({
             <View style={styles.modal}>
               <ScrollView
                 style={styles.scrollView}
-                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom }]}
+                contentContainerStyle={styles.scrollContent}
                 scrollEnabled={true}
                 keyboardShouldPersistTaps="handled"
               >

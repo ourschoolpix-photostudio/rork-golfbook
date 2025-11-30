@@ -167,7 +167,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
               style={styles.content}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+              contentContainerStyle={{ paddingBottom: 20 }}
             >
             <View style={styles.section}>
               <ProfilePhotoPicker
