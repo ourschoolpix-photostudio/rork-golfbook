@@ -120,15 +120,15 @@ export function EventPlayerModal({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={[styles.overlay, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+        <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={styles.scrollContent}
-              scrollEnabled={true}
-              keyboardShouldPersistTaps="handled"
-            >
-              <View style={styles.modal}>
+            <View style={[styles.modal, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+              <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                scrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
+              >
             <View style={styles.header}>
               <Text style={styles.title}>{player.name}</Text>
               <TouchableOpacity onPress={onClose}>
@@ -283,8 +283,8 @@ export function EventPlayerModal({
                 </Text>
               </TouchableOpacity>
             </View>
-              </View>
-            </ScrollView>
+              </ScrollView>
+            </View>
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
@@ -296,26 +296,25 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modal: {
+    width: '100%',
+    maxHeight: '80%',
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 20,
-    width: '90%',
-    maxHeight: '80%',
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 5,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
   },
   header: {
     flexDirection: 'row',
