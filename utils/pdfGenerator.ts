@@ -1096,9 +1096,17 @@ function buildCheckInHTMLContent(
     });
   }
 
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
   const dateRange = event.endDate && event.endDate !== event.date 
-    ? `${event.date} - ${event.endDate}` 
-    : event.date;
+    ? `${formatDate(event.date)} - ${formatDate(event.endDate)}` 
+    : formatDate(event.date);
 
   return `<!DOCTYPE html>
 <html>
@@ -1136,15 +1144,18 @@ function buildCheckInHTMLContent(
       margin-bottom: 8px;
       letter-spacing: 1px;
     }
-    .header-subtitle {
-      font-size: 16px;
-      color: #666;
-      margin-top: 5px;
-    }
-    .header-date {
+    .venue-date-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
       font-size: 14px;
       color: #666;
-      margin-top: 5px;
+      margin-top: 8px;
+    }
+    .venue-text, .date-text {
+      font-size: 14px;
+      color: #666;
     }
     .sponsor-section {
       background: #FFF3E0;
@@ -1227,9 +1238,10 @@ function buildCheckInHTMLContent(
       <img src="${logoUrl}" alt="Club Logo" class="logo" />
     </div>` : ''}
     <div class="header-title">${event.name}</div>
-    <div class="header-subtitle">Check-In List</div>
-    <div class="header-date">${dateRange}</div>
-    ${event.location ? `<div class="header-date">${event.location}</div>` : ''}
+    <div class="venue-date-row">
+      ${event.location ? `<span class="venue-text">${event.location}</span>` : ''}
+      <span class="date-text">${dateRange}</span>
+    </div>
   </div>
   ${playersHTML}
   <div class="footer">
