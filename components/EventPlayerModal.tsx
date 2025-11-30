@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Member, Event } from '@/types';
@@ -117,18 +117,16 @@ export function EventPlayerModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          scrollEnabled={true}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.modal}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              scrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.modal}>
             <View style={styles.header}>
               <Text style={styles.title}>{player.name}</Text>
               <TouchableOpacity onPress={onClose}>
@@ -283,9 +281,11 @@ export function EventPlayerModal({
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+              </View>
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -308,7 +308,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
-    width: '85%',
+    width: '90%',
+    maxHeight: '80%',
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,
