@@ -486,11 +486,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   container: {
-    width: '100%',
-    maxHeight: '90%',
+    width: '90%',
+    maxWidth: 600,
     backgroundColor: '#fff',
     borderRadius: 16,
     shadowColor: '#000',
@@ -498,6 +497,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 5,
+    maxHeight: '80%',
   },
   header: {
     flexDirection: 'row',
