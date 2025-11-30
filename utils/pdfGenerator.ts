@@ -901,11 +901,11 @@ function buildRegistrationTextContent(
   return textContent;
 }
 
-export async function generateCheckInPDF(options: RegistrationPDFOptions): Promise<void> {
+export async function generateCheckInPDF(options: RegistrationPDFOptions, logoUrl?: string): Promise<void> {
   try {
     console.log('[pdfGenerator] Starting check-in PDF generation...');
     const { registrations, members, event } = options;
-    const htmlContent = buildCheckInHTMLContent(registrations, members, event);
+    const htmlContent = buildCheckInHTMLContent(registrations, members, event, logoUrl);
 
     if (Platform.OS === 'web') {
       return generateWebCheckInPDF(htmlContent, event.name);
@@ -965,7 +965,8 @@ function generateWebCheckInPDF(htmlContent: string, eventName: string): void {
 function buildCheckInHTMLContent(
   registrations: any[],
   members: Member[],
-  event: Event
+  event: Event,
+  logoUrl?: string
 ): string {
   const isSocial = event.type === 'social';
   let playersHTML = '';
@@ -1119,6 +1120,15 @@ function buildCheckInHTMLContent(
       border-bottom: 3px solid #1B5E20;
       padding-bottom: 15px;
     }
+    .logo-container {
+      margin-bottom: 15px;
+    }
+    .logo {
+      max-height: 80px;
+      max-width: 200px;
+      height: auto;
+      width: auto;
+    }
     .header-title {
       font-size: 28px;
       font-weight: bold;
@@ -1212,6 +1222,10 @@ function buildCheckInHTMLContent(
 </head>
 <body>
   <div class="header">
+    ${logoUrl ? `
+    <div class="logo-container">
+      <img src="${logoUrl}" alt="Club Logo" class="logo" />
+    </div>` : ''}
     <div class="header-title">${event.name}</div>
     <div class="header-subtitle">Check-In List</div>
     <div class="header-date">${dateRange}</div>

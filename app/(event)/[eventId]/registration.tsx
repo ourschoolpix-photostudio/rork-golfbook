@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { registrationService } from '@/utils/registrationService';
 import { generateRegistrationPDF, generateRegistrationText, generateCheckInPDF } from '@/utils/pdfGenerator';
 import * as Clipboard from 'expo-clipboard';
@@ -47,6 +48,7 @@ export default function EventRegistrationScreen() {
   const { eventId, openPayment } = useLocalSearchParams<{ eventId: string; openPayment?: string }>();
   const { currentUser, members: allMembers } = useAuth();
   const { addNotification } = useNotifications();
+  const { orgInfo } = useSettings();
   const [event, setEvent] = useState<Event | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<Member[]>([]);
@@ -824,7 +826,7 @@ export default function EventRegistrationScreen() {
             members: allMembers,
             event,
             useCourseHandicap,
-          });
+          }, orgInfo.logoUrl);
         }
         console.log('[registration] ✅ Check-in PDF generated successfully');
       } catch (error) {
