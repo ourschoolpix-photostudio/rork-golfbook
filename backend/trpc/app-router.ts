@@ -31,7 +31,15 @@ export const appRouter = createTRPCRouter({
     status: getSyncStatusProcedure,
   }),
   members: membersCrudRoute,
-  events: eventsCrudRoute,
+  events: createTRPCRouter({
+    getAll: eventsCrudRoute.getAll,
+    get: eventsCrudRoute.get,
+    create: eventsCrudRoute.create,
+    update: eventsCrudRoute.update,
+    delete: eventsCrudRoute.delete,
+    register: eventsCrudRoute.register,
+    unregister: eventsCrudRoute.unregister,
+  }),
   registrations: createTRPCRouter({
     create: registrationsCrudRoute.create,
     update: registrationsCrudRoute.update,
