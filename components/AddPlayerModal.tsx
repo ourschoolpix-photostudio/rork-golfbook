@@ -4,14 +4,16 @@ import {
   Text,
   StyleSheet,
   Modal,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { ProfilePhotoPicker } from './ProfilePhotoPicker';
 import { Member } from '@/types';
@@ -38,6 +40,7 @@ const BOARD_MEMBER_ROLES = [
 
 export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPlayerModalProps) {
   const { currentUser } = useAuth();
+  const insets = useSafeAreaInsets();
   const isEditMode = !!editingMember;
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
@@ -142,27 +145,30 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true}>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
-          <TouchableOpacity 
-            onPress={onClose}
-            style={styles.closeIconButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    <Modal visible={visible} animationType="slide" transparent={false}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+            <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
+            <TouchableOpacity 
+              onPress={onClose}
+              style={styles.closeIconButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <X size={20} color="#fff" strokeWidth={3} />
+            </TouchableOpacity>
+          </View>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardAvoid}
+            keyboardVerticalOffset={0}
           >
-            <X size={20} color="#fff" strokeWidth={3} />
-          </TouchableOpacity>
-        </View>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoid}
-        >
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+            >
             <View style={styles.section}>
               <ProfilePhotoPicker
                 onPhotoPicked={setProfilePhotoUri}
@@ -472,9 +478,10 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
