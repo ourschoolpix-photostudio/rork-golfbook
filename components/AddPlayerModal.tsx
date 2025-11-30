@@ -517,7 +517,6 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
   content: {
-    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
   },

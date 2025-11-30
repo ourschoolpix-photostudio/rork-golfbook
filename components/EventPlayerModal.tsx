@@ -310,9 +310,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     maxHeight: '80%',
   },
-  scrollView: {
-    flex: 1,
-  },
+  scrollView: {},
   scrollContent: {
     padding: 20,
   },
