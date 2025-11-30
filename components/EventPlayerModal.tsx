@@ -122,7 +122,7 @@ export function EventPlayerModal({
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={[styles.modal, { marginTop: insets.top }]}>
+            <View style={styles.modal}>
               <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom }]}
@@ -296,8 +296,9 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   modal: {
     width: '100%',
