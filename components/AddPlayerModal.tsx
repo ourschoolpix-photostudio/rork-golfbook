@@ -11,7 +11,6 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { ProfilePhotoPicker } from './ProfilePhotoPicker';
 import { Member } from '@/types';
@@ -38,7 +37,6 @@ const BOARD_MEMBER_ROLES = [
 
 export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPlayerModalProps) {
   const { currentUser } = useAuth();
-  const insets = useSafeAreaInsets();
   const isEditMode = !!editingMember;
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
@@ -143,25 +141,27 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={false}>
+    <Modal visible={visible} animationType="fade" transparent={true}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-            <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
-            <TouchableOpacity 
-              onPress={onClose}
-              style={styles.closeIconButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <X size={20} color="#fff" strokeWidth={3} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 20 }}
-          >
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.container}>
+              <View style={styles.header}>
+                <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
+                <TouchableOpacity 
+                  onPress={onClose}
+                  style={styles.closeIconButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <X size={20} color="#fff" strokeWidth={3} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 20 }}
+              >
             <View style={styles.section}>
               <ProfilePhotoPicker
                 onPhotoPicked={setProfilePhotoUri}
@@ -471,7 +471,9 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
+              </ScrollView>
+            </View>
+          </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
     </Modal>
@@ -479,17 +481,33 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  container: {
+    width: '100%',
+    maxHeight: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingVertical: 16,
     backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
