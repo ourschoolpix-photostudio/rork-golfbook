@@ -516,9 +516,7 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#1a1a1a',
   },
-  scrollView: {
-    flex: 1,
-  },
+  scrollView: {},
   scrollContent: {
     padding: 20,
     paddingTop: 16,
