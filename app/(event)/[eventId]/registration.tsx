@@ -1452,10 +1452,17 @@ export default function EventRegistrationScreen() {
       {addCustomGuestModalVisible && (
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={0}
         >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <TouchableWithoutFeedback onPress={() => {
+            Keyboard.dismiss();
+            setAddCustomGuestModalVisible(false);
+            setAddCustomGuestName('');
+            setAddCustomGuestCount('');
+            setAddCustomGuestNames('');
+            setAddCustomGuestIsSponsor(false);
+          }}>
             <View style={styles.modalOverlayInner}>
               <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
                 <View style={styles.modal}>
@@ -2421,20 +2428,17 @@ const styles = StyleSheet.create({
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-start',
-    paddingTop: 210,
+    justifyContent: 'flex-end',
   },
   modalOverlayInner: {
     flex: 1,
-    justifyContent: 'flex-start',
-    paddingTop: 210,
+    justifyContent: 'flex-end',
   },
   modal: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '75%',
-    marginBottom: 12,
+    flex: 1,
   },
   modalHeader: {
     flexDirection: 'row',
