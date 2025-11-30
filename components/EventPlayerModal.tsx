@@ -120,17 +120,11 @@ export function EventPlayerModal({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.overlay}>
+        <View style={[styles.overlay, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
           <TouchableWithoutFeedback>
             <ScrollView
               style={styles.scrollView}
-              contentContainerStyle={[
-                styles.scrollContent,
-                { 
-                  paddingTop: Math.max(insets.top, 20),
-                  paddingBottom: Math.max(insets.bottom, 20),
-                }
-              ]}
+              contentContainerStyle={styles.scrollContent}
               scrollEnabled={true}
               keyboardShouldPersistTaps="handled"
             >
