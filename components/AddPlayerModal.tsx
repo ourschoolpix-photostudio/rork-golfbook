@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   },
   toggleGroup: {
     flexDirection: 'row',
-    gap: 8,
+    marginHorizontal: -4,
   },
   toggleButton: {
     flex: 1,
@@ -541,6 +541,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     backgroundColor: '#fff',
     alignItems: 'center',
+    marginHorizontal: 4,
   },
   toggleButtonActive: {
     backgroundColor: '#007AFF',
@@ -556,7 +557,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    gap: 8,
+    marginHorizontal: -4,
     marginBottom: 8,
   },
   input: {
@@ -571,16 +572,19 @@ const styles = StyleSheet.create({
   },
   inputHalf: {
     flex: 1,
+    marginHorizontal: 4,
   },
   inputThird: {
     flex: 1,
+    marginHorizontal: 4,
   },
   inputSmall: {
     flex: 0.6,
+    marginHorizontal: 4,
   },
   handicapRow: {
     flexDirection: 'row',
-    gap: 12,
+    marginHorizontal: -6,
     marginBottom: 12,
   },
   flightCard: {
@@ -590,6 +594,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: '#eee',
+    marginHorizontal: 6,
   },
   flightCardTitle: {
     fontSize: 14,
@@ -601,7 +606,7 @@ const styles = StyleSheet.create({
   circleButtonGroup: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
+    marginHorizontal: -4,
   },
   circleButton: {
     width: 40,
@@ -612,6 +617,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    marginHorizontal: 4,
   },
   circleButtonActive: {
     backgroundColor: '#007AFF',
@@ -627,11 +633,12 @@ const styles = StyleSheet.create({
   },
   labeledInputRow: {
     flexDirection: 'row',
-    gap: 12,
+    marginHorizontal: -6,
     marginBottom: 12,
   },
   labeledInputGroup: {
     flex: 1,
+    marginHorizontal: 6,
   },
   inputLabel: {
     fontSize: 12,
@@ -641,12 +648,13 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 12,
+    marginHorizontal: -6,
     marginVertical: 24,
     paddingHorizontal: 0,
   },
   buttonRowButton: {
     flex: 1,
+    marginHorizontal: 6,
   },
   addButton: {
     backgroundColor: '#007AFF',
@@ -655,7 +663,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 12,
   },
   addButtonText: {
     color: '#fff',
@@ -684,7 +691,8 @@ const styles = StyleSheet.create({
   rolesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    marginHorizontal: -4,
+    marginVertical: -4,
   },
   roleChip: {
     paddingVertical: 8,
@@ -693,6 +701,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     backgroundColor: '#fff',
+    margin: 4,
   },
   roleChipActive: {
     backgroundColor: '#007AFF',
