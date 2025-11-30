@@ -146,333 +146,334 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
             <View style={styles.modal}>
+              <View style={styles.header}>
+                <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
+                <TouchableOpacity 
+                  onPress={onClose}
+                  style={styles.closeIconButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <X size={20} color="#fff" strokeWidth={3} />
+                </TouchableOpacity>
+              </View>
+
               <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>{isEditMode ? 'Edit Player' : 'Add Player'}</Text>
-              <TouchableOpacity 
-                onPress={onClose}
-                style={styles.closeIconButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <X size={20} color="#fff" strokeWidth={3} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.section}>
-              <ProfilePhotoPicker
-                onPhotoPicked={setProfilePhotoUri}
-                currentPhotoUri={profilePhotoUri}
-              />
-            </View>
-
-            <View style={styles.section}>
-              <View style={styles.toggleGroup}>
-                <TouchableOpacity
-                  style={[styles.toggleButton, membershipType === 'active' && styles.toggleButtonActive]}
-                  onPress={() => setMembershipType('active')}
-                >
-                  <Text
-                    style={[
-                      styles.toggleButtonText,
-                      membershipType === 'active' && styles.toggleButtonTextActive,
-                    ]}
-                  >
-                    Active
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.toggleButton, membershipType === 'in-active' && styles.toggleButtonActive]}
-                  onPress={() => setMembershipType('in-active')}
-                >
-                  <Text
-                    style={[
-                      styles.toggleButtonText,
-                      membershipType === 'in-active' && styles.toggleButtonTextActive,
-                    ]}
-                  >
-                    In-active
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.toggleButton, membershipType === 'guest' && styles.toggleButtonActive]}
-                  onPress={() => setMembershipType('guest')}
-                >
-                  <Text
-                    style={[
-                      styles.toggleButtonText,
-                      membershipType === 'guest' && styles.toggleButtonTextActive,
-                    ]}
-                  >
-                    Guest
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <View style={styles.toggleGroup}>
-                <TouchableOpacity
-                  style={[styles.toggleButton, gender === 'male' && styles.toggleButtonActive]}
-                  onPress={() => setGender('male')}
-                >
-                  <Text
-                    style={[
-                      styles.toggleButtonText,
-                      gender === 'male' && styles.toggleButtonTextActive,
-                    ]}
-                  >
-                    Male
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.toggleButton, gender === 'female' && styles.toggleButtonActive]}
-                  onPress={() => setGender('female')}
-                >
-                  <Text
-                    style={[
-                      styles.toggleButtonText,
-                      gender === 'female' && styles.toggleButtonTextActive,
-                    ]}
-                  >
-                    Female
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>PLAYER DETAILS</Text>
-
-              <View style={styles.row}>
-                <TextInput
-                  style={[styles.input, styles.inputHalf]}
-                  placeholder="Full Name"
-                  placeholderTextColor="#333"
-                  value={fullName}
-                  onChangeText={setFullName}
-                  autoCapitalize="words"
-                />
-              </View>
-
-              <View style={styles.row}>
-                <TextInput
-                  style={[styles.input, styles.inputThird]}
-                  placeholder="Username *"
-                  placeholderTextColor="#333"
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="words"
-                />
-                <TextInput
-                  style={[styles.input, styles.inputThird]}
-                  placeholder="PIN *"
-                  placeholderTextColor="#333"
-                  value={pin}
-                  onChangeText={setPin}
-                  maxLength={4}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={styles.row}>
-                <TextInput
-                  style={[styles.input, styles.inputHalf]}
-                  placeholder="Address"
-                  placeholderTextColor="#333"
-                  value={address}
-                  onChangeText={setAddress}
-                  autoCapitalize="words"
-                />
-              </View>
-
-              <View style={styles.row}>
-                <TextInput
-                  style={[styles.input, styles.inputThird]}
-                  placeholder="City"
-                  placeholderTextColor="#333"
-                  value={city}
-                  onChangeText={setCity}
-                  autoCapitalize="words"
-                />
-                <TextInput
-                  style={[styles.input, styles.inputSmall]}
-                  placeholder="State"
-                  placeholderTextColor="#333"
-                  value={state}
-                  onChangeText={setState}
-                  maxLength={2}
-                  autoCapitalize="characters"
-                />
-              </View>
-
-              <View style={styles.row}>
-                <TextInput
-                  style={[styles.input, styles.inputHalf]}
-                  placeholder="Email Address"
-                  placeholderTextColor="#333"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.row}>
-                <TextInput
-                  style={[styles.input, styles.inputHalf]}
-                  placeholder="Phone Number"
-                  placeholderTextColor="#333"
-                  value={phone}
-                  onChangeText={(text) => setPhone(formatPhoneNumber(text))}
-                  keyboardType="phone-pad"
-                />
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>FLIGHT & HANDICAP</Text>
-
-              <View style={styles.handicapRow}>
-                <View style={styles.flightCard}>
-                  <Text style={styles.flightCardTitle}>Tournament Flight</Text>
-                  <View style={styles.circleButtonGroup}>
-                    {(['A', 'B', 'C', 'L'] as const).map((letter) => (
-                      <TouchableOpacity
-                        key={letter}
-                        style={[
-                          styles.circleButton,
-                          flight === letter && styles.circleButtonActive,
-                        ]}
-                        onPress={() => setFlight(letter)}
-                      >
-                        <Text
-                          style={[
-                            styles.circleButtonText,
-                            flight === letter && styles.circleButtonTextActive,
-                          ]}
-                        >
-                          {letter}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-
-                <View style={styles.flightCard}>
-                  <Text style={styles.flightCardTitle}>Rolex Flight</Text>
-                  <View style={styles.circleButtonGroup}>
-                    {(['A', 'B'] as const).map((letter) => (
-                      <TouchableOpacity
-                        key={letter}
-                        style={[
-                          styles.circleButton,
-                          rolexFlight === letter && styles.circleButtonActive,
-                        ]}
-                        onPress={() => setRolexFlight(letter)}
-                      >
-                        <Text
-                          style={[
-                            styles.circleButtonText,
-                            rolexFlight === letter && styles.circleButtonTextActive,
-                          ]}
-                        >
-                          {letter}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.labeledInputRow}>
-                <View style={styles.labeledInputGroup}>
-                  <Text style={styles.inputLabel}>Current Handicap</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholderTextColor="#999"
-                    value={currentHandicap}
-                    onChangeText={setCurrentHandicap}
-                    keyboardType="decimal-pad"
+                <View style={styles.section}>
+                  <ProfilePhotoPicker
+                    onPhotoPicked={setProfilePhotoUri}
+                    currentPhotoUri={profilePhotoUri}
                   />
                 </View>
-              </View>
 
-              <View style={styles.labeledInputRow}>
-                <View style={styles.labeledInputGroup}>
-                  <Text style={styles.inputLabel}>GHIN#</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholderTextColor="#999"
-                    value={ghin}
-                    onChangeText={setGhin}
-                    keyboardType="number-pad"
-                  />
-                </View>
-                <View style={styles.labeledInputGroup}>
-                  <Text style={styles.inputLabel}>Rolex Points</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholderTextColor="#999"
-                    value={rolexPoints}
-                    onChangeText={setRolexPoints}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-            </View>
-
-            {currentUser?.isAdmin && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>BOARD MEMBER ROLES (Admin Only)</Text>
-                <View style={styles.rolesContainer}>
-                  {BOARD_MEMBER_ROLES.map((role) => (
+                <View style={styles.section}>
+                  <View style={styles.toggleGroup}>
                     <TouchableOpacity
-                      key={role}
-                      style={[
-                        styles.roleChip,
-                        boardMemberRoles.includes(role) && styles.roleChipActive,
-                      ]}
-                      onPress={() => {
-                        setBoardMemberRoles((prev) =>
-                          prev.includes(role)
-                            ? prev.filter((r) => r !== role)
-                            : [...prev, role]
-                        );
-                      }}
+                      style={[styles.toggleButton, membershipType === 'active' && styles.toggleButtonActive]}
+                      onPress={() => setMembershipType('active')}
                     >
                       <Text
                         style={[
-                          styles.roleChipText,
-                          boardMemberRoles.includes(role) && styles.roleChipTextActive,
+                          styles.toggleButtonText,
+                          membershipType === 'active' && styles.toggleButtonTextActive,
                         ]}
                       >
-                        {role}
+                        Active
                       </Text>
                     </TouchableOpacity>
-                  ))}
+                    <TouchableOpacity
+                      style={[styles.toggleButton, membershipType === 'in-active' && styles.toggleButtonActive]}
+                      onPress={() => setMembershipType('in-active')}
+                    >
+                      <Text
+                        style={[
+                          styles.toggleButtonText,
+                          membershipType === 'in-active' && styles.toggleButtonTextActive,
+                        ]}
+                      >
+                        In-active
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.toggleButton, membershipType === 'guest' && styles.toggleButtonActive]}
+                      onPress={() => setMembershipType('guest')}
+                    >
+                      <Text
+                        style={[
+                          styles.toggleButtonText,
+                          membershipType === 'guest' && styles.toggleButtonTextActive,
+                        ]}
+                      >
+                        Guest
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            )}
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.addButton, styles.buttonRowButton]}
-                onPress={handleAddPlayer}
-              >
-                <Text style={styles.addButtonText}>{isEditMode ? 'Update Player' : 'Add Player'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.closeButton, styles.buttonRowButton]}
-                onPress={onClose}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
+
+                <View style={styles.section}>
+                  <View style={styles.toggleGroup}>
+                    <TouchableOpacity
+                      style={[styles.toggleButton, gender === 'male' && styles.toggleButtonActive]}
+                      onPress={() => setGender('male')}
+                    >
+                      <Text
+                        style={[
+                          styles.toggleButtonText,
+                          gender === 'male' && styles.toggleButtonTextActive,
+                        ]}
+                      >
+                        Male
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.toggleButton, gender === 'female' && styles.toggleButtonActive]}
+                      onPress={() => setGender('female')}
+                    >
+                      <Text
+                        style={[
+                          styles.toggleButtonText,
+                          gender === 'female' && styles.toggleButtonTextActive,
+                        ]}
+                      >
+                        Female
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>PLAYER DETAILS</Text>
+
+                  <View style={styles.row}>
+                    <TextInput
+                      style={[styles.input, styles.inputHalf]}
+                      placeholder="Full Name"
+                      placeholderTextColor="#333"
+                      value={fullName}
+                      onChangeText={setFullName}
+                      autoCapitalize="words"
+                    />
+                  </View>
+
+                  <View style={styles.row}>
+                    <TextInput
+                      style={[styles.input, styles.inputThird]}
+                      placeholder="Username *"
+                      placeholderTextColor="#333"
+                      value={username}
+                      onChangeText={setUsername}
+                      autoCapitalize="words"
+                    />
+                    <TextInput
+                      style={[styles.input, styles.inputThird]}
+                      placeholder="PIN *"
+                      placeholderTextColor="#333"
+                      value={pin}
+                      onChangeText={setPin}
+                      maxLength={4}
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  <View style={styles.row}>
+                    <TextInput
+                      style={[styles.input, styles.inputHalf]}
+                      placeholder="Address"
+                      placeholderTextColor="#333"
+                      value={address}
+                      onChangeText={setAddress}
+                      autoCapitalize="words"
+                    />
+                  </View>
+
+                  <View style={styles.row}>
+                    <TextInput
+                      style={[styles.input, styles.inputThird]}
+                      placeholder="City"
+                      placeholderTextColor="#333"
+                      value={city}
+                      onChangeText={setCity}
+                      autoCapitalize="words"
+                    />
+                    <TextInput
+                      style={[styles.input, styles.inputSmall]}
+                      placeholder="State"
+                      placeholderTextColor="#333"
+                      value={state}
+                      onChangeText={setState}
+                      maxLength={2}
+                      autoCapitalize="characters"
+                    />
+                  </View>
+
+                  <View style={styles.row}>
+                    <TextInput
+                      style={[styles.input, styles.inputHalf]}
+                      placeholder="Email Address"
+                      placeholderTextColor="#333"
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                  </View>
+
+                  <View style={styles.row}>
+                    <TextInput
+                      style={[styles.input, styles.inputHalf]}
+                      placeholder="Phone Number"
+                      placeholderTextColor="#333"
+                      value={phone}
+                      onChangeText={(text) => setPhone(formatPhoneNumber(text))}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>FLIGHT & HANDICAP</Text>
+
+                  <View style={styles.handicapRow}>
+                    <View style={styles.flightCard}>
+                      <Text style={styles.flightCardTitle}>Tournament Flight</Text>
+                      <View style={styles.circleButtonGroup}>
+                        {(['A', 'B', 'C', 'L'] as const).map((letter) => (
+                          <TouchableOpacity
+                            key={letter}
+                            style={[
+                              styles.circleButton,
+                              flight === letter && styles.circleButtonActive,
+                            ]}
+                            onPress={() => setFlight(letter)}
+                          >
+                            <Text
+                              style={[
+                                styles.circleButtonText,
+                                flight === letter && styles.circleButtonTextActive,
+                              ]}
+                            >
+                              {letter}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+
+                    <View style={styles.flightCard}>
+                      <Text style={styles.flightCardTitle}>Rolex Flight</Text>
+                      <View style={styles.circleButtonGroup}>
+                        {(['A', 'B'] as const).map((letter) => (
+                          <TouchableOpacity
+                            key={letter}
+                            style={[
+                              styles.circleButton,
+                              rolexFlight === letter && styles.circleButtonActive,
+                            ]}
+                            onPress={() => setRolexFlight(letter)}
+                          >
+                            <Text
+                              style={[
+                                styles.circleButtonText,
+                                rolexFlight === letter && styles.circleButtonTextActive,
+                              ]}
+                            >
+                              {letter}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.labeledInputRow}>
+                    <View style={styles.labeledInputGroup}>
+                      <Text style={styles.inputLabel}>Current Handicap</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholderTextColor="#999"
+                        value={currentHandicap}
+                        onChangeText={setCurrentHandicap}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.labeledInputRow}>
+                    <View style={styles.labeledInputGroup}>
+                      <Text style={styles.inputLabel}>GHIN#</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholderTextColor="#999"
+                        value={ghin}
+                        onChangeText={setGhin}
+                        keyboardType="number-pad"
+                      />
+                    </View>
+                    <View style={styles.labeledInputGroup}>
+                      <Text style={styles.inputLabel}>Rolex Points</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholderTextColor="#999"
+                        value={rolexPoints}
+                        onChangeText={setRolexPoints}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                {currentUser?.isAdmin && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>BOARD MEMBER ROLES (Admin Only)</Text>
+                    <View style={styles.rolesContainer}>
+                      {BOARD_MEMBER_ROLES.map((role) => (
+                        <TouchableOpacity
+                          key={role}
+                          style={[
+                            styles.roleChip,
+                            boardMemberRoles.includes(role) && styles.roleChipActive,
+                          ]}
+                          onPress={() => {
+                            setBoardMemberRoles((prev) =>
+                              prev.includes(role)
+                                ? prev.filter((r) => r !== role)
+                                : [...prev, role]
+                            );
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.roleChipText,
+                              boardMemberRoles.includes(role) && styles.roleChipTextActive,
+                            ]}
+                          >
+                            {role}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </ScrollView>
+
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.addButton, styles.buttonRowButton]}
+                  onPress={handleAddPlayer}
+                >
+                  <Text style={styles.addButtonText}>{isEditMode ? 'Update Player' : 'Add Player'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.closeButton, styles.buttonRowButton]}
+                  onPress={onClose}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </TouchableWithoutFeedback>
         </View>
@@ -504,7 +505,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -514,9 +516,12 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#1a1a1a',
   },
-  scrollView: {},
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     padding: 20,
+    paddingTop: 16,
   },
   section: {
     marginBottom: 16,
@@ -648,13 +653,14 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    marginHorizontal: -6,
-    marginVertical: 24,
-    paddingHorizontal: 0,
+    padding: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    gap: 12,
   },
   buttonRowButton: {
     flex: 1,
-    marginHorizontal: 6,
   },
   addButton: {
     backgroundColor: '#007AFF',
