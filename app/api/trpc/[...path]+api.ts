@@ -62,8 +62,8 @@ const handleRequest = async (request: Request) => {
     honoUrl.protocol = 'http:';
     honoUrl.host = 'localhost';
     
-    const pathAfterTrpc = url.pathname.replace('/api/trpc/', '');
-    honoUrl.pathname = `/trpc/${pathAfterTrpc}`;
+    let pathAfterApi = url.pathname.replace(/^\/api\//, '');
+    honoUrl.pathname = `/${pathAfterApi}`;
     
     console.log('🔧 [API] Forwarding to Hono:', honoUrl.toString());
     
