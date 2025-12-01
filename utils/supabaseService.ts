@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { validateMemberData, validateEventData, validateRegistrationData, validateScoreData, validateGroupingData, validateFinancialData } from '@/utils/dataValidation';
 
 const mapEventFromDB = (e: any) => ({
   id: e.id,
@@ -85,6 +86,11 @@ export const supabaseService = {
     },
 
     create: async (event: any) => {
+      const validation = validateEventData(event);
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+      
       const { error } = await supabase.from('events').insert({
         id: event.id,
         name: event.name,
@@ -205,6 +211,11 @@ export const supabaseService = {
     },
 
     create: async (member: any) => {
+      const validation = validateMemberData(member);
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+      
       const { error } = await supabase.from('members').insert({
         id: member.id,
         name: member.name,
@@ -271,6 +282,11 @@ export const supabaseService = {
     },
 
     create: async (registration: any) => {
+      const validation = validateRegistrationData(registration);
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+      
       const { error } = await supabase.from('event_registrations').insert({
         event_id: registration.eventId,
         member_id: registration.memberId,
@@ -331,6 +347,11 @@ export const supabaseService = {
     },
 
     create: async (grouping: any) => {
+      const validation = validateGroupingData(grouping);
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+      
       const { error } = await supabase.from('groupings').insert({
         event_id: grouping.eventId,
         day: grouping.day,
@@ -398,6 +419,11 @@ export const supabaseService = {
     },
 
     create: async (score: any) => {
+      const validation = validateScoreData(score);
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+      
       const { error } = await supabase.from('scores').insert({
         event_id: score.eventId,
         member_id: score.memberId,
@@ -430,6 +456,12 @@ export const supabaseService = {
     },
     
     submit: async (eventId: string, memberId: string, day: number, holes: any[], totalScore: number, submittedBy: string) => {
+      const scoreData = { eventId, memberId, day, holes, totalScore, submittedBy };
+      const validation = validateScoreData(scoreData);
+      if (!validation.valid) {
+        throw new Error(`Score validation failed: ${validation.errors.join(', ')}`);
+      }
+      
       const { error } = await supabase.from('scores').upsert({
         event_id: eventId,
         member_id: memberId,
@@ -474,6 +506,11 @@ export const supabaseService = {
     },
     
     create: async (financial: any) => {
+      const validation = validateFinancialData(financial);
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+      
       const { error } = await supabase.from('financial_records').insert({
         event_id: financial.eventId,
         member_id: financial.memberId,

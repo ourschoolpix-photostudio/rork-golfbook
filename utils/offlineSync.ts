@@ -87,6 +87,25 @@ export const syncPendingOperations = async (
 async function syncScoreSubmit(operation: PendingOperation): Promise<void> {
   const { eventId, memberId, day, holes, totalScore, submittedBy } = operation.data;
   
+  const { data: existing, error: fetchError } = await supabase
+    .from('scores')
+    .select('updated_at')
+    .eq('event_id', eventId)
+    .eq('member_id', memberId)
+    .eq('day', day)
+    .maybeSingle();
+  
+  if (fetchError) throw fetchError;
+  
+  if (existing && operation.timestamp) {
+    const existingTime = new Date(existing.updated_at).getTime();
+    const operationTime = new Date(operation.timestamp).getTime();
+    if (existingTime > operationTime) {
+      console.log('[OfflineSync] ⚠️ Server has newer score, skipping update');
+      return;
+    }
+  }
+  
   const { error } = await supabase.from('scores').upsert({
     event_id: eventId,
     member_id: memberId,

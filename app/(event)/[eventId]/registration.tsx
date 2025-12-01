@@ -24,6 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { registrationService } from '@/utils/registrationService';
+import { registrationCache } from '@/utils/registrationCache';
 import { generateRegistrationPDF, generateRegistrationText, generateCheckInPDF } from '@/utils/pdfGenerator';
 import * as Clipboard from 'expo-clipboard';
 import { Member, User, Event } from '@/types';
@@ -195,6 +196,9 @@ export default function EventRegistrationScreen() {
       const loadRegs = async () => {
         const regs = registrationsQuery.data || [];
         console.log('[registration] Loaded regs from backend:', regs);
+        
+        await registrationCache.cacheRegistrations(foundEvent.id, regs);
+        
         const regMap: Record<string, any> = {};
         regs.forEach(reg => {
           const memberName = allMembers.find(m => m.id === reg.memberId)?.name;
