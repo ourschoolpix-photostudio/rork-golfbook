@@ -1,8 +1,5 @@
 import { Hono } from "hono";
-import { trpcServer } from "@hono/trpc-server";
 import { cors } from "hono/cors";
-import { appRouter } from "@/backend/trpc/app-router";
-import { createContext } from "@/backend/trpc/create-context";
 
 const app = new Hono();
 
@@ -12,18 +9,7 @@ app.use("*", cors({
   allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
-console.log('🔧 [Hono] Registering tRPC middleware at /api/trpc');
-
-app.use(
-  "/api/trpc/*",
-  trpcServer({
-    router: appRouter,
-    createContext,
-    onError({ error, path }) {
-      console.error('❌ [tRPC] Error on path', path, ':', error);
-    },
-  })
-);
+console.log('🔧 [Hono] tRPC has been disabled - app now uses direct Supabase calls');
 
 app.get("/", (c) => {
   console.log('🏠 [Hono] Root endpoint hit');
@@ -58,7 +44,7 @@ app.notFound((c) => {
     error: 'Not Found',
     path: c.req.url,
     method: c.req.method,
-    registeredRoutes: ['/api/trpc/*', '/', '/health']
+    registeredRoutes: ['/', '/health']
   }, 404);
 });
 
