@@ -16,12 +16,21 @@ const getBaseUrl = () => {
   }
 
   if (__DEV__) {
-    const debuggerHost = Constants.expoConfig?.hostUri?.split(':').shift();
+    const debuggerHost = Constants.expoConfig?.hostUri?.split(':').shift() || 
+                         Constants.manifest?.debuggerHost?.split(':').shift() ||
+                         Constants.manifest2?.extra?.expoGo?.debuggerHost?.split(':').shift();
+    
     if (debuggerHost) {
       const devUrl = `http://${debuggerHost}:8081`;
       console.log('🔧 [tRPC] Using dev server URL:', devUrl);
       return devUrl;
     }
+    
+    console.log('🔍 [tRPC] Available Constants:', {
+      hostUri: Constants.expoConfig?.hostUri,
+      debuggerHost: Constants.manifest?.debuggerHost,
+      manifest2: Constants.manifest2?.extra?.expoGo?.debuggerHost
+    });
   }
 
   console.error('❌ [tRPC] Could not determine backend URL');
