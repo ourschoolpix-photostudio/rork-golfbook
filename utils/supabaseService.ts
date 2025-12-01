@@ -443,6 +443,14 @@ export const supabaseService = {
       
       if (error) throw error;
     },
+    
+    deleteAll: async (eventId: string) => {
+      const { error } = await supabase
+        .from('scores')
+        .delete()
+        .eq('event_id', eventId);
+      if (error) throw error;
+    },
   },
   
   financials: {

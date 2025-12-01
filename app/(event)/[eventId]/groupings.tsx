@@ -26,8 +26,10 @@ import { type LabelOverride } from '@/utils/groupingsHelper';
 import { generateGroupLabel } from '@/utils/groupLabelHelper';
 import { generateGroupingsPDF } from '@/utils/pdfGenerator';
 import { EventFooter } from '@/components/EventFooter';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabaseService } from '@/utils/supabaseService';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
+import { useAuth } from '@/contexts/AuthContext';
 import { canManageGroupings } from '@/utils/rolePermissions';
 
 interface Group {
@@ -72,27 +74,53 @@ export default function GroupingsScreen() {
   const [pinInput, setPinInput] = useState<string>('');
   const [registrations, setRegistrations] = useState<Record<string, any>>({});
   
+  const queryClient = useQueryClient();
+  const { members: allMembers } = useAuth();
+  
   const triggerGroupRefresh = () => {
     console.log('[groupings] 🔄 Triggering group refresh to re-enrich scores...');
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const { data: eventData, isLoading: eventLoading } = trpc.events.get.useQuery({ eventId: id || '' }, { enabled: !!id });
-  const { data: allMembers = [], isLoading: membersLoading } = trpc.members.getAll.useQuery();
-  const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings } = trpc.sync.groupings.get.useQuery(
-    { eventId: id || '' },
-    { enabled: !!id }
-  );
-  const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores } = trpc.sync.scores.getAll.useQuery(
-    { eventId: id || '' },
-    { enabled: !!id }
-  );
-  const { data: backendRegistrations = [], refetch: refetchRegistrations } = trpc.registrations.getAll.useQuery(
-    { eventId: id || '' },
-    { enabled: !!id }
-  );
-  const syncGroupingsMutation = trpc.sync.groupings.sync.useMutation();
-  const deleteScoresMutation = trpc.sync.scores.deleteAll.useMutation();
+  const { data: eventData, isLoading: eventLoading } = useQuery({
+    queryKey: ['events', id],
+    queryFn: () => supabaseService.events.get(id),
+    enabled: !!id,
+  });
+  
+  const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings } = useQuery({
+    queryKey: ['groupings', id],
+    queryFn: () => supabaseService.groupings.getAll(id),
+    enabled: !!id,
+  });
+  
+  const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores } = useQuery({
+    queryKey: ['scores', id],
+    queryFn: () => supabaseService.scores.getAll(id),
+    enabled: !!id,
+  });
+  
+  const { data: backendRegistrations = [], refetch: refetchRegistrations } = useQuery({
+    queryKey: ['registrations', id],
+    queryFn: () => supabaseService.registrations.getAll(id),
+    enabled: !!id,
+  });
+  
+  const syncGroupingsMutation = useMutation({
+    mutationFn: ({ eventId, groupings }: { eventId: string; groupings: any[] }) => 
+      supabaseService.groupings.sync(eventId, groupings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groupings', id] });
+    },
+  });
+  
+  const deleteScoresMutation = useMutation({
+    mutationFn: ({ eventId }: { eventId: string }) => 
+      supabaseService.scores.deleteAll(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scores', id] });
+    },
+  });
 
   useEffect(() => {
     const loadUser = async () => {
@@ -123,9 +151,9 @@ export default function GroupingsScreen() {
   }, [eventData]);
 
   useEffect(() => {
-    if (allMembers.length > 0) {
+    if (allMembers && allMembers.length > 0) {
       setMembers(allMembers as Member[]);
-      console.log('[groupings] Members loaded from backend:', allMembers.length);
+      console.log('[groupings] Members loaded:', allMembers.length);
     }
   }, [allMembers]);
 
@@ -234,7 +262,7 @@ export default function GroupingsScreen() {
       for (let i = 1; i <= maxHole; i++) {
         const grouping = dayGroupings.find((g: Grouping) => g.hole === i);
         if (grouping) {
-          const slots = grouping.slots.map(memberId => {
+          const slots = grouping.slots.map((memberId: string | null) => {
             if (!memberId) return null;
             
             // Only include player if they're still registered
@@ -373,7 +401,6 @@ export default function GroupingsScreen() {
       await syncGroupingsMutation.mutateAsync({
         eventId: event.id,
         groupings: groupingsToSave,
-        syncedBy: user.id,
       });
       
       await refetchGroupings();
@@ -444,6 +471,8 @@ export default function GroupingsScreen() {
     setCheckedPlayers([]);
   };
 
+  const membersLoading = false;
+  
   const handleSortByNetScore = () => {
     if (ungroupedPlayers.length === 0) {
       console.log('[groupings] ⚠️ No unassigned players!');
@@ -486,7 +515,13 @@ export default function GroupingsScreen() {
     console.log('[groupings] ✅ Unassigned event players auto-grouped by net score');
   };
 
-  const updateMemberMutation = trpc.members.update.useMutation();
+  const updateMemberMutation = useMutation({
+    mutationFn: ({ memberId, updates }: { memberId: string; updates: Partial<Member> }) => 
+      supabaseService.members.update(memberId, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+    },
+  });
 
   const handleUpdateMember = async (updatedMember: Member) => {
     try {
@@ -496,7 +531,7 @@ export default function GroupingsScreen() {
         memberId: updatedMember.id, 
         updates: updatedMember 
       });
-      console.log('[groupings] ✅ Member updated and saved to backend:', updatedMember.name, { 
+      console.log('[groupings] ✅ Member updated and saved:', updatedMember.name, { 
         adjustedHandicap: updatedMember.adjustedHandicap,
         handicap: updatedMember.handicap 
       });
