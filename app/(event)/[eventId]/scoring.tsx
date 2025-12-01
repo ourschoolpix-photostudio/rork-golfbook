@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Bird, Zap } from 'lucide-react-native';
@@ -8,7 +9,7 @@ import { EventFooter } from '@/components/EventFooter';
 import { TeeHoleIndicator } from '@/components/TeeHoleIndicator';
 import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
-import { trpc } from '@/lib/trpc';
+import { supabaseService } from '@/utils/supabaseService';
 import { getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
 
 export default function ScoringScreen() {
@@ -27,24 +28,34 @@ export default function ScoringScreen() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
 
-  const { data: eventData, isLoading: eventLoading } = trpc.events.get.useQuery(
-    { eventId: eventId || '' },
-    { enabled: !!eventId }
-  );
-  const { data: allMembers = [], isLoading: membersLoading } = trpc.members.getAll.useQuery();
-  const { data: eventRegistrations = [], isLoading: registrationsLoading } = trpc.registrations.getAll.useQuery(
-    { eventId: eventId || '' },
-    { enabled: !!eventId }
-  );
-  const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings } = trpc.sync.groupings.get.useQuery(
-    { eventId: eventId || '' },
-    { enabled: !!eventId }
-  );
-  const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores } = trpc.sync.scores.getAll.useQuery(
-    { eventId: eventId || '' },
-    { enabled: !!eventId }
-  );
-  const submitScoreMutation = trpc.sync.scores.submit.useMutation();
+  const { data: eventData, isLoading: eventLoading } = useQuery({
+    queryKey: ['events', eventId],
+    queryFn: () => supabaseService.events.get(eventId || ''),
+    enabled: !!eventId,
+  });
+  const { data: allMembers = [], isLoading: membersLoading } = useQuery({
+    queryKey: ['members'],
+    queryFn: () => supabaseService.members.getAll(),
+  });
+  const { data: eventRegistrations = [], isLoading: registrationsLoading } = useQuery({
+    queryKey: ['registrations', eventId],
+    queryFn: () => supabaseService.registrations.getAll(eventId || ''),
+    enabled: !!eventId,
+  });
+  const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings } = useQuery({
+    queryKey: ['groupings', eventId],
+    queryFn: () => supabaseService.groupings.getAll(eventId || ''),
+    enabled: !!eventId,
+  });
+  const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores } = useQuery({
+    queryKey: ['scores', eventId],
+    queryFn: () => supabaseService.scores.getAll(eventId || ''),
+    enabled: !!eventId,
+  });
+  const submitScoreMutation = useMutation({
+    mutationFn: ({ eventId, memberId, day, holes, totalScore, submittedBy }: any) =>
+      supabaseService.scores.submit(eventId, memberId, day, holes, totalScore, submittedBy),
+  });
 
   const getHoleAtIndex = (leadingHole: number, groupIndex: number): number => {
     let hole = leadingHole - groupIndex;
@@ -362,7 +373,7 @@ export default function ScoringScreen() {
           
           if (totalScore > 0) {
             await submitScoreMutation.mutateAsync({
-              eventId,
+              eventId: eventId!,
               memberId: player.id,
               day: selectedDay,
               holes: holesArray,

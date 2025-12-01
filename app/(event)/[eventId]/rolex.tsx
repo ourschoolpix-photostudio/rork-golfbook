@@ -16,7 +16,8 @@ import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventFooter } from '@/components/EventFooter';
 import { Trophy } from 'lucide-react-native';
 import { Member, User, Event } from '@/types';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabaseService } from '@/utils/supabaseService';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
 import {
   getDisplayHandicap,
@@ -36,15 +37,38 @@ export default function EventRolexScreen() {
   const [viewMode, setViewMode] = useState<'tournament' | 'rolex'>('tournament');
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
 
-  const { data: eventData, refetch: refetchEvent } = trpc.events.get.useQuery({ eventId: id }, { enabled: !!id });
-  const { data: allMembers = [], refetch: refetchMembers } = trpc.members.getAll.useQuery();
-  const { data: eventScores = [], refetch: refetchScores } = trpc.sync.scores.getAll.useQuery({ eventId: id }, { enabled: !!id });
-  const { data: eventRegistrations = [], refetch: refetchRegistrations } = trpc.registrations.getAll.useQuery({ eventId: id }, { enabled: !!id });
-  const updateMemberMutation = trpc.members.update.useMutation({
+  const queryClient = useQueryClient();
+  
+  const { data: eventData, refetch: refetchEvent } = useQuery({
+    queryKey: ['events', id],
+    queryFn: () => supabaseService.events.get(id),
+    enabled: !!id,
+  });
+  
+  const { data: allMembers = [], refetch: refetchMembers } = useQuery({
+    queryKey: ['members'],
+    queryFn: () => supabaseService.members.getAll(),
+  });
+  
+  const { data: eventScores = [], refetch: refetchScores } = useQuery({
+    queryKey: ['scores', id],
+    queryFn: () => supabaseService.scores.getAll(id),
+    enabled: !!id,
+  });
+  
+  const { data: eventRegistrations = [], refetch: refetchRegistrations } = useQuery({
+    queryKey: ['registrations', id],
+    queryFn: () => supabaseService.registrations.getAll(id),
+    enabled: !!id,
+  });
+  
+  const updateMemberMutation = useMutation({
+    mutationFn: ({ memberId, updates }: { memberId: string; updates: Partial<Member> }) =>
+      supabaseService.members.update(memberId, updates),
     onSuccess: () => {
-      refetchMembers();
-      refetchEvent();
-      refetchRegistrations();
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
     },
   });
 

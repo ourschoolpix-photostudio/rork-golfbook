@@ -7,7 +7,8 @@ import { EventFooter } from '@/components/EventFooter';
 import { useState, useMemo, useCallback } from 'react';
 import { useEvents } from '@/contexts/EventsContext';
 import { FinancialRecord } from '@/types';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabaseService } from '@/utils/supabaseService';
 
 type ExpenseCategory = 'food' | 'drink' | 'venue' | 'trophy' | 'custom';
 type GainCategory = 'donation' | 'sponsorship' | 'merch' | 'custom';
@@ -17,9 +18,25 @@ export default function FinanceScreen() {
   const { currentUser } = useAuth();
   const { addFinancial } = useEvents();
   
-  const { data: event, refetch: refetchEvent } = trpc.events.get.useQuery({ eventId: eventId || '' }, { enabled: !!eventId });
-  const { data: registrations = [], refetch: refetchRegistrations } = trpc.registrations.getAll.useQuery({ eventId: eventId || '' }, { enabled: !!eventId });
-  const { data: financials = [], refetch: refetchFinancials } = trpc.financials.getAll.useQuery({ eventId: eventId || '' }, { enabled: !!eventId });
+  const queryClient = useQueryClient();
+  
+  const { data: event, refetch: refetchEvent } = useQuery({
+    queryKey: ['events', eventId],
+    queryFn: () => supabaseService.events.get(eventId || ''),
+    enabled: !!eventId,
+  });
+  
+  const { data: registrations = [], refetch: refetchRegistrations } = useQuery({
+    queryKey: ['registrations', eventId],
+    queryFn: () => supabaseService.registrations.getAll(eventId || ''),
+    enabled: !!eventId,
+  });
+  
+  const { data: financials = [], refetch: refetchFinancials } = useQuery({
+    queryKey: ['financials', eventId],
+    queryFn: () => supabaseService.financials.getAll(eventId || ''),
+    enabled: !!eventId,
+  });
 
   useFocusEffect(
     useCallback(() => {
