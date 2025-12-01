@@ -17,8 +17,11 @@ const getBaseUrl = () => {
   }
 
   if (Platform.OS === 'web') {
-    console.log('🔧 [tRPC] Using same-origin URL for web');
-    return '';
+    const webUrl = typeof window !== 'undefined' 
+      ? `${window.location.protocol}//${window.location.host}`
+      : '';
+    console.log('🔧 [tRPC] Using web URL:', webUrl);
+    return webUrl;
   }
 
   if (__DEV__) {
@@ -45,13 +48,17 @@ export const checkBackendHealth = async (): Promise<boolean> => {
   }
 
   try {
-    const response = await fetch(`${getBaseUrl()}/health`, {
+    const response = await fetch(`${getBaseUrl()}/api/health`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
     isBackendAvailable = response.ok;
     lastBackendCheck = now;
     console.log(`🏥 [tRPC] Backend health check: ${isBackendAvailable ? '✅' : '❌'}`);
+    if (response.ok) {
+      const data = await response.json();
+      console.log('🏥 [tRPC] Health response:', data);
+    }
   } catch (error) {
     isBackendAvailable = false;
     lastBackendCheck = now;

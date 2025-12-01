@@ -3,8 +3,12 @@ import app from "@/backend/hono";
 const handleRequest = async (request: Request) => {
   try {
     const url = new URL(request.url);
-    console.log('🚀 [API] Handling request:', request.method, url.pathname);
-    console.log('🚀 [API] Search params:', url.search);
+    console.log('🚀 [API] ========== NEW REQUEST ==========');
+    console.log('🚀 [API] Method:', request.method);
+    console.log('🚀 [API] Full URL:', request.url);
+    console.log('🚀 [API] Pathname:', url.pathname);
+    console.log('🚀 [API] Search:', url.search);
+    console.log('🚀 [API] Headers:', Object.fromEntries(request.headers.entries()));
 
     const honoRequest = new Request(request.url, {
       method: request.method,
@@ -12,13 +16,17 @@ const handleRequest = async (request: Request) => {
       body: request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined,
     });
     
-    console.log('🔧 [API] Forwarding to Hono:', request.url);
+    console.log('🔧 [API] Forwarding to Hono app.fetch()...');
     
     const response = await app.fetch(honoRequest);
-    console.log('✅ [API] Response status:', response.status);
+    
+    console.log('✅ [API] Response received from Hono');
+    console.log('✅ [API] Status:', response.status);
+    console.log('✅ [API] Status text:', response.statusText);
     
     return response;
   } catch (error) {
+    console.error('❌ [API] ========== ERROR ==========');
     console.error('❌ [API] Error:', error);
     console.error('❌ [API] Error stack:', error instanceof Error ? error.stack : 'no stack');
     return new Response(JSON.stringify({ 
