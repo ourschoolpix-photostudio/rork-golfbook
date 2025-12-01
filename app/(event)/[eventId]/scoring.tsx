@@ -11,6 +11,8 @@ import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
 import { supabaseService } from '@/utils/supabaseService';
 import { getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
+import { useRealtimeScores, useRealtimeGroupings } from '@/utils/useRealtimeSubscription';
+import { useOfflineMode } from '@/contexts/OfflineModeContext';
 
 export default function ScoringScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -54,6 +56,11 @@ export default function ScoringScreen() {
     refetchInterval: 10000,
     refetchIntervalInBackground: false,
   });
+  const { shouldUseOfflineMode, addPendingOperation } = useOfflineMode();
+  
+  useRealtimeScores(eventId || '', !!eventId);
+  useRealtimeGroupings(eventId || '', !!eventId);
+  
   const submitScoreMutation = useMutation({
     mutationFn: ({ eventId, memberId, day, holes, totalScore, submittedBy }: any) =>
       supabaseService.scores.submit(eventId, memberId, day, holes, totalScore, submittedBy),
@@ -355,9 +362,19 @@ export default function ScoringScreen() {
   const handleSubmitScores = async () => {
     if (!eventId || !currentUser) return;
 
+    if (shouldUseOfflineMode) {
+      Alert.alert(
+        'Offline Mode',
+        'You are currently offline or in offline mode. Scores cannot be submitted. Please go online to submit scores.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const scoresSubmitted = [];
+      const submissionPromises = [];
       
       for (const player of myGroup) {
         if (player && player.id) {
@@ -374,14 +391,16 @@ export default function ScoringScreen() {
           const totalScore = getTotalScore(player.id);
           
           if (totalScore > 0) {
-            await submitScoreMutation.mutateAsync({
-              eventId: eventId!,
-              memberId: player.id,
-              day: selectedDay,
-              holes: holesArray,
-              totalScore,
-              submittedBy: currentUser.id,
-            });
+            submissionPromises.push(
+              submitScoreMutation.mutateAsync({
+                eventId: eventId!,
+                memberId: player.id,
+                day: selectedDay,
+                holes: holesArray,
+                totalScore,
+                submittedBy: currentUser.id,
+              })
+            );
             scoresSubmitted.push(player.name);
           }
         }
@@ -393,7 +412,8 @@ export default function ScoringScreen() {
         return;
       }
 
-      console.log('[scoring] ✅ Submitted scores to backend for:', scoresSubmitted);
+      await Promise.all(submissionPromises);
+      console.log('[scoring] ✅ Submitted scores atomically for:', scoresSubmitted);
       
       await refetchScores();
       await loadScores();

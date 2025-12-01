@@ -31,6 +31,7 @@ import { supabaseService } from '@/utils/supabaseService';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { canManageGroupings } from '@/utils/rolePermissions';
+import { useRealtimeScores, useRealtimeGroupings, useRealtimeRegistrations } from '@/utils/useRealtimeSubscription';
 
 interface Group {
   hole: number;
@@ -76,6 +77,10 @@ export default function GroupingsScreen() {
   
   const queryClient = useQueryClient();
   const { members: allMembers } = useAuth();
+  
+  useRealtimeScores(id, !!id);
+  useRealtimeGroupings(id, !!id);
+  useRealtimeRegistrations(id, !!id);
   
   const triggerGroupRefresh = () => {
     console.log('[groupings] 🔄 Triggering group refresh to re-enrich scores...');
