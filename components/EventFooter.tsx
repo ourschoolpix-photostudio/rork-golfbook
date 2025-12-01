@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { OfflineModeToggle } from '@/components/OfflineModeToggle';
 import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseService } from '@/utils/supabaseService';
 import { canViewFinance } from '@/utils/rolePermissions';
 
 type EventFooterProps = {
@@ -38,13 +38,7 @@ export function EventFooter({
     
     const fetchEvent = async () => {
       try {
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .eq('id', eventId)
-          .single();
-        
-        if (error) throw error;
+        const data = await supabaseService.events.get(eventId);
         setEvent(data);
         console.log('[EventFooter] Fetched event:', data?.id);
       } catch (error) {
