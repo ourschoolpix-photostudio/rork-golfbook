@@ -10,6 +10,7 @@ import { GamesProvider } from "@/contexts/GamesContext";
 import { OfflineModeProvider } from "@/contexts/OfflineModeContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { trpc, trpcClient } from "@/lib/trpc";
 
 const originalWarn = console.warn;
 console.warn = (...args: any[]) => {
@@ -87,23 +88,25 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={styles.container}>
-        <OfflineModeProvider>
-          <SettingsProvider>
-            <AuthProvider>
-              <NotificationsProvider>
-                <EventsProvider>
-                  <GamesProvider>
-                    <RootLayoutNav />
-                  </GamesProvider>
-                </EventsProvider>
-              </NotificationsProvider>
-            </AuthProvider>
-          </SettingsProvider>
-        </OfflineModeProvider>
-      </GestureHandlerRootView>
-    </QueryClientProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={styles.container}>
+          <OfflineModeProvider>
+            <SettingsProvider>
+              <AuthProvider>
+                <NotificationsProvider>
+                  <EventsProvider>
+                    <GamesProvider>
+                      <RootLayoutNav />
+                    </GamesProvider>
+                  </EventsProvider>
+                </NotificationsProvider>
+              </AuthProvider>
+            </SettingsProvider>
+          </OfflineModeProvider>
+        </GestureHandlerRootView>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
 
