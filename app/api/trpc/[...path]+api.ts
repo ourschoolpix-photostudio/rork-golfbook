@@ -10,10 +10,15 @@ const handleRequest = async (request: Request) => {
     console.log('🚀 [API] Search:', url.search);
     console.log('🚀 [API] Headers:', Object.fromEntries(request.headers.entries()));
 
+    const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined;
+    if (body) {
+      console.log('🚀 [API] Request body:', body.substring(0, 500));
+    }
+
     const honoRequest = new Request(request.url, {
       method: request.method,
       headers: request.headers,
-      body: request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined,
+      body: body,
     });
     
     console.log('🔧 [API] Forwarding to Hono app.fetch()...');
@@ -24,7 +29,14 @@ const handleRequest = async (request: Request) => {
     console.log('✅ [API] Status:', response.status);
     console.log('✅ [API] Status text:', response.statusText);
     
-    return response;
+    const responseText = await response.text();
+    console.log('✅ [API] Response body:', responseText.substring(0, 500));
+    
+    return new Response(responseText, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
   } catch (error) {
     console.error('❌ [API] ========== ERROR ==========');
     console.error('❌ [API] Error:', error);

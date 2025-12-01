@@ -7,15 +7,6 @@ import Constants from 'expo-constants';
 export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
-  if (process.env.EXPO_PUBLIC_RORK_API_BASE_URL) {
-    let url = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
-    if (url.startsWith('http://')) {
-      url = url.replace('http://', 'https://');
-    }
-    console.log('🔧 [tRPC] Using configured API URL:', url);
-    return url;
-  }
-
   if (Platform.OS === 'web') {
     const webUrl = typeof window !== 'undefined' 
       ? `${window.location.protocol}//${window.location.host}`
@@ -33,7 +24,7 @@ const getBaseUrl = () => {
     }
   }
 
-  console.log('⚠️ [tRPC] No backend URL configured');
+  console.error('❌ [tRPC] Could not determine backend URL');
   return '';
 };
 
