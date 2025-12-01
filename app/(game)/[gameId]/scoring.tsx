@@ -13,7 +13,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Trophy, BarChart3 } from 'lucide-
 import { useGames } from '@/contexts/GamesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonalGamePlayer } from '@/types';
-import { trpc } from '@/lib/trpc';
+import { supabaseService } from '@/utils/supabaseService';
 import * as WolfHelper from '@/utils/wolfHelper';
 import * as NinersHelper from '@/utils/ninersHelper';
 
@@ -24,17 +24,22 @@ export default function GameScoringScreen() {
   const { completeGame } = useGames();
   const { currentUser } = useAuth();
 
-  const gameQuery = trpc.games.getAll.useQuery(
-    { memberId: currentUser?.id || '' },
-    { enabled: !!currentUser?.id, refetchInterval: false }
-  );
+  const [game, setGame] = useState<any>(undefined);
 
-  const game = useMemo(() => {
-    if (gameQuery.data) {
-      return gameQuery.data.find(g => g.id === gameId);
-    }
-    return undefined;
-  }, [gameQuery.data, gameId]);
+  useEffect(() => {
+    const loadGame = async () => {
+      if (currentUser?.id) {
+        try {
+          const games = await supabaseService.games.getAll(currentUser.id);
+          const foundGame = games.find(g => g.id === gameId);
+          setGame(foundGame);
+        } catch (error) {
+          console.error('[GameScoring] Error loading game:', error);
+        }
+      }
+    };
+    loadGame();
+  }, [currentUser?.id, gameId]);
   const [currentHole, setCurrentHole] = useState<number>(1);
   const [holeScores, setHoleScores] = useState<{ [playerIndex: number]: { [hole: number]: number } }>({});
   const [strokesUsedOnHole, setStrokesUsedOnHole] = useState<{ [playerIndex: number]: boolean }>({});
@@ -87,7 +92,7 @@ export default function GameScoringScreen() {
     }));
   }, [game]);
 
-  const updateGameMutation = trpc.games.update.useMutation();
+
 
   const allComplete = useMemo(() => {
     if (!game) return false;
@@ -275,8 +280,10 @@ export default function GameScoringScreen() {
       const updateData = buildUpdateData(false);
       if (!updateData) return;
 
-      await updateGameMutation.mutateAsync(updateData);
-      await gameQuery.refetch();
+      await supabaseService.games.update(gameId, updateData);
+      const games = await supabaseService.games.getAll(currentUser?.id || '');
+      const updatedGame = games.find(g => g.id === gameId);
+      if (updatedGame) setGame(updatedGame);
       console.log('[GameScoring] Auto-calculated and saved team score for hole', currentHole);
     } catch (error) {
       console.error('[GameScoring] Error auto-saving scores:', error);
@@ -292,8 +299,10 @@ export default function GameScoringScreen() {
       const updateData = buildUpdateData(false);
       if (!updateData) return;
 
-      await updateGameMutation.mutateAsync(updateData);
-      await gameQuery.refetch();
+      await supabaseService.games.update(gameId, updateData);
+      const games = await supabaseService.games.getAll(currentUser?.id || '');
+      const updatedGame = games.find(g => g.id === gameId);
+      if (updatedGame) setGame(updatedGame);
       console.log('[GameScoring] Auto-saved scores for hole', currentHole);
     } catch (error) {
       console.error('[GameScoring] Error auto-saving scores:', error);
@@ -452,8 +461,10 @@ export default function GameScoringScreen() {
       const updateData = buildUpdateData(true);
       if (!updateData) return;
 
-      await updateGameMutation.mutateAsync(updateData);
-      await gameQuery.refetch();
+      await supabaseService.games.update(gameId, updateData);
+      const games = await supabaseService.games.getAll(currentUser?.id || '');
+      const updatedGame = games.find(g => g.id === gameId);
+      if (updatedGame) setGame(updatedGame);
 
       console.log('[GameScoring] Saved all scores');
       
@@ -538,11 +549,12 @@ export default function GameScoringScreen() {
     };
 
     try {
-      await updateGameMutation.mutateAsync({
-        gameId,
+      await supabaseService.games.update(gameId, {
         wolfPartnerships: updatedWolfPartnerships,
       });
-      await gameQuery.refetch();
+      const games = await supabaseService.games.getAll(currentUser?.id || '');
+      const updatedGame = games.find(g => g.id === gameId);
+      if (updatedGame) setGame(updatedGame);
       console.log('[GameScoring] Saved wolf partnership (solo toggle) for hole', currentHole);
     } catch (error) {
       console.error('[GameScoring] Error saving wolf partnership (solo toggle):', error);
@@ -564,11 +576,12 @@ export default function GameScoringScreen() {
     };
 
     try {
-      await updateGameMutation.mutateAsync({
-        gameId,
+      await supabaseService.games.update(gameId, {
         wolfPartnerships: updatedWolfPartnerships,
       });
-      await gameQuery.refetch();
+      const games = await supabaseService.games.getAll(currentUser?.id || '');
+      const updatedGame = games.find(g => g.id === gameId);
+      if (updatedGame) setGame(updatedGame);
       console.log('[GameScoring] Saved wolf partnership (quad toggle) for hole', currentHole);
     } catch (error) {
       console.error('[GameScoring] Error saving wolf partnership (quad toggle):', error);
@@ -587,11 +600,12 @@ export default function GameScoringScreen() {
     };
 
     try {
-      await updateGameMutation.mutateAsync({
-        gameId,
+      await supabaseService.games.update(gameId, {
         wolfPartnerships: updatedWolfPartnerships,
       });
-      await gameQuery.refetch();
+      const games = await supabaseService.games.getAll(currentUser?.id || '');
+      const updatedGame = games.find(g => g.id === gameId);
+      if (updatedGame) setGame(updatedGame);
       console.log('[GameScoring] Saved wolf partnership for hole', currentHole);
     } catch (error) {
       console.error('[GameScoring] Error saving wolf partnership:', error);

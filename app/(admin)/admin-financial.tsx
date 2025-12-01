@@ -14,25 +14,30 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FinancialRecord } from '@/types';
 import { AdminFooter } from '@/components/AdminFooter';
-import { trpc } from '@/lib/trpc';
+import { supabaseService } from '@/utils/supabaseService';
 
 export default function AdminFinancialScreen() {
   const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [form, setForm] = useState({ description: '', amount: '', type: 'expense' as 'expense' | 'income' });
 
-  const { data: allFinancials = [], refetch } = trpc.financials.getAllGlobal.useQuery();
-  const createFinancialMutation = trpc.financials.create.useMutation({
-    onSuccess: () => {
-      refetch();
-    },
-  });
+  const [allFinancials, setAllFinancials] = useState<FinancialRecord[]>([]);
+
+  const loadFinancials = async () => {
+    try {
+      const data = await supabaseService.financials.getAll('global');
+      setAllFinancials(data);
+      console.log('[admin-financial] ✅ Loaded', data.length, 'financial records');
+    } catch (error) {
+      console.error('[admin-financial] Error loading financials:', error);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
-      console.log('[admin-financial] 🎯 Page FOCUSED - refetching data');
-      refetch();
-    }, [refetch])
+      console.log('[admin-financial] 🎯 Page FOCUSED - loading data');
+      loadFinancials();
+    }, [])
   );
 
   const records = allFinancials.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -53,9 +58,10 @@ export default function AdminFinancialScreen() {
     };
 
     try {
-      await createFinancialMutation.mutateAsync(record);
+      await supabaseService.financials.create(record);
       setForm({ description: '', amount: '', type: 'expense' });
       setModalVisible(false);
+      await loadFinancials();
     } catch (error) {
       console.error('[admin-financial] Error adding record:', error);
       Alert.alert('Error', 'Failed to add financial record');

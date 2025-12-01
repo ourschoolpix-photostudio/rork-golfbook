@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AdminFooter } from '@/components/AdminFooter';
 import { Member } from '@/types';
 import { bulkUpdateMembers, BulkUpdateFields } from '@/utils/bulk-update';
-import { trpc } from '@/lib/trpc';
+import { supabase } from '@/integrations/supabase/client';
 
 type UpdateOperation = {
   id: string;
@@ -28,7 +28,7 @@ export default function BulkUpdateScreen() {
   const [loading, setLoading] = useState(false);
   const [isNormalizing, setIsNormalizing] = useState(false);
   const { members, updateMember } = useAuth();
-  const normalizeNamesMutation = trpc.members.normalizeAllNames.useMutation();
+
 
   const handleUpdateTournamentFlights = async () => {
     Alert.alert(
@@ -241,7 +241,7 @@ export default function BulkUpdateScreen() {
   const handleNormalizeNames = async () => {
     Alert.alert(
       'Normalize Member Names',
-      'This will convert all member names to proper case (first letter capitalized) in the backend database. Continue?',
+      'This will convert all member names to proper case (first letter capitalized) in the database. Continue?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -249,10 +249,30 @@ export default function BulkUpdateScreen() {
           onPress: async () => {
             try {
               setIsNormalizing(true);
-              const result = await normalizeNamesMutation.mutateAsync();
+              
+              const { data, error } = await supabase.from('members').select('id, name');
+              if (error) throw error;
+              
+              let count = 0;
+              for (const member of data || []) {
+                const normalized = member.name
+                  .toLowerCase()
+                  .split(' ')
+                  .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ');
+                
+                if (normalized !== member.name) {
+                  await supabase
+                    .from('members')
+                    .update({ name: normalized, full_name: normalized })
+                    .eq('id', member.id);
+                  count++;
+                }
+              }
+              
               Alert.alert(
                 'Success', 
-                `Normalized ${result.count} member names to proper case in the database.`
+                `Normalized ${count} member names to proper case in the database.`
               );
             } catch (error) {
               console.error('Error normalizing names:', error);

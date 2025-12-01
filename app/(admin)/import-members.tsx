@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Member } from '@/types';
-import { trpc } from '@/lib/trpc';
+import { supabaseService } from '@/utils/supabaseService';
 
 export default function ImportMembersScreen() {
   const router = useRouter();
@@ -12,7 +12,7 @@ export default function ImportMembersScreen() {
   const [importData, setImportData] = useState('');
   const [importing, setImporting] = useState(false);
 
-  const createMemberMutation = trpc.members.create.useMutation();
+
 
   const parseAndImportMembers = async () => {
     try {
@@ -97,7 +97,7 @@ export default function ImportMembersScreen() {
 
       for (const member of newMembers) {
         try {
-          await createMemberMutation.mutateAsync(member);
+          await supabaseService.members.create(member);
           successCount++;
           console.log(`✅ Imported member ${successCount}/${newMembers.length}: ${member.name}`);
         } catch (error) {

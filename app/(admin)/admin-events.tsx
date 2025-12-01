@@ -17,7 +17,7 @@ import { AdminFooter } from '@/components/AdminFooter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Event } from '@/types';
 import { SyncButton, SyncStatusIndicator } from '@/components/SyncButton';
-import { trpc } from '@/lib/trpc';
+import { supabaseService } from '@/utils/supabaseService';
 import { formatDateForDisplay } from '@/utils/dateUtils';
 
 type EventFormType = {
@@ -195,24 +195,22 @@ export default function AdminEventsScreen() {
     day3HolePars: Array(18).fill(''),
   });
 
-  const eventsQuery = trpc.events.getAll.useQuery(undefined, {
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  });
-
   useEffect(() => {
     loadEvents();
-  }, [eventsQuery.data]);
+  }, []);
 
   const loadEvents = async () => {
-    if (eventsQuery.data) {
-      console.log('✅ Admin Events - Events from backend:', eventsQuery.data.length);
-      const sortedEvents = [...eventsQuery.data].sort((a, b) => {
+    try {
+      const data = await supabaseService.events.getAll();
+      console.log('✅ Admin Events - Events from Supabase:', data.length);
+      const sortedEvents = [...data].sort((a, b) => {
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return timeB - timeA;
       });
       setEvents(sortedEvents);
+    } catch (error) {
+      console.error('[AdminEvents] Error loading events:', error);
     }
   };
 
@@ -301,9 +299,7 @@ export default function AdminEventsScreen() {
     });
   };
 
-  const createEventMutation = trpc.events.create.useMutation();
-  const updateEventMutation = trpc.events.update.useMutation();
-  const deleteEventMutation = trpc.events.delete.useMutation();
+
 
   const handleSaveEvent = async () => {
     if (!form.eventName.trim() || !form.course.trim()) {
@@ -313,9 +309,7 @@ export default function AdminEventsScreen() {
 
     try {
       if (editingId) {
-        await updateEventMutation.mutateAsync({
-          eventId: editingId,
-          updates: {
+        await supabaseService.events.update(editingId, {
             id: editingId,
             name: form.eventName,
             venue: form.course,
@@ -398,7 +392,6 @@ export default function AdminEventsScreen() {
             lowGrossTrophy: form.lowGrossTrophy,
             lowGrossCashPrize: form.lowGrossCashPrize,
             closestToPin: form.closestToPin,
-          },
         });
       } else {
         const newEvent = {
@@ -486,14 +479,14 @@ export default function AdminEventsScreen() {
           closestToPin: form.closestToPin,
           createdAt: new Date().toISOString(),
         };
-        await createEventMutation.mutateAsync(newEvent);
+        await supabaseService.events.create(newEvent);
       }
 
       Alert.alert('Success', editingId ? 'Event updated successfully' : 'Event created successfully');
       resetForm();
       setEditingId(null);
       setModalVisible(false);
-      eventsQuery.refetch();
+      await loadEvents();
     } catch (error) {
       console.error('Error saving event:', error);
       Alert.alert('Error', 'Failed to save event. Please try again.');
@@ -524,11 +517,11 @@ export default function AdminEventsScreen() {
     if (!eventToDelete) return;
 
     try {
-      await deleteEventMutation.mutateAsync({ eventId: eventToDelete });
+      await supabaseService.events.delete(eventToDelete);
       
-      console.log(`Deleted event ${eventToDelete} from backend`);
+      console.log(`Deleted event ${eventToDelete} from Supabase`);
       Alert.alert('Success', 'Event deleted successfully');
-      eventsQuery.refetch();
+      await loadEvents();
     } catch (error) {
       console.error('Error deleting event:', error);
       Alert.alert('Error', 'Failed to delete event');

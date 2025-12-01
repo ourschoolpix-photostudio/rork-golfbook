@@ -11,7 +11,7 @@ import { useFocusEffect } from 'expo-router';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { Member } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { trpc } from '@/lib/trpc';
+import { supabaseService } from '@/utils/supabaseService';
 
 type FlightFilter = 'all' | 'A' | 'B';
 
@@ -21,17 +21,24 @@ export default function GlobalRolexScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [flightFilter, setFlightFilter] = useState<FlightFilter>('all');
 
-  const membersQuery = trpc.members.getAll.useQuery();
-  const allMembers = membersQuery.data || [];
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
+
+  const loadMembers = async () => {
+    try {
+      const data = await supabaseService.members.getAll();
+      console.log('[GlobalRolex] ✅ Loaded', data.length, 'members from Supabase');
+      setAllMembers(data);
+    } catch (error) {
+      console.error('[GlobalRolex] Error loading members:', error);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
-      console.log('[GlobalRolex] Screen focused, refetching members...');
-      membersQuery.refetch();
-    }, [membersQuery])
+      console.log('[GlobalRolex] Screen focused, loading members...');
+      loadMembers();
+    }, [])
   );
-
-  console.log('[GlobalRolex] Rendering with', allMembers.length, 'members');
 
   const sortedMembers = useMemo(() => {
     let filtered = [...allMembers];
