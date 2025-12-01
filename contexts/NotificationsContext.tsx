@@ -1,6 +1,6 @@
-import { useCallback, useMemo, createContext, useContext, ReactNode } from 'react';
+import { useCallback, useMemo, createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { RegistrationNotification } from '@/types';
-import { trpc } from '@/lib/trpc';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 type NotificationsContextType = {
@@ -21,79 +21,126 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const memberId = currentUser?.id;
   const isUserLoggedIn = !!memberId;
 
-  const notificationsQuery = trpc.notifications.getAll.useQuery(
-    { memberId },
-    { enabled: isUserLoggedIn }
-  );
+  const [notifications, setNotifications] = useState<RegistrationNotification[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const createNotificationMutation = trpc.notifications.create.useMutation({
-    onSuccess: () => {
-      notificationsQuery.refetch();
-    },
-  });
+  const fetchNotifications = useCallback(async () => {
+    if (!isUserLoggedIn) return;
+    
+    try {
+      setIsLoading(true);
+      console.log('⏳ [NotificationsContext] Loading notifications from Supabase...');
+      
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('member_id', memberId)
+        .order('created_at', { ascending: false });
 
-  const markAsReadMutation = trpc.notifications.markAsRead.useMutation({
-    onSuccess: () => {
-      notificationsQuery.refetch();
-    },
-  });
+      if (error) {
+        console.error('❌ [NotificationsContext] Failed to fetch notifications:', error);
+        return;
+      }
 
-  const markAllAsReadMutation = trpc.notifications.markAllAsRead.useMutation({
-    onSuccess: () => {
-      notificationsQuery.refetch();
-    },
-  });
+      console.log('✅ [NotificationsContext] Successfully fetched notifications:', data?.length || 0);
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('❌ [NotificationsContext] Exception fetching notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [memberId, isUserLoggedIn]);
 
-  const deleteNotificationMutation = trpc.notifications.delete.useMutation({
-    onSuccess: () => {
-      notificationsQuery.refetch();
-    },
-  });
-
-  const clearAllMutation = trpc.notifications.clearAll.useMutation({
-    onSuccess: () => {
-      notificationsQuery.refetch();
-    },
-  });
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const addNotification = useCallback(
     async (notification: Omit<RegistrationNotification, 'id' | 'isRead' | 'createdAt'>) => {
-      await createNotificationMutation.mutateAsync({
-        memberId,
-        eventId: notification.eventId,
-        type: notification.type as any,
-        title: notification.title,
-        message: notification.message,
-        metadata: notification.metadata,
-      });
+      const { error } = await supabase
+        .from('notifications')
+        .insert([{
+          member_id: memberId,
+          event_id: notification.eventId,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          metadata: notification.metadata,
+          is_read: false,
+        }]);
+
+      if (error) {
+        console.error('❌ [NotificationsContext] Failed to add notification:', error);
+        throw error;
+      }
+
+      await fetchNotifications();
     },
-    [memberId, createNotificationMutation]
+    [memberId, fetchNotifications]
   );
 
   const markAsRead = useCallback(
     async (notificationId: string) => {
-      await markAsReadMutation.mutateAsync({ notificationId });
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId);
+
+      if (error) {
+        console.error('❌ [NotificationsContext] Failed to mark as read:', error);
+        throw error;
+      }
+
+      await fetchNotifications();
     },
-    [markAsReadMutation]
+    [fetchNotifications]
   );
 
   const deleteNotification = useCallback(
     async (notificationId: string) => {
-      await deleteNotificationMutation.mutateAsync({ notificationId });
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
+
+      if (error) {
+        console.error('❌ [NotificationsContext] Failed to delete notification:', error);
+        throw error;
+      }
+
+      await fetchNotifications();
     },
-    [deleteNotificationMutation]
+    [fetchNotifications]
   );
 
   const markAllAsRead = useCallback(async () => {
-    await markAllAsReadMutation.mutateAsync({ memberId });
-  }, [memberId, markAllAsReadMutation]);
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('member_id', memberId);
+
+    if (error) {
+      console.error('❌ [NotificationsContext] Failed to mark all as read:', error);
+      throw error;
+    }
+
+    await fetchNotifications();
+  }, [memberId, fetchNotifications]);
 
   const clearAll = useCallback(async () => {
-    await clearAllMutation.mutateAsync({ memberId });
-  }, [memberId, clearAllMutation]);
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('member_id', memberId);
 
-  const notifications = useMemo(() => notificationsQuery.data || [], [notificationsQuery.data]);
-  const isLoading = notificationsQuery.isLoading;
+    if (error) {
+      console.error('❌ [NotificationsContext] Failed to clear all notifications:', error);
+      throw error;
+    }
+
+    await fetchNotifications();
+  }, [memberId, fetchNotifications]);
+
   const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 
   const value = useMemo(() => ({

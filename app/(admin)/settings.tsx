@@ -20,7 +20,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { photoService } from '@/utils/photoService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
-import { trpc } from '@/lib/trpc';
 import CoursesManagementModal from '@/components/CoursesManagementModal';
 
 interface OrganizationInfo {
@@ -46,10 +45,9 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { refreshOrganizationInfo } = useSettings();
+  const { orgInfo: contextOrgInfo, isLoading: contextIsLoading, refreshOrganizationInfo, updateOrganizationInfo } = useSettings();
 
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [expandedSections, setExpandedSections] = useState<{
     organization: boolean;
@@ -80,24 +78,11 @@ export default function SettingsScreen() {
     rolexBonusPoints: '',
   });
 
-  const settingsQuery = trpc.settings.getSettings.useQuery();
-  const updateSettingsMutation = trpc.settings.updateSettings.useMutation();
-
-
   useEffect(() => {
-    if (settingsQuery.data) {
-      setOrgInfo({
-        ...settingsQuery.data,
-        rolexPlacementPoints: settingsQuery.data.rolexPlacementPoints || Array(30).fill(''),
-        rolexAttendancePoints: settingsQuery.data.rolexAttendancePoints || '',
-        rolexBonusPoints: settingsQuery.data.rolexBonusPoints || '',
-      });
+    if (contextOrgInfo) {
+      setOrgInfo(contextOrgInfo);
     }
-  }, [settingsQuery.data]);
-
-  useEffect(() => {
-    setIsLoading(settingsQuery.isLoading);
-  }, [settingsQuery.isLoading]);
+  }, [contextOrgInfo]);
 
 
 
@@ -116,9 +101,8 @@ export default function SettingsScreen() {
       console.log('[Settings] Client Secret length:', trimmedOrgInfo.paypalClientSecret.length);
       console.log('[Settings] Mode:', trimmedOrgInfo.paypalMode);
       
-      await updateSettingsMutation.mutateAsync(trimmedOrgInfo);
+      await updateOrganizationInfo(trimmedOrgInfo);
       setOrgInfo(trimmedOrgInfo);
-      await refreshOrganizationInfo();
       
       Alert.alert('Success', 'Organization information saved successfully to database.');
     } catch (error: any) {
@@ -147,7 +131,7 @@ export default function SettingsScreen() {
         
         const updatedInfo = { ...orgInfo, logoUrl: uploadedUrl };
         setOrgInfo(updatedInfo);
-        await updateSettingsMutation.mutateAsync(updatedInfo);
+        await updateOrganizationInfo(updatedInfo);
         Alert.alert('Success', 'Logo uploaded successfully');
       }
     } catch (error: any) {
@@ -172,7 +156,7 @@ export default function SettingsScreen() {
             try {
               const updatedInfo = { ...orgInfo, logoUrl: '' };
               setOrgInfo(updatedInfo);
-              await updateSettingsMutation.mutateAsync(updatedInfo);
+              await updateOrganizationInfo(updatedInfo);
               Alert.alert('Success', 'Logo removed successfully');
             } catch (error) {
               console.error('Error removing logo:', error);
@@ -209,7 +193,7 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        {isLoading ? (
+        {contextIsLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#007AFF" />
           </View>

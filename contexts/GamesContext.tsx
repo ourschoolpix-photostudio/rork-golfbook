@@ -1,6 +1,6 @@
-import { useMemo, useCallback, createContext, useContext, ReactNode } from 'react';
+import { useMemo, useCallback, createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { PersonalGame } from '@/types';
-import { trpc } from '@/lib/trpc';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 type GamesContextType = {
@@ -53,28 +53,39 @@ export function GamesProvider({ children }: { children: ReactNode }) {
   const memberId = currentUser?.id || '';
   const isUserLoggedIn = !!currentUser?.id;
 
-  const gamesQuery = trpc.games.getAll.useQuery(
-    { memberId },
-    { enabled: isUserLoggedIn }
-  );
+  const [games, setGames] = useState<PersonalGame[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const createGameMutation = trpc.games.create.useMutation({
-    onSuccess: async () => {
-      await gamesQuery.refetch();
-    },
-  });
+  const fetchGames = useCallback(async () => {
+    if (!isUserLoggedIn) return;
+    
+    try {
+      setIsLoading(true);
+      console.log('⏳ [GamesContext] Loading games from Supabase...');
+      
+      const { data, error } = await supabase
+        .from('personal_games')
+        .select('*')
+        .eq('member_id', memberId)
+        .order('created_at', { ascending: false });
 
-  const updateGameMutation = trpc.games.update.useMutation({
-    onSuccess: () => {
-      gamesQuery.refetch();
-    },
-  });
+      if (error) {
+        console.error('❌ [GamesContext] Failed to fetch games:', error);
+        return;
+      }
 
-  const deleteGameMutation = trpc.games.delete.useMutation({
-    onSuccess: () => {
-      gamesQuery.refetch();
-    },
-  });
+      console.log('✅ [GamesContext] Successfully fetched games:', data?.length || 0);
+      setGames(data || []);
+    } catch (error) {
+      console.error('❌ [GamesContext] Exception fetching games:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [memberId, isUserLoggedIn]);
+
+  useEffect(() => {
+    fetchGames();
+  }, [fetchGames]);
 
   const createGame = useCallback(async (
     courseName: string,
@@ -130,19 +141,29 @@ export function GamesProvider({ children }: { children: ReactNode }) {
       gameData.wolfPartnerships = {};
     }
 
-    const result = await createGameMutation.mutateAsync(gameData);
-    console.log('[GamesContext] Created game:', result.id);
-    await gamesQuery.refetch();
+    const { data, error } = await supabase
+      .from('personal_games')
+      .insert([gameData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ [GamesContext] Failed to create game:', error);
+      throw error;
+    }
+
+    console.log('[GamesContext] Created game:', data.id);
+    await fetchGames();
     console.log('[GamesContext] Refetched games after creation');
-    return result.id;
-  }, [memberId, createGameMutation, gamesQuery]);
+    return data.id;
+  }, [memberId, fetchGames]);
 
   const updateGameScores = useCallback(async (
     gameId: string,
     playerIndex: number,
     scores: number[]
   ) => {
-    const game = gamesQuery.data?.find(g => g.id === gameId);
+    const game = games.find(g => g.id === gameId);
     if (!game) {
       throw new Error('Game not found');
     }
@@ -154,12 +175,19 @@ export function GamesProvider({ children }: { children: ReactNode }) {
       totalScore: scores.reduce((sum, score) => sum + score, 0),
     };
 
-    await updateGameMutation.mutateAsync({
-      gameId,
-      players: updatedPlayers,
-    });
+    const { error } = await supabase
+      .from('personal_games')
+      .update({ players: updatedPlayers })
+      .eq('id', gameId);
+
+    if (error) {
+      console.error('❌ [GamesContext] Failed to update scores:', error);
+      throw error;
+    }
+
     console.log('[GamesContext] Updated scores for game:', gameId);
-  }, [gamesQuery.data, updateGameMutation]);
+    await fetchGames();
+  }, [games, fetchGames]);
 
   const updateGame = useCallback(async (gameId: string, updates: Partial<{
     courseName: string;
@@ -193,25 +221,54 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     if (updates.potPlayers) updateData.potPlayers = updates.potPlayers;
     if (updates.useHandicaps !== undefined) updateData.useHandicaps = updates.useHandicaps;
 
-    await updateGameMutation.mutateAsync(updateData);
+    const { error } = await supabase
+      .from('personal_games')
+      .update(updateData)
+      .eq('id', gameId);
+
+    if (error) {
+      console.error('❌ [GamesContext] Failed to update game:', error);
+      throw error;
+    }
+
     console.log('[GamesContext] Updated game:', gameId);
-  }, [updateGameMutation]);
+    await fetchGames();
+  }, [fetchGames]);
 
   const completeGame = useCallback(async (gameId: string) => {
-    await updateGameMutation.mutateAsync({
-      gameId,
-      status: 'completed',
-    });
+    const { error } = await supabase
+      .from('personal_games')
+      .update({ 
+        status: 'completed',
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', gameId);
+
+    if (error) {
+      console.error('❌ [GamesContext] Failed to complete game:', error);
+      throw error;
+    }
+
     console.log('[GamesContext] Completed game:', gameId);
-  }, [updateGameMutation]);
+    await fetchGames();
+  }, [fetchGames]);
 
   const deleteGame = useCallback(async (gameId: string) => {
-    await deleteGameMutation.mutateAsync({ gameId });
-    console.log('[GamesContext] Deleted game:', gameId);
-  }, [deleteGameMutation]);
+    const { error } = await supabase
+      .from('personal_games')
+      .delete()
+      .eq('id', gameId);
 
-  const games = useMemo(() => gamesQuery.data || [], [gamesQuery.data]);
-  const isLoading = gamesQuery.isLoading;
+    if (error) {
+      console.error('❌ [GamesContext] Failed to delete game:', error);
+      throw error;
+    }
+
+    console.log('[GamesContext] Deleted game:', gameId);
+    await fetchGames();
+  }, [fetchGames]);
+
+
 
   const inProgressGames = useMemo(() => 
     games.filter(g => g.status === 'in-progress'),
