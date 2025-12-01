@@ -18,7 +18,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabaseService } from '@/utils/supabaseService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -82,48 +83,84 @@ export default function EventRegistrationScreen() {
   const [generatedTextContent, setGeneratedTextContent] = useState<string>('');
   const [includeHandicapForPDF, setIncludeHandicapForPDF] = useState<boolean>(false);
 
-  const eventsQuery = trpc.events.getAll.useQuery();
-  const eventQuery = trpc.events.get.useQuery({ eventId: eventId! }, { enabled: !!eventId });
-  const registrationsQuery = trpc.registrations.getAll.useQuery(
-    { eventId: eventId! },
-    { enabled: !!eventId }
-  );
-  const createMemberMutation = trpc.members.create.useMutation({
-    onSuccess: () => {
-      eventsQuery.refetch();
-    },
+  const queryClient = useQueryClient();
+
+  const eventsQuery = useQuery({
+    queryKey: ['events'],
+    queryFn: () => supabaseService.events.getAll(),
   });
-  const updateMemberMutation = trpc.members.update.useMutation();
-  const deleteMemberMutation = trpc.members.delete.useMutation();
-  const updateEventMutation = trpc.events.update.useMutation({
-    onSuccess: () => {
-      eventsQuery.refetch();
-      eventQuery.refetch();
-    },
+
+  const eventQuery = useQuery({
+    queryKey: ['events', eventId],
+    queryFn: () => supabaseService.events.get(eventId!),
+    enabled: !!eventId,
   });
-  const registerMutation = trpc.events.register.useMutation({
-    onSuccess: () => {
-      eventQuery.refetch();
-      registrationsQuery.refetch();
-    },
+
+  const registrationsQuery = useQuery({
+    queryKey: ['registrations', eventId],
+    queryFn: () => supabaseService.registrations.getAll(eventId!),
+    enabled: !!eventId,
   });
-  const unregisterMutation = trpc.events.unregister.useMutation({
+
+  const createMemberMutation = useMutation({
+    mutationFn: (member: Member) => supabaseService.members.create(member),
     onSuccess: () => {
-      eventQuery.refetch();
-      registrationsQuery.refetch();
-    },
-  });
-  const updateRegistrationMutation = trpc.registrations.update.useMutation({
-    onSuccess: () => {
-      eventQuery.refetch();
-      registrationsQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['events'] });
     },
   });
 
-  const updatePaymentStatusMutation = trpc.registrations.update.useMutation({
+  const updateMemberMutation = useMutation({
+    mutationFn: ({ memberId, updates }: { memberId: string; updates: any }) => 
+      supabaseService.members.update(memberId, updates),
+  });
+
+  const deleteMemberMutation = useMutation({
+    mutationFn: ({ memberId }: { memberId: string }) => 
+      supabaseService.members.delete(memberId),
+  });
+
+  const updateEventMutation = useMutation({
+    mutationFn: ({ eventId, updates }: { eventId: string; updates: any }) => 
+      supabaseService.events.update(eventId, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: ({ eventId, memberId, isSponsor }: { eventId: string; memberId: string; isSponsor?: boolean }) => 
+      supabaseService.events.register(eventId, memberId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
+    },
+  });
+
+  const unregisterMutation = useMutation({
+    mutationFn: ({ eventId, memberId }: { eventId: string; memberId: string }) => 
+      supabaseService.events.unregister(eventId, memberId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
+    },
+  });
+
+  const updateRegistrationMutation = useMutation({
+    mutationFn: ({ registrationId, updates }: { registrationId: string; updates: any }) => 
+      supabaseService.registrations.update(registrationId, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
+    },
+  });
+
+  const updatePaymentStatusMutation = useMutation({
+    mutationFn: ({ registrationId, updates }: { registrationId: string; updates: any }) => 
+      supabaseService.registrations.update(registrationId, updates),
     onSuccess: () => {
       console.log('[registration] ✅ Payment status updated successfully');
-      registrationsQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
     },
     onError: (err) => {
       console.error('[registration] ❌ Error updating payment status:', err);
@@ -365,11 +402,16 @@ export default function EventRegistrationScreen() {
     }
   };
 
-  const groupingsQuery = trpc.sync.groupings.get.useQuery(
-    { eventId: eventId! },
-    { enabled: !!eventId }
-  );
-  const syncGroupingsMutation = trpc.sync.groupings.sync.useMutation();
+  const groupingsQuery = useQuery({
+    queryKey: ['groupings', eventId],
+    queryFn: () => supabaseService.groupings.getAll(eventId!),
+    enabled: !!eventId,
+  });
+
+  const syncGroupingsMutation = useMutation({
+    mutationFn: ({ eventId, groupings }: { eventId: string; groupings: any[]; syncedBy?: string }) => 
+      supabaseService.groupings.sync(eventId, groupings),
+  });
 
   const handleRemovePlayer = async (playerId: string) => {
     console.log('[registration] 🗑️ REMOVE PLAYER STARTED - playerId:', playerId);

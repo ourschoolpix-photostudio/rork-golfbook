@@ -1,5 +1,64 @@
 import { supabase } from '@/integrations/supabase/client';
 
+const mapEventFromDB = (e: any) => ({
+  id: e.id,
+  name: e.name,
+  date: e.date,
+  startDate: e.start_date || e.date,
+  endDate: e.end_date,
+  venue: e.venue,
+  location: e.location,
+  course: e.course,
+  status: e.status,
+  description: e.description,
+  memo: e.memo,
+  registrationDeadline: e.registration_deadline,
+  maxParticipants: e.max_participants,
+  createdAt: e.created_at,
+  createdBy: e.created_by,
+  type: e.type,
+  photoUrl: e.photo_url,
+  entryFee: e.entry_fee,
+  numberOfDays: e.number_of_days,
+  address: e.address,
+  city: e.city,
+  state: e.state,
+  zipcode: e.zipcode,
+  registeredPlayers: e.registered_players,
+  day1StartTime: e.day1_start_time,
+  day1StartPeriod: e.day1_start_period,
+  day1EndTime: e.day1_end_time,
+  day1EndPeriod: e.day1_end_period,
+  day1Course: e.day1_course,
+  day1StartType: e.day1_start_type,
+  day1LeadingHole: e.day1_leading_hole,
+  day1Par: e.day1_par,
+  day1HolePars: e.day1_hole_pars,
+  day2StartTime: e.day2_start_time,
+  day2StartPeriod: e.day2_start_period,
+  day2EndTime: e.day2_end_time,
+  day2EndPeriod: e.day2_end_period,
+  day2Course: e.day2_course,
+  day2StartType: e.day2_start_type,
+  day2LeadingHole: e.day2_leading_hole,
+  day2Par: e.day2_par,
+  day2HolePars: e.day2_hole_pars,
+  day3StartTime: e.day3_start_time,
+  day3StartPeriod: e.day3_start_period,
+  day3EndTime: e.day3_end_time,
+  day3EndPeriod: e.day3_end_period,
+  day3Course: e.day3_course,
+  day3StartType: e.day3_start_type,
+  day3LeadingHole: e.day3_leading_hole,
+  day3Par: e.day3_par,
+  day3HolePars: e.day3_hole_pars,
+  flightACutoff: e.flight_a_cutoff,
+  flightBCutoff: e.flight_b_cutoff,
+  flightATeebox: e.flight_a_teebox,
+  flightBTeebox: e.flight_b_teebox,
+  flightLTeebox: e.flight_l_teebox,
+});
+
 export const supabaseService = {
   events: {
     getAll: async () => {
@@ -10,27 +69,7 @@ export const supabaseService = {
       
       if (error) throw error;
       
-      return (data || []).map((e: any) => ({
-        id: e.id,
-        name: e.name,
-        date: e.date,
-        startDate: e.start_date || e.date,
-        endDate: e.end_date,
-        venue: e.venue,
-        location: e.location,
-        course: e.course,
-        status: e.status,
-        description: e.description,
-        memo: e.memo,
-        registrationDeadline: e.registration_deadline,
-        maxParticipants: e.max_participants,
-        createdAt: e.created_at,
-        createdBy: e.created_by,
-        type: e.type,
-        photoUrl: e.photo_url,
-        entryFee: e.entry_fee,
-        numberOfDays: e.number_of_days,
-      }));
+      return (data || []).map(mapEventFromDB);
     },
     
     get: async (eventId: string) => {
@@ -42,27 +81,73 @@ export const supabaseService = {
       
       if (error) throw error;
       
-      return {
-        id: data.id,
-        name: data.name,
-        date: data.date,
-        startDate: data.start_date || data.date,
-        endDate: data.end_date,
-        venue: data.venue,
-        location: data.location,
-        course: data.course,
-        status: data.status,
-        description: data.description,
-        memo: data.memo,
-        registrationDeadline: data.registration_deadline,
-        maxParticipants: data.max_participants,
-        createdAt: data.created_at,
-        createdBy: data.created_by,
-        type: data.type,
-        photoUrl: data.photo_url,
-        entryFee: data.entry_fee,
-        numberOfDays: data.number_of_days,
-      };
+      return mapEventFromDB(data);
+    },
+
+    create: async (event: any) => {
+      const { error } = await supabase.from('events').insert({
+        id: event.id,
+        name: event.name,
+        date: event.date,
+        start_date: event.startDate || event.date,
+        end_date: event.endDate,
+        venue: event.venue,
+        location: event.location,
+        course: event.course,
+        status: event.status || 'upcoming',
+        description: event.description,
+        memo: event.memo,
+        registration_deadline: event.registrationDeadline,
+        max_participants: event.maxParticipants,
+        created_by: event.createdBy,
+        type: event.type || 'tournament',
+        photo_url: event.photoUrl,
+        entry_fee: event.entryFee,
+        number_of_days: event.numberOfDays || 1,
+        address: event.address,
+        city: event.city,
+        state: event.state,
+        zipcode: event.zipcode,
+      });
+      
+      if (error) throw error;
+    },
+
+    update: async (eventId: string, updates: any) => {
+      const supabaseUpdates: any = {};
+      if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+      if (updates.date !== undefined) supabaseUpdates.date = updates.date;
+      if (updates.startDate !== undefined) supabaseUpdates.start_date = updates.startDate;
+      if (updates.endDate !== undefined) supabaseUpdates.end_date = updates.endDate;
+      if (updates.venue !== undefined) supabaseUpdates.venue = updates.venue;
+      if (updates.location !== undefined) supabaseUpdates.location = updates.location;
+      if (updates.course !== undefined) supabaseUpdates.course = updates.course;
+      if (updates.status !== undefined) supabaseUpdates.status = updates.status;
+      if (updates.description !== undefined) supabaseUpdates.description = updates.description;
+      if (updates.memo !== undefined) supabaseUpdates.memo = updates.memo;
+      if (updates.registrationDeadline !== undefined) supabaseUpdates.registration_deadline = updates.registrationDeadline;
+      if (updates.maxParticipants !== undefined) supabaseUpdates.max_participants = updates.maxParticipants;
+      if (updates.type !== undefined) supabaseUpdates.type = updates.type;
+      if (updates.photoUrl !== undefined) supabaseUpdates.photo_url = updates.photoUrl;
+      if (updates.entryFee !== undefined) supabaseUpdates.entry_fee = updates.entryFee;
+      if (updates.numberOfDays !== undefined) supabaseUpdates.number_of_days = updates.numberOfDays;
+      if (updates.registeredPlayers !== undefined) supabaseUpdates.registered_players = updates.registeredPlayers;
+
+      const { error } = await supabase
+        .from('events')
+        .update(supabaseUpdates)
+        .eq('id', eventId);
+      
+      if (error) throw error;
+    },
+
+    delete: async (eventId: string) => {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId);
+      
+      if (error) throw error;
     },
     
     register: async (eventId: string, memberId: string) => {
@@ -86,6 +171,80 @@ export const supabaseService = {
     },
   },
   
+  members: {
+    getAll: async () => {
+      const { data, error } = await supabase.from('members').select('*');
+      if (error) throw error;
+      return (data || []).map((m: any) => ({
+        id: m.id,
+        name: m.name || m.full_name || '',
+        username: m.username || m.name || '',
+        pin: m.pin || '',
+        isAdmin: m.is_admin || false,
+        rolexPoints: m.rolex_points || 0,
+        email: m.email || '',
+        phone: m.phone || '',
+        handicap: m.handicap || 0,
+        membershipType: m.membership_type || 'active',
+        joinDate: m.join_date || new Date().toISOString().split('T')[0],
+        createdAt: m.created_at || new Date().toISOString(),
+        gender: m.gender,
+        address: m.address,
+        city: m.city,
+        state: m.state,
+        flight: m.flight,
+        rolexFlight: m.rolex_flight,
+        currentHandicap: m.current_handicap,
+        dateOfBirth: m.date_of_birth,
+        emergencyContactName: m.emergency_contact_name,
+        emergencyContactPhone: m.emergency_contact_phone,
+        profilePhotoUrl: m.profile_photo_url,
+        adjustedHandicap: m.adjusted_handicap,
+        ghin: m.ghin,
+      }));
+    },
+
+    create: async (member: any) => {
+      const { error } = await supabase.from('members').insert({
+        id: member.id,
+        name: member.name,
+        username: member.username || member.name,
+        pin: member.pin,
+        is_admin: member.isAdmin || false,
+        rolex_points: member.rolexPoints || 0,
+        email: member.email || '',
+        phone: member.phone || '',
+        handicap: member.handicap || 0,
+        membership_type: member.membershipType || 'active',
+        join_date: member.joinDate || new Date().toISOString().split('T')[0],
+        full_name: member.name,
+      });
+      if (error) throw error;
+    },
+
+    update: async (memberId: string, updates: any) => {
+      const supabaseUpdates: any = {};
+      if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+      if (updates.handicap !== undefined) supabaseUpdates.handicap = updates.handicap;
+      if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
+      if (updates.email !== undefined) supabaseUpdates.email = updates.email;
+
+      const { error } = await supabase
+        .from('members')
+        .update(supabaseUpdates)
+        .eq('id', memberId);
+      if (error) throw error;
+    },
+
+    delete: async (memberId: string) => {
+      const { error } = await supabase
+        .from('members')
+        .delete()
+        .eq('id', memberId);
+      if (error) throw error;
+    },
+  },
+
   registrations: {
     getAll: async (eventId: string) => {
       const { data, error } = await supabase
@@ -101,6 +260,7 @@ export const supabaseService = {
         memberId: r.member_id,
         status: r.status,
         paymentStatus: r.payment_status,
+        playerPhone: r.player_phone,
         adjustedHandicap: r.adjusted_handicap,
         numberOfGuests: r.number_of_guests,
         guestNames: r.guest_names,
@@ -109,14 +269,30 @@ export const supabaseService = {
         member: r.members,
       }));
     },
+
+    create: async (registration: any) => {
+      const { error } = await supabase.from('event_registrations').insert({
+        event_id: registration.eventId,
+        member_id: registration.memberId,
+        status: registration.status || 'registered',
+        payment_status: registration.paymentStatus || 'unpaid',
+        player_phone: registration.playerPhone,
+        adjusted_handicap: registration.adjustedHandicap,
+        number_of_guests: registration.numberOfGuests || 0,
+        guest_names: registration.guestNames,
+        is_sponsor: registration.isSponsor || false,
+      });
+      if (error) throw error;
+    },
     
     update: async (registrationId: string, updates: any) => {
       const supabaseUpdates: any = {};
-      if (updates.status) supabaseUpdates.status = updates.status;
-      if (updates.paymentStatus) supabaseUpdates.payment_status = updates.paymentStatus;
-      if (updates.adjustedHandicap) supabaseUpdates.adjusted_handicap = updates.adjustedHandicap;
+      if (updates.status !== undefined) supabaseUpdates.status = updates.status;
+      if (updates.paymentStatus !== undefined) supabaseUpdates.payment_status = updates.paymentStatus;
+      if (updates.playerPhone !== undefined) supabaseUpdates.player_phone = updates.playerPhone;
+      if (updates.adjustedHandicap !== undefined) supabaseUpdates.adjusted_handicap = updates.adjustedHandicap;
       if (updates.numberOfGuests !== undefined) supabaseUpdates.number_of_guests = updates.numberOfGuests;
-      if (updates.guestNames) supabaseUpdates.guest_names = updates.guestNames;
+      if (updates.guestNames !== undefined) supabaseUpdates.guest_names = updates.guestNames;
       if (updates.isSponsor !== undefined) supabaseUpdates.is_sponsor = updates.isSponsor;
       
       const { error } = await supabase
@@ -124,6 +300,14 @@ export const supabaseService = {
         .update(supabaseUpdates)
         .eq('id', registrationId);
       
+      if (error) throw error;
+    },
+
+    delete: async (registrationId: string) => {
+      const { error } = await supabase
+        .from('event_registrations')
+        .delete()
+        .eq('id', registrationId);
       if (error) throw error;
     },
   },
@@ -144,6 +328,37 @@ export const supabaseService = {
         hole: g.hole,
         slots: g.slots,
       }));
+    },
+
+    create: async (grouping: any) => {
+      const { error } = await supabase.from('groupings').insert({
+        event_id: grouping.eventId,
+        day: grouping.day,
+        hole: grouping.hole,
+        slots: grouping.slots,
+      });
+      if (error) throw error;
+    },
+
+    update: async (groupingId: string, updates: any) => {
+      const supabaseUpdates: any = {};
+      if (updates.slots !== undefined) supabaseUpdates.slots = updates.slots;
+      if (updates.day !== undefined) supabaseUpdates.day = updates.day;
+      if (updates.hole !== undefined) supabaseUpdates.hole = updates.hole;
+
+      const { error } = await supabase
+        .from('groupings')
+        .update(supabaseUpdates)
+        .eq('id', groupingId);
+      if (error) throw error;
+    },
+
+    delete: async (groupingId: string) => {
+      const { error } = await supabase
+        .from('groupings')
+        .delete()
+        .eq('id', groupingId);
+      if (error) throw error;
     },
     
     sync: async (eventId: string, groupings: any[]) => {
@@ -180,6 +395,38 @@ export const supabaseService = {
         totalScore: s.total_score,
         submittedBy: s.submitted_by,
       }));
+    },
+
+    create: async (score: any) => {
+      const { error } = await supabase.from('scores').insert({
+        event_id: score.eventId,
+        member_id: score.memberId,
+        day: score.day,
+        holes: score.holes,
+        total_score: score.totalScore,
+        submitted_by: score.submittedBy,
+      });
+      if (error) throw error;
+    },
+
+    update: async (scoreId: string, updates: any) => {
+      const supabaseUpdates: any = {};
+      if (updates.holes !== undefined) supabaseUpdates.holes = updates.holes;
+      if (updates.totalScore !== undefined) supabaseUpdates.total_score = updates.totalScore;
+
+      const { error } = await supabase
+        .from('scores')
+        .update(supabaseUpdates)
+        .eq('id', scoreId);
+      if (error) throw error;
+    },
+
+    delete: async (scoreId: string) => {
+      const { error } = await supabase
+        .from('scores')
+        .delete()
+        .eq('id', scoreId);
+      if (error) throw error;
     },
     
     submit: async (eventId: string, memberId: string, day: number, holes: any[], totalScore: number, submittedBy: string) => {
@@ -228,6 +475,158 @@ export const supabaseService = {
         date: financial.date,
       });
       
+      if (error) throw error;
+    },
+
+    update: async (financialId: string, updates: any) => {
+      const supabaseUpdates: any = {};
+      if (updates.amount !== undefined) supabaseUpdates.amount = updates.amount;
+      if (updates.description !== undefined) supabaseUpdates.description = updates.description;
+
+      const { error } = await supabase
+        .from('financial_records')
+        .update(supabaseUpdates)
+        .eq('id', financialId);
+      if (error) throw error;
+    },
+
+    delete: async (financialId: string) => {
+      const { error } = await supabase
+        .from('financial_records')
+        .delete()
+        .eq('id', financialId);
+      if (error) throw error;
+    },
+  },
+
+  games: {
+    getAll: async (memberId: string) => {
+      const { data, error } = await supabase
+        .from('personal_games')
+        .select('*')
+        .eq('member_id', memberId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return (data || []).map((g: any) => ({
+        id: g.id,
+        memberId: g.member_id,
+        gameType: g.game_type,
+        players: g.players,
+        scores: g.scores,
+        date: g.date,
+        courseName: g.course_name,
+        createdAt: g.created_at,
+      }));
+    },
+
+    create: async (game: any) => {
+      const { error } = await supabase.from('personal_games').insert({
+        id: game.id,
+        member_id: game.memberId,
+        game_type: game.gameType,
+        players: game.players,
+        scores: game.scores,
+        date: game.date,
+        course_name: game.courseName,
+      });
+      if (error) throw error;
+    },
+
+    update: async (gameId: string, updates: any) => {
+      const supabaseUpdates: any = {};
+      if (updates.scores !== undefined) supabaseUpdates.scores = updates.scores;
+      if (updates.players !== undefined) supabaseUpdates.players = updates.players;
+
+      const { error } = await supabase
+        .from('personal_games')
+        .update(supabaseUpdates)
+        .eq('id', gameId);
+      if (error) throw error;
+    },
+
+    delete: async (gameId: string) => {
+      const { error } = await supabase
+        .from('personal_games')
+        .delete()
+        .eq('id', gameId);
+      if (error) throw error;
+    },
+  },
+
+  courses: {
+    getAll: async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      
+      return (data || []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        location: c.location,
+        par: c.par,
+        holePars: c.hole_pars,
+        teeboxes: c.teeboxes,
+        createdAt: c.created_at,
+      }));
+    },
+
+    get: async (courseId: string) => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('id', courseId)
+        .single();
+      
+      if (error) throw error;
+      
+      return {
+        id: data.id,
+        name: data.name,
+        location: data.location,
+        par: data.par,
+        holePars: data.hole_pars,
+        teeboxes: data.teeboxes,
+        createdAt: data.created_at,
+      };
+    },
+
+    create: async (course: any) => {
+      const { error } = await supabase.from('courses').insert({
+        id: course.id,
+        name: course.name,
+        location: course.location,
+        par: course.par,
+        hole_pars: course.holePars,
+        teeboxes: course.teeboxes,
+      });
+      if (error) throw error;
+    },
+
+    update: async (courseId: string, updates: any) => {
+      const supabaseUpdates: any = {};
+      if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+      if (updates.location !== undefined) supabaseUpdates.location = updates.location;
+      if (updates.par !== undefined) supabaseUpdates.par = updates.par;
+      if (updates.holePars !== undefined) supabaseUpdates.hole_pars = updates.holePars;
+      if (updates.teeboxes !== undefined) supabaseUpdates.teeboxes = updates.teeboxes;
+
+      const { error } = await supabase
+        .from('courses')
+        .update(supabaseUpdates)
+        .eq('id', courseId);
+      if (error) throw error;
+    },
+
+    delete: async (courseId: string) => {
+      const { error } = await supabase
+        .from('courses')
+        .delete()
+        .eq('id', courseId);
       if (error) throw error;
     },
   },
