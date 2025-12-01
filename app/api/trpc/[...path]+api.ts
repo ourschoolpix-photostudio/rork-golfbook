@@ -1,54 +1,32 @@
-import app from "@/backend/hono";
+import { appRouter } from "@/backend/trpc/app-router";
+import { createContext } from "@/backend/trpc/create-context";
+import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
 const handleRequest = async (request: Request) => {
   try {
     const url = new URL(request.url);
-    console.log('🚀 [API] ========== NEW REQUEST ==========');
-    console.log('🚀 [API] Method:', request.method);
-    console.log('🚀 [API] Full URL:', request.url);
-    console.log('🚀 [API] Pathname:', url.pathname);
-    console.log('🚀 [API] Search:', url.search);
-    console.log('🚀 [API] Headers:', Object.fromEntries(request.headers.entries()));
+    console.log('🚀 [tRPC API] ========== NEW REQUEST ==========');
+    console.log('🚀 [tRPC API] Method:', request.method);
+    console.log('🚀 [tRPC API] Full URL:', request.url);
+    console.log('🚀 [tRPC API] Pathname:', url.pathname);
+    console.log('🚀 [tRPC API] Search:', url.search);
 
-    let body: string | undefined;
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
-      try {
-        body = await request.text();
-        if (body) {
-          console.log('🚀 [API] Request body:', body.substring(0, 500));
-        }
-      } catch (e) {
-        console.warn('⚠️ [API] Could not read request body:', e);
-      }
-    }
+    const response = await fetchRequestHandler({
+      endpoint: '/api/trpc',
+      req: request,
+      router: appRouter,
+      createContext,
+      onError({ error, path }) {
+        console.error('❌ [tRPC API] Error on path', path, ':', error);
+      },
+    });
 
-    const honoRequest = new Request(request.url, {
-      method: request.method,
-      headers: request.headers,
-      body: body,
-    });
-    
-    console.log('🔧 [API] Forwarding to Hono app.fetch()...');
-    
-    const response = await app.fetch(honoRequest);
-    
-    console.log('✅ [API] Response received from Hono');
-    console.log('✅ [API] Status:', response.status);
-    console.log('✅ [API] Status text:', response.statusText);
-    
-    const clonedResponse = response.clone();
-    const responseText = await response.text();
-    console.log('✅ [API] Response body:', responseText.substring(0, 500));
-    
-    return new Response(responseText, {
-      status: clonedResponse.status,
-      statusText: clonedResponse.statusText,
-      headers: clonedResponse.headers,
-    });
+    console.log('✅ [tRPC API] Response status:', response.status);
+    return response;
   } catch (error) {
-    console.error('❌ [API] ========== ERROR ==========');
-    console.error('❌ [API] Error:', error);
-    console.error('❌ [API] Error stack:', error instanceof Error ? error.stack : 'no stack');
+    console.error('❌ [tRPC API] ========== ERROR ==========');
+    console.error('❌ [tRPC API] Error:', error);
+    console.error('❌ [tRPC API] Error stack:', error instanceof Error ? error.stack : 'no stack');
     return new Response(JSON.stringify({ 
       error: 'Server error',
       details: error instanceof Error ? error.message : 'Unknown error'
