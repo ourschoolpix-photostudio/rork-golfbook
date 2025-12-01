@@ -14,6 +14,33 @@ const getBaseUrl = () => {
   );
 };
 
+let isBackendAvailable = true;
+let lastBackendCheck = 0;
+const BACKEND_CHECK_INTERVAL = 60000;
+
+export const checkBackendHealth = async (): Promise<boolean> => {
+  const now = Date.now();
+  if (now - lastBackendCheck < BACKEND_CHECK_INTERVAL) {
+    return isBackendAvailable;
+  }
+
+  try {
+    const response = await fetch(`${getBaseUrl()}/health`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    isBackendAvailable = response.ok;
+    lastBackendCheck = now;
+    console.log(`🏥 [tRPC] Backend health check: ${isBackendAvailable ? '✅' : '❌'}`);
+  } catch (error) {
+    isBackendAvailable = false;
+    lastBackendCheck = now;
+    console.log('🏥 [tRPC] Backend health check failed:', error);
+  }
+
+  return isBackendAvailable;
+};
+
 export const trpcClient = trpc.createClient({
   links: [
     httpLink({
@@ -35,6 +62,10 @@ export const trpcClient = trpc.createClient({
             const text = await response.text();
             console.error('❌ [tRPC] Non-OK response:', text);
             
+            if (response.status === 404) {
+              isBackendAvailable = false;
+            }
+            
             try {
               const json = JSON.parse(text);
               throw new Error(json.error?.message || `Request failed with status ${response.status}`);
@@ -46,6 +77,7 @@ export const trpcClient = trpc.createClient({
           return response;
         } catch (error) {
           console.error('❌ [tRPC] Fetch error:', error);
+          isBackendAvailable = false;
           throw error;
         }
       },
