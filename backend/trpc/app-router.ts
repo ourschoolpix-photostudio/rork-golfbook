@@ -4,29 +4,13 @@ import { syncMembersProcedure, getSyncStatusProcedure } from "@/backend/trpc/rou
 import { syncEventProcedure } from "@/backend/trpc/routes/sync/events/route";
 import { syncGroupingsProcedure, getGroupingsProcedure } from "@/backend/trpc/routes/sync/groupings/route";
 import { submitScoreProcedure, getScoresProcedure, getPlayerScoreProcedure, deleteScoresProcedure } from "@/backend/trpc/routes/sync/scores/route";
-import { 
-  getAllMembersProcedure,
-  getMemberProcedure,
-  getMemberByPinProcedure,
-  createMemberProcedure,
-  updateMemberProcedure,
-  deleteMemberProcedure,
-  normalizeAllMemberNamesProcedure,
-} from "@/backend/trpc/routes/members/crud/route";
-import {
-  getAllEventsProcedure,
-  getEventProcedure,
-  createEventProcedure,
-  updateEventProcedure,
-  deleteEventProcedure,
-  registerForEventProcedure,
-  unregisterFromEventProcedure,
-} from "@/backend/trpc/routes/events/crud/route";
+import membersCrud from "@/backend/trpc/routes/members/crud/route";
+import eventsCrud from "@/backend/trpc/routes/events/crud/route";
 import { createRegistrationProcedure, updateRegistrationProcedure, getAllRegistrationsProcedure } from "@/backend/trpc/routes/registrations/crud/route";
 import { sendRegistrationEmailProcedure } from "@/backend/trpc/routes/registrations/send-email/route";
 import { createPaymentProcedure, capturePaymentProcedure } from "@/backend/trpc/routes/registrations/paypal/route";
 import financialsCrud from "@/backend/trpc/routes/financials/crud/route";
-import { getSettingsProcedure, updateSettingsProcedure } from "@/backend/trpc/routes/settings/crud/route";
+import settingsCrud from "@/backend/trpc/routes/settings/crud/route";
 import gamesCrud from "@/backend/trpc/routes/games/crud/route";
 import notificationsCrud from "@/backend/trpc/routes/notifications/crud/route";
 import preferencesCrud from "@/backend/trpc/routes/preferences/crud/route";
@@ -54,24 +38,8 @@ export const appRouter = createTRPCRouter({
     }),
     status: getSyncStatusProcedure,
   }),
-  members: createTRPCRouter({
-    getAll: getAllMembersProcedure,
-    get: getMemberProcedure,
-    getByPin: getMemberByPinProcedure,
-    create: createMemberProcedure,
-    update: updateMemberProcedure,
-    delete: deleteMemberProcedure,
-    normalizeAllNames: normalizeAllMemberNamesProcedure,
-  }),
-  events: createTRPCRouter({
-    getAll: getAllEventsProcedure,
-    get: getEventProcedure,
-    create: createEventProcedure,
-    update: updateEventProcedure,
-    delete: deleteEventProcedure,
-    register: registerForEventProcedure,
-    unregister: unregisterFromEventProcedure,
-  }),
+  members: membersCrud,
+  events: eventsCrud,
   registrations: createTRPCRouter({
     create: createRegistrationProcedure,
     update: updateRegistrationProcedure,
@@ -83,10 +51,7 @@ export const appRouter = createTRPCRouter({
     }),
   }),
   financials: financialsCrud,
-  settings: createTRPCRouter({
-    getSettings: getSettingsProcedure,
-    updateSettings: updateSettingsProcedure,
-  }),
+  settings: settingsCrud,
   games: gamesCrud,
   notifications: notificationsCrud,
   preferences: preferencesCrud,
