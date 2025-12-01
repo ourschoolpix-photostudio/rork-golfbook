@@ -1,14 +1,32 @@
 import { createTRPCReact } from "@trpc/react-query";
 import { httpLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
   if (process.env.EXPO_PUBLIC_RORK_API_BASE_URL) {
+    console.log('🔧 [tRPC] Using configured API URL:', process.env.EXPO_PUBLIC_RORK_API_BASE_URL);
     return process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   }
 
+  if (Platform.OS === 'web') {
+    console.log('🔧 [tRPC] Using same-origin URL for web');
+    return '';
+  }
+
+  if (__DEV__) {
+    const debuggerHost = Constants.expoConfig?.hostUri?.split(':').shift();
+    if (debuggerHost) {
+      const devUrl = `http://${debuggerHost}:8081`;
+      console.log('🔧 [tRPC] Using dev server URL:', devUrl);
+      return devUrl;
+    }
+  }
+
+  console.log('⚠️ [tRPC] No backend URL configured');
   return '';
 };
 
