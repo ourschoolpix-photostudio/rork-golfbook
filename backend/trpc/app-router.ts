@@ -1,10 +1,9 @@
 import { createTRPCRouter } from "@/backend/trpc/create-context";
 import hiRoute from "@/backend/trpc/routes/example/hi/route";
-import membersRoute from "@/backend/trpc/routes/sync/members/route";
+import membersRoute, { getSyncStatusProcedure } from "@/backend/trpc/routes/sync/members/route";
 import eventsRoute from "@/backend/trpc/routes/sync/events/route";
 import groupingsRoute from "@/backend/trpc/routes/sync/groupings/route";
 import scoresRoute from "@/backend/trpc/routes/sync/scores/route";
-import { getSyncStatusProcedure } from "@/backend/trpc/routes/sync/members/route";
 import membersCrudRoute from "@/backend/trpc/routes/members/crud/route";
 import eventsCrudRoute from "@/backend/trpc/routes/events/crud/route";
 import registrationsCrudRoute from "@/backend/trpc/routes/registrations/crud/route";
