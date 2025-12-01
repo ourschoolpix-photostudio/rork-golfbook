@@ -10,7 +10,15 @@ import { GamesProvider } from "@/contexts/GamesContext";
 import { OfflineModeProvider } from "@/contexts/OfflineModeContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { trpc, trpcClient } from "@/lib/trpc";
+import { trpc, trpcClient, checkBackendHealth } from "@/lib/trpc";
+
+console.log('🚀 [App] Starting application...');
+console.log('🔧 [App] Environment variables:', {
+  hasApiBaseUrl: !!process.env.EXPO_PUBLIC_RORK_API_BASE_URL,
+  apiBaseUrl: process.env.EXPO_PUBLIC_RORK_API_BASE_URL,
+  hasSupabaseUrl: !!process.env.EXPO_PUBLIC_SUPABASE_URL,
+  platform: Platform.OS,
+});
 
 const originalWarn = console.warn;
 console.warn = (...args: any[]) => {
@@ -87,6 +95,15 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    const checkBackend = async () => {
+      console.log('🏥 [App] Checking backend health...');
+      const isHealthy = await checkBackendHealth();
+      console.log('🏥 [App] Backend health status:', isHealthy ? '✅ Healthy' : '❌ Unavailable');
+    };
+    checkBackend();
+  }, []);
+
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>

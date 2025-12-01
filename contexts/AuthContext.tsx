@@ -34,13 +34,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     try {
       setIsFetchingMembers(true);
       console.log('📥 [AuthContext] Fetching members via tRPC...');
+      console.log('📥 [AuthContext] tRPC client exists:', !!trpcClient);
+      console.log('📥 [AuthContext] tRPC members route exists:', !!trpcClient.members);
+      console.log('📥 [AuthContext] tRPC getAll exists:', !!trpcClient.members?.getAll);
       
       const fetchedMembers = await trpcClient.members.getAll.query();
       console.log('✅ [AuthContext] Successfully fetched members:', fetchedMembers.length);
+      console.log('✅ [AuthContext] Sample member:', fetchedMembers[0] ? { id: fetchedMembers[0].id, name: fetchedMembers[0].name } : 'none');
       setMembers(fetchedMembers);
       return fetchedMembers;
     } catch (error) {
       console.error('❌ [AuthContext] Failed to fetch members:', error);
+      console.error('❌ [AuthContext] Error details:', error instanceof Error ? { message: error.message, stack: error.stack } : 'unknown error');
       return [];
     } finally {
       setIsFetchingMembers(false);

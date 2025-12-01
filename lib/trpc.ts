@@ -48,6 +48,9 @@ export const trpcClient = trpc.createClient({
       async fetch(url, options) {
         try {
           console.log('🌐 [tRPC] Making request to:', url);
+          console.log('🌐 [tRPC] Request method:', options?.method);
+          console.log('🌐 [tRPC] Request body:', options?.body ? JSON.stringify(JSON.parse(options.body as string), null, 2) : 'none');
+          
           const response = await fetch(url, {
             ...options,
             headers: {
@@ -57,13 +60,16 @@ export const trpcClient = trpc.createClient({
           });
           
           console.log('📡 [tRPC] Response status:', response.status);
+          console.log('📡 [tRPC] Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
           
           if (!response.ok) {
             const text = await response.text();
-            console.error('❌ [tRPC] Non-OK response:', text);
+            console.error('❌ [tRPC] Non-OK response body:', text.substring(0, 500));
             
             if (response.status === 404) {
               isBackendAvailable = false;
+              console.error('❌ [tRPC] 404 Error - Backend endpoint not found. Check if backend is running and API_BASE_URL is correct.');
+              console.error('❌ [tRPC] Expected endpoint:', `${getBaseUrl()}/api/trpc`);
             }
             
             try {
@@ -74,9 +80,17 @@ export const trpcClient = trpc.createClient({
             }
           }
           
-          return response;
+          const responseText = await response.text();
+          console.log('✅ [tRPC] Response body preview:', responseText.substring(0, 200));
+          
+          return new Response(responseText, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+          });
         } catch (error) {
           console.error('❌ [tRPC] Fetch error:', error);
+          console.error('❌ [tRPC] Error stack:', error instanceof Error ? error.stack : 'no stack');
           isBackendAvailable = false;
           throw error;
         }

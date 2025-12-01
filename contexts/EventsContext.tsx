@@ -13,12 +13,17 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     try {
       setIsLoading(true);
       console.log('📥 [EventsContext] Fetching events via tRPC...');
+      console.log('📥 [EventsContext] tRPC client exists:', !!trpcClient);
+      console.log('📥 [EventsContext] tRPC events route exists:', !!trpcClient.events);
+      console.log('📥 [EventsContext] tRPC getAll exists:', !!trpcClient.events?.getAll);
       
       const fetchedEvents = await trpcClient.events.getAll.query();
       console.log('✅ [EventsContext] Successfully fetched events:', fetchedEvents.length);
+      console.log('✅ [EventsContext] Sample event:', fetchedEvents[0] ? { id: fetchedEvents[0].id, name: fetchedEvents[0].name } : 'none');
       setEvents(fetchedEvents);
     } catch (error) {
       console.error('❌ [EventsContext] Failed to fetch events:', error);
+      console.error('❌ [EventsContext] Error details:', error instanceof Error ? { message: error.message, stack: error.stack } : 'unknown error');
       setEvents([]);
     } finally {
       setIsLoading(false);
