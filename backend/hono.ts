@@ -12,28 +12,7 @@ app.use("*", cors({
   allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.notFound((c) => {
-  console.warn('⚠️ [Hono] 404 Not Found:', c.req.url);
-  return c.json({
-    error: {
-      message: 'Not Found',
-      path: c.req.url,
-      timestamp: new Date().toISOString(),
-    }
-  }, 404);
-});
-
-app.onError((err, c) => {
-  console.error('❌ [Hono] Server error:', err);
-  return c.json({
-    error: {
-      message: err.message || 'Internal server error',
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-    }
-  }, 500);
-});
-
-console.log('🔧 [Hono] Registering tRPC middleware at /api/trpc/*');
+console.log('🔧 [Hono] Registering tRPC middleware at /api/trpc');
 
 app.use(
   "/api/trpc/*",
@@ -63,9 +42,19 @@ app.get("/health", (c) => {
   });
 });
 
-app.all('*', (c) => {
-  console.log('🔍 [Hono] Unmatched route:', c.req.url, 'Method:', c.req.method);
-  return c.json({ 
+app.onError((err, c) => {
+  console.error('❌ [Hono] Server error:', err);
+  return c.json({
+    error: {
+      message: err.message || 'Internal server error',
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    }
+  }, 500);
+});
+
+app.notFound((c) => {
+  console.warn('⚠️ [Hono] 404 Not Found:', c.req.url);
+  return c.json({
     error: 'Not Found',
     path: c.req.url,
     method: c.req.method,

@@ -8,8 +8,12 @@ export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
   if (process.env.EXPO_PUBLIC_RORK_API_BASE_URL) {
-    console.log('🔧 [tRPC] Using configured API URL:', process.env.EXPO_PUBLIC_RORK_API_BASE_URL);
-    return process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+    let url = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+    if (url.startsWith('http://')) {
+      url = url.replace('http://', 'https://');
+    }
+    console.log('🔧 [tRPC] Using configured API URL:', url);
+    return url;
   }
 
   if (Platform.OS === 'web') {
