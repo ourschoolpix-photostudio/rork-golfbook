@@ -94,14 +94,36 @@ export default function EventRegistrationScreen() {
 
   const eventQuery = useQuery({
     queryKey: ['events', eventId],
-    queryFn: () => supabaseService.events.get(eventId!),
+    queryFn: async () => {
+      try {
+        console.log('[registration] 🔍 Fetching event:', eventId);
+        const data = await supabaseService.events.get(eventId!);
+        console.log('[registration] ✅ Event fetched successfully:', data?.id, data?.name);
+        return data;
+      } catch (error) {
+        console.error('[registration] ❌ Error fetching event:', error);
+        throw error;
+      }
+    },
     enabled: !!eventId,
+    retry: 2,
   });
 
   const registrationsQuery = useQuery({
     queryKey: ['registrations', eventId],
-    queryFn: () => supabaseService.registrations.getAll(eventId!),
-    enabled: !!eventId,
+    queryFn: async () => {
+      try {
+        console.log('[registration] 🔍 Fetching registrations for event:', eventId);
+        const data = await supabaseService.registrations.getAll(eventId!);
+        console.log('[registration] ✅ Registrations fetched:', data?.length || 0);
+        return data;
+      } catch (error) {
+        console.error('[registration] ❌ Error fetching registrations:', error);
+        throw error;
+      }
+    },
+    enabled: !!eventId && !!eventQuery.data,
+    retry: 2,
   });
 
   const createMemberMutation = useMutation({
@@ -1101,6 +1123,10 @@ export default function EventRegistrationScreen() {
   }
 
   if (eventQuery.isError) {
+    const errorMessage = eventQuery.error instanceof Error ? eventQuery.error.message : 'Failed to load event data';
+    console.error('[registration] 🔴 Event query error:', errorMessage);
+    console.error('[registration] 🔴 Full error:', eventQuery.error);
+    
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -1109,11 +1135,17 @@ export default function EventRegistrationScreen() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>Error Loading Event</Text>
           <Text style={styles.errorText}>
-            {eventQuery.error instanceof Error ? eventQuery.error.message : 'Failed to load event data'}
+            {errorMessage}
+          </Text>
+          <Text style={[styles.errorText, { fontSize: 12, marginTop: 8, color: '#999' }]}>
+            Event ID: {eventId}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => eventQuery.refetch()}
+            onPress={() => {
+              console.log('[registration] 🔄 Retrying event fetch...');
+              eventQuery.refetch();
+            }}
           >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
