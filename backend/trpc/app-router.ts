@@ -26,7 +26,7 @@ import { createRegistrationProcedure, updateRegistrationProcedure, getAllRegistr
 import { sendRegistrationEmailProcedure } from "@/backend/trpc/routes/registrations/send-email/route";
 import { createPaymentProcedure, capturePaymentProcedure } from "@/backend/trpc/routes/registrations/paypal/route";
 import financialsCrud from "@/backend/trpc/routes/financials/crud/route";
-import { getSettingsProcedure, updateSettingsProcedure } from "@/backend/trpc/routes/settings/crud/route";
+import settingsCrud from "@/backend/trpc/routes/settings/crud/route";
 import gamesCrud from "@/backend/trpc/routes/games/crud/route";
 import notificationsCrud from "@/backend/trpc/routes/notifications/crud/route";
 import preferencesCrud from "@/backend/trpc/routes/preferences/crud/route";
@@ -83,10 +83,7 @@ export const appRouter = createTRPCRouter({
     }),
   }),
   financials: financialsCrud,
-  settings: createTRPCRouter({
-    getSettings: getSettingsProcedure,
-    updateSettings: updateSettingsProcedure,
-  }),
+  settings: settingsCrud,
   games: gamesCrud,
   notifications: notificationsCrud,
   preferences: preferencesCrud,
