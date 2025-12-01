@@ -10,9 +10,16 @@ const handleRequest = async (request: Request) => {
     console.log('🚀 [API] Search:', url.search);
     console.log('🚀 [API] Headers:', Object.fromEntries(request.headers.entries()));
 
-    const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined;
-    if (body) {
-      console.log('🚀 [API] Request body:', body.substring(0, 500));
+    let body: string | undefined;
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      try {
+        body = await request.text();
+        if (body) {
+          console.log('🚀 [API] Request body:', body.substring(0, 500));
+        }
+      } catch (e) {
+        console.warn('⚠️ [API] Could not read request body:', e);
+      }
     }
 
     const honoRequest = new Request(request.url, {
@@ -29,13 +36,14 @@ const handleRequest = async (request: Request) => {
     console.log('✅ [API] Status:', response.status);
     console.log('✅ [API] Status text:', response.statusText);
     
+    const clonedResponse = response.clone();
     const responseText = await response.text();
     console.log('✅ [API] Response body:', responseText.substring(0, 500));
     
     return new Response(responseText, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
+      status: clonedResponse.status,
+      statusText: clonedResponse.statusText,
+      headers: clonedResponse.headers,
     });
   } catch (error) {
     console.error('❌ [API] ========== ERROR ==========');
