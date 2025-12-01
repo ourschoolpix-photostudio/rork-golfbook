@@ -1,8 +1,17 @@
 import app from '@/backend/hono';
 
+console.log('📦 [API Init] Hono app imported:', !!app);
+
 export async function GET(request: Request) {
   try {
     console.log('🚀 [API GET] Handling request:', request.url);
+    if (!app) {
+      console.error('❌ [API GET] Hono app is not initialized');
+      return new Response(JSON.stringify({ error: 'Backend app not initialized' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     return app.fetch(request);
   } catch (error) {
     console.error('❌ [API GET] Error:', error);
@@ -19,6 +28,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     console.log('🚀 [API POST] Handling request:', request.url);
+    if (!app) {
+      console.error('❌ [API POST] Hono app is not initialized');
+      return new Response(JSON.stringify({ error: 'Backend app not initialized' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     return app.fetch(request);
   } catch (error) {
     console.error('❌ [API POST] Error:', error);

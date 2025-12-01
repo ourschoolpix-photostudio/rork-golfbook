@@ -33,6 +33,8 @@ app.onError((err, c) => {
   }, 500);
 });
 
+console.log('🔧 [Hono] Registering tRPC middleware at /api/trpc/*');
+
 app.use(
   "/api/trpc/*",
   trpcServer({
@@ -46,10 +48,12 @@ app.use(
 );
 
 app.get("/", (c) => {
+  console.log('🏠 [Hono] Root endpoint hit');
   return c.json({ status: "ok", message: "API is running" });
 });
 
 app.get("/health", (c) => {
+  console.log('🏫 [Hono] Health check hit');
   return c.json({ 
     status: "ok", 
     timestamp: new Date().toISOString(),
@@ -58,6 +62,16 @@ app.get("/health", (c) => {
       hasSupabaseKey: !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     }
   });
+});
+
+app.all('*', (c) => {
+  console.log('🔍 [Hono] Unmatched route:', c.req.url, 'Method:', c.req.method);
+  return c.json({ 
+    error: 'Not Found',
+    path: c.req.url,
+    method: c.req.method,
+    registeredRoutes: ['/trpc/*', '/', '/health']
+  }, 404);
 });
 
 export default app;
