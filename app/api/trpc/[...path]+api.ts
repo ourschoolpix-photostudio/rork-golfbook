@@ -1,57 +1,4 @@
-import { Hono } from "hono";
-import { trpcServer } from "@hono/trpc-server";
-import { cors } from "hono/cors";
-import { appRouter } from "../../../backend/trpc/app-router";
-import { createContext } from "../../../backend/trpc/create-context";
-
-const app = new Hono();
-
-app.use("*", cors({
-  origin: '*',
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
-}));
-
-console.log('🔧 [API] Registering tRPC middleware');
-
-app.use(
-  "/*",
-  trpcServer({
-    router: appRouter,
-    createContext,
-    onError({ error, path }) {
-      console.error('❌ [tRPC] Error on path', path, ':', error);
-    },
-  })
-);
-
-app.get("/health", (c) => {
-  console.log('🏫 [API] Health check hit');
-  return c.json({ 
-    status: "ok", 
-    timestamp: new Date().toISOString(),
-  });
-});
-
-app.onError((err, c) => {
-  console.error('❌ [API] Server error:', err);
-  return c.json({
-    error: {
-      message: err.message || 'Internal server error',
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-    }
-  }, 500);
-});
-
-app.notFound((c) => {
-  console.warn('⚠️ [API] 404 Not Found:', c.req.url);
-  return c.json({
-    error: 'Not Found',
-    path: c.req.url,
-    method: c.req.method,
-    registeredRoutes: ['/*']
-  }, 404);
-});
+import app from "@/backend/hono";
 
 const handleRequest = async (request: Request) => {
   try {
@@ -63,8 +10,7 @@ const handleRequest = async (request: Request) => {
     honoUrl.protocol = 'http:';
     honoUrl.host = 'localhost';
     
-    let pathAfterApi = url.pathname.replace(/^\/api\//, '');
-    honoUrl.pathname = `/${pathAfterApi}`;
+    honoUrl.pathname = url.pathname;
     
     console.log('🔧 [API] Forwarding to Hono:', honoUrl.toString());
     
