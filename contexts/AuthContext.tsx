@@ -4,23 +4,85 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Member } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
+function transformMemberFromDB(dbMember: any): Member {
+  return {
+    id: dbMember.id,
+    name: dbMember.name,
+    pin: dbMember.pin,
+    isAdmin: dbMember.is_admin || false,
+    email: dbMember.email,
+    phone: dbMember.phone,
+    handicap: dbMember.handicap,
+    rolexPoints: dbMember.rolex_points || 0,
+    createdAt: dbMember.created_at,
+    fullName: dbMember.full_name,
+    username: dbMember.username,
+    membershipType: dbMember.membership_type,
+    gender: dbMember.gender,
+    address: dbMember.address,
+    city: dbMember.city,
+    state: dbMember.state,
+    flight: dbMember.flight,
+    rolexFlight: dbMember.rolex_flight,
+    currentHandicap: dbMember.current_handicap,
+    dateOfBirth: dbMember.date_of_birth,
+    emergencyContactName: dbMember.emergency_contact_name,
+    emergencyContactPhone: dbMember.emergency_contact_phone,
+    joinDate: dbMember.join_date,
+    profilePhotoUrl: dbMember.profile_photo_url,
+    adjustedHandicap: dbMember.adjusted_handicap,
+    ghin: dbMember.ghin,
+  };
+}
+
+function transformMemberToDB(member: Member): any {
+  return {
+    id: member.id,
+    name: member.name,
+    pin: member.pin,
+    is_admin: member.isAdmin,
+    email: member.email,
+    phone: member.phone,
+    handicap: member.handicap,
+    rolex_points: member.rolexPoints,
+    created_at: member.createdAt,
+    full_name: member.fullName,
+    username: member.username,
+    membership_type: member.membershipType,
+    gender: member.gender,
+    address: member.address,
+    city: member.city,
+    state: member.state,
+    flight: member.flight,
+    rolex_flight: member.rolexFlight,
+    current_handicap: member.currentHandicap,
+    date_of_birth: member.dateOfBirth,
+    emergency_contact_name: member.emergencyContactName,
+    emergency_contact_phone: member.emergencyContactPhone,
+    join_date: member.joinDate,
+    profile_photo_url: member.profilePhotoUrl,
+    adjusted_handicap: member.adjustedHandicap,
+    ghin: member.ghin,
+  };
+}
+
 const STORAGE_KEYS = {
   CURRENT_USER: '@golf_current_user',
 } as const;
 
-const DEFAULT_MEMBER: Member = {
+const DEFAULT_MEMBER = {
   id: 'admin-bruce-pham',
   name: 'Bruce Pham',
   username: 'Bruce Pham',
   pin: '8650',
-  isAdmin: true,
-  rolexPoints: 0,
-  createdAt: new Date().toISOString(),
-  membershipType: 'active',
+  is_admin: true,
+  rolex_points: 0,
+  created_at: new Date().toISOString(),
+  membership_type: 'active',
   email: '',
   phone: '',
   handicap: 0,
-  joinDate: new Date().toISOString().split('T')[0],
+  join_date: new Date().toISOString().split('T')[0],
 };
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
@@ -46,7 +108,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
 
       console.log('✅ [AuthContext] Successfully fetched members:', data?.length || 0);
-      setMembers(data || []);
+      const transformedMembers = (data || []).map(transformMemberFromDB);
+      setMembers(transformedMembers);
     } catch (error) {
       console.error('❌ [AuthContext] Exception fetching members:', error instanceof Error ? error.message : String(error));
     } finally {
@@ -62,11 +125,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     loadCurrentUser();
   }, []);
 
-  const addMemberDirect = useCallback(async (member: Member) => {
+  const addMemberDirect = useCallback(async (dbMember: any) => {
     try {
       const { error } = await supabase
         .from('members')
-        .insert([member]);
+        .insert([dbMember]);
 
       if (error) {
         console.error('❌ [AuthContext] Failed to create member:', JSON.stringify(error, null, 2));
@@ -150,9 +213,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const addMember = useCallback(async (member: Member) => {
     try {
+      const dbMember = transformMemberToDB(member);
       const { error } = await supabase
         .from('members')
-        .insert([member]);
+        .insert([dbMember]);
 
       if (error) {
         console.error('❌ [AuthContext] Failed to add member:', JSON.stringify(error, null, 2));
@@ -168,9 +232,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const updateMember = useCallback(async (memberId: string, updates: Partial<Member>) => {
     try {
+      const dbUpdates = transformMemberToDB(updates as Member);
       const { error } = await supabase
         .from('members')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', memberId);
 
       if (error) {
