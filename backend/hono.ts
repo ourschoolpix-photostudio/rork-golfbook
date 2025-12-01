@@ -33,10 +33,10 @@ app.onError((err, c) => {
   }, 500);
 });
 
-console.log('🔧 [Hono] Registering tRPC middleware at /trpc/*');
+console.log('🔧 [Hono] Registering tRPC middleware at /api/trpc/*');
 
 app.use(
-  "/trpc/*",
+  "/api/trpc/*",
   trpcServer({
     router: appRouter,
     createContext,
@@ -69,7 +69,7 @@ app.all('*', (c) => {
     error: 'Not Found',
     path: c.req.url,
     method: c.req.method,
-    registeredRoutes: ['/trpc/*', '/', '/health']
+    registeredRoutes: ['/api/trpc/*', '/', '/health']
   }, 404);
 });
 
