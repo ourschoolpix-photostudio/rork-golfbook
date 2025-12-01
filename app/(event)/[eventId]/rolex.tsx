@@ -9,8 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { authService } from '@/utils/auth';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventFooter } from '@/components/EventFooter';
@@ -27,7 +26,6 @@ import {
 
 export default function EventRolexScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
-  const router = useRouter();
   const id = eventId || '';
   const [members, setMembers] = useState<Member[]>([]);
   const [event, setEvent] = useState<Event | null>(null);
@@ -112,8 +110,8 @@ export default function EventRolexScreen() {
       }
 
       const eventMembers = (eventData.registeredPlayers || [])
-        .map(playerId => allMembers.find((m: any) => m.id === playerId))
-        .filter((m): m is Member => Boolean(m) && m?.membershipType === 'active');
+        .map((playerId: string) => (allMembers as Member[]).find((m: Member) => m.id === playerId))
+        .filter((m: Member | undefined): m is Member => Boolean(m) && m?.membershipType === 'active');
 
       const numberOfDays = eventData.numberOfDays || 1;
       console.log('[rolex] 📊 Event has', numberOfDays, 'days');
@@ -123,7 +121,7 @@ export default function EventRolexScreen() {
         registrationMap[reg.memberId] = reg;
       });
 
-      const enrichedMembers = eventMembers.map((player) => {
+      const enrichedMembers = eventMembers.map((player: Member) => {
         const playerReg = registrationMap[player.id];
         
         // Use the centralized utility to get the effective handicap
@@ -166,9 +164,9 @@ export default function EventRolexScreen() {
         };
       });
 
-      console.log('[rolex] Enriched members with scores:', enrichedMembers.map(m => ({ name: m.name, id: m.id, scoreTotal: m.scoreTotal, flight: m.flight })));
+      console.log('[rolex] Enriched members with scores:', enrichedMembers.map((m: any) => ({ name: m.name, id: m.id, scoreTotal: m.scoreTotal, flight: m.flight })));
 
-      const sorted = enrichedMembers.sort((a, b) => {
+      const sorted = enrichedMembers.sort((a: any, b: any) => {
         const aIsActive = a.membershipType === 'active';
         const bIsActive = b.membershipType === 'active';
 
@@ -187,13 +185,13 @@ export default function EventRolexScreen() {
         return (a.scoreNet || 0) - (b.scoreNet || 0);
       });
 
-      console.log('[rolex] Final sorted members:', sorted.map(m => ({ 
+      console.log('[rolex] Final sorted members:', sorted.map((m: any) => ({ 
         name: m.name, 
         flight: m.flight,
         scoreNet: m.scoreNet 
       })));
 
-      setMembers(sorted.map(m => ({
+      setMembers(sorted.map((m: any) => ({
         ...m,
         flight: (m.flight === 'A' || m.flight === 'B' || m.flight === 'C' || m.flight === 'L') ? m.flight : undefined
       })));

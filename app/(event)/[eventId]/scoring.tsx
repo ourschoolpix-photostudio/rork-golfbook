@@ -143,7 +143,7 @@ export default function ScoringScreen() {
       for (const grouping of dayGroupings) {
         if (grouping.slots.includes(userId)) {
           const groupMembers = grouping.slots
-            .filter((id): id is string => id !== null)
+            .filter((id: any): id is string => id !== null)
             .map((id: string) => {
               const member = allMembers.find((m: any) => m.id === id);
               if (!member) return null;
@@ -162,17 +162,17 @@ export default function ScoringScreen() {
                 registration: registration || undefined,
               } as Member & { effectiveHandicap: number; registration?: any };
             })
-            .filter((m): m is Member & { effectiveHandicap: number } => m !== null && typeof m.effectiveHandicap === 'number');
+            .filter((m: any): m is Member & { effectiveHandicap: number } => m !== null && typeof m.effectiveHandicap === 'number');
           
           console.log('[scoring] 🔍 Checking if players are still in registration...');
           console.log('[scoring] Registered players:', golfEvent.registeredPlayers || []);
-          console.log('[scoring] Group members found:', groupMembers.map(m => m ? { id: m.id, name: m.name } : null).filter(Boolean));
+          console.log('[scoring] Group members found:', groupMembers.map((m: any) => m ? { id: m.id, name: m.name } : null).filter(Boolean));
           
-          const validGroupMembers = groupMembers.filter(member => 
+          const validGroupMembers = groupMembers.filter((member: any) => 
             member && (golfEvent.registeredPlayers || []).includes(member.id)
           );
           
-          console.log('[scoring] Valid members (still registered):', validGroupMembers.map(m => m?.name).filter(Boolean));
+          console.log('[scoring] Valid members (still registered):', validGroupMembers.map((m: any) => m?.name).filter(Boolean));
           
           if (validGroupMembers.length === 0) {
             console.log('[scoring] ⚠️ No valid players found in group - all have been removed from registration');
@@ -183,7 +183,7 @@ export default function ScoringScreen() {
           
           setMyGroup(validGroupMembers as Member[]);
           setMyGrouping(grouping);
-          console.log('[scoring] Found my group:', validGroupMembers.map(m => m.name));
+          console.log('[scoring] Found my group:', validGroupMembers.map((m: any) => m.name));
           console.log('[scoring] Group hole number:', grouping.hole);
           
           updateHoleBasedOnStartType(golfEvent, grouping, dayNumber, isDoubleMode);
