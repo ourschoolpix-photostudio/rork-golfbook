@@ -15,7 +15,7 @@ app.use("*", cors({
 console.log('🔧 [API] Registering tRPC middleware');
 
 app.use(
-  "*",
+  "/trpc/*",
   trpcServer({
     router: appRouter,
     createContext,
@@ -62,8 +62,8 @@ const handleRequest = async (request: Request) => {
     honoUrl.protocol = 'http:';
     honoUrl.host = 'localhost';
     
-    const pathWithoutApi = url.pathname.replace('/api/trpc/', '/');
-    honoUrl.pathname = pathWithoutApi;
+    const pathAfterTrpc = url.pathname.replace('/api/trpc/', '');
+    honoUrl.pathname = `/trpc/${pathAfterTrpc}`;
     
     console.log('🔧 [API] Forwarding to Hono:', honoUrl.toString());
     
