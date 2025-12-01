@@ -2,7 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Member } from '@/types';
-import { trpc } from '@/lib/trpc';
+import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEYS = {
   CURRENT_USER: '@golf_current_user',
@@ -27,56 +27,71 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasInitializedAdmin, setHasInitializedAdmin] = useState<boolean>(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [isFetchingMembers, setIsFetchingMembers] = useState<boolean>(false);
 
-  const membersQuery = trpc.members.getAll.useQuery();
+  const fetchMembers = useCallback(async () => {
+    try {
+      setIsFetchingMembers(true);
+      console.log('⏳ [AuthContext] Loading members from Supabase...');
+      
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('❌ [AuthContext] Failed to fetch members:', error);
+        return;
+      }
+
+      console.log('✅ [AuthContext] Successfully fetched members:', data?.length || 0);
+      setMembers(data || []);
+    } catch (error) {
+      console.error('❌ [AuthContext] Exception fetching members:', error);
+    } finally {
+      setIsFetchingMembers(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (membersQuery.error) {
-      console.error('❌ [AuthContext] Failed to fetch members:', membersQuery.error);
-    }
-    if (membersQuery.data) {
-      console.log('✅ [AuthContext] Successfully fetched members:', membersQuery.data.length);
-    }
-    if (membersQuery.isLoading) {
-      console.log('⏳ [AuthContext] Loading members...');
-    }
-  }, [membersQuery.data, membersQuery.error, membersQuery.isLoading]);
-
-  const createMemberMutation = trpc.members.create.useMutation({
-    onSuccess: () => {
-      membersQuery.refetch();
-    },
-  });
-
-  const updateMemberMutation = trpc.members.update.useMutation({
-    onSuccess: () => {
-      membersQuery.refetch();
-    },
-  });
-
-  const deleteMemberMutation = trpc.members.delete.useMutation({
-    onSuccess: () => {
-      membersQuery.refetch();
-    },
-  });
+    fetchMembers();
+  }, [fetchMembers]);
 
   useEffect(() => {
     loadCurrentUser();
   }, []);
 
+  const addMemberDirect = useCallback(async (member: Member) => {
+    try {
+      const { error } = await supabase
+        .from('members')
+        .insert([member]);
+
+      if (error) {
+        console.error('❌ [AuthContext] Failed to create member:', error);
+        return;
+      }
+
+      await fetchMembers();
+    } catch (error) {
+      console.error('❌ [AuthContext] Exception creating member:', error);
+    }
+  }, [fetchMembers]);
+
   useEffect(() => {
     const shouldInitializeAdmin = 
-      membersQuery.data && 
-      membersQuery.data.length === 0 && 
-      !createMemberMutation.isPending && 
-      !hasInitializedAdmin;
+      members && 
+      members.length === 0 && 
+      !hasInitializedAdmin && 
+      !isFetchingMembers;
 
     if (shouldInitializeAdmin) {
       console.log('AuthContext - No members found, creating default admin');
       setHasInitializedAdmin(true);
-      createMemberMutation.mutate(DEFAULT_MEMBER);
+      addMemberDirect(DEFAULT_MEMBER);
     }
-  }, [membersQuery.data, hasInitializedAdmin, createMemberMutation]);
+  }, [members, hasInitializedAdmin, isFetchingMembers, addMemberDirect]);
 
   const loadCurrentUser = async () => {
     try {
@@ -105,14 +120,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     try {
       console.log('AuthContext login - searching for username:', username, 'and pin:', pin);
       
-      const allMembers = membersQuery.data || [];
-      const member = allMembers.find((m: Member) => 
+      const member = members.find((m: Member) => 
         (m.username?.toLowerCase() === username.trim().toLowerCase() || 
          m.name?.toLowerCase() === username.trim().toLowerCase()) && 
         m.pin === pin.trim()
       );
       
-      console.log('AuthContext login - total members in cache:', allMembers.length);
+      console.log('AuthContext login - total members in cache:', members.length);
       console.log('AuthContext login - found member:', member ? { id: member.id, name: member.name, pin: member.pin } : 'NONE');
       
       if (member) {
@@ -127,7 +141,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.error('Login error in AuthContext:', error);
       return false;
     }
-  }, [membersQuery.data]);
+  }, [members]);
 
   const logout = useCallback(async () => {
     setCurrentUser(null);
@@ -135,37 +149,80 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   }, []);
 
   const addMember = useCallback(async (member: Member) => {
-    await createMemberMutation.mutateAsync(member);
-  }, [createMemberMutation]);
+    try {
+      const { error } = await supabase
+        .from('members')
+        .insert([member]);
+
+      if (error) {
+        console.error('❌ [AuthContext] Failed to add member:', error);
+        throw error;
+      }
+
+      await fetchMembers();
+    } catch (error) {
+      console.error('❌ [AuthContext] Exception adding member:', error);
+      throw error;
+    }
+  }, [fetchMembers]);
 
   const updateMember = useCallback(async (memberId: string, updates: Partial<Member>) => {
-    await updateMemberMutation.mutateAsync({ memberId, updates });
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update(updates)
+        .eq('id', memberId);
 
-    if (currentUser?.id === memberId) {
-      const updatedMember = { ...currentUser, ...updates };
-      setCurrentUser(updatedMember);
-      await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedMember));
+      if (error) {
+        console.error('❌ [AuthContext] Failed to update member:', error);
+        throw error;
+      }
+
+      if (currentUser?.id === memberId) {
+        const updatedMember = { ...currentUser, ...updates };
+        setCurrentUser(updatedMember);
+        await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedMember));
+      }
+
+      await fetchMembers();
+    } catch (error) {
+      console.error('❌ [AuthContext] Exception updating member:', error);
+      throw error;
     }
-  }, [currentUser, updateMemberMutation]);
+  }, [currentUser, fetchMembers]);
 
   const deleteMember = useCallback(async (memberId: string) => {
-    await deleteMemberMutation.mutateAsync({ memberId });
+    try {
+      const { error } = await supabase
+        .from('members')
+        .delete()
+        .eq('id', memberId);
 
-    if (currentUser?.id === memberId) {
-      await logout();
+      if (error) {
+        console.error('❌ [AuthContext] Failed to delete member:', error);
+        throw error;
+      }
+
+      if (currentUser?.id === memberId) {
+        await logout();
+      }
+
+      await fetchMembers();
+    } catch (error) {
+      console.error('❌ [AuthContext] Exception deleting member:', error);
+      throw error;
     }
-  }, [currentUser, logout, deleteMemberMutation]);
-
-  const members = useMemo(() => membersQuery.data || [], [membersQuery.data]);
+  }, [currentUser, logout, fetchMembers]);
 
   return useMemo(() => ({
     members,
     currentUser,
-    isLoading: isLoading || membersQuery.isLoading,
+    isLoading: isLoading || isFetchingMembers,
     login,
     logout,
     addMember,
     updateMember,
     deleteMember,
-  }), [members, currentUser, isLoading, membersQuery.isLoading, login, logout, addMember, updateMember, deleteMember]);
+    refreshMembers: fetchMembers,
+  }), [members, currentUser, isLoading, isFetchingMembers, login, logout, addMember, updateMember, deleteMember, fetchMembers]);
 });
