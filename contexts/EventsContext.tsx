@@ -18,14 +18,14 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         .order('date', { ascending: false });
 
       if (error) {
-        console.error('❌ [EventsContext] Failed to fetch events:', error);
+        console.error('❌ [EventsContext] Failed to fetch events:', JSON.stringify(error, null, 2));
         return;
       }
 
       console.log('✅ [EventsContext] Successfully fetched events:', data?.length || 0);
       setEvents(data || []);
     } catch (error) {
-      console.error('❌ [EventsContext] Exception fetching events:', error);
+      console.error('❌ [EventsContext] Exception fetching events:', error instanceof Error ? error.message : String(error));
     } finally {
       setIsFetchingEvents(false);
     }
@@ -47,13 +47,13 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         .insert([eventWithDefaults]);
 
       if (error) {
-        console.error('❌ [EventsContext] Failed to add event:', error);
+        console.error('❌ [EventsContext] Failed to add event:', JSON.stringify(error, null, 2));
         throw error;
       }
 
       await fetchEvents();
     } catch (error) {
-      console.error('❌ [EventsContext] Exception adding event:', error);
+      console.error('❌ [EventsContext] Exception adding event:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }, [fetchEvents]);
@@ -66,13 +66,13 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         .eq('id', eventId);
 
       if (error) {
-        console.error('❌ [EventsContext] Failed to update event:', error);
+        console.error('❌ [EventsContext] Failed to update event:', JSON.stringify(error, null, 2));
         throw error;
       }
 
       await fetchEvents();
     } catch (error) {
-      console.error('❌ [EventsContext] Exception updating event:', error);
+      console.error('❌ [EventsContext] Exception updating event:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }, [fetchEvents]);
@@ -85,13 +85,13 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         .eq('id', eventId);
 
       if (error) {
-        console.error('❌ [EventsContext] Failed to delete event:', error);
+        console.error('❌ [EventsContext] Failed to delete event:', JSON.stringify(error, null, 2));
         throw error;
       }
 
       await fetchEvents();
     } catch (error) {
-      console.error('❌ [EventsContext] Exception deleting event:', error);
+      console.error('❌ [EventsContext] Exception deleting event:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }, [fetchEvents]);
@@ -103,13 +103,13 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         .insert([registration]);
 
       if (error) {
-        console.error('❌ [EventsContext] Failed to add registration:', error);
+        console.error('❌ [EventsContext] Failed to add registration:', JSON.stringify(error, null, 2));
         throw error;
       }
 
       await fetchEvents();
     } catch (error) {
-      console.error('❌ [EventsContext] Exception adding registration:', error);
+      console.error('❌ [EventsContext] Exception adding registration:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }, [fetchEvents]);
@@ -141,13 +141,13 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         .insert([financial]);
 
       if (error) {
-        console.error('❌ [EventsContext] Failed to add financial record:', error);
+        console.error('❌ [EventsContext] Failed to add financial record:', JSON.stringify(error, null, 2));
         throw error;
       }
 
       await fetchEvents();
     } catch (error) {
-      console.error('❌ [EventsContext] Exception adding financial record:', error);
+      console.error('❌ [EventsContext] Exception adding financial record:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }, [fetchEvents]);

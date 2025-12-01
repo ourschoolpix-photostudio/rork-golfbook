@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useEvents } from '@/contexts/EventsContext';
 import { useRouter, useFocusEffect, Stack } from 'expo-router';
 import { useState, useCallback, useEffect } from 'react';
 import {
@@ -16,13 +17,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { Member, Event } from '@/types';
-import { trpc } from '@/lib/trpc';
 import { formatDateForDisplay } from '@/utils/dateUtils';
 
 
 
 export default function DashboardScreen() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, members, isLoading: authLoading, updateMember } = useAuth();
+  const { events: contextEvents, isLoading: eventsLoading, refreshEvents } = useEvents();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [events, setEvents] = useState<Event[]>([]);
@@ -30,69 +31,47 @@ export default function DashboardScreen() {
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [detailsModalVisible, setDetailsModalVisible] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false);
-
-  const eventsQuery = trpc.events.getAll.useQuery(undefined, {
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    staleTime: 0,
-  });
-
-  const membersQuery = trpc.members.getAll.useQuery(undefined, {
-    enabled: !!currentUser,
-  });
 
   useFocusEffect(
     useCallback(() => {
       console.log('📱 Dashboard - Screen focused, refetching data...');
-      eventsQuery.refetch();
-      membersQuery.refetch();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+      refreshEvents();
+    }, [refreshEvents])
   );
 
   useEffect(() => {
-    console.log('🔄 Dashboard - eventsQuery state:', {
-      isLoading: eventsQuery.isLoading,
-      isError: eventsQuery.isError,
-      error: eventsQuery.error,
-      dataLength: eventsQuery.data?.length ?? 'no data',
-      status: eventsQuery.status
+    console.log('🔄 Dashboard - Events state:', {
+      isLoading: eventsLoading,
+      dataLength: contextEvents?.length ?? 'no data',
     });
     
-    if (eventsQuery.data) {
-      console.log('✅ Dashboard - Events from backend:', eventsQuery.data.length);
-      console.log('📋 Dashboard - Event IDs:', eventsQuery.data.map(e => e.id));
-      const sortedEvents = [...eventsQuery.data].sort((a, b) => {
+    if (contextEvents) {
+      console.log('✅ Dashboard - Events from context:', contextEvents.length);
+      console.log('📋 Dashboard - Event IDs:', contextEvents.map(e => e.id));
+      const sortedEvents = [...contextEvents].sort((a, b) => {
         const dateA = a.date ? new Date(a.date).getTime() : 0;
         const dateB = b.date ? new Date(b.date).getTime() : 0;
         return dateB - dateA;
       });
       setEvents(sortedEvents);
-      setIsLoadingEvents(false);
-    } else if (eventsQuery.isError) {
-      console.error('❌ Dashboard - Failed to fetch events:', eventsQuery.error);
-      setIsLoadingEvents(false);
     }
-  }, [eventsQuery.data, eventsQuery.isError, eventsQuery.error, eventsQuery.isLoading, eventsQuery.status]);
+  }, [contextEvents, eventsLoading]);
 
   useEffect(() => {
-    console.log('🔄 Dashboard - membersQuery state:', {
-      isLoading: membersQuery.isLoading,
-      isError: membersQuery.isError,
-      error: membersQuery.error,
-      dataLength: membersQuery.data?.length ?? 'no data',
+    console.log('🔄 Dashboard - Members state:', {
+      isLoading: authLoading,
+      dataLength: members?.length ?? 'no data',
       currentUserId: currentUser?.id
     });
     
-    if (currentUser && membersQuery.data) {
-      const memberProfile = membersQuery.data.find(
+    if (currentUser && members) {
+      const memberProfile = members.find(
         (m: Member) => m.id === currentUser.id
       );
       console.log('Dashboard - Found profile:', memberProfile);
       setUserProfile(memberProfile || null);
     }
-  }, [currentUser, membersQuery.data, membersQuery.isError, membersQuery.error, membersQuery.isLoading]);
+  }, [currentUser, members, authLoading]);
 
   const handleLogout = async () => {
     await logout();
@@ -104,18 +83,9 @@ export default function DashboardScreen() {
     setDetailsModalVisible(true);
   };
 
-  const updateMemberMutation = trpc.members.update.useMutation({
-    onSuccess: () => {
-      membersQuery.refetch();
-    },
-  });
-
   const handleSaveProfile = async (updated: Member) => {
     try {
-      await updateMemberMutation.mutateAsync({
-        memberId: updated.id,
-        updates: updated,
-      });
+      await updateMember(updated.id, updated);
       setUserProfile(updated);
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -308,21 +278,10 @@ export default function DashboardScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {isLoadingEvents || eventsQuery.isLoading ? (
+        {eventsLoading || authLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#007AFF" />
             <Text style={styles.loadingText}>Loading events...</Text>
-          </View>
-        ) : eventsQuery.isError ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorTitle}>❌ Error Loading Events</Text>
-            <Text style={styles.errorText}>{String(eventsQuery.error)}</Text>
-            <TouchableOpacity 
-              style={styles.retryButton}
-              onPress={() => eventsQuery.refetch()}
-            >
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
           </View>
         ) : events.length === 0 ? (
           <View style={styles.emptyContainer}>
