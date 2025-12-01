@@ -569,7 +569,15 @@ export default function EventRegistrationScreen() {
       console.log('[registration] ✅ Custom guest added successfully!');
     } catch (error) {
       console.error('[registration] ❌ Error adding custom guest:', error);
-      Alert.alert('Error', 'Failed to add guest. Please try again.');
+      if (error instanceof Error) {
+        console.error('[registration] Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        });
+      }
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert('Error', `Failed to add guest: ${errorMessage}`);
     }
   };
 
