@@ -33,14 +33,13 @@ app.onError((err, c) => {
   }, 500);
 });
 
-console.log('🔧 [Hono] Registering tRPC middleware at /api/trpc/*');
+console.log('🔧 [Hono] Registering tRPC middleware at /trpc/*');
 
 app.use(
   "/trpc/*",
   trpcServer({
     router: appRouter,
     createContext,
-    endpoint: '/trpc',
     onError({ error, path }) {
       console.error('❌ [tRPC] Error on path', path, ':', error);
     },
