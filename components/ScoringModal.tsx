@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView,
 import { Ionicons } from '@expo/vector-icons';
 import { saveAdminScoresForDay, getAdminScoresForDay, getScoresForDay } from '@/utils/scorePeristence';
 import { getDisplayHandicap } from '@/utils/handicapHelper';
-import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOfflineMode } from '@/contexts/OfflineModeContext';
+import { supabaseService } from '@/utils/supabaseService';
 
 interface ScoringModalProps {
   visible: boolean;
@@ -27,7 +27,7 @@ export default function ScoringModal({ visible, slots, label, onClose, onSaveSco
   
   const { currentUser } = useAuth();
   const { shouldUseOfflineMode, addPendingOperation, isOfflineMode } = useOfflineMode();
-  const submitScoreMutation = trpc.sync.scores.submit.useMutation();
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     if (visible && eventId) {
@@ -161,16 +161,21 @@ export default function ScoringModal({ visible, slots, label, onClose, onSaveSco
           }
         } else {
           console.log(`[ScoringModal] 🟢 Online mode - submitting scores to backend`);
-          for (const [playerId, scoreData] of Object.entries(updatedScores)) {
-            await submitScoreMutation.mutateAsync({
-              eventId,
-              memberId: playerId,
-              day: selectedDay,
-              holes: [],
-              totalScore: scoreData.scoreTotal,
-              submittedBy: currentUser.id,
-            });
-            console.log(`[ScoringModal] ✅ Saved score to backend for player ${playerId}:`, scoreData.scoreTotal);
+          setIsSubmitting(true);
+          try {
+            for (const [playerId, scoreData] of Object.entries(updatedScores)) {
+              await supabaseService.scores.submit(
+                eventId,
+                playerId,
+                selectedDay,
+                [],
+                scoreData.scoreTotal,
+                currentUser.id
+              );
+              console.log(`[ScoringModal] ✅ Saved score to backend for player ${playerId}:`, scoreData.scoreTotal);
+            }
+          } finally {
+            setIsSubmitting(false);
           }
         }
       }
