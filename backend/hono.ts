@@ -19,11 +19,11 @@ app.onError((err, c) => {
 });
 
 app.use(
-  "/trpc/*",
+  "/api/trpc/*",
   trpcServer({
     router: appRouter,
     createContext,
-    endpoint: '/trpc',
+    endpoint: '/api/trpc',
     onError({ error, path }) {
       console.error('❌ [tRPC] Error on path', path, ':', error);
     },
