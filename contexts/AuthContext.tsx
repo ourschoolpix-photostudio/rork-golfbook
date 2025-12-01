@@ -54,7 +54,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       return fetchedMembers;
     } catch (error) {
       console.error('❌ [AuthContext] Failed to fetch members:', error);
-      return [];
+      console.log('📥 [AuthContext] Falling back to local storage');
+      
+      try {
+        const fallbackMembers = await localStorageService.members.getAll();
+        console.log('✅ [AuthContext] Successfully fetched members from local storage fallback:', fallbackMembers.length);
+        setMembers(fallbackMembers);
+        return fallbackMembers;
+      } catch (fallbackError) {
+        console.error('❌ [AuthContext] Fallback also failed:', fallbackError);
+        setMembers([]);
+        return [];
+      }
     } finally {
       setIsFetchingMembers(false);
     }

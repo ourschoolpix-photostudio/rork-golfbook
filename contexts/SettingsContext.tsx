@@ -66,12 +66,28 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         ...DEFAULT_ORG_INFO,
         ...settings,
       };
+      
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settingsWithDefaults));
       setOrgInfo(settingsWithDefaults);
     } catch (error) {
       console.error('❌ [SettingsContext] Failed to fetch settings:', error);
-      const localStorageStr = await AsyncStorage.getItem(STORAGE_KEY);
-      const localSettings = localStorageStr ? JSON.parse(localStorageStr) : DEFAULT_ORG_INFO;
-      setOrgInfo(localSettings);
+      console.log('📥 [SettingsContext] Falling back to local storage or defaults');
+      
+      try {
+        const localStorageStr = await AsyncStorage.getItem(STORAGE_KEY);
+        const localSettings = localStorageStr ? JSON.parse(localStorageStr) : null;
+        
+        if (localSettings) {
+          console.log('📥 [SettingsContext] Using cached settings from local storage');
+          setOrgInfo(localSettings);
+        } else {
+          console.log('📥 [SettingsContext] Using default settings');
+          setOrgInfo(DEFAULT_ORG_INFO);
+        }
+      } catch (storageError) {
+        console.error('❌ [SettingsContext] Failed to read from local storage:', storageError);
+        setOrgInfo(DEFAULT_ORG_INFO);
+      }
     } finally {
       setIsLoading(false);
     }

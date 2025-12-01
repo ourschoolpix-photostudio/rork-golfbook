@@ -15,7 +15,7 @@ app.use("*", cors({
 console.log('🔧 [API] Registering tRPC middleware');
 
 app.use(
-  "/trpc/*",
+  "/*",
   trpcServer({
     router: appRouter,
     createContext,
@@ -49,6 +49,7 @@ app.notFound((c) => {
     error: 'Not Found',
     path: c.req.url,
     method: c.req.method,
+    registeredRoutes: ['/*']
   }, 404);
 });
 

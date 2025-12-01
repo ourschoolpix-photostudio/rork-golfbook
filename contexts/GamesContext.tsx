@@ -1,105 +1,61 @@
-import { useMemo, useCallback, createContext, useContext, ReactNode, useEffect } from 'react';
+import createContextHook from '@nkzw/create-context-hook';
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import { PersonalGame } from '@/types';
-import { trpc } from '@/lib/trpc';
+import { trpcClient } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
+import { localStorageService } from '@/utils/localStorageService';
+import { useSettings } from '@/contexts/SettingsContext';
 
-type GamesContextType = {
-  games: PersonalGame[];
-  inProgressGames: PersonalGame[];
-  completedGames: PersonalGame[];
-  isLoading: boolean;
-  createGame: (
-    courseName: string,
-    coursePar: number,
-    holePars: number[],
-    players: { name: string; handicap: number; strokesReceived?: number; strokeMode?: 'manual' | 'auto' | 'all-but-par3'; teamId?: 1 | 2; memberId?: string }[],
-    gameType?: 'individual-net' | 'team-match-play' | 'wolf' | 'niners',
-    matchPlayScoringType?: 'best-ball' | 'alternate-ball',
-    strokeIndices?: number[],
-    dollarAmount?: number,
-    front9Bet?: number,
-    back9Bet?: number,
-    overallBet?: number,
-    potBet?: number,
-    potPlayers?: { name: string; handicap: number; memberId?: string }[],
-    useHandicaps?: boolean
-  ) => Promise<string>;
-  updateGame: (gameId: string, updates: Partial<{
-    courseName: string;
-    coursePar: number;
-    holePars: number[];
-    players: any[];
-    gameType: 'individual-net' | 'team-match-play' | 'wolf' | 'niners';
-    matchPlayScoringType: 'best-ball' | 'alternate-ball';
-    strokeIndices: number[];
-    dollarAmount: number;
-    front9Bet: number;
-    back9Bet: number;
-    overallBet: number;
-    potBet: number;
-    potPlayers: { name: string; handicap: number; memberId?: string }[];
-    useHandicaps: boolean;
-  }>) => Promise<void>;
-  updateGameScores: (gameId: string, playerIndex: number, scores: number[]) => Promise<void>;
-  completeGame: (gameId: string) => Promise<void>;
-  deleteGame: (gameId: string) => Promise<void>;
-  getGame: (gameId: string) => PersonalGame | undefined;
-};
-
-const GamesContext = createContext<GamesContextType | undefined>(undefined);
-
-export function GamesProvider({ children }: { children: ReactNode }) {
+export const [GamesProvider, useGames] = createContextHook(() => {
   const { currentUser } = useAuth();
+  const { orgInfo } = useSettings();
+  const useLocalStorage = orgInfo?.useLocalStorage || false;
   const memberId = currentUser?.id || '';
 
-  const gamesQuery = trpc.games.getAll.useQuery(
-    memberId ? { memberId } : undefined,
-    {
-      enabled: !!memberId,
-      staleTime: 1000 * 60 * 5,
+  const [games, setGames] = useState<PersonalGame[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const fetchGames = useCallback(async () => {
+    if (!memberId) {
+      setGames([]);
+      setIsLoading(false);
+      return;
     }
-  );
+
+    try {
+      setIsLoading(true);
+      
+      if (useLocalStorage) {
+        console.log('📥 [GamesContext] Fetching games from local storage...');
+        const fetchedGames = await localStorageService.games.getAll(memberId);
+        console.log('✅ [GamesContext] Successfully fetched games from local storage:', fetchedGames.length);
+        setGames(fetchedGames);
+      } else {
+        console.log('📥 [GamesContext] Fetching games via tRPC...');
+        const fetchedGames = await trpcClient.games.getAll.query({ memberId });
+        console.log('✅ [GamesContext] Successfully fetched games:', fetchedGames.length);
+        setGames(fetchedGames);
+      }
+    } catch (error) {
+      console.error('❌ [GamesContext] Failed to fetch games:', error);
+      console.log('📥 [GamesContext] Falling back to local storage');
+      
+      try {
+        const fallbackGames = await localStorageService.games.getAll(memberId);
+        console.log('✅ [GamesContext] Successfully fetched games from local storage fallback:', fallbackGames.length);
+        setGames(fallbackGames);
+      } catch (fallbackError) {
+        console.error('❌ [GamesContext] Fallback also failed:', fallbackError);
+        setGames([]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [memberId, useLocalStorage]);
 
   useEffect(() => {
-    if (gamesQuery.data) {
-      console.log('✅ [GamesContext] Successfully fetched games:', gamesQuery.data.length);
-    }
-    if (gamesQuery.error) {
-      console.error('❌ [GamesContext] Failed to fetch games:', gamesQuery.error);
-    }
-  }, [gamesQuery.data, gamesQuery.error]);
-
-  const games = useMemo(() => gamesQuery.data || [], [gamesQuery.data]);
-
-  const createGameMutation = trpc.games.create.useMutation({
-    onSuccess: () => {
-      console.log('✅ [GamesContext] Game created successfully');
-      gamesQuery.refetch();
-    },
-    onError: (error) => {
-      console.error('❌ [GamesContext] Failed to create game:', error);
-    },
-  });
-
-  const updateGameMutation = trpc.games.update.useMutation({
-    onSuccess: () => {
-      console.log('✅ [GamesContext] Game updated successfully');
-      gamesQuery.refetch();
-    },
-    onError: (error) => {
-      console.error('❌ [GamesContext] Failed to update game:', error);
-    },
-  });
-
-  const deleteGameMutation = trpc.games.delete.useMutation({
-    onSuccess: () => {
-      console.log('✅ [GamesContext] Game deleted successfully');
-      gamesQuery.refetch();
-    },
-    onError: (error) => {
-      console.error('❌ [GamesContext] Failed to delete game:', error);
-    },
-  });
+    fetchGames();
+  }, [fetchGames]);
 
   const createGame = useCallback(async (
     courseName: string,
@@ -154,10 +110,30 @@ export function GamesProvider({ children }: { children: ReactNode }) {
       gameData.wolfOrder = players.map((_, idx) => idx);
     }
 
-    const result = await createGameMutation.mutateAsync(gameData);
-    console.log('[GamesContext] Created game:', result.id);
-    return result.id;
-  }, [memberId, createGameMutation]);
+    try {
+      console.log('➕ [GamesContext] Creating game:', courseName);
+      let result;
+      
+      if (useLocalStorage) {
+        const newGame = {
+          id: `game-${Date.now()}`,
+          status: 'in-progress' as const,
+          createdAt: new Date().toISOString(),
+          ...gameData,
+        };
+        result = await localStorageService.games.create(newGame);
+      } else {
+        result = await trpcClient.games.create.mutate(gameData);
+      }
+      
+      console.log('✅ [GamesContext] Game created:', result.id);
+      await fetchGames();
+      return result.id;
+    } catch (error) {
+      console.error('❌ [GamesContext] Failed to create game:', error);
+      throw error;
+    }
+  }, [memberId, fetchGames, useLocalStorage]);
 
   const updateGameScores = useCallback(async (
     gameId: string,
@@ -176,13 +152,22 @@ export function GamesProvider({ children }: { children: ReactNode }) {
       totalScore: scores.reduce((sum, score) => sum + score, 0),
     };
 
-    await updateGameMutation.mutateAsync({
-      gameId,
-      players: updatedPlayers,
-    });
-
-    console.log('[GamesContext] Updated scores for game:', gameId);
-  }, [games, updateGameMutation]);
+    try {
+      console.log('✏️ [GamesContext] Updating scores for game:', gameId);
+      
+      if (useLocalStorage) {
+        await localStorageService.games.update(gameId, { players: updatedPlayers });
+      } else {
+        await trpcClient.games.update.mutate({ gameId, players: updatedPlayers });
+      }
+      
+      console.log('✅ [GamesContext] Scores updated successfully');
+      await fetchGames();
+    } catch (error) {
+      console.error('❌ [GamesContext] Failed to update scores:', error);
+      throw error;
+    }
+  }, [games, fetchGames, useLocalStorage]);
 
   const updateGame = useCallback(async (gameId: string, updates: Partial<{
     courseName: string;
@@ -200,27 +185,61 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     potPlayers: { name: string; handicap: number; memberId?: string }[];
     useHandicaps: boolean;
   }>) => {
-    await updateGameMutation.mutateAsync({
-      gameId,
-      ...updates,
-    });
-
-    console.log('[GamesContext] Updated game:', gameId);
-  }, [updateGameMutation]);
+    try {
+      console.log('✏️ [GamesContext] Updating game:', gameId);
+      
+      if (useLocalStorage) {
+        await localStorageService.games.update(gameId, updates);
+      } else {
+        await trpcClient.games.update.mutate({ gameId, ...updates });
+      }
+      
+      console.log('✅ [GamesContext] Game updated successfully');
+      await fetchGames();
+    } catch (error) {
+      console.error('❌ [GamesContext] Failed to update game:', error);
+      throw error;
+    }
+  }, [fetchGames, useLocalStorage]);
 
   const completeGame = useCallback(async (gameId: string) => {
-    await updateGameMutation.mutateAsync({
-      gameId,
-      status: 'completed',
-    });
-
-    console.log('[GamesContext] Completed game:', gameId);
-  }, [updateGameMutation]);
+    try {
+      console.log('✅ [GamesContext] Completing game:', gameId);
+      
+      if (useLocalStorage) {
+        await localStorageService.games.update(gameId, { 
+          status: 'completed',
+          completedAt: new Date().toISOString()
+        });
+      } else {
+        await trpcClient.games.update.mutate({ gameId, status: 'completed' });
+      }
+      
+      console.log('✅ [GamesContext] Game completed successfully');
+      await fetchGames();
+    } catch (error) {
+      console.error('❌ [GamesContext] Failed to complete game:', error);
+      throw error;
+    }
+  }, [fetchGames, useLocalStorage]);
 
   const deleteGame = useCallback(async (gameId: string) => {
-    await deleteGameMutation.mutateAsync({ gameId });
-    console.log('[GamesContext] Deleted game:', gameId);
-  }, [deleteGameMutation]);
+    try {
+      console.log('🗑️ [GamesContext] Deleting game:', gameId);
+      
+      if (useLocalStorage) {
+        await localStorageService.games.delete(gameId);
+      } else {
+        await trpcClient.games.delete.mutate({ gameId });
+      }
+      
+      console.log('✅ [GamesContext] Game deleted successfully');
+      await fetchGames();
+    } catch (error) {
+      console.error('❌ [GamesContext] Failed to delete game:', error);
+      throw error;
+    }
+  }, [fetchGames, useLocalStorage]);
 
   const inProgressGames = useMemo(() => 
     games.filter(g => g.status === 'in-progress'),
@@ -240,30 +259,16 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     return games.find(g => g.id === gameId);
   }, [games]);
 
-  const value = useMemo(() => ({
+  return useMemo(() => ({
     games,
     inProgressGames,
     completedGames,
-    isLoading: gamesQuery.isLoading,
+    isLoading,
     createGame,
     updateGame,
     updateGameScores,
     completeGame,
     deleteGame,
     getGame,
-  }), [games, inProgressGames, completedGames, gamesQuery.isLoading, createGame, updateGame, updateGameScores, completeGame, deleteGame, getGame]);
-
-  return (
-    <GamesContext.Provider value={value}>
-      {children}
-    </GamesContext.Provider>
-  );
-}
-
-export function useGames(): GamesContextType {
-  const context = useContext(GamesContext);
-  if (!context) {
-    throw new Error('useGames must be used within GamesProvider');
-  }
-  return context;
-}
+  }), [games, inProgressGames, completedGames, isLoading, createGame, updateGame, updateGameScores, completeGame, deleteGame, getGame]);
+});

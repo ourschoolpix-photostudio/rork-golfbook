@@ -32,7 +32,16 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       setEvents(fetchedEvents);
     } catch (error) {
       console.error('❌ [EventsContext] Failed to fetch events:', error);
-      setEvents([]);
+      console.log('📥 [EventsContext] Falling back to local storage');
+      
+      try {
+        const fallbackEvents = await localStorageService.events.getAll();
+        console.log('✅ [EventsContext] Successfully fetched events from local storage fallback:', fallbackEvents.length);
+        setEvents(fallbackEvents);
+      } catch (fallbackError) {
+        console.error('❌ [EventsContext] Fallback also failed:', fallbackError);
+        setEvents([]);
+      }
     } finally {
       setIsLoading(false);
     }
