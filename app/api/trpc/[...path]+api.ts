@@ -42,11 +42,10 @@ function getApp() {
     });
 
     app.use(
-      "/api/trpc/*",
+      "/*",
       trpcServer({
         router: appRouter,
         createContext,
-        endpoint: '/api/trpc',
         onError({ error, path }) {
           console.error('❌ [tRPC] Error on path', path, ':', error);
         },
