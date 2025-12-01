@@ -1,6 +1,9 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useMemo, useCallback, useEffect, useState } from 'react';
 import { trpcClient } from '@/lib/trpc';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEY = '@golf_settings';
 
 export interface OrganizationInfo {
   name: string;
@@ -17,6 +20,7 @@ export interface OrganizationInfo {
   rolexPlacementPoints: string[];
   rolexAttendancePoints: string;
   rolexBonusPoints: string;
+  useLocalStorage?: boolean;
 }
 
 const DEFAULT_ORG_INFO: OrganizationInfo = {
@@ -34,6 +38,7 @@ const DEFAULT_ORG_INFO: OrganizationInfo = {
   rolexPlacementPoints: Array(30).fill(''),
   rolexAttendancePoints: '',
   rolexBonusPoints: '',
+  useLocalStorage: false,
 };
 
 export const [SettingsProvider, useSettings] = createContextHook(() => {
@@ -43,8 +48,17 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
   const fetchSettings = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('📥 [SettingsContext] Fetching settings via tRPC...');
       
+      const localStorageStr = await AsyncStorage.getItem(STORAGE_KEY);
+      const localSettings = localStorageStr ? JSON.parse(localStorageStr) : null;
+      
+      if (localSettings?.useLocalStorage) {
+        console.log('📥 [SettingsContext] Using local storage mode');
+        setOrgInfo(localSettings);
+        return;
+      }
+      
+      console.log('📥 [SettingsContext] Fetching settings via tRPC...');
       const settings = await trpcClient.settings.getSettings.query();
       console.log('✅ [SettingsContext] Successfully fetched settings');
       
@@ -55,7 +69,9 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       setOrgInfo(settingsWithDefaults);
     } catch (error) {
       console.error('❌ [SettingsContext] Failed to fetch settings:', error);
-      setOrgInfo(DEFAULT_ORG_INFO);
+      const localStorageStr = await AsyncStorage.getItem(STORAGE_KEY);
+      const localSettings = localStorageStr ? JSON.parse(localStorageStr) : DEFAULT_ORG_INFO;
+      setOrgInfo(localSettings);
     } finally {
       setIsLoading(false);
     }
@@ -72,15 +88,23 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
   const updateOrganizationInfo = useCallback(async (updates: Partial<OrganizationInfo>) => {
     try {
       console.log('✏️ [SettingsContext] Updating settings...');
-
-      await trpcClient.settings.updateSettings.mutate(updates);
-      console.log('✅ [SettingsContext] Settings updated successfully');
+      const newSettings = { ...orgInfo, ...updates };
+      
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+      
+      if (!newSettings.useLocalStorage) {
+        await trpcClient.settings.updateSettings.mutate(updates);
+        console.log('✅ [SettingsContext] Settings updated successfully (backend)');
+      } else {
+        console.log('✅ [SettingsContext] Settings updated successfully (local storage)');
+      }
+      
       await fetchSettings();
     } catch (error) {
       console.error('❌ [SettingsContext] Exception updating settings:', error);
       throw error;
     }
-  }, [fetchSettings]);
+  }, [fetchSettings, orgInfo]);
 
   return useMemo(() => ({
     orgInfo,

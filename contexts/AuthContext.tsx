@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Member } from '@/types';
 import { trpcClient } from '@/lib/trpc';
+import { localStorageService } from '@/utils/localStorageService';
+import { useSettings } from '@/contexts/SettingsContext';
 
 const STORAGE_KEYS = {
   CURRENT_USER: '@golf_current_user',
@@ -24,6 +26,9 @@ const DEFAULT_MEMBER: Member = {
 };
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
+  const { orgInfo } = useSettings();
+  const useLocalStorage = orgInfo?.useLocalStorage || false;
+  
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [hasInitializedAdmin, setHasInitializedAdmin] = useState<boolean>(false);
@@ -33,24 +38,27 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const fetchMembers = useCallback(async () => {
     try {
       setIsFetchingMembers(true);
-      console.log('📥 [AuthContext] Fetching members via tRPC...');
-      console.log('📥 [AuthContext] tRPC client exists:', !!trpcClient);
-      console.log('📥 [AuthContext] tRPC members route exists:', !!trpcClient.members);
-      console.log('📥 [AuthContext] tRPC getAll exists:', !!trpcClient.members?.getAll);
       
+      if (useLocalStorage) {
+        console.log('📥 [AuthContext] Fetching members from local storage...');
+        const fetchedMembers = await localStorageService.members.getAll();
+        console.log('✅ [AuthContext] Successfully fetched members from local storage:', fetchedMembers.length);
+        setMembers(fetchedMembers);
+        return fetchedMembers;
+      }
+      
+      console.log('📥 [AuthContext] Fetching members via tRPC...');
       const fetchedMembers = await trpcClient.members.getAll.query();
       console.log('✅ [AuthContext] Successfully fetched members:', fetchedMembers.length);
-      console.log('✅ [AuthContext] Sample member:', fetchedMembers[0] ? { id: fetchedMembers[0].id, name: fetchedMembers[0].name } : 'none');
       setMembers(fetchedMembers);
       return fetchedMembers;
     } catch (error) {
       console.error('❌ [AuthContext] Failed to fetch members:', error);
-      console.error('❌ [AuthContext] Error details:', error instanceof Error ? { message: error.message, stack: error.stack } : 'unknown error');
       return [];
     } finally {
       setIsFetchingMembers(false);
     }
-  }, []);
+  }, [useLocalStorage]);
 
   useEffect(() => {
     fetchMembers();
@@ -64,19 +72,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         return;
       }
 
-      console.log('➕ [AuthContext] Creating member via tRPC:', member.name);
+      if (useLocalStorage) {
+        console.log('➕ [AuthContext] Creating member in local storage:', member.name);
+        await localStorageService.members.create(member);
+      } else {
+        console.log('➕ [AuthContext] Creating member via tRPC:', member.name);
+        await trpcClient.members.create.mutate(member);
+      }
       
-      await trpcClient.members.create.mutate(member);
       console.log('✅ [AuthContext] Member created successfully');
       await fetchMembers();
     } catch (error: any) {
-      if (error?.message?.includes('duplicate key')) {
+      if (error?.message?.includes('duplicate key') || error?.message?.includes('already exists')) {
         console.log('✅ [AuthContext] Member already exists, skipping creation');
         return;
       }
       console.error('❌ [AuthContext] Exception creating member:', error);
     }
-  }, [members, fetchMembers]);
+  }, [members, fetchMembers, useLocalStorage]);
 
   useEffect(() => {
     const shouldInitializeAdmin = 
@@ -155,20 +168,30 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     try {
       console.log('➕ [AuthContext] Adding member:', member.name);
       
-      await trpcClient.members.create.mutate(member);
+      if (useLocalStorage) {
+        await localStorageService.members.create(member);
+      } else {
+        await trpcClient.members.create.mutate(member);
+      }
+      
       console.log('✅ [AuthContext] Member added successfully');
       await fetchMembers();
     } catch (error) {
       console.error('❌ [AuthContext] Exception adding member:', error);
       throw error;
     }
-  }, [fetchMembers]);
+  }, [fetchMembers, useLocalStorage]);
 
   const updateMember = useCallback(async (memberId: string, updates: Partial<Member>) => {
     try {
       console.log('✏️ [AuthContext] Updating member:', memberId);
       
-      await trpcClient.members.update.mutate({ memberId, updates });
+      if (useLocalStorage) {
+        await localStorageService.members.update(memberId, updates);
+      } else {
+        await trpcClient.members.update.mutate({ memberId, updates });
+      }
+      
       console.log('✅ [AuthContext] Member updated successfully');
       await fetchMembers();
 
@@ -181,13 +204,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.error('❌ [AuthContext] Exception updating member:', error);
       throw error;
     }
-  }, [currentUser, fetchMembers]);
+  }, [currentUser, fetchMembers, useLocalStorage]);
 
   const deleteMember = useCallback(async (memberId: string) => {
     try {
       console.log('🗑️ [AuthContext] Deleting member:', memberId);
       
-      await trpcClient.members.delete.mutate({ memberId });
+      if (useLocalStorage) {
+        await localStorageService.members.delete(memberId);
+      } else {
+        await trpcClient.members.delete.mutate({ memberId });
+      }
+      
       console.log('✅ [AuthContext] Member deleted successfully');
       await fetchMembers();
 
@@ -198,7 +226,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.error('❌ [AuthContext] Exception deleting member:', error);
       throw error;
     }
-  }, [currentUser, logout, fetchMembers]);
+  }, [currentUser, logout, fetchMembers, useLocalStorage]);
 
   return useMemo(() => ({
     members,

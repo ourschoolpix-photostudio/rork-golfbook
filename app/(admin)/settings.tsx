@@ -37,6 +37,7 @@ interface OrganizationInfo {
   rolexPlacementPoints: string[];
   rolexAttendancePoints: string;
   rolexBonusPoints: string;
+  useLocalStorage?: boolean;
 }
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -45,7 +46,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { orgInfo: contextOrgInfo, isLoading: contextIsLoading, refreshOrganizationInfo, updateOrganizationInfo } = useSettings();
+  const { orgInfo: contextOrgInfo, isLoading: contextIsLoading, updateOrganizationInfo } = useSettings();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -54,11 +55,13 @@ export default function SettingsScreen() {
     paypal: boolean;
     rolexPoints: boolean;
     courses: boolean;
+    storage: boolean;
   }>({
     organization: false,
     paypal: false,
     rolexPoints: false,
     courses: false,
+    storage: true,
   });
   const [showCoursesModal, setShowCoursesModal] = useState(false);
   const [orgInfo, setOrgInfo] = useState<OrganizationInfo>({
@@ -76,6 +79,7 @@ export default function SettingsScreen() {
     rolexPlacementPoints: Array(30).fill(''),
     rolexAttendancePoints: '',
     rolexBonusPoints: '',
+    useLocalStorage: false,
   });
 
   useEffect(() => {
@@ -193,6 +197,105 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('storage')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons name="server" size={22} color="#007AFF" />
+              <Text style={styles.sectionTitle}>Storage Mode</Text>
+            </View>
+            <Ionicons
+              name={expandedSections.storage ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color="#007AFF"
+            />
+          </TouchableOpacity>
+          
+          {expandedSections.storage && (
+            <View style={styles.sectionContent}>
+              <View style={[styles.warningBox, orgInfo.useLocalStorage && styles.errorBox]}>
+                <Ionicons name="warning" size={20} color={orgInfo.useLocalStorage ? "#FF3B30" : "#FF9500"} />
+                <View style={styles.warningTextContainer}>
+                  <Text style={[styles.warningText, orgInfo.useLocalStorage && styles.errorText]}>
+                    {orgInfo.useLocalStorage 
+                      ? 'Local Storage Mode is ENABLED. All data is stored on this device only. Backend is NOT being used.'
+                      : 'Backend Mode is enabled. All data is synced with the server.'}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.sectionDescription}>
+                Toggle between backend storage (requires working backend) and local device storage (works offline).
+              </Text>
+
+              <View style={styles.storageToggleContainer}>
+                <View style={styles.storageOption}>
+                  <View style={styles.storageIconContainer}>
+                    <Ionicons name="cloud" size={32} color={!orgInfo.useLocalStorage ? "#007AFF" : "#999"} />
+                  </View>
+                  <Text style={styles.storageOptionTitle}>Backend Storage</Text>
+                  <Text style={styles.storageOptionDesc}>Syncs with server</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.toggleButtonContainer}
+                  onPress={() => {
+                    Alert.alert(
+                      'Change Storage Mode',
+                      `Switch to ${orgInfo.useLocalStorage ? 'Backend' : 'Local'} storage?\n\nNote: Existing data will not be automatically migrated.`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Switch',
+                          style: 'destructive',
+                          onPress: async () => {
+                            try {
+                              await updateOrganizationInfo({ useLocalStorage: !orgInfo.useLocalStorage });
+                              Alert.alert('Success', 'Storage mode changed. Please restart the app for best results.');
+                            } catch {
+                              Alert.alert('Error', 'Failed to change storage mode');
+                            }
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <View style={[styles.toggleTrack, orgInfo.useLocalStorage && styles.toggleTrackActive]}>
+                    <View style={[styles.toggleThumb, orgInfo.useLocalStorage && styles.toggleThumbActive]} />
+                  </View>
+                </TouchableOpacity>
+
+                <View style={styles.storageOption}>
+                  <View style={styles.storageIconContainer}>
+                    <Ionicons name="phone-portrait" size={32} color={orgInfo.useLocalStorage ? "#007AFF" : "#999"} />
+                  </View>
+                  <Text style={styles.storageOptionTitle}>Local Storage</Text>
+                  <Text style={styles.storageOptionDesc}>Device only</Text>
+                </View>
+              </View>
+
+              {orgInfo.useLocalStorage && (
+                <View style={styles.infoBox}>
+                  <Ionicons name="information-circle" size={20} color="#007AFF" />
+                  <View style={styles.infoTextContainer}>
+                    <Text style={styles.infoTitle}>Local Storage Mode Active</Text>
+                    <Text style={styles.infoText}>
+                      • All data is stored on this device only{"\n"}
+                      • Data will not sync across devices{"\n"}
+                      • Backend errors will not affect functionality{"\n"}
+                      • Make sure to backup your data regularly
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
         {contextIsLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#007AFF" />
@@ -1123,5 +1226,70 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#e0e0e0',
     marginVertical: 20,
+  },
+  storageToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 20,
+    paddingHorizontal: 8,
+  },
+  storageOption: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  storageIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  storageOptionTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  storageOptionDesc: {
+    fontSize: 12,
+    color: '#666',
+  },
+  toggleButtonContainer: {
+    padding: 8,
+  },
+  toggleTrack: {
+    width: 60,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ddd',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  toggleTrackActive: {
+    backgroundColor: '#34C759',
+  },
+  toggleThumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  toggleThumbActive: {
+    transform: [{ translateX: 28 }],
+  },
+  errorBox: {
+    backgroundColor: '#FFE5E5',
+    borderColor: '#FFB2B2',
+  },
+  errorText: {
+    color: '#D32F2F',
   },
 });

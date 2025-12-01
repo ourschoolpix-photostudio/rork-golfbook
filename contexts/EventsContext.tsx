@@ -2,33 +2,41 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Event, EventRegistration, Grouping, Score, EventRolexPoints, FinancialRecord } from '@/types';
 import { trpcClient } from '@/lib/trpc';
+import { localStorageService } from '@/utils/localStorageService';
+import { useSettings } from '@/contexts/SettingsContext';
 
 
 
 export const [EventsProvider, useEvents] = createContextHook(() => {
+  const { orgInfo } = useSettings();
+  const useLocalStorage = orgInfo?.useLocalStorage || false;
+  
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchEvents = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('📥 [EventsContext] Fetching events via tRPC...');
-      console.log('📥 [EventsContext] tRPC client exists:', !!trpcClient);
-      console.log('📥 [EventsContext] tRPC events route exists:', !!trpcClient.events);
-      console.log('📥 [EventsContext] tRPC getAll exists:', !!trpcClient.events?.getAll);
       
+      if (useLocalStorage) {
+        console.log('📥 [EventsContext] Fetching events from local storage...');
+        const fetchedEvents = await localStorageService.events.getAll();
+        console.log('✅ [EventsContext] Successfully fetched events from local storage:', fetchedEvents.length);
+        setEvents(fetchedEvents);
+        return;
+      }
+      
+      console.log('📥 [EventsContext] Fetching events via tRPC...');
       const fetchedEvents = await trpcClient.events.getAll.query();
       console.log('✅ [EventsContext] Successfully fetched events:', fetchedEvents.length);
-      console.log('✅ [EventsContext] Sample event:', fetchedEvents[0] ? { id: fetchedEvents[0].id, name: fetchedEvents[0].name } : 'none');
       setEvents(fetchedEvents);
     } catch (error) {
       console.error('❌ [EventsContext] Failed to fetch events:', error);
-      console.error('❌ [EventsContext] Error details:', error instanceof Error ? { message: error.message, stack: error.stack } : 'unknown error');
       setEvents([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [useLocalStorage]);
 
   useEffect(() => {
     fetchEvents();
@@ -43,40 +51,55 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         startDate: event.startDate || event.date || '',
       };
       
-      await trpcClient.events.create.mutate(eventWithDefaults as any);
+      if (useLocalStorage) {
+        await localStorageService.events.create(eventWithDefaults);
+      } else {
+        await trpcClient.events.create.mutate(eventWithDefaults as any);
+      }
+      
       console.log('✅ [EventsContext] Event added successfully');
       await fetchEvents();
     } catch (error) {
       console.error('❌ [EventsContext] Exception adding event:', error);
       throw error;
     }
-  }, [fetchEvents]);
+  }, [fetchEvents, useLocalStorage]);
 
   const updateEvent = useCallback(async (eventId: string, updates: Partial<Event>) => {
     try {
       console.log('✏️ [EventsContext] Updating event:', eventId);
       
-      await trpcClient.events.update.mutate({ eventId, updates });
+      if (useLocalStorage) {
+        await localStorageService.events.update(eventId, updates);
+      } else {
+        await trpcClient.events.update.mutate({ eventId, updates });
+      }
+      
       console.log('✅ [EventsContext] Event updated successfully');
       await fetchEvents();
     } catch (error) {
       console.error('❌ [EventsContext] Exception updating event:', error);
       throw error;
     }
-  }, [fetchEvents]);
+  }, [fetchEvents, useLocalStorage]);
 
   const deleteEvent = useCallback(async (eventId: string) => {
     try {
       console.log('🗑️ [EventsContext] Deleting event:', eventId);
       
-      await trpcClient.events.delete.mutate({ eventId });
+      if (useLocalStorage) {
+        await localStorageService.events.delete(eventId);
+      } else {
+        await trpcClient.events.delete.mutate({ eventId });
+      }
+      
       console.log('✅ [EventsContext] Event deleted successfully');
       await fetchEvents();
     } catch (error) {
       console.error('❌ [EventsContext] Exception deleting event:', error);
       throw error;
     }
-  }, [fetchEvents]);
+  }, [fetchEvents, useLocalStorage]);
 
   const addRegistration = useCallback(async (registration: EventRegistration) => {
     console.log('addRegistration - using direct registration flow');
