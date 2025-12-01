@@ -1550,21 +1550,30 @@ export default function EventRegistrationScreen() {
 
       {modalVisible && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                Select Players ({members.filter((m) => !selectedPlayers.find((p) => p.id === m.id) && !(m.membershipType === 'guest' && m.id.startsWith('guest_'))).length})
-              </Text>
-              <TouchableOpacity onPress={() => {
-                setModalVisible(false);
-                setSelectedForBulkAdd(new Set());
-                setPlayerGuestCounts({});
-                setPlayerGuestNames({});
-                setPlayerSponsorFlags({});
-              }}>
-                <Ionicons name="close" size={24} color="#1a1a1a" />
-              </TouchableOpacity>
-            </View>
+          <TouchableWithoutFeedback onPress={() => {
+            setModalVisible(false);
+            setSelectedForBulkAdd(new Set());
+            setPlayerGuestCounts({});
+            setPlayerGuestNames({});
+            setPlayerSponsorFlags({});
+          }}>
+            <View style={styles.centeredModalWrapper}>
+              <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                <View style={styles.addPlayerModalContainer}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>
+                      Select Players ({members.filter((m) => !selectedPlayers.find((p) => p.id === m.id) && !(m.membershipType === 'guest' && m.id.startsWith('guest_'))).length})
+                    </Text>
+                    <TouchableOpacity onPress={() => {
+                      setModalVisible(false);
+                      setSelectedForBulkAdd(new Set());
+                      setPlayerGuestCounts({});
+                      setPlayerGuestNames({});
+                      setPlayerSponsorFlags({});
+                    }}>
+                      <Ionicons name="close" size={24} color="#1a1a1a" />
+                    </TouchableOpacity>
+                  </View>
 
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
               {Array.from(new Set(members.map(m => m.id)))
@@ -1681,8 +1690,11 @@ export default function EventRegistrationScreen() {
                   Add {selectedForBulkAdd.size > 0 ? `(${selectedForBulkAdd.size})` : ''} Players
                 </Text>
               </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
             </View>
-          </View>
+          </TouchableWithoutFeedback>
         </View>
       )}
 
@@ -2434,6 +2446,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   addGuestModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  addPlayerModalContainer: {
     backgroundColor: '#fff',
     borderRadius: 16,
     width: '100%',
