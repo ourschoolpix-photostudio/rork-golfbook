@@ -127,11 +127,26 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const addMemberDirect = useCallback(async (dbMember: any) => {
     try {
+      const { data: existingMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('id', dbMember.id)
+        .single();
+
+      if (existingMember) {
+        console.log('✅ [AuthContext] Member already exists, skipping creation');
+        return;
+      }
+
       const { error } = await supabase
         .from('members')
         .insert([dbMember]);
 
       if (error) {
+        if (error.code === '23505') {
+          console.log('✅ [AuthContext] Member already exists (duplicate key), skipping creation');
+          return;
+        }
         console.error('❌ [AuthContext] Failed to create member:', JSON.stringify(error, null, 2));
         return;
       }
