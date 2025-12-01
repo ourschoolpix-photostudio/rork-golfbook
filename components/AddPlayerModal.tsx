@@ -498,7 +498,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: -2 },
     elevation: 5,
-    maxHeight: '80%',
+    maxHeight: '70%',
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -514,7 +515,9 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#1a1a1a',
   },
-  scrollView: {},
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     padding: 20,
   },
