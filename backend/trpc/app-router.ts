@@ -1,70 +1,99 @@
 import { createTRPCRouter } from "@/backend/trpc/create-context";
 import hiRoute from "@/backend/trpc/routes/example/hi/route";
-import membersRoute, { getSyncStatusProcedure } from "@/backend/trpc/routes/sync/members/route";
-import eventsRoute from "@/backend/trpc/routes/sync/events/route";
-import groupingsRoute from "@/backend/trpc/routes/sync/groupings/route";
-import scoresRoute from "@/backend/trpc/routes/sync/scores/route";
-import membersCrudRoute from "@/backend/trpc/routes/members/crud/route";
-import eventsCrudRoute from "@/backend/trpc/routes/events/crud/route";
-import registrationsCrudRoute from "@/backend/trpc/routes/registrations/crud/route";
-import registrationsEmailRoute from "@/backend/trpc/routes/registrations/send-email/route";
-import registrationsPaypalRoute from "@/backend/trpc/routes/registrations/paypal/route";
-import financialsCrudRoute from "@/backend/trpc/routes/financials/crud/route";
-import settingsRoute from "@/backend/trpc/routes/settings/get-paypal-config/route";
-import settingsCrudRoute from "@/backend/trpc/routes/settings/crud/route";
-import gamesCrudRoute from "@/backend/trpc/routes/games/crud/route";
-import notificationsCrudRoute from "@/backend/trpc/routes/notifications/crud/route";
-import preferencesCrudRoute from "@/backend/trpc/routes/preferences/crud/route";
-import offlineCrudRoute from "@/backend/trpc/routes/offline/crud/route";
-import coursesCrudRoute from "@/backend/trpc/routes/courses/crud/route";
+import { syncMembersProcedure, getSyncStatusProcedure } from "@/backend/trpc/routes/sync/members/route";
+import { syncEventProcedure } from "@/backend/trpc/routes/sync/events/route";
+import { syncGroupingsProcedure, getGroupingsProcedure } from "@/backend/trpc/routes/sync/groupings/route";
+import { submitScoreProcedure, getScoresProcedure, getPlayerScoreProcedure, deleteScoresProcedure } from "@/backend/trpc/routes/sync/scores/route";
+import { 
+  getAllMembersProcedure,
+  getMemberProcedure,
+  getMemberByPinProcedure,
+  createMemberProcedure,
+  updateMemberProcedure,
+  deleteMemberProcedure,
+  normalizeAllMemberNamesProcedure,
+} from "@/backend/trpc/routes/members/crud/route";
+import {
+  getAllEventsProcedure,
+  getEventProcedure,
+  createEventProcedure,
+  updateEventProcedure,
+  deleteEventProcedure,
+  registerForEventProcedure,
+  unregisterFromEventProcedure,
+} from "@/backend/trpc/routes/events/crud/route";
+import { createRegistrationProcedure, updateRegistrationProcedure, getAllRegistrationsProcedure } from "@/backend/trpc/routes/registrations/crud/route";
+import { sendRegistrationEmailProcedure } from "@/backend/trpc/routes/registrations/send-email/route";
+import { createPaymentProcedure, capturePaymentProcedure } from "@/backend/trpc/routes/registrations/paypal/route";
+import financialsCrud from "@/backend/trpc/routes/financials/crud/route";
+import { getSettingsProcedure, updateSettingsProcedure } from "@/backend/trpc/routes/settings/crud/route";
+import gamesCrud from "@/backend/trpc/routes/games/crud/route";
+import notificationsCrud from "@/backend/trpc/routes/notifications/crud/route";
+import preferencesCrud from "@/backend/trpc/routes/preferences/crud/route";
+import offlineCrud from "@/backend/trpc/routes/offline/crud/route";
+import coursesCrud from "@/backend/trpc/routes/courses/crud/route";
+
+console.log('🏗️ [tRPC] Building app router...');
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
   }),
   sync: createTRPCRouter({
-    members: membersRoute,
-    events: eventsRoute,
-    groupings: groupingsRoute,
-    scores: scoresRoute,
+    members: syncMembersProcedure,
+    events: syncEventProcedure,
+    groupings: createTRPCRouter({
+      sync: syncGroupingsProcedure,
+      get: getGroupingsProcedure,
+    }),
+    scores: createTRPCRouter({
+      submit: submitScoreProcedure,
+      getAll: getScoresProcedure,
+      getPlayer: getPlayerScoreProcedure,
+      deleteAll: deleteScoresProcedure,
+    }),
     status: getSyncStatusProcedure,
   }),
   members: createTRPCRouter({
-    getAll: membersCrudRoute.getAll,
-    get: membersCrudRoute.get,
-    getByPin: membersCrudRoute.getByPin,
-    create: membersCrudRoute.create,
-    update: membersCrudRoute.update,
-    delete: membersCrudRoute.delete,
-    normalizeAllNames: membersCrudRoute.normalizeAllNames,
+    getAll: getAllMembersProcedure,
+    get: getMemberProcedure,
+    getByPin: getMemberByPinProcedure,
+    create: createMemberProcedure,
+    update: updateMemberProcedure,
+    delete: deleteMemberProcedure,
+    normalizeAllNames: normalizeAllMemberNamesProcedure,
   }),
   events: createTRPCRouter({
-    getAll: eventsCrudRoute.getAll,
-    get: eventsCrudRoute.get,
-    create: eventsCrudRoute.create,
-    update: eventsCrudRoute.update,
-    delete: eventsCrudRoute.delete,
-    register: eventsCrudRoute.register,
-    unregister: eventsCrudRoute.unregister,
+    getAll: getAllEventsProcedure,
+    get: getEventProcedure,
+    create: createEventProcedure,
+    update: updateEventProcedure,
+    delete: deleteEventProcedure,
+    register: registerForEventProcedure,
+    unregister: unregisterFromEventProcedure,
   }),
   registrations: createTRPCRouter({
-    create: registrationsCrudRoute.create,
-    update: registrationsCrudRoute.update,
-    getAll: registrationsCrudRoute.getAll,
-    sendEmail: registrationsEmailRoute.sendEmail,
-    paypal: registrationsPaypalRoute,
+    create: createRegistrationProcedure,
+    update: updateRegistrationProcedure,
+    getAll: getAllRegistrationsProcedure,
+    sendEmail: sendRegistrationEmailProcedure,
+    paypal: createTRPCRouter({
+      createPayment: createPaymentProcedure,
+      capturePayment: capturePaymentProcedure,
+    }),
   }),
-  financials: financialsCrudRoute,
+  financials: financialsCrud,
   settings: createTRPCRouter({
-    getPayPalConfig: settingsRoute.getPayPalConfig,
-    getSettings: settingsCrudRoute.getSettings,
-    updateSettings: settingsCrudRoute.updateSettings,
+    getSettings: getSettingsProcedure,
+    updateSettings: updateSettingsProcedure,
   }),
-  games: gamesCrudRoute,
-  notifications: notificationsCrudRoute,
-  preferences: preferencesCrudRoute,
-  offline: offlineCrudRoute,
-  courses: coursesCrudRoute,
+  games: gamesCrud,
+  notifications: notificationsCrud,
+  preferences: preferencesCrud,
+  offline: offlineCrud,
+  courses: coursesCrud,
 });
+
+console.log('✅ [tRPC] App router built successfully');
 
 export type AppRouter = typeof appRouter;

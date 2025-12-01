@@ -15,8 +15,8 @@ export function SyncButton({ eventId }: SyncButtonProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
-  const syncMembersMutation = trpc.sync.members.sync.useMutation();
-  const syncEventMutation = trpc.sync.events.sync.useMutation();
+  const syncMembersMutation = trpc.sync.members.useMutation();
+  const syncEventMutation = trpc.sync.events.useMutation();
 
   const handleSync = async () => {
     if (!currentUser?.isAdmin) {
