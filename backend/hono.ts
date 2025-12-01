@@ -6,7 +6,22 @@ import { createContext } from "@/backend/trpc/create-context";
 
 const app = new Hono();
 
-app.use("*", cors());
+app.use("*", cors({
+  origin: '*',
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.notFound((c) => {
+  console.warn('⚠️ [Hono] 404 Not Found:', c.req.url);
+  return c.json({
+    error: {
+      message: 'Not Found',
+      path: c.req.url,
+      timestamp: new Date().toISOString(),
+    }
+  }, 404);
+});
 
 app.onError((err, c) => {
   console.error('❌ [Hono] Server error:', err);
