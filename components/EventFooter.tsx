@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { OfflineModeToggle } from '@/components/OfflineModeToggle';
 import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
-import { trpc } from '@/lib/trpc';
+import { supabase } from '@/integrations/supabase/client';
 import { canViewFinance } from '@/utils/rolePermissions';
 
 type EventFooterProps = {
@@ -30,9 +30,31 @@ export function EventFooter({
   const insets = useSafeAreaInsets();
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
 
-  const eventQuery = trpc.events.get.useQuery({ eventId: eventId! }, { enabled: !!eventId });
-  const event = eventQuery.data;
+  const [event, setEvent] = useState<any>(null);
   const isSocialEvent = event?.type === 'social';
+
+  useEffect(() => {
+    if (!eventId) return;
+    
+    const fetchEvent = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', eventId)
+          .single();
+        
+        if (error) throw error;
+        setEvent(data);
+        console.log('[EventFooter] Fetched event:', data?.id);
+      } catch (error) {
+        console.error('[EventFooter] Error fetching event:', error);
+        setEvent(null);
+      }
+    };
+    
+    fetchEvent();
+  }, [eventId]);
 
   useEffect(() => {
     const loadCourseHandicapSetting = async () => {

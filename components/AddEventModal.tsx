@@ -17,7 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { photoService } from '@/utils/photoService';
-import { trpc } from '@/lib/trpc';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AddEventModalProps {
   visible: boolean;
@@ -126,8 +126,33 @@ export function AddEventModal({
   const [showCourseDropdown2, setShowCourseDropdown2] = useState(false);
   const [showCourseDropdown3, setShowCourseDropdown3] = useState(false);
   
-  const coursesQuery = trpc.courses.getAll.useQuery({ memberId: '', source: 'admin' });
-  const adminCourses = coursesQuery.data || [];
+  const [adminCourses, setAdminCourses] = React.useState<any[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+      setIsLoadingCourses(true);
+      try {
+        const { data, error } = await supabase
+          .from('courses')
+          .select('*')
+          .order('name', { ascending: true });
+        
+        if (error) throw error;
+        setAdminCourses(data || []);
+        console.log('[AddEventModal] Fetched courses:', data?.length);
+      } catch (error) {
+        console.error('[AddEventModal] Error fetching courses:', error);
+        setAdminCourses([]);
+      } finally {
+        setIsLoadingCourses(false);
+      }
+    };
+    
+    if (visible) {
+      fetchCourses();
+    }
+  }, [visible]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   
   const day1HoleRefs = useRef<(TextInput | null)[]>(Array(18).fill(null));
