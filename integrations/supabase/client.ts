@@ -31,18 +31,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     headers: {
       'x-my-custom-header': 'golf-app',
     },
-    fetch: async (url, options = {}) => {
-      try {
-        const response = await fetch(url, {
-          ...options,
-          signal: AbortSignal.timeout(15000),
-        });
-        return response;
-      } catch (error) {
-        console.error('❌ Supabase fetch error:', error);
-        throw error;
-      }
-    },
   },
   realtime: {
     params: {
