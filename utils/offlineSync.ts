@@ -1,4 +1,4 @@
-import { trpcClient } from '@/lib/trpc';
+import { supabase } from '@/integrations/supabase/client';
 import type { PendingOperation } from '@/contexts/OfflineModeContext';
 
 export interface SyncResult {
@@ -87,67 +87,109 @@ export const syncPendingOperations = async (
 async function syncScoreSubmit(operation: PendingOperation): Promise<void> {
   const { eventId, memberId, day, holes, totalScore, submittedBy } = operation.data;
   
-  await trpcClient.sync.scores.submit.mutate({
-    eventId,
-    memberId,
+  const { error } = await supabase.from('scores').upsert({
+    event_id: eventId,
+    member_id: memberId,
     day,
-    holes: holes || [],
-    totalScore,
-    submittedBy,
+    holes,
+    total_score: totalScore,
+    submitted_by: submittedBy,
+  }, {
+    onConflict: 'event_id,member_id,day'
   });
+  
+  if (error) throw error;
 }
 
 async function syncRegistrationCreate(operation: PendingOperation): Promise<void> {
   const { eventId, memberId } = operation.data;
   
-  await trpcClient.events.register.mutate({
-    eventId,
-    memberId,
+  const { error } = await supabase.from('event_registrations').insert({
+    event_id: eventId,
+    member_id: memberId,
+    status: 'registered',
   });
+  
+  if (error) throw error;
 }
 
 async function syncRegistrationUpdate(operation: PendingOperation): Promise<void> {
   const { registrationId, updates } = operation.data;
   
-  await trpcClient.registrations.update.mutate({
-    registrationId,
-    updates,
-  });
+  const supabaseUpdates: any = {};
+  if (updates.status) supabaseUpdates.status = updates.status;
+  if (updates.paymentStatus) supabaseUpdates.payment_status = updates.paymentStatus;
+  if (updates.adjustedHandicap) supabaseUpdates.adjusted_handicap = updates.adjustedHandicap;
+  if (updates.numberOfGuests !== undefined) supabaseUpdates.number_of_guests = updates.numberOfGuests;
+  if (updates.guestNames) supabaseUpdates.guest_names = updates.guestNames;
+  if (updates.isSponsor !== undefined) supabaseUpdates.is_sponsor = updates.isSponsor;
+  
+  const { error } = await supabase
+    .from('event_registrations')
+    .update(supabaseUpdates)
+    .eq('id', registrationId);
+  
+  if (error) throw error;
 }
 
 async function syncRegistrationDelete(operation: PendingOperation): Promise<void> {
   const { eventId, memberId } = operation.data;
   
-  await trpcClient.events.unregister.mutate({
-    eventId,
-    memberId,
-  });
+  const { error } = await supabase
+    .from('event_registrations')
+    .delete()
+    .eq('event_id', eventId)
+    .eq('member_id', memberId);
+  
+  if (error) throw error;
 }
 
 async function syncGroupings(operation: PendingOperation): Promise<void> {
-  const { eventId, groupings, syncedBy } = operation.data;
+  const { eventId, groupings } = operation.data;
   
-  await trpcClient.sync.groupings.sync.mutate({
-    eventId,
-    groupings,
-    syncedBy,
-  });
+  for (const grouping of groupings) {
+    const { error } = await supabase.from('groupings').upsert({
+      event_id: eventId,
+      day: grouping.day,
+      hole: grouping.hole,
+      slots: grouping.slots,
+    }, {
+      onConflict: 'event_id,day,hole'
+    });
+    
+    if (error) throw error;
+  }
 }
 
 async function syncMemberUpdate(operation: PendingOperation): Promise<void> {
   const { memberId, updates } = operation.data;
   
-  await trpcClient.members.update.mutate({
-    memberId,
-    updates,
-  });
+  const supabaseUpdates: any = {};
+  if (updates.name) supabaseUpdates.name = updates.name;
+  if (updates.email) supabaseUpdates.email = updates.email;
+  if (updates.phone) supabaseUpdates.phone = updates.phone;
+  if (updates.handicap !== undefined) supabaseUpdates.handicap = updates.handicap;
+  
+  const { error } = await supabase
+    .from('members')
+    .update(supabaseUpdates)
+    .eq('id', memberId);
+  
+  if (error) throw error;
 }
 
 async function syncEventUpdate(operation: PendingOperation): Promise<void> {
   const { eventId, updates } = operation.data;
   
-  await trpcClient.events.update.mutate({
-    eventId,
-    updates,
-  });
+  const supabaseUpdates: any = {};
+  if (updates.status) supabaseUpdates.status = updates.status;
+  if (updates.name) supabaseUpdates.name = updates.name;
+  if (updates.date) supabaseUpdates.date = updates.date;
+  
+  const { error } = await supabase
+    .from('events')
+    .update(supabaseUpdates)
+    .eq('id', eventId);
+  
+  if (error) throw error;
 }

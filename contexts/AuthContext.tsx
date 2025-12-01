@@ -2,9 +2,9 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Member } from '@/types';
-import { trpcClient } from '@/lib/trpc';
 import { localStorageService } from '@/utils/localStorageService';
 import { useSettings } from '@/contexts/SettingsContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEYS = {
   CURRENT_USER: '@golf_current_user',
@@ -47,8 +47,39 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         return fetchedMembers;
       }
       
-      console.log('📥 [AuthContext] Fetching members via tRPC...');
-      const fetchedMembers = await trpcClient.members.getAll.query();
+      console.log('📥 [AuthContext] Fetching members from Supabase...');
+      const { data, error } = await supabase.from('members').select('*');
+      
+      if (error) throw error;
+      
+      const fetchedMembers = (data || []).map((m: any) => ({
+        id: m.id,
+        name: m.name || m.full_name || '',
+        username: m.username || m.name || '',
+        pin: m.pin || '',
+        isAdmin: m.is_admin || false,
+        rolexPoints: m.rolex_points || 0,
+        email: m.email || '',
+        phone: m.phone || '',
+        handicap: m.handicap || 0,
+        membershipType: m.membership_type || 'active',
+        joinDate: m.join_date || new Date().toISOString().split('T')[0],
+        createdAt: m.created_at || new Date().toISOString(),
+        gender: m.gender,
+        address: m.address,
+        city: m.city,
+        state: m.state,
+        flight: m.flight,
+        rolexFlight: m.rolex_flight,
+        currentHandicap: m.current_handicap,
+        dateOfBirth: m.date_of_birth,
+        emergencyContactName: m.emergency_contact_name,
+        emergencyContactPhone: m.emergency_contact_phone,
+        profilePhotoUrl: m.profile_photo_url,
+        adjustedHandicap: m.adjusted_handicap,
+        ghin: m.ghin,
+      }));
+      
       console.log('✅ [AuthContext] Successfully fetched members:', fetchedMembers.length);
       setMembers(fetchedMembers);
       return fetchedMembers;
@@ -87,8 +118,23 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         console.log('➕ [AuthContext] Creating member in local storage:', member.name);
         await localStorageService.members.create(member);
       } else {
-        console.log('➕ [AuthContext] Creating member via tRPC:', member.name);
-        await trpcClient.members.create.mutate(member);
+        console.log('➕ [AuthContext] Creating member in Supabase:', member.name);
+        const { error } = await supabase.from('members').insert({
+          id: member.id,
+          name: member.name,
+          username: member.username || member.name,
+          pin: member.pin,
+          is_admin: member.isAdmin || false,
+          rolex_points: member.rolexPoints || 0,
+          email: member.email || '',
+          phone: member.phone || '',
+          handicap: member.handicap || 0,
+          membership_type: member.membershipType || 'active',
+          join_date: member.joinDate || new Date().toISOString().split('T')[0],
+          full_name: member.name,
+        });
+        
+        if (error) throw error;
       }
       
       console.log('✅ [AuthContext] Member created successfully');
@@ -182,7 +228,35 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (useLocalStorage) {
         await localStorageService.members.create(member);
       } else {
-        await trpcClient.members.create.mutate(member);
+        const { error } = await supabase.from('members').insert({
+          id: member.id,
+          name: member.name,
+          username: member.username || member.name,
+          pin: member.pin,
+          is_admin: member.isAdmin || false,
+          rolex_points: member.rolexPoints || 0,
+          email: member.email || '',
+          phone: member.phone || '',
+          handicap: member.handicap || 0,
+          membership_type: member.membershipType || 'active',
+          join_date: member.joinDate || new Date().toISOString().split('T')[0],
+          full_name: member.name,
+          gender: member.gender,
+          address: member.address,
+          city: member.city,
+          state: member.state,
+          flight: member.flight,
+          rolex_flight: member.rolexFlight,
+          current_handicap: member.currentHandicap,
+          date_of_birth: member.dateOfBirth,
+          emergency_contact_name: member.emergencyContactName,
+          emergency_contact_phone: member.emergencyContactPhone,
+          profile_photo_url: member.profilePhotoUrl,
+          adjusted_handicap: member.adjustedHandicap,
+          ghin: member.ghin,
+        });
+        
+        if (error) throw error;
       }
       
       console.log('✅ [AuthContext] Member added successfully');
@@ -200,7 +274,37 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (useLocalStorage) {
         await localStorageService.members.update(memberId, updates);
       } else {
-        await trpcClient.members.update.mutate({ memberId, updates });
+        const supabaseUpdates: any = {};
+        if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+        if (updates.username !== undefined) supabaseUpdates.username = updates.username;
+        if (updates.pin !== undefined) supabaseUpdates.pin = updates.pin;
+        if (updates.isAdmin !== undefined) supabaseUpdates.is_admin = updates.isAdmin;
+        if (updates.rolexPoints !== undefined) supabaseUpdates.rolex_points = updates.rolexPoints;
+        if (updates.email !== undefined) supabaseUpdates.email = updates.email;
+        if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
+        if (updates.handicap !== undefined) supabaseUpdates.handicap = updates.handicap;
+        if (updates.membershipType !== undefined) supabaseUpdates.membership_type = updates.membershipType;
+        if (updates.joinDate !== undefined) supabaseUpdates.join_date = updates.joinDate;
+        if (updates.gender !== undefined) supabaseUpdates.gender = updates.gender;
+        if (updates.address !== undefined) supabaseUpdates.address = updates.address;
+        if (updates.city !== undefined) supabaseUpdates.city = updates.city;
+        if (updates.state !== undefined) supabaseUpdates.state = updates.state;
+        if (updates.flight !== undefined) supabaseUpdates.flight = updates.flight;
+        if (updates.rolexFlight !== undefined) supabaseUpdates.rolex_flight = updates.rolexFlight;
+        if (updates.currentHandicap !== undefined) supabaseUpdates.current_handicap = updates.currentHandicap;
+        if (updates.dateOfBirth !== undefined) supabaseUpdates.date_of_birth = updates.dateOfBirth;
+        if (updates.emergencyContactName !== undefined) supabaseUpdates.emergency_contact_name = updates.emergencyContactName;
+        if (updates.emergencyContactPhone !== undefined) supabaseUpdates.emergency_contact_phone = updates.emergencyContactPhone;
+        if (updates.profilePhotoUrl !== undefined) supabaseUpdates.profile_photo_url = updates.profilePhotoUrl;
+        if (updates.adjustedHandicap !== undefined) supabaseUpdates.adjusted_handicap = updates.adjustedHandicap;
+        if (updates.ghin !== undefined) supabaseUpdates.ghin = updates.ghin;
+        
+        const { error } = await supabase
+          .from('members')
+          .update(supabaseUpdates)
+          .eq('id', memberId);
+        
+        if (error) throw error;
       }
       
       console.log('✅ [AuthContext] Member updated successfully');
@@ -224,7 +328,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (useLocalStorage) {
         await localStorageService.members.delete(memberId);
       } else {
-        await trpcClient.members.delete.mutate({ memberId });
+        const { error } = await supabase
+          .from('members')
+          .delete()
+          .eq('id', memberId);
+        
+        if (error) throw error;
       }
       
       console.log('✅ [AuthContext] Member deleted successfully');

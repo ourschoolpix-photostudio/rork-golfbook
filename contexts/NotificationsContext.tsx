@@ -1,10 +1,10 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useCallback, useMemo, useEffect, useState } from 'react';
 import { RegistrationNotification } from '@/types';
-import { trpcClient } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { localStorageService } from '@/utils/localStorageService';
 import { useSettings } from '@/contexts/SettingsContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export const [NotificationsProvider, useNotifications] = createContextHook(() => {
   const { currentUser } = useAuth();
@@ -31,8 +31,27 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
         console.log('✅ [NotificationsContext] Successfully fetched notifications from local storage:', fetchedNotifications.length);
         setNotifications(fetchedNotifications);
       } else {
-        console.log('📥 [NotificationsContext] Fetching notifications via tRPC...');
-        const fetchedNotifications = await trpcClient.notifications.getAll.query({ memberId });
+        console.log('📥 [NotificationsContext] Fetching notifications from Supabase...');
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('member_id', memberId)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        const fetchedNotifications = (data || []).map((n: any) => ({
+          id: n.id,
+          memberId: n.member_id,
+          eventId: n.event_id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          isRead: n.is_read,
+          metadata: n.metadata,
+          createdAt: n.created_at,
+        }));
+        
         console.log('✅ [NotificationsContext] Successfully fetched notifications:', fetchedNotifications.length);
         setNotifications(fetchedNotifications);
       }
@@ -71,14 +90,17 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
           };
           await localStorageService.notifications.create(newNotification);
         } else {
-          await trpcClient.notifications.create.mutate({
-            memberId: notification.memberId,
-            eventId: notification.eventId,
+          const { error } = await supabase.from('notifications').insert({
+            member_id: notification.memberId,
+            event_id: notification.eventId,
             type: notification.type,
             title: notification.title,
             message: notification.message,
             metadata: notification.metadata,
+            is_read: false,
           });
+          
+          if (error) throw error;
         }
         
         console.log('✅ [NotificationsContext] Notification created successfully');
@@ -99,7 +121,12 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
         if (useLocalStorage) {
           await localStorageService.notifications.markAsRead(notificationId);
         } else {
-          await trpcClient.notifications.markAsRead.mutate({ notificationId });
+          const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', notificationId);
+          
+          if (error) throw error;
         }
         
         console.log('✅ [NotificationsContext] Notification marked as read');
@@ -120,7 +147,12 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
         if (useLocalStorage) {
           await localStorageService.notifications.delete(notificationId);
         } else {
-          await trpcClient.notifications.delete.mutate({ notificationId });
+          const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('id', notificationId);
+          
+          if (error) throw error;
         }
         
         console.log('✅ [NotificationsContext] Notification deleted');
@@ -140,7 +172,12 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
       if (useLocalStorage) {
         await localStorageService.notifications.markAllAsRead(memberId);
       } else {
-        await trpcClient.notifications.markAllAsRead.mutate(memberId ? { memberId } : {});
+        const { error } = await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('member_id', memberId);
+        
+        if (error) throw error;
       }
       
       console.log('✅ [NotificationsContext] All notifications marked as read');
@@ -158,7 +195,12 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
       if (useLocalStorage) {
         await localStorageService.notifications.clearAll(memberId);
       } else {
-        await trpcClient.notifications.clearAll.mutate(memberId ? { memberId } : {});
+        const { error } = await supabase
+          .from('notifications')
+          .delete()
+          .eq('member_id', memberId);
+        
+        if (error) throw error;
       }
       
       console.log('✅ [NotificationsContext] All notifications cleared');

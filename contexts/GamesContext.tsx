@@ -1,10 +1,10 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useMemo, useCallback, useEffect, useState } from 'react';
 import { PersonalGame } from '@/types';
-import { trpcClient } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { localStorageService } from '@/utils/localStorageService';
 import { useSettings } from '@/contexts/SettingsContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export const [GamesProvider, useGames] = createContextHook(() => {
   const { currentUser } = useAuth();
@@ -31,8 +31,38 @@ export const [GamesProvider, useGames] = createContextHook(() => {
         console.log('✅ [GamesContext] Successfully fetched games from local storage:', fetchedGames.length);
         setGames(fetchedGames);
       } else {
-        console.log('📥 [GamesContext] Fetching games via tRPC...');
-        const fetchedGames = await trpcClient.games.getAll.query({ memberId });
+        console.log('📥 [GamesContext] Fetching games from Supabase...');
+        const { data, error } = await supabase
+          .from('personal_games')
+          .select('*')
+          .eq('member_id', memberId)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        const fetchedGames = (data || []).map((g: any) => ({
+          id: g.id,
+          memberId: g.member_id,
+          courseName: g.course_name,
+          coursePar: g.course_par,
+          holePars: g.hole_pars,
+          strokeIndices: g.stroke_indices,
+          players: g.players,
+          status: g.status,
+          createdAt: g.created_at,
+          completedAt: g.completed_at,
+          gameType: g.game_type,
+          matchPlayScoringType: g.match_play_scoring_type,
+          dollarAmount: g.dollar_amount,
+          front9Bet: g.front_9_bet,
+          back9Bet: g.back_9_bet,
+          overallBet: g.overall_bet,
+          potBet: g.pot_bet,
+          potPlayers: g.pot_players,
+          useHandicaps: g.use_handicaps,
+          wolfOrder: g.wolf_order,
+        }));
+        
         console.log('✅ [GamesContext] Successfully fetched games:', fetchedGames.length);
         setGames(fetchedGames);
       }
@@ -123,7 +153,28 @@ export const [GamesProvider, useGames] = createContextHook(() => {
         };
         result = await localStorageService.games.create(newGame);
       } else {
-        result = await trpcClient.games.create.mutate(gameData);
+        const { data, error } = await supabase.from('personal_games').insert({
+          member_id: gameData.memberId,
+          course_name: gameData.courseName,
+          course_par: gameData.coursePar,
+          hole_pars: gameData.holePars,
+          stroke_indices: gameData.strokeIndices,
+          players: gameData.players,
+          status: 'in-progress',
+          game_type: gameData.gameType,
+          match_play_scoring_type: gameData.matchPlayScoringType,
+          dollar_amount: gameData.dollarAmount,
+          front_9_bet: gameData.front9Bet,
+          back_9_bet: gameData.back9Bet,
+          overall_bet: gameData.overallBet,
+          pot_bet: gameData.potBet,
+          pot_players: gameData.potPlayers,
+          use_handicaps: gameData.useHandicaps,
+          wolf_order: gameData.wolfOrder,
+        }).select().single();
+        
+        if (error) throw error;
+        result = { id: data.id };
       }
       
       console.log('✅ [GamesContext] Game created:', result.id);
@@ -158,7 +209,12 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       if (useLocalStorage) {
         await localStorageService.games.update(gameId, { players: updatedPlayers });
       } else {
-        await trpcClient.games.update.mutate({ gameId, players: updatedPlayers });
+        const { error } = await supabase
+          .from('personal_games')
+          .update({ players: updatedPlayers })
+          .eq('id', gameId);
+        
+        if (error) throw error;
       }
       
       console.log('✅ [GamesContext] Scores updated successfully');
@@ -191,7 +247,28 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       if (useLocalStorage) {
         await localStorageService.games.update(gameId, updates);
       } else {
-        await trpcClient.games.update.mutate({ gameId, ...updates });
+        const supabaseUpdates: any = {};
+        if (updates.courseName) supabaseUpdates.course_name = updates.courseName;
+        if (updates.coursePar) supabaseUpdates.course_par = updates.coursePar;
+        if (updates.holePars) supabaseUpdates.hole_pars = updates.holePars;
+        if (updates.players) supabaseUpdates.players = updates.players;
+        if (updates.gameType) supabaseUpdates.game_type = updates.gameType;
+        if (updates.matchPlayScoringType) supabaseUpdates.match_play_scoring_type = updates.matchPlayScoringType;
+        if (updates.strokeIndices) supabaseUpdates.stroke_indices = updates.strokeIndices;
+        if (updates.dollarAmount !== undefined) supabaseUpdates.dollar_amount = updates.dollarAmount;
+        if (updates.front9Bet !== undefined) supabaseUpdates.front_9_bet = updates.front9Bet;
+        if (updates.back9Bet !== undefined) supabaseUpdates.back_9_bet = updates.back9Bet;
+        if (updates.overallBet !== undefined) supabaseUpdates.overall_bet = updates.overallBet;
+        if (updates.potBet !== undefined) supabaseUpdates.pot_bet = updates.potBet;
+        if (updates.potPlayers) supabaseUpdates.pot_players = updates.potPlayers;
+        if (updates.useHandicaps !== undefined) supabaseUpdates.use_handicaps = updates.useHandicaps;
+        
+        const { error } = await supabase
+          .from('personal_games')
+          .update(supabaseUpdates)
+          .eq('id', gameId);
+        
+        if (error) throw error;
       }
       
       console.log('✅ [GamesContext] Game updated successfully');
@@ -212,7 +289,15 @@ export const [GamesProvider, useGames] = createContextHook(() => {
           completedAt: new Date().toISOString()
         });
       } else {
-        await trpcClient.games.update.mutate({ gameId, status: 'completed' });
+        const { error } = await supabase
+          .from('personal_games')
+          .update({ 
+            status: 'completed',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', gameId);
+        
+        if (error) throw error;
       }
       
       console.log('✅ [GamesContext] Game completed successfully');
@@ -230,7 +315,12 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       if (useLocalStorage) {
         await localStorageService.games.delete(gameId);
       } else {
-        await trpcClient.games.delete.mutate({ gameId });
+        const { error } = await supabase
+          .from('personal_games')
+          .delete()
+          .eq('id', gameId);
+        
+        if (error) throw error;
       }
       
       console.log('✅ [GamesContext] Game deleted successfully');

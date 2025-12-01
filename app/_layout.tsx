@@ -10,7 +10,7 @@ import { GamesProvider } from "@/contexts/GamesContext";
 import { OfflineModeProvider } from "@/contexts/OfflineModeContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { trpc, trpcClient, checkBackendHealth } from "@/lib/trpc";
+
 
 console.log('🚀 [App] Starting application...');
 console.log('🔧 [App] Environment variables:', {
@@ -95,35 +95,26 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  useEffect(() => {
-    const checkBackend = async () => {
-      console.log('🏥 [App] Checking backend health...');
-      const isHealthy = await checkBackendHealth();
-      console.log('🏥 [App] Backend health status:', isHealthy ? '✅ Healthy' : '❌ Unavailable');
-    };
-    checkBackend();
-  }, []);
+
 
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={styles.container}>
-          <OfflineModeProvider>
-            <SettingsProvider>
-              <AuthProvider>
-                <NotificationsProvider>
-                  <EventsProvider>
-                    <GamesProvider>
-                      <RootLayoutNav />
-                    </GamesProvider>
-                  </EventsProvider>
-                </NotificationsProvider>
-              </AuthProvider>
-            </SettingsProvider>
-          </OfflineModeProvider>
-        </GestureHandlerRootView>
-      </QueryClientProvider>
-    </trpc.Provider>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={styles.container}>
+        <OfflineModeProvider>
+          <SettingsProvider>
+            <AuthProvider>
+              <NotificationsProvider>
+                <EventsProvider>
+                  <GamesProvider>
+                    <RootLayoutNav />
+                  </GamesProvider>
+                </EventsProvider>
+              </NotificationsProvider>
+            </AuthProvider>
+          </SettingsProvider>
+        </OfflineModeProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }
 

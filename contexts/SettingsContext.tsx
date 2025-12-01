@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useMemo, useCallback, useEffect, useState } from 'react';
-import { trpcClient } from '@/lib/trpc';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEY = '@golf_settings';
 
@@ -58,8 +58,28 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         return;
       }
       
-      console.log('📥 [SettingsContext] Fetching settings via tRPC...');
-      const settings = await trpcClient.settings.getSettings.query();
+      console.log('📥 [SettingsContext] Fetching settings from Supabase...');
+      const { data, error } = await supabase.from('organization_settings').select('*').single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      const settings = data ? {
+        name: data.name,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zip_code,
+        phone: data.phone,
+        zellePhone: data.zelle_phone,
+        logoUrl: data.logo_url,
+        paypalClientId: data.paypal_client_id,
+        paypalClientSecret: data.paypal_client_secret,
+        paypalMode: data.paypal_mode,
+        rolexPlacementPoints: data.rolex_placement_points,
+        rolexAttendancePoints: data.rolex_attendance_points,
+        rolexBonusPoints: data.rolex_bonus_points,
+      } : {};
+      
       console.log('✅ [SettingsContext] Successfully fetched settings');
       
       const settingsWithDefaults: OrganizationInfo = {
@@ -109,7 +129,32 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
       
       if (!newSettings.useLocalStorage) {
-        await trpcClient.settings.updateSettings.mutate(updates);
+        const supabaseUpdates: any = {};
+        if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+        if (updates.address !== undefined) supabaseUpdates.address = updates.address;
+        if (updates.city !== undefined) supabaseUpdates.city = updates.city;
+        if (updates.state !== undefined) supabaseUpdates.state = updates.state;
+        if (updates.zipCode !== undefined) supabaseUpdates.zip_code = updates.zipCode;
+        if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
+        if (updates.zellePhone !== undefined) supabaseUpdates.zelle_phone = updates.zellePhone;
+        if (updates.logoUrl !== undefined) supabaseUpdates.logo_url = updates.logoUrl;
+        if (updates.paypalClientId !== undefined) supabaseUpdates.paypal_client_id = updates.paypalClientId;
+        if (updates.paypalClientSecret !== undefined) supabaseUpdates.paypal_client_secret = updates.paypalClientSecret;
+        if (updates.paypalMode !== undefined) supabaseUpdates.paypal_mode = updates.paypalMode;
+        if (updates.rolexPlacementPoints !== undefined) supabaseUpdates.rolex_placement_points = updates.rolexPlacementPoints;
+        if (updates.rolexAttendancePoints !== undefined) supabaseUpdates.rolex_attendance_points = updates.rolexAttendancePoints;
+        if (updates.rolexBonusPoints !== undefined) supabaseUpdates.rolex_bonus_points = updates.rolexBonusPoints;
+        
+        const { data: existingData } = await supabase.from('organization_settings').select('*').limit(1).single();
+        
+        if (existingData) {
+          const { error } = await supabase.from('organization_settings').update(supabaseUpdates).eq('id', existingData.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('organization_settings').insert(supabaseUpdates);
+          if (error) throw error;
+        }
+        
         console.log('✅ [SettingsContext] Settings updated successfully (backend)');
       } else {
         console.log('✅ [SettingsContext] Settings updated successfully (local storage)');
