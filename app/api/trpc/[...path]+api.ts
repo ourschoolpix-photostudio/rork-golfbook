@@ -6,20 +6,14 @@ const handleRequest = async (request: Request) => {
     console.log('🚀 [API] Handling request:', request.method, url.pathname);
     console.log('🚀 [API] Search params:', url.search);
 
-    const honoUrl = new URL(request.url);
-    honoUrl.protocol = 'http:';
-    honoUrl.host = 'localhost';
-    
-    honoUrl.pathname = url.pathname;
-    
-    console.log('🔧 [API] Forwarding to Hono:', honoUrl.toString());
-    
-    const honoRequest = new Request(honoUrl.toString(), {
+    const honoRequest = new Request(request.url, {
       method: request.method,
       headers: request.headers,
       body: request.method !== 'GET' && request.method !== 'HEAD' ? await request.text() : undefined,
     });
-
+    
+    console.log('🔧 [API] Forwarding to Hono:', request.url);
+    
     const response = await app.fetch(honoRequest);
     console.log('✅ [API] Response status:', response.status);
     
