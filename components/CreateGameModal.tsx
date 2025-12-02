@@ -13,9 +13,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { X, ChevronDown, BookOpen, Users, UserPlus } from 'lucide-react-native';
-import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonalGame } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CreateGameModalProps {
   visible: boolean;
@@ -68,15 +69,85 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
   const [selectedPotMemberIds, setSelectedPotMemberIds] = useState<string[]>([]);
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
 
-  const coursesQuery = trpc.courses.getAll.useQuery(
-    { memberId: currentUser?.id || '', source: 'admin' },
-    { enabled: !!currentUser?.id && visible }
-  );
+  const coursesQuery = useQuery({
+    queryKey: ['courses', currentUser?.id, 'admin'],
+    queryFn: async () => {
+      console.log('[CreateGameModal] Fetching courses for member:', currentUser?.id);
+      let query = supabase.from('courses').select('*');
+      
+      query = query.eq('source_type', 'admin');
+      query = query.order('name', { ascending: true });
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('[CreateGameModal] Error fetching courses:', error);
+        throw new Error(`Failed to fetch courses: ${error.message}`);
+      }
 
-  const membersQuery = trpc.members.getAll.useQuery(
-    undefined,
-    { enabled: visible }
-  );
+      const courses = data.map(course => ({
+        id: course.id,
+        name: course.name,
+        par: course.par,
+        holePars: course.hole_pars,
+        strokeIndices: course.stroke_indices,
+        slopeRating: course.slope_rating,
+        courseRating: course.course_rating,
+        memberId: course.member_id,
+        isPublic: course.is_public,
+        source: course.source_type,
+        createdAt: course.created_at,
+        updatedAt: course.updated_at,
+      }));
+
+      console.log('[CreateGameModal] Fetched courses:', courses.length);
+      return courses;
+    },
+    enabled: !!currentUser?.id && visible,
+  });
+
+  const membersQuery = useQuery({
+    queryKey: ['members'],
+    queryFn: async () => {
+      console.log('[CreateGameModal] Fetching members from Supabase...');
+      const { data, error } = await supabase.from('members').select('*');
+      
+      if (error) throw error;
+      
+      const fetchedMembers = (data || []).map((m: any) => ({
+        id: m.id,
+        name: m.name || m.full_name || '',
+        username: m.username || m.name || '',
+        pin: m.pin || '',
+        isAdmin: m.is_admin || false,
+        rolexPoints: m.rolex_points || 0,
+        email: m.email || '',
+        phone: m.phone || '',
+        handicap: m.handicap || 0,
+        membershipType: m.membership_type || 'active',
+        joinDate: m.join_date || new Date().toISOString().split('T')[0],
+        createdAt: m.created_at || new Date().toISOString(),
+        gender: m.gender,
+        address: m.address,
+        city: m.city,
+        state: m.state,
+        flight: m.flight,
+        rolexFlight: m.rolex_flight,
+        currentHandicap: m.current_handicap,
+        dateOfBirth: m.date_of_birth,
+        emergencyContactName: m.emergency_contact_name,
+        emergencyContactPhone: m.emergency_contact_phone,
+        profilePhotoUrl: m.profile_photo_url,
+        adjustedHandicap: m.adjusted_handicap,
+        ghin: m.ghin,
+        boardMemberRoles: m.board_member_roles || [],
+      }));
+      
+      console.log('[CreateGameModal] Fetched members:', fetchedMembers.length);
+      return fetchedMembers;
+    },
+    enabled: visible,
+  });
 
   const courses = coursesQuery.data || [];
   const members = React.useMemo(() => membersQuery.data || [], [membersQuery.data]);

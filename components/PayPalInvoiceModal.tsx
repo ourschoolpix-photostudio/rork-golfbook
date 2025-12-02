@@ -11,12 +11,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
 import { Member, Event } from '@/types';
 import { TournamentTermsModal } from './TournamentTermsModal';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { formatDateAsFullDay } from '@/utils/dateUtils';
-import { trpc } from '@/lib/trpc';
 
 interface PayPalInvoiceModalProps {
   visible: boolean;
@@ -37,13 +35,10 @@ export function PayPalInvoiceModal({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [numberOfGuests, setNumberOfGuests] = useState('');
   const [guestNames, setGuestNames] = useState('');
-
-  const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
-  const capturePaymentMutation = trpc.registrations.paypal.capturePayment.useMutation();
 
   useEffect(() => {
     if (visible && currentUser) {
@@ -97,121 +92,10 @@ export function PayPalInvoiceModal({
     if (!canRegister() || !event) return;
 
     Alert.alert(
-      'Confirm Payment Method',
-      `You are about to pay $${totalAmount.toFixed(2)} (including service fee) using PayPal.\n\nYou will be redirected to PayPal to complete your secure payment.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          onPress: async () => {
-            setIsSubmitting(true);
-            try {
-              console.log('[PayPal] Creating payment order...');
-              const paymentResult = await createPaymentMutation.mutateAsync({
-                amount: totalAmount,
-                eventName: event.name,
-                eventId: event.id,
-                playerEmail: email.trim(),
-              });
-
-      console.log('[PayPal] Payment order created:', paymentResult.orderId);
-      console.log('[PayPal] Full payment result:', JSON.stringify(paymentResult, null, 2));
-
-      if (paymentResult.approvalUrl) {
-        console.log('[PayPal] Opening approval URL:', paymentResult.approvalUrl);
-        
-        const result = await WebBrowser.openAuthSessionAsync(
-          paymentResult.approvalUrl,
-          'rork-app://paypal-callback'
-        );
-
-        console.log('[PayPal] WebBrowser result type:', result.type);
-        console.log('[PayPal] WebBrowser result:', JSON.stringify(result, null, 2));
-
-        if (result.type === 'success') {
-          const url = result.url;
-          console.log('[PayPal] Success URL:', url);
-          
-          const urlParts = url.split('?');
-          if (urlParts.length < 2) {
-            throw new Error('Invalid PayPal callback URL - no query parameters');
-          }
-          
-          const urlParams = new URLSearchParams(urlParts[1]);
-          const token = urlParams.get('token');
-          const payerId = urlParams.get('PayerID');
-          
-          console.log('[PayPal] Extracted token:', token);
-          console.log('[PayPal] Extracted PayerID:', payerId);
-
-          if (token) {
-            console.log('[PayPal] Capturing payment...');
-            const captureResult = await capturePaymentMutation.mutateAsync({
-              orderId: token,
-            });
-
-            console.log('[PayPal] Payment captured:', JSON.stringify(captureResult, null, 2));
-
-            if (captureResult.success) {
-              console.log('[PayPal] Payment successful, registering with PAID status');
-              await onRegister(ghin.trim(), email.trim(), phone.trim(), guestCount > 0 ? guestCount : undefined, guestNames.trim() || undefined, 'paid');
-              
-              setGhin('');
-              setEmail('');
-              setPhone('');
-              setAgreeToTerms(false);
-              setNumberOfGuests('');
-              setGuestNames('');
-              
-              Alert.alert(
-                'Payment Successful',
-                `Your payment of $${totalAmount.toFixed(2)} has been processed successfully! You are now registered for ${event.name}.`,
-                [{ text: 'OK', onPress: onClose }]
-              );
-            } else {
-              throw new Error('Payment capture failed');
-            }
-          } else {
-            throw new Error('No payment token received from PayPal callback');
-          }
-        } else if (result.type === 'cancel') {
-          console.log('[PayPal] User cancelled payment');
-          Alert.alert('Payment Cancelled', 'You cancelled the payment process.');
-        } else if (result.type === 'dismiss') {
-          console.log('[PayPal] User dismissed payment');
-          Alert.alert('Payment Dismissed', 'You dismissed the payment process.');
-        }
-      } else {
-        throw new Error('No approval URL received from PayPal');
-      }
-              } catch (error: any) {
-                console.error('[PayPal] Error during payment:', error);
-                console.error('[PayPal] Error stack:', error?.stack);
-                console.error('[PayPal] Error message:', error?.message);
-                
-                let errorMessage = 'Failed to process PayPal payment. Please try again or contact support.';
-                
-                if (error?.message) {
-                  if (error.message.includes('credentials')) {
-                    errorMessage = 'PayPal configuration error. Please contact support.';
-                  } else if (error.message.includes('network') || error.message.includes('fetch')) {
-                    errorMessage = 'Network error. Please check your connection and try again.';
-                  } else {
-                    errorMessage = `Payment failed: ${error.message}`;
-                  }
-                }
-                
-                Alert.alert(
-                  'Payment Error',
-                  errorMessage
-                );
-              } finally {
-                setIsSubmitting(false);
-              }
-            },
-          },
-        ]
-      );
+      'PayPal Not Available',
+      'PayPal payment integration is currently disabled. Please contact the administrator to use alternative payment methods.',
+      [{ text: 'OK' }]
+    );
   };
 
   return (

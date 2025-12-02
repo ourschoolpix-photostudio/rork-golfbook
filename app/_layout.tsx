@@ -10,7 +10,6 @@ import { GamesProvider } from "@/contexts/GamesContext";
 import { OfflineModeProvider } from "@/contexts/OfflineModeContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { trpc, trpcClient } from "@/lib/trpc";
 
 
 console.log('🚀 [App] Starting application...');
@@ -99,25 +98,23 @@ export default function RootLayout() {
 
 
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={styles.container}>
-          <OfflineModeProvider>
-            <SettingsProvider>
-              <AuthProvider>
-                <NotificationsProvider>
-                  <EventsProvider>
-                    <GamesProvider>
-                      <RootLayoutNav />
-                    </GamesProvider>
-                  </EventsProvider>
-                </NotificationsProvider>
-              </AuthProvider>
-            </SettingsProvider>
-          </OfflineModeProvider>
-        </GestureHandlerRootView>
-      </QueryClientProvider>
-    </trpc.Provider>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={styles.container}>
+        <OfflineModeProvider>
+          <SettingsProvider>
+            <AuthProvider>
+              <NotificationsProvider>
+                <EventsProvider>
+                  <GamesProvider>
+                    <RootLayoutNav />
+                  </GamesProvider>
+                </EventsProvider>
+              </NotificationsProvider>
+            </AuthProvider>
+          </SettingsProvider>
+        </OfflineModeProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }
 

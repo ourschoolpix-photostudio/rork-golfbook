@@ -13,8 +13,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { X, Plus, Edit2, Trash2, Save } from 'lucide-react-native';
-import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Course {
   id: string;
@@ -35,6 +36,7 @@ interface CoursesManagementModalProps {
 
 export default function CoursesManagementModal({ visible, onClose }: CoursesManagementModalProps) {
   const { currentUser } = useAuth();
+  const queryClient = useQueryClient();
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [courseName, setCourseName] = useState<string>('');
@@ -45,28 +47,149 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
   const strokeIndexInputRefs = React.useRef<(TextInput | null)[]>([]);
 
-  const coursesQuery = trpc.courses.getAll.useQuery(
-    { memberId: currentUser?.id || '', source: 'admin' },
-    { enabled: !!currentUser?.id && visible }
-  );
+  const coursesQuery = useQuery({
+    queryKey: ['courses', currentUser?.id, 'admin'],
+    queryFn: async () => {
+      console.log('[CoursesManagementModal] Fetching courses for member:', currentUser?.id);
+      let query = supabase.from('courses').select('*');
+      
+      query = query.eq('source_type', 'admin');
+      query = query.order('name', { ascending: true });
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('[CoursesManagementModal] Error fetching courses:', error);
+        throw new Error(`Failed to fetch courses: ${error.message}`);
+      }
 
-  const createCourseMutation = trpc.courses.create.useMutation({
+      const courses = data.map(course => ({
+        id: course.id,
+        name: course.name,
+        par: course.par,
+        holePars: course.hole_pars,
+        strokeIndices: course.stroke_indices,
+        slopeRating: course.slope_rating,
+        courseRating: course.course_rating,
+        memberId: course.member_id,
+        isPublic: course.is_public,
+        source: course.source_type,
+        createdAt: course.created_at,
+        updatedAt: course.updated_at,
+      }));
+
+      console.log('[CoursesManagementModal] Fetched courses:', courses.length);
+      return courses;
+    },
+    enabled: !!currentUser?.id && visible,
+  });
+
+  const createCourseMutation = useMutation({
+    mutationFn: async (input: {
+      memberId: string;
+      name: string;
+      par: number;
+      holePars: number[];
+      strokeIndices?: number[];
+      slopeRating?: number;
+      courseRating?: number;
+      isPublic: boolean;
+      source: string;
+    }) => {
+      console.log('[CoursesManagementModal] Creating course:', input.name);
+      
+      const { data, error } = await supabase
+        .from('courses')
+        .insert({
+          member_id: input.memberId,
+          name: input.name,
+          par: input.par,
+          hole_pars: input.holePars,
+          stroke_indices: input.strokeIndices,
+          slope_rating: input.slopeRating,
+          course_rating: input.courseRating,
+          is_public: input.isPublic,
+          source_type: input.source,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[CoursesManagementModal] Error creating course:', error);
+        throw new Error(`Failed to create course: ${error.message}`);
+      }
+
+      console.log('[CoursesManagementModal] Created course:', data.id);
+      return data;
+    },
     onSuccess: () => {
-      coursesQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
       resetForm();
     },
   });
 
-  const updateCourseMutation = trpc.courses.update.useMutation({
+  const updateCourseMutation = useMutation({
+    mutationFn: async (input: {
+      courseId: string;
+      name?: string;
+      par?: number;
+      holePars?: number[];
+      strokeIndices?: number[];
+      slopeRating?: number;
+      courseRating?: number;
+    }) => {
+      console.log('[CoursesManagementModal] Updating course:', input.courseId);
+      
+      const updateData: any = {
+        updated_at: new Date().toISOString(),
+      };
+      if (input.name) updateData.name = input.name;
+      if (input.par) updateData.par = input.par;
+      if (input.holePars) updateData.hole_pars = input.holePars;
+      if (input.strokeIndices !== undefined) updateData.stroke_indices = input.strokeIndices;
+      if (input.slopeRating !== undefined) updateData.slope_rating = input.slopeRating;
+      if (input.courseRating !== undefined) updateData.course_rating = input.courseRating;
+
+      const { data, error } = await supabase
+        .from('courses')
+        .update(updateData)
+        .eq('id', input.courseId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[CoursesManagementModal] Error updating course:', error);
+        throw new Error(`Failed to update course: ${error.message}`);
+      }
+
+      console.log('[CoursesManagementModal] Updated course:', data.id);
+      return data;
+    },
     onSuccess: () => {
-      coursesQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
       resetForm();
     },
   });
 
-  const deleteCourseMutation = trpc.courses.delete.useMutation({
+  const deleteCourseMutation = useMutation({
+    mutationFn: async (input: { courseId: string }) => {
+      console.log('[CoursesManagementModal] Deleting course:', input.courseId);
+      
+      const { error } = await supabase
+        .from('courses')
+        .delete()
+        .eq('id', input.courseId);
+
+      if (error) {
+        console.error('[CoursesManagementModal] Error deleting course:', error);
+        throw new Error(`Failed to delete course: ${error.message}`);
+      }
+
+      console.log('[CoursesManagementModal] Deleted course:', input.courseId);
+      return { success: true };
+    },
     onSuccess: () => {
-      coursesQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
     },
   });
 
