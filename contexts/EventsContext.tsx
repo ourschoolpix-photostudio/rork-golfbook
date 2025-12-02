@@ -34,8 +34,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       console.log('📥 [EventsContext] Fetching registrations from Supabase...');
       const { data: registrationsData, error: registrationsError } = await supabase
         .from('event_registrations')
-        .select('event_id, member_id, status')
-        .in('status', ['registered', 'confirmed']);
+        .select('event_id, member_id, status');
       
       if (registrationsError) {
         console.error('⚠️ [EventsContext] Failed to fetch registrations:', registrationsError);
