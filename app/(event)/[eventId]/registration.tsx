@@ -1308,10 +1308,10 @@ export default function EventRegistrationScreen() {
             >
               {event?.type === 'social' 
                 ? Object.values(registrations)
-                    .filter((reg) => reg.paymentStatus === 'paid')
+                    .filter((reg) => reg.paymentStatus === 'paid' && !reg.isSponsor)
                     .reduce((total, reg) => total + 1 + (reg.numberOfGuests || 0), 0)
                 : Object.values(registrations).filter(
-                    (reg) => reg.paymentStatus === 'paid'
+                    (reg) => reg.paymentStatus === 'paid' && !reg.isSponsor
                   ).length}
             </Text>
           </TouchableOpacity>
@@ -1333,10 +1333,10 @@ export default function EventRegistrationScreen() {
             >
               {event?.type === 'social' 
                 ? Object.values(registrations)
-                    .filter((reg) => reg.paymentStatus === 'unpaid')
+                    .filter((reg) => reg.paymentStatus === 'unpaid' && !reg.isSponsor)
                     .reduce((total, reg) => total + 1 + (reg.numberOfGuests || 0), 0)
                 : Object.values(registrations).filter(
-                    (reg) => reg.paymentStatus === 'unpaid'
+                    (reg) => reg.paymentStatus === 'unpaid' && !reg.isSponsor
                   ).length}
             </Text>
           </TouchableOpacity>
