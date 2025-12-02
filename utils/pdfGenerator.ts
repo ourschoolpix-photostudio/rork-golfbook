@@ -41,10 +41,11 @@ async function generateNativePDF(
   try {
     console.log('[pdfGenerator] Generating PDF with expo-print...');
     
-    const timestamp = Date.now();
-    const date = new Date().toISOString().split('T')[0];
-    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
-    const filename = `${timestamp}-${date}-${cleanEventName}-day${activeDay}.pdf`;
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+    const yymmdd = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '');
+    const filename = `${hhmm}${yymmdd}${cleanEventName}.pdf`;
     
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
@@ -68,10 +69,11 @@ async function generateNativePDF(
 
 function generateWebPDF(htmlContent: string, eventName: string, activeDay: number): void {
   try {
-    const timestamp = Date.now();
-    const date = new Date().toISOString().split('T')[0];
-    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
-    const filename = `${timestamp}-${date}-${cleanEventName}-day${activeDay}.html`;
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+    const yymmdd = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '');
+    const filename = `${hhmm}${yymmdd}${cleanEventName}.html`;
     
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -341,10 +343,11 @@ async function generateNativeRegistrationPDF(
   try {
     console.log('[pdfGenerator] Generating registration PDF with expo-print...');
     
-    const timestamp = Date.now();
-    const date = new Date().toISOString().split('T')[0];
-    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
-    const filename = `${timestamp}-${date}-${cleanEventName}-registrations.pdf`;
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+    const yymmdd = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '');
+    const filename = `${hhmm}${yymmdd}${cleanEventName}.pdf`;
     
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
@@ -368,10 +371,11 @@ async function generateNativeRegistrationPDF(
 
 function generateWebRegistrationPDF(htmlContent: string, eventName: string): void {
   try {
-    const timestamp = Date.now();
-    const date = new Date().toISOString().split('T')[0];
-    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
-    const filename = `${timestamp}-${date}-${cleanEventName}-registrations.html`;
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+    const yymmdd = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '');
+    const filename = `${hhmm}${yymmdd}${cleanEventName}.html`;
     
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -945,10 +949,11 @@ async function generateNativeCheckInPDF(
   try {
     console.log('[pdfGenerator] Generating check-in PDF with expo-print...');
     
-    const timestamp = Date.now();
-    const date = new Date().toISOString().split('T')[0];
-    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
-    const filename = `${timestamp}-${date}-${cleanEventName}-check-in.pdf`;
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+    const yymmdd = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '');
+    const filename = `${hhmm}${yymmdd}${cleanEventName}.pdf`;
     
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
@@ -972,10 +977,11 @@ async function generateNativeCheckInPDF(
 
 function generateWebCheckInPDF(htmlContent: string, eventName: string): void {
   try {
-    const timestamp = Date.now();
-    const date = new Date().toISOString().split('T')[0];
-    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
-    const filename = `${timestamp}-${date}-${cleanEventName}-check-in.html`;
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+    const yymmdd = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '');
+    const filename = `${hhmm}${yymmdd}${cleanEventName}.html`;
     
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
