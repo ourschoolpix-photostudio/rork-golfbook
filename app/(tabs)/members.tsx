@@ -43,6 +43,10 @@ export default function MembersScreen() {
       const dedupedData = allMembersFromAuth.filter(m => {
         if (seenIds.has(m.id)) return false;
         seenIds.add(m.id);
+        if (m.membershipType === 'guest' && m.id.startsWith('guest_')) {
+          console.log('[Members] Filtering out custom guest (event-specific):', m.name, m.id);
+          return false;
+        }
         return true;
       });
       

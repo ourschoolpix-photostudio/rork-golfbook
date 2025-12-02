@@ -579,9 +579,10 @@ export default function EventRegistrationScreen() {
 
     try {
       console.log('[registration] 🎯 Adding custom guest:', addCustomGuestName.trim(), 'with', guestCount, 'additional guests');
+      console.log('[registration] ⚠️ Custom guest is event-specific and will NOT be added to member management');
       
       const customGuest: Member = {
-        id: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `guest_${event.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: addCustomGuestName.trim(),
         pin: '',
         isAdmin: false,
@@ -591,9 +592,9 @@ export default function EventRegistrationScreen() {
         membershipType: 'guest',
       };
 
-      console.log('[registration] Step 1: Creating member record...');
+      console.log('[registration] Step 1: Creating temporary member record (event-specific guest)...');
       await createMemberMutation.mutateAsync(customGuest);
-      console.log('[registration] ✓ Member created');
+      console.log('[registration] ✓ Temporary member created');
 
       console.log('[registration] Step 2: Creating registration...');
       await registerMutation.mutateAsync({
@@ -620,7 +621,7 @@ export default function EventRegistrationScreen() {
         console.log('[registration] ✓ Registration fully updated');
       }
 
-      console.log('[registration] Step 4: Updating local state...');
+      console.log('[registration] Step 4: Updating local state (event-specific only)...');
       const updated = [...selectedPlayers, customGuest];
       setSelectedPlayers(updated);
       setMembers([...members, customGuest]);
@@ -635,7 +636,7 @@ export default function EventRegistrationScreen() {
       setAddCustomGuestIsSponsor(false);
       setAddCustomGuestModalVisible(false);
       
-      console.log('[registration] ✅ Custom guest added successfully!');
+      console.log('[registration] ✅ Custom guest added successfully (event-specific, not in member management)!');
     } catch (error) {
       console.error('[registration] ❌ Error adding custom guest:', error);
       if (error instanceof Error) {

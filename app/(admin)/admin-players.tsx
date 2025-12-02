@@ -28,9 +28,16 @@ export default function AdminPlayersScreen() {
 
   useEffect(() => {
     console.log('[AdminPlayers] Loading members from AuthContext');
-    const sorted = [...allMembersFromContext].sort((a, b) => a.name.localeCompare(b.name));
+    const filteredMembers = allMembersFromContext.filter(m => {
+      if (m.membershipType === 'guest' && m.id.startsWith('guest_')) {
+        console.log('[AdminPlayers] Filtering out custom guest (event-specific):', m.name, m.id);
+        return false;
+      }
+      return true;
+    });
+    const sorted = [...filteredMembers].sort((a, b) => a.name.localeCompare(b.name));
     setMembers(sorted);
-    console.log(`[AdminPlayers] Set ${sorted.length} members to state`);
+    console.log(`[AdminPlayers] Set ${sorted.length} members to state (excluded event-specific guests)`);
   }, [allMembersFromContext]);
 
   useFocusEffect(
@@ -41,7 +48,13 @@ export default function AdminPlayersScreen() {
 
   const loadMembers = async () => {
     console.log('[AdminPlayers] Reloading members from context');
-    const sorted = [...allMembersFromContext].sort((a, b) => a.name.localeCompare(b.name));
+    const filteredMembers = allMembersFromContext.filter(m => {
+      if (m.membershipType === 'guest' && m.id.startsWith('guest_')) {
+        return false;
+      }
+      return true;
+    });
+    const sorted = [...filteredMembers].sort((a, b) => a.name.localeCompare(b.name));
     setMembers(sorted);
   };
 
