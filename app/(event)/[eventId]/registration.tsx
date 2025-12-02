@@ -615,13 +615,10 @@ export default function EventRegistrationScreen() {
       console.log('[registration] 🎯 Adding custom guest (no member record):', addCustomGuestName.trim());
       console.log('[registration] Guest count:', guestCount, 'Sponsor:', addCustomGuestIsSponsor);
       
-      const customGuestId = `guest_${event.id}_${Date.now()}`;
-      
       console.log('[registration] Creating registration directly without member record...');
       const { error } = await supabase
         .from('event_registrations')
         .insert({
-          id: customGuestId,
           event_id: event.id,
           member_id: null,
           is_custom_guest: true,
