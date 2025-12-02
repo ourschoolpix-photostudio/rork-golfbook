@@ -910,6 +910,7 @@ export default function EventRegistrationScreen() {
   const handleOutputFormatSelected = async (format: 'pdf' | 'text' | 'checkin') => {
     setOutputFormatModalVisible(false);
     const regs = registrationsQuery.data || [];
+    console.log('[registration] 📊 All registrations for export:', regs.length);
 
     if (format === 'checkin') {
       setIsGeneratingPDF(true);
