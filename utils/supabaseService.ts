@@ -302,6 +302,8 @@ export const supabaseService = {
         numberOfGuests: r.number_of_guests,
         guestNames: r.guest_names,
         isSponsor: r.is_sponsor,
+        isCustomGuest: r.is_custom_guest,
+        customGuestName: r.custom_guest_name,
         registeredAt: r.registered_at,
         member: r.members,
       }));

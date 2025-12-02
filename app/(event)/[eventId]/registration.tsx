@@ -1069,15 +1069,22 @@ export default function EventRegistrationScreen() {
   }, [registrations]);
 
   const getTotalPeopleCount = useMemo(() => {
-    const nonSponsorCount = selectedPlayers.filter(player => {
-      const playerReg = registrations[player.name];
-      return !playerReg?.isSponsor;
-    }).length;
-    const nonSponsorGuestCount = Object.values(registrations)
+    const regs = registrationsQuery.data || [];
+    
+    const nonSponsorMemberCount = regs.filter(reg => 
+      !reg.isCustomGuest && !reg.isSponsor
+    ).length;
+    
+    const nonSponsorCustomGuestCount = regs.filter(reg => 
+      reg.isCustomGuest && !reg.isSponsor
+    ).length;
+    
+    const additionalGuestCount = regs
       .filter(reg => !reg.isSponsor)
       .reduce((total, reg) => total + (reg.numberOfGuests || 0), 0);
-    return nonSponsorCount + nonSponsorGuestCount;
-  }, [selectedPlayers, registrations]);
+    
+    return nonSponsorMemberCount + nonSponsorCustomGuestCount + additionalGuestCount;
+  }, [registrationsQuery.data]);
 
   const getTotalPaidAmount = useMemo(() => {
     if (!event?.entryFee) return 0;
