@@ -236,7 +236,8 @@ export const supabaseService = {
     },
 
     create: async (member: any) => {
-      const validation = validateMemberData(member);
+      const skipPinValidation = member.membershipType === 'guest' && member.id?.startsWith('guest_');
+      const validation = validateMemberData(member, skipPinValidation);
       if (!validation.valid) {
         throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
       }

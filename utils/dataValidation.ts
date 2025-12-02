@@ -3,14 +3,14 @@ export interface ValidationResult {
   errors: string[];
 }
 
-export function validateMemberData(member: any): ValidationResult {
+export function validateMemberData(member: any, skipPinValidation: boolean = false): ValidationResult {
   const errors: string[] = [];
 
   if (!member.name || typeof member.name !== 'string' || member.name.trim().length === 0) {
     errors.push('Member name is required and must be a non-empty string');
   }
 
-  if (!member.pin || typeof member.pin !== 'string' || member.pin.length < 4) {
+  if (!skipPinValidation && (!member.pin || typeof member.pin !== 'string' || member.pin.length < 4)) {
     errors.push('PIN is required and must be at least 4 characters');
   }
 

@@ -583,11 +583,11 @@ export default function EventRegistrationScreen() {
       
       const customGuestId = `guest_${event.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      console.log('[registration] Step 1: Creating temporary member record for database constraint...');
+      console.log('[registration] Step 1: Creating temporary member record for social event...');
       const customGuest: Member = {
         id: customGuestId,
         name: addCustomGuestName.trim(),
-        pin: 'TEMP_GUEST',
+        pin: '',
         isAdmin: false,
         handicap: 0,
         rolexPoints: 0,
