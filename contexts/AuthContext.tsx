@@ -78,6 +78,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         profilePhotoUrl: m.profile_photo_url,
         adjustedHandicap: m.adjusted_handicap,
         ghin: m.ghin,
+        boardMemberRoles: m.board_member_roles || [],
       }));
       
       console.log('✅ [AuthContext] Successfully fetched members:', fetchedMembers.length);
@@ -132,6 +133,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           membership_type: member.membershipType || 'active',
           join_date: member.joinDate || new Date().toISOString().split('T')[0],
           full_name: member.name,
+          board_member_roles: member.boardMemberRoles || [],
         });
         
         if (error) throw error;
@@ -254,6 +256,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           profile_photo_url: member.profilePhotoUrl,
           adjusted_handicap: member.adjustedHandicap,
           ghin: member.ghin,
+          board_member_roles: member.boardMemberRoles || [],
         });
         
         if (error) throw error;
@@ -269,10 +272,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const updateMember = useCallback(async (memberId: string, updates: Partial<Member>) => {
     try {
-      console.log('✏️ [AuthContext] Updating member:', memberId);
+      console.log('✏️ [AuthContext] Updating member:', memberId, 'with updates:', Object.keys(updates));
       
       if (useLocalStorage) {
         await localStorageService.members.update(memberId, updates);
+        console.log('✅ [AuthContext] Member updated in local storage');
       } else {
         const supabaseUpdates: any = {};
         if (updates.name !== undefined) supabaseUpdates.name = updates.name;
@@ -298,6 +302,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (updates.profilePhotoUrl !== undefined) supabaseUpdates.profile_photo_url = updates.profilePhotoUrl;
         if (updates.adjustedHandicap !== undefined) supabaseUpdates.adjusted_handicap = updates.adjustedHandicap;
         if (updates.ghin !== undefined) supabaseUpdates.ghin = updates.ghin;
+        if (updates.boardMemberRoles !== undefined) supabaseUpdates.board_member_roles = updates.boardMemberRoles || [];
+        
+        console.log('📤 [AuthContext] Sending Supabase update with fields:', Object.keys(supabaseUpdates));
         
         const { error } = await supabase
           .from('members')
@@ -305,16 +312,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           .eq('id', memberId);
         
         if (error) throw error;
+        console.log('✅ [AuthContext] Member updated in Supabase');
       }
       
-      console.log('✅ [AuthContext] Member updated successfully');
+      console.log('🔄 [AuthContext] Refreshing members list...');
       await fetchMembers();
 
       if (currentUser?.id === memberId) {
         const updatedMember = { ...currentUser, ...updates };
+        console.log('🔄 [AuthContext] Updating current user in state and storage');
         setCurrentUser(updatedMember);
         await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedMember));
       }
+      
+      console.log('✅ [AuthContext] Member update complete');
     } catch (error) {
       console.error('❌ [AuthContext] Exception updating member:', error);
       throw error;

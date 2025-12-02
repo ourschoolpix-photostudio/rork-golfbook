@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-import { useFocusEffect, Stack, useRouter } from 'expo-router';
+import { useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +17,6 @@ import { PlayerEditModal } from '@/components/PlayerEditModal';
 
 
 export default function MembersScreen() {
-  const router = useRouter();
   const { currentUser: authUser, members: allMembersFromContext, updateMember: updateMemberFromContext } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +96,7 @@ export default function MembersScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      console.log('[Members] Screen focused');
+      console.log('[Members] Screen focused, reloading members');
       loadMembers();
     }, [loadMembers])
   );
@@ -105,31 +104,33 @@ export default function MembersScreen() {
   const handleSaveCurrentUser = useCallback(async (updatedMember: Member) => {
     try {
       console.log('[Members] Saving current user profile:', updatedMember.name);
+      console.log('[Members] Board member roles:', updatedMember.boardMemberRoles);
       
       await updateMemberFromContext(updatedMember.id, updatedMember);
       
+      console.log('[Members] Update complete, updating local state');
       setCurrentUser(updatedMember);
-      await loadMembers();
+      
       console.log('[Members] Current user profile saved successfully');
     } catch (error) {
       console.error('[Members] Error saving current user profile:', error);
       throw error;
     }
-  }, [updateMemberFromContext, loadMembers]);
+  }, [updateMemberFromContext]);
 
   const handleSaveMember = useCallback(async (updatedMember: Member) => {
     try {
       console.log('[Members] Saving member:', updatedMember.name);
+      console.log('[Members] Board member roles:', updatedMember.boardMemberRoles);
       
       await updateMemberFromContext(updatedMember.id, updatedMember);
       
-      await loadMembers();
       console.log('[Members] Member saved successfully');
     } catch (error) {
       console.error('[Members] Error saving member:', error);
       throw error;
     }
-  }, [updateMemberFromContext, loadMembers]);
+  }, [updateMemberFromContext]);
 
   const handleCardPress = (member: Member) => {
     if (authUser?.isAdmin) {
