@@ -584,7 +584,7 @@ export default function EventRegistrationScreen() {
       const customGuest: Member = {
         id: `guest_${event.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: addCustomGuestName.trim(),
-        pin: '',
+        pin: `guest${Date.now()}`,
         isAdmin: false,
         handicap: 0,
         rolexPoints: 0,
