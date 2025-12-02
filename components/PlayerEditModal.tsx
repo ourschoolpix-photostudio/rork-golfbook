@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     backgroundColor: '#fff',
-    minWidth: 110,
+    width: '48%',
     alignItems: 'center',
   },
   roleChipActive: {
