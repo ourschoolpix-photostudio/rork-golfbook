@@ -1123,76 +1123,76 @@ function buildCheckInHTMLContent(
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: white;
       padding: 20px;
-      font-size: 12px;
+      font-size: 10px;
     }
     .header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
       border-bottom: 3px solid #1B5E20;
-      padding-bottom: 15px;
+      padding-bottom: 12px;
     }
     .logo-container {
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
     .logo {
-      max-height: 80px;
-      max-width: 200px;
+      max-height: 60px;
+      max-width: 180px;
       height: auto;
       width: auto;
     }
     .header-title {
-      font-size: 28px;
+      font-size: 22px;
       font-weight: bold;
       color: #1B5E20;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
     }
     .venue-date-row {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 20px;
-      font-size: 14px;
+      gap: 15px;
+      font-size: 11px;
       color: #666;
-      margin-top: 8px;
+      margin-top: 5px;
     }
     .venue-text, .date-text {
-      font-size: 14px;
+      font-size: 11px;
       color: #666;
     }
     .sponsor-section {
       background: #FFF3E0;
       border: 2px solid #FF9500;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 25px;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 15px;
     }
     .sponsor-header {
-      font-size: 18px;
+      font-size: 14px;
       font-weight: 700;
       color: #FF9500;
       text-align: center;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
       border-bottom: 2px solid #FF9500;
     }
     .flight-separator {
       background: #E8F5E9;
-      padding: 12px 15px;
+      padding: 8px 10px;
       font-weight: bold;
-      font-size: 16px;
+      font-size: 12px;
       color: #1B5E20;
-      margin-top: 20px;
-      margin-bottom: 10px;
-      border-radius: 6px;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      border-radius: 4px;
       border-left: 4px solid #1B5E20;
     }
     .check-in-row {
       display: flex;
       align-items: center;
-      padding: 12px 10px;
+      padding: 6px 8px;
       border-bottom: 1px solid #E0E0E0;
-      gap: 15px;
+      gap: 10px;
       page-break-inside: avoid;
     }
     .check-in-row:hover {
@@ -1202,21 +1202,21 @@ function buildCheckInHTMLContent(
       background: #FAFAFA;
     }
     .checkbox {
-      width: 20px;
-      height: 20px;
+      width: 16px;
+      height: 16px;
       border: 2px solid #1B5E20;
-      border-radius: 4px;
+      border-radius: 3px;
       flex-shrink: 0;
     }
     .player-number {
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 600;
       color: #666;
-      min-width: 35px;
+      min-width: 28px;
       text-align: left;
     }
     .player-name {
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 600;
       color: #1a1a1a;
       flex: 1;
@@ -1228,21 +1228,21 @@ function buildCheckInHTMLContent(
       display: inline-block;
       background: #FF5722;
       color: white;
-      font-size: 10px;
+      font-size: 8px;
       font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 3px;
-      margin-left: 10px;
-      letter-spacing: 0.5px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      margin-left: 8px;
+      letter-spacing: 0.3px;
     }
     .footer {
-      margin-top: 40px;
-      padding-top: 20px;
+      margin-top: 25px;
+      padding-top: 15px;
       border-top: 2px solid #1B5E20;
       text-align: center;
     }
     .footer-text {
-      font-size: 12px;
+      font-size: 10px;
       color: #666;
       font-style: italic;
     }
