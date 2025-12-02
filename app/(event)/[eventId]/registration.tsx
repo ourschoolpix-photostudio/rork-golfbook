@@ -920,7 +920,6 @@ export default function EventRegistrationScreen() {
             registrations: regs,
             members: allMembers,
             event,
-            useCourseHandicap,
           }, orgInfo.logoUrl);
         }
         console.log('[registration] ✅ Check-in PDF generated successfully');
@@ -939,7 +938,6 @@ export default function EventRegistrationScreen() {
               registrations: regs,
               members: allMembers,
               event,
-              useCourseHandicap,
             },
             includeHandicapForPDF
           );
@@ -960,7 +958,6 @@ export default function EventRegistrationScreen() {
               registrations: regs,
               members: allMembers,
               event,
-              useCourseHandicap,
             },
             includeHandicapForPDF
           );
