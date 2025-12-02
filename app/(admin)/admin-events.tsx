@@ -19,6 +19,7 @@ import { Event } from '@/types';
 
 import { supabaseService } from '@/utils/supabaseService';
 import { formatDateForDisplay } from '@/utils/dateUtils';
+import { useQuery } from '@tanstack/react-query';
 
 type EventFormType = {
   status: 'upcoming' | 'active' | 'complete';
@@ -107,6 +108,7 @@ export default function AdminEventsScreen() {
   const router = useRouter();
   const { currentUser } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
+  const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pinModalVisible, setPinModalVisible] = useState(false);
@@ -195,9 +197,35 @@ export default function AdminEventsScreen() {
     day3HolePars: Array(18).fill(''),
   });
 
+  const registrationsQuery = useQuery({
+    queryKey: ['all-admin-event-registrations', events.length],
+    queryFn: async () => {
+      const allRegistrations: Record<string, any[]> = {};
+      if (events && events.length > 0) {
+        for (const event of events) {
+          try {
+            const regs = await supabaseService.registrations.getAll(event.id);
+            allRegistrations[event.id] = regs || [];
+          } catch (error) {
+            console.error(`Error fetching registrations for event ${event.id}:`, error);
+            allRegistrations[event.id] = [];
+          }
+        }
+      }
+      return allRegistrations;
+    },
+    enabled: events.length > 0,
+  });
+
   useEffect(() => {
     loadEvents();
   }, []);
+
+  useEffect(() => {
+    if (registrationsQuery.data) {
+      setEventRegistrations(registrationsQuery.data);
+    }
+  }, [registrationsQuery.data]);
 
   const loadEvents = async () => {
     try {
@@ -661,6 +689,21 @@ export default function AdminEventsScreen() {
 
     return schedules.join('\n');
   };
+
+  const getEventAttendeeCount = (event: Event): number => {
+    const registrations = eventRegistrations[event.id] || [];
+    
+    if (event.type === 'social') {
+      const registeredPlayerIds = Array.from(new Set(event.registeredPlayers || []));
+      const nonSponsorCount = registrations.filter(reg => !reg.isSponsor && registeredPlayerIds.includes(reg.memberId)).length;
+      const nonSponsorGuestCount = registrations
+        .filter(reg => !reg.isSponsor && registeredPlayerIds.includes(reg.memberId))
+        .reduce((total, reg) => total + (reg.numberOfGuests || 0), 0);
+      return nonSponsorCount + nonSponsorGuestCount;
+    } else {
+      return (event.registeredPlayers || []).length;
+    }
+  };
   
   return (
     <View style={styles.container}>
@@ -719,7 +762,7 @@ export default function AdminEventsScreen() {
                     day3Course: item.day3Course,
                   })}</Text>
                 ) : null}
-                <Text style={styles.eventPlayers}>Players: {(item.registeredPlayers || []).length}</Text>
+                <Text style={styles.eventPlayers}>{item.type === 'social' ? 'Attendees:' : 'Players:'} {getEventAttendeeCount(item)}</Text>
                 <TouchableOpacity
                   style={styles.deleteButtonCircle}
                   onPress={(e) => {
@@ -841,7 +884,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   listContent: {
-    paddingTop: 105,
+    paddingTop: 160,
     paddingHorizontal: 16,
     paddingBottom: 100,
   },
