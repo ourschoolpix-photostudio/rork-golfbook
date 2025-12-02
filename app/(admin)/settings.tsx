@@ -61,7 +61,7 @@ export default function SettingsScreen() {
     paypal: false,
     rolexPoints: false,
     courses: false,
-    storage: true,
+    storage: false,
   });
   const [showCoursesModal, setShowCoursesModal] = useState(false);
   const [orgInfo, setOrgInfo] = useState<OrganizationInfo>({
