@@ -581,38 +581,26 @@ export default function EventRegistrationScreen() {
       console.log('[registration] 🎯 Adding custom guest:', addCustomGuestName.trim(), 'with', guestCount, 'additional guests');
       console.log('[registration] ⚠️ Custom guest is event-specific and will NOT be added to member management');
       
-      const customGuest: Member = {
-        id: `guest_${event.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: addCustomGuestName.trim(),
-        pin: `guest${Date.now()}`,
-        isAdmin: false,
-        handicap: 0,
-        rolexPoints: 0,
-        createdAt: new Date().toISOString(),
-        membershipType: 'guest',
-      };
-
-      console.log('[registration] Step 1: Creating temporary member record (event-specific guest)...');
-      await createMemberMutation.mutateAsync(customGuest);
-      console.log('[registration] ✓ Temporary member created');
-
-      console.log('[registration] Step 2: Creating registration...');
+      const customGuestId = `guest_${event.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      console.log('[registration] Step 1: Creating registration directly (no member record needed)...');
       await registerMutation.mutateAsync({
         eventId: event.id,
-        memberId: customGuest.id,
+        memberId: customGuestId,
         isSponsor: addCustomGuestIsSponsor,
       });
       console.log('[registration] ✓ Registration created');
       
-      console.log('[registration] Step 3: Refetching to get registration ID...');
+      console.log('[registration] Step 2: Refetching to get registration ID...');
       const backendRegs = await registrationsQuery.refetch();
-      const guestReg = backendRegs.data?.find((r: any) => r.memberId === customGuest.id);
+      const guestReg = backendRegs.data?.find((r: any) => r.memberId === customGuestId);
       
       if (guestReg) {
-        console.log('[registration] Step 4: Updating registration with all details...');
+        console.log('[registration] Step 3: Updating registration with guest name and details...');
         await updateRegistrationMutation.mutateAsync({
           registrationId: guestReg.id,
           updates: { 
+            playerName: addCustomGuestName.trim(),
             numberOfGuests: guestCount || 0,
             guestNames: guestNamesValue || null,
             isSponsor: addCustomGuestIsSponsor,
@@ -621,7 +609,18 @@ export default function EventRegistrationScreen() {
         console.log('[registration] ✓ Registration fully updated');
       }
 
-      console.log('[registration] Step 4: Updating local state (event-specific only)...');
+      console.log('[registration] Step 4: Creating temporary local-only member object for UI...');
+      const customGuest: Member = {
+        id: customGuestId,
+        name: addCustomGuestName.trim(),
+        pin: '',
+        isAdmin: false,
+        handicap: 0,
+        rolexPoints: 0,
+        createdAt: new Date().toISOString(),
+        membershipType: 'guest',
+      };
+      
       const updated = [...selectedPlayers, customGuest];
       setSelectedPlayers(updated);
       setMembers([...members, customGuest]);
@@ -636,7 +635,7 @@ export default function EventRegistrationScreen() {
       setAddCustomGuestIsSponsor(false);
       setAddCustomGuestModalVisible(false);
       
-      console.log('[registration] ✅ Custom guest added successfully (event-specific, not in member management)!');
+      console.log('[registration] ✅ Custom guest added successfully (registration-only, no member record)!');
     } catch (error) {
       console.error('[registration] ❌ Error adding custom guest:', error);
       if (error instanceof Error) {
