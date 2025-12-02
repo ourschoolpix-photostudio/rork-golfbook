@@ -164,9 +164,9 @@ export default function EventRolexScreen() {
         };
       });
 
-      console.log('[rolex] Enriched members with scores:', enrichedMembers.map((m: Member & { scoreTotal?: number; flight?: string }) => ({ name: m.name, id: m.id, scoreTotal: m.scoreTotal, flight: m.flight })));
+      console.log('[rolex] Enriched members with scores:', enrichedMembers.map((m: any) => ({ name: m.name, id: m.id, scoreTotal: m.scoreTotal, flight: m.flight })));
 
-      const sorted = enrichedMembers.sort((a: Member & { scoreTotal?: number; scoreNet?: number }, b: Member & { scoreTotal?: number; scoreNet?: number }) => {
+      const sorted = enrichedMembers.sort((a: any, b: any) => {
         const aIsActive = a.membershipType === 'active';
         const bIsActive = b.membershipType === 'active';
 
@@ -185,16 +185,16 @@ export default function EventRolexScreen() {
         return (a.scoreNet || 0) - (b.scoreNet || 0);
       });
 
-      console.log('[rolex] Final sorted members:', sorted.map((m: Member & { flight?: string; scoreNet?: number }) => ({ 
+      console.log('[rolex] Final sorted members:', sorted.map((m: any) => ({ 
         name: m.name, 
         flight: m.flight,
         scoreNet: m.scoreNet 
       })));
 
-      setMembers(sorted.map((m: Member & { scoreTotal?: number; scoreNet?: number; flight?: string }) => ({
+      setMembers(sorted.map((m: any) => ({
         ...m,
-        flight: (m.flight === 'A' || m.flight === 'B' || m.flight === 'C' || m.flight === 'L') ? m.flight : undefined
-      })));
+        flight: (m.flight === 'A' || m.flight === 'B' || m.flight === 'C' || m.flight === 'L') ? m.flight as ('A' | 'B' | 'C' | 'L') : undefined
+      })) as Member[]);
     } catch (error) {
       console.error('Error loading event members:', error);
     }
