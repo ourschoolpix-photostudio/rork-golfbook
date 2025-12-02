@@ -1244,7 +1244,7 @@ function buildCheckInHTMLContent(
     }
     .unpaid-badge {
       display: inline-block;
-      background: #000000;
+      background: #808080;
       color: white;
       font-size: 8px;
       font-weight: 700;
