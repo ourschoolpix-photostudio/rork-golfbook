@@ -186,9 +186,13 @@ export const supabaseService = {
         event_id: eventId,
         member_id: memberId,
         status: 'registered',
+        payment_status: 'pending',
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('[supabaseService] Registration error:', error);
+        throw new Error(`Failed to register: ${error.message}`);
+      }
     },
     
     unregister: async (eventId: string, memberId: string) => {
