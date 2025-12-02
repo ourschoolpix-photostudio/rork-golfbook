@@ -13,6 +13,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import { supabaseService } from '@/utils/supabaseService';
 
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
@@ -31,12 +33,38 @@ export default function DashboardScreen() {
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [detailsModalVisible, setDetailsModalVisible] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
+
+  const registrationsQuery = useQuery({
+    queryKey: ['all-event-registrations', contextEvents?.length || 0],
+    queryFn: async () => {
+      const allRegistrations: Record<string, any[]> = {};
+      if (contextEvents && contextEvents.length > 0) {
+        for (const event of contextEvents) {
+          try {
+            const regs = await supabaseService.registrations.getAll(event.id);
+            allRegistrations[event.id] = regs || [];
+          } catch (error) {
+            console.error(`Error fetching registrations for event ${event.id}:`, error);
+            allRegistrations[event.id] = [];
+          }
+        }
+      }
+      return allRegistrations;
+    },
+    enabled: !!contextEvents && contextEvents.length > 0,
+  });
+
+  const { refetch: refetchRegistrations } = registrationsQuery;
 
   useFocusEffect(
     useCallback(() => {
       console.log('📱 Dashboard - Screen focused, refetching data...');
       refreshEvents();
-    }, [refreshEvents])
+      if (refetchRegistrations) {
+        refetchRegistrations();
+      }
+    }, [refreshEvents, refetchRegistrations])
   );
 
   useEffect(() => {
@@ -56,6 +84,12 @@ export default function DashboardScreen() {
       setEvents(sortedEvents);
     }
   }, [contextEvents, eventsLoading]);
+
+  useEffect(() => {
+    if (registrationsQuery.data) {
+      setEventRegistrations(registrationsQuery.data);
+    }
+  }, [registrationsQuery.data]);
 
   useEffect(() => {
     console.log('🔄 Dashboard - Members state:', {
@@ -204,6 +238,19 @@ export default function DashboardScreen() {
     return schedules;
   };
 
+  const getEventAttendeeCount = (event: Event): number => {
+    const registrations = eventRegistrations[event.id] || [];
+    
+    if (event.type === 'social') {
+      const nonSponsorRegistrations = registrations.filter(reg => !reg.isSponsor);
+      const playersCount = nonSponsorRegistrations.length;
+      const guestsCount = nonSponsorRegistrations.reduce((total, reg) => total + (reg.numberOfGuests || 0), 0);
+      return playersCount + guestsCount;
+    } else {
+      return (event.registeredPlayers || []).length;
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -333,7 +380,7 @@ export default function DashboardScreen() {
                   </View>
 
                   <Text style={styles.eventPlayers}>
-                    Players registered: {(item.registeredPlayers || []).length}
+                    {item.type === 'social' ? 'Attendees:' : 'Players registered:'} {getEventAttendeeCount(item)}
                   </Text>
 
                   {item.entryFee && (
