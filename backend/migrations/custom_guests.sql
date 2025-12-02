@@ -28,6 +28,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS event_registrations_event_member_unique
   ON event_registrations (event_id, member_id)
   WHERE member_id IS NOT NULL;
 
--- Add comment
+-- Add comments
 COMMENT ON COLUMN event_registrations.is_custom_guest IS 'True for custom guests added for social events only';
 COMMENT ON COLUMN event_registrations.custom_guest_name IS 'Name of custom guest (only used when is_custom_guest is true)';
