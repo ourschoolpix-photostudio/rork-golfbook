@@ -975,13 +975,23 @@ function buildCheckInHTMLContent(
   if (isSocial) {
     const sponsors = registrations
       .filter(reg => reg.isSponsor)
-      .map(reg => ({ reg, member: members.find(m => m.id === reg.memberId) }))
+      .map(reg => {
+        if (reg.isCustomGuest) {
+          return { reg, member: { id: reg.id, name: reg.customGuestName || 'Unknown Guest' } };
+        }
+        return { reg, member: members.find(m => m.id === reg.memberId) };
+      })
       .filter(item => item.member)
       .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
     
     const nonSponsors = registrations
       .filter(reg => !reg.isSponsor)
-      .map(reg => ({ reg, member: members.find(m => m.id === reg.memberId) }))
+      .map(reg => {
+        if (reg.isCustomGuest) {
+          return { reg, member: { id: reg.id, name: reg.customGuestName || 'Unknown Guest' } };
+        }
+        return { reg, member: members.find(m => m.id === reg.memberId) };
+      })
       .filter(item => item.member)
       .sort((a, b) => (a.member?.name || '').localeCompare(b.member?.name || ''));
 
@@ -1053,11 +1063,19 @@ function buildCheckInHTMLContent(
     };
     
     const regsWithFlight = registrations
-      .map(reg => ({
-        reg,
-        member: members.find(m => m.id === reg.memberId),
-        flight: calculateTournamentFlight(members.find(m => m.id === reg.memberId)!, reg)
-      }))
+      .map(reg => {
+        let member;
+        if (reg.isCustomGuest) {
+          member = { id: reg.id, name: reg.customGuestName || 'Unknown Guest', handicap: 0 };
+        } else {
+          member = members.find(m => m.id === reg.memberId);
+        }
+        return {
+          reg,
+          member,
+          flight: member ? calculateTournamentFlight(member as Member, reg) : 'L'
+        };
+      })
       .filter(item => item.member);
     
     const groupedByFlight: Record<string, typeof regsWithFlight> = {
