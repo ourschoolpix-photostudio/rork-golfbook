@@ -865,8 +865,13 @@ function buildRegistrationTextContent(
       totalAttendees++;
       
       const guestNames = reg.guestNames ? reg.guestNames.split('\n').filter((n: string) => n.trim()) : [];
+      const numberOfGuests = reg.numberOfGuests || 0;
+      const entryFee = Number(event.entryFee) || 0;
+      const totalCost = entryFee * (1 + numberOfGuests);
+      const isPaid = reg.paymentStatus === 'paid';
       
-      textContent += `${itemNumber}. ${member.name}\n`;
+      const paymentText = !isPaid ? ' \x1b[31m[UNPAID]\x1b[0m' : '';
+      textContent += `${itemNumber}. ${member.name} ${totalCost}${paymentText}\n`;
       
       if (guestNames.length > 0) {
         guestNames.forEach((guestName: string) => {
@@ -944,11 +949,14 @@ function buildRegistrationTextContent(
         itemNumber++;
         totalPlayers++;
         const handicap = getDisplayHandicap(member as any, reg, event, useCourseHandicap, 1);
+        const entryFee = Number(event.entryFee) || 0;
+        const isPaid = reg.paymentStatus === 'paid';
+        const paymentText = !isPaid ? ' \x1b[31m[UNPAID]\x1b[0m' : '';
         
         if (includeHandicap) {
-          textContent += `${itemNumber}. ${member.name} - ${handicap}\n`;
+          textContent += `${itemNumber}. ${member.name} - ${handicap} ${entryFee}${paymentText}\n`;
         } else {
-          textContent += `${itemNumber}. ${member.name}\n`;
+          textContent += `${itemNumber}. ${member.name} ${entryFee}${paymentText}\n`;
         }
       });
       
