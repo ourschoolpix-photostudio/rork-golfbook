@@ -27,7 +27,7 @@ interface AddPlayerModalProps {
 const BOARD_MEMBER_ROLES = [
   'Admin',
   'President',
-  'VP',
+  'Vice-President',
   'Tournament Director',
   'Handicap Director',
   'Operations',
@@ -695,17 +695,17 @@ const styles = StyleSheet.create({
   rolesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -4,
-    marginVertical: -4,
+    gap: 8,
   },
   roleChip: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#ddd',
     backgroundColor: '#fff',
-    margin: 4,
+    minWidth: 110,
+    alignItems: 'center',
   },
   roleChipActive: {
     backgroundColor: '#007AFF',
