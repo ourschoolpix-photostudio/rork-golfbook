@@ -57,8 +57,8 @@ export function EventStatusButton({ status, onStatusChange, isAdmin }: EventStat
 
 const styles = StyleSheet.create({
   button: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
