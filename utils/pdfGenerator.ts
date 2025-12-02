@@ -991,14 +991,15 @@ function buildCheckInHTMLContent(
           <div class="sponsor-header">Sponsors</div>
       `;
       
-      sponsors.forEach(({ member }) => {
+      sponsors.forEach(({ reg, member }) => {
         if (!member) return;
         itemNumber++;
+        const isPaid = reg.paymentStatus === 'paid';
         playersHTML += `
-          <div class="check-in-row">
+          <div class="check-in-row ${!isPaid ? 'unpaid-row' : ''}">
             <div class="checkbox"></div>
             <div class="player-number">${itemNumber}.</div>
-            <div class="player-name">${member.name}</div>
+            <div class="player-name">${member.name}${!isPaid ? ' <span class="unpaid-badge">UNPAID</span>' : ''}</div>
           </div>
         `;
       });
@@ -1013,12 +1014,13 @@ function buildCheckInHTMLContent(
       
       itemNumber++;
       const guestNames = reg.guestNames ? reg.guestNames.split('\n').filter((n: string) => n.trim()) : [];
+      const isPaid = reg.paymentStatus === 'paid';
       
       playersHTML += `
-        <div class="check-in-row">
+        <div class="check-in-row ${!isPaid ? 'unpaid-row' : ''}">
           <div class="checkbox"></div>
           <div class="player-number">${itemNumber}.</div>
-          <div class="player-name">${member.name}</div>
+          <div class="player-name">${member.name}${!isPaid ? ' <span class="unpaid-badge">UNPAID</span>' : ''}</div>
         </div>
       `;
       
@@ -1026,10 +1028,10 @@ function buildCheckInHTMLContent(
         guestNames.forEach((guestName: string) => {
           itemNumber++;
           playersHTML += `
-            <div class="check-in-row guest-row">
+            <div class="check-in-row guest-row ${!isPaid ? 'unpaid-row' : ''}">
               <div class="checkbox"></div>
               <div class="player-number">${itemNumber}.</div>
-              <div class="player-name">${member.name} - ${guestName}</div>
+              <div class="player-name">${member.name} - ${guestName}${!isPaid ? ' <span class="unpaid-badge">UNPAID</span>' : ''}</div>
             </div>
           `;
         });
@@ -1081,15 +1083,16 @@ function buildCheckInHTMLContent(
         <div class="flight-separator">Flight ${flight} (${flightRegs.length})</div>
       `;
       
-      flightRegs.forEach(({ member }) => {
+      flightRegs.forEach(({ reg, member }) => {
         if (!member) return;
         itemNumber++;
+        const isPaid = reg.paymentStatus === 'paid';
         
         playersHTML += `
-          <div class="check-in-row">
+          <div class="check-in-row ${!isPaid ? 'unpaid-row' : ''}">
             <div class="checkbox"></div>
             <div class="player-number">${itemNumber}.</div>
-            <div class="player-name">${member.name}</div>
+            <div class="player-name">${member.name}${!isPaid ? ' <span class="unpaid-badge">UNPAID</span>' : ''}</div>
           </div>
         `;
       });
@@ -1217,6 +1220,20 @@ function buildCheckInHTMLContent(
       font-weight: 600;
       color: #1a1a1a;
       flex: 1;
+    }
+    .unpaid-row {
+      background: #FFF9E6;
+    }
+    .unpaid-badge {
+      display: inline-block;
+      background: #FF5722;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin-left: 10px;
+      letter-spacing: 0.5px;
     }
     .footer {
       margin-top: 40px;
