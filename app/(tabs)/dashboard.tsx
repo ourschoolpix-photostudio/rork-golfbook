@@ -242,9 +242,10 @@ export default function DashboardScreen() {
     const registrations = eventRegistrations[event.id] || [];
     
     if (event.type === 'social') {
-      const nonSponsorCount = registrations.filter(reg => !reg.isSponsor).length;
+      const registeredPlayerIds = Array.from(new Set(event.registeredPlayers || []));
+      const nonSponsorCount = registrations.filter(reg => !reg.isSponsor && registeredPlayerIds.includes(reg.memberId)).length;
       const nonSponsorGuestCount = registrations
-        .filter(reg => !reg.isSponsor)
+        .filter(reg => !reg.isSponsor && registeredPlayerIds.includes(reg.memberId))
         .reduce((total, reg) => total + (reg.numberOfGuests || 0), 0);
       return nonSponsorCount + nonSponsorGuestCount;
     } else {
