@@ -31,6 +31,26 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       
       if (error) throw error;
       
+      console.log('📥 [EventsContext] Fetching registrations from Supabase...');
+      const { data: registrationsData, error: registrationsError } = await supabase
+        .from('event_registrations')
+        .select('event_id, member_id, status')
+        .in('status', ['registered', 'confirmed']);
+      
+      if (registrationsError) {
+        console.error('⚠️ [EventsContext] Failed to fetch registrations:', registrationsError);
+      }
+      
+      const registrationsByEvent = new Map<string, string[]>();
+      (registrationsData || []).forEach((reg: any) => {
+        if (!registrationsByEvent.has(reg.event_id)) {
+          registrationsByEvent.set(reg.event_id, []);
+        }
+        registrationsByEvent.get(reg.event_id)!.push(reg.member_id);
+      });
+      
+      console.log('✅ [EventsContext] Registrations by event:', Object.fromEntries(registrationsByEvent));
+      
       const fetchedEvents = (data || []).map((e: any) => ({
         id: e.id,
         name: e.name,
@@ -87,6 +107,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         flightATeebox: e.flight_a_teebox,
         flightBTeebox: e.flight_b_teebox,
         flightLTeebox: e.flight_l_teebox,
+        registeredPlayers: registrationsByEvent.get(e.id) || [],
       }));
       
       console.log('✅ [EventsContext] Successfully fetched events:', fetchedEvents.length);
