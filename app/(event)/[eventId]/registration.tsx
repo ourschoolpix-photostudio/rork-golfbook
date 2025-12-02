@@ -20,6 +20,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { supabaseService } from '@/utils/supabaseService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
@@ -578,58 +579,38 @@ export default function EventRegistrationScreen() {
     const guestNamesValue = normalizeGuestNames(addCustomGuestNames, guestCount);
 
     try {
-      console.log('[registration] 🎯 Adding custom guest:', addCustomGuestName.trim(), 'with', guestCount, 'additional guests');
-      console.log('[registration] ⚠️ Custom guest is event-specific and temporary');
+      console.log('[registration] 🎯 Adding custom guest (no member record):', addCustomGuestName.trim());
+      console.log('[registration] Guest count:', guestCount, 'Sponsor:', addCustomGuestIsSponsor);
       
-      const customGuestId = `guest_${event.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const customGuestId = `guest_${event.id}_${Date.now()}`;
       
-      console.log('[registration] Step 1: Creating temporary member record for social event...');
-      const customGuest: Member = {
-        id: customGuestId,
-        name: addCustomGuestName.trim(),
-        pin: 'GUEST',
-        isAdmin: false,
-        handicap: 0,
-        rolexPoints: 0,
-        createdAt: new Date().toISOString(),
-        membershipType: 'guest',
-      };
-      
-      await createMemberMutation.mutateAsync(customGuest);
-      console.log('[registration] ✓ Temporary member created');
-      
-      console.log('[registration] Step 2: Creating registration...');
-      await registerMutation.mutateAsync({
-        eventId: event.id,
-        memberId: customGuestId,
-        isSponsor: addCustomGuestIsSponsor,
-      });
-      console.log('[registration] ✓ Registration created');
-      
-      console.log('[registration] Step 3: Refetching to get registration ID...');
-      const backendRegs = await registrationsQuery.refetch();
-      const guestReg = backendRegs.data?.find((r: any) => r.memberId === customGuestId);
-      
-      if (guestReg) {
-        console.log('[registration] Step 4: Updating registration with guest details...');
-        await updateRegistrationMutation.mutateAsync({
-          registrationId: guestReg.id,
-          updates: { 
-            numberOfGuests: guestCount || 0,
-            guestNames: guestNamesValue || null,
-            isSponsor: addCustomGuestIsSponsor,
-          },
+      console.log('[registration] Creating registration directly without member record...');
+      const { error } = await supabase
+        .from('event_registrations')
+        .insert({
+          id: customGuestId,
+          event_id: event.id,
+          member_id: null,
+          is_custom_guest: true,
+          custom_guest_name: addCustomGuestName.trim(),
+          status: 'registered',
+          payment_status: 'pending',
+          number_of_guests: guestCount || 0,
+          guest_names: guestNamesValue || null,
+          is_sponsor: addCustomGuestIsSponsor,
+          registered_at: new Date().toISOString(),
         });
-        console.log('[registration] ✓ Registration fully updated');
+      
+      if (error) {
+        console.error('[registration] ❌ Error creating custom guest registration:', error);
+        throw new Error(`Failed to create registration: ${error.message}`);
       }
       
-      const updated = [...selectedPlayers, customGuest];
-      setSelectedPlayers(updated);
-      setMembers([...members, customGuest]);
+      console.log('[registration] ✓ Custom guest registration created');
       
-      console.log('[registration] Step 5: Final refetch to sync UI...');
+      console.log('[registration] Refetching registrations to sync UI...');
       await registrationsQuery.refetch();
-      console.log('[registration] ✓ Final refetch complete');
+      console.log('[registration] ✓ Refetch complete');
       
       setAddCustomGuestName('');
       setAddCustomGuestCount('');

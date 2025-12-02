@@ -5,7 +5,7 @@ import { z } from "zod";
 const registrationSchema = z.object({
   id: z.string(),
   eventId: z.string(),
-  memberId: z.string(),
+  memberId: z.string().nullable().optional(),
   status: z.enum(['registered', 'confirmed', 'withdrawn']),
   paymentStatus: z.enum(['pending', 'paid', 'refunded']).optional(),
   registeredAt: z.string(),
@@ -13,35 +13,48 @@ const registrationSchema = z.object({
   guestNames: z.string().optional(),
   adjustedHandicap: z.string().nullable().optional(),
   isSponsor: z.boolean().optional(),
+  isCustomGuest: z.boolean().optional(),
+  customGuestName: z.string().optional(),
 });
 
 export const createRegistrationProcedure = publicProcedure
   .input(z.object({
     id: z.string(),
     eventId: z.string(),
-    memberId: z.string(),
+    memberId: z.string().nullable().optional(),
     status: z.enum(['registered', 'confirmed', 'withdrawn']).default('registered'),
     paymentStatus: z.enum(['pending', 'paid', 'refunded']).optional(),
     numberOfGuests: z.number().optional(),
     guestNames: z.string().optional(),
     adjustedHandicap: z.string().nullable().optional(),
     isSponsor: z.boolean().optional(),
+    isCustomGuest: z.boolean().optional(),
+    customGuestName: z.string().optional(),
   }))
   .mutation(async ({ input }) => {
     console.log('📝 Creating registration:', input);
     
+    const insertData: any = {
+      id: input.id,
+      event_id: input.eventId,
+      status: input.status,
+      payment_status: input.paymentStatus || 'pending',
+      adjusted_handicap: input.adjustedHandicap,
+      is_sponsor: input.isSponsor || false,
+      registered_at: new Date().toISOString(),
+      number_of_guests: input.numberOfGuests || 0,
+      guest_names: input.guestNames || null,
+      is_custom_guest: input.isCustomGuest || false,
+      custom_guest_name: input.customGuestName || null,
+    };
+
+    if (input.memberId) {
+      insertData.member_id = input.memberId;
+    }
+    
     const { error } = await supabase
       .from('event_registrations')
-      .insert({
-        id: input.id,
-        event_id: input.eventId,
-        member_id: input.memberId,
-        status: input.status,
-        payment_status: input.paymentStatus || 'pending',
-        adjusted_handicap: input.adjustedHandicap,
-        is_sponsor: input.isSponsor || false,
-        registered_at: new Date().toISOString(),
-      });
+      .insert(insertData);
 
     if (error) {
       console.error('❌ Error creating registration:', error);
@@ -133,7 +146,7 @@ export const getAllRegistrationsProcedure = publicProcedure
       id: reg.id,
       eventId: reg.event_id,
       memberId: reg.member_id,
-      playerName: reg.member?.name || '',
+      playerName: reg.is_custom_guest ? reg.custom_guest_name : (reg.member?.name || ''),
       playerPhone: reg.member?.phone || null,
       paymentStatus: reg.payment_status,
       status: reg.status,
@@ -142,6 +155,8 @@ export const getAllRegistrationsProcedure = publicProcedure
       numberOfGuests: reg.number_of_guests || 0,
       guestNames: reg.guest_names || null,
       isSponsor: reg.is_sponsor || false,
+      isCustomGuest: reg.is_custom_guest || false,
+      customGuestName: reg.custom_guest_name || null,
     }));
 
     console.log('✅ Fetched registrations:', registrations.length);
