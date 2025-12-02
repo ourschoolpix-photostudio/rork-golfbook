@@ -10,8 +10,10 @@ export function validateMemberData(member: any, skipPinValidation: boolean = fal
     errors.push('Member name is required and must be a non-empty string');
   }
 
-  if (!skipPinValidation && (!member.pin || typeof member.pin !== 'string' || member.pin.length < 4)) {
-    errors.push('PIN is required and must be at least 4 characters');
+  if (!skipPinValidation) {
+    if (!member.pin || typeof member.pin !== 'string' || member.pin.length < 4) {
+      errors.push('PIN is required and must be at least 4 characters');
+    }
   }
 
   if (member.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email)) {
