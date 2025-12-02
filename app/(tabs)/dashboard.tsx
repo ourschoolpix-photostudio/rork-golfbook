@@ -242,10 +242,11 @@ export default function DashboardScreen() {
     const registrations = eventRegistrations[event.id] || [];
     
     if (event.type === 'social') {
-      const nonSponsorRegistrations = registrations.filter(reg => !reg.isSponsor);
-      const playersCount = nonSponsorRegistrations.length;
-      const guestsCount = nonSponsorRegistrations.reduce((total, reg) => total + (reg.numberOfGuests || 0), 0);
-      return playersCount + guestsCount;
+      const nonSponsorCount = registrations.filter(reg => !reg.isSponsor).length;
+      const nonSponsorGuestCount = registrations
+        .filter(reg => !reg.isSponsor)
+        .reduce((total, reg) => total + (reg.numberOfGuests || 0), 0);
+      return nonSponsorCount + nonSponsorGuestCount;
     } else {
       return (event.registeredPlayers || []).length;
     }
