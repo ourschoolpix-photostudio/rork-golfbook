@@ -70,7 +70,23 @@ export const supabaseService = {
       
       if (error) throw error;
       
-      return (data || []).map(mapEventFromDB);
+      const events = data || [];
+      
+      const eventsWithRegistrations = await Promise.all(events.map(async (e) => {
+        const { data: regs } = await supabase
+          .from('event_registrations')
+          .select('member_id')
+          .eq('event_id', e.id);
+        
+        const registeredPlayers = (regs || []).map((r: any) => r.member_id);
+        
+        return {
+          ...mapEventFromDB(e),
+          registeredPlayers,
+        };
+      }));
+      
+      return eventsWithRegistrations;
     },
     
     get: async (eventId: string) => {
@@ -82,7 +98,17 @@ export const supabaseService = {
       
       if (error) throw error;
       
-      return mapEventFromDB(data);
+      const { data: regs } = await supabase
+        .from('event_registrations')
+        .select('member_id')
+        .eq('event_id', eventId);
+      
+      const registeredPlayers = (regs || []).map((r: any) => r.member_id);
+      
+      return {
+        ...mapEventFromDB(data),
+        registeredPlayers,
+      };
     },
 
     create: async (event: any) => {
@@ -137,7 +163,6 @@ export const supabaseService = {
       if (updates.photoUrl !== undefined) supabaseUpdates.photo_url = updates.photoUrl;
       if (updates.entryFee !== undefined) supabaseUpdates.entry_fee = updates.entryFee;
       if (updates.numberOfDays !== undefined) supabaseUpdates.number_of_days = updates.numberOfDays;
-      if (updates.registeredPlayers !== undefined) supabaseUpdates.registered_players = updates.registeredPlayers;
 
       const { error } = await supabase
         .from('events')
