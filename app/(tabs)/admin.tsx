@@ -100,13 +100,6 @@ export default function AdminScreen() {
       icon: 'settings',
       href: '/(admin)/settings' as const,
     },
-    {
-      id: 'debug',
-      title: '🔧 Debug Data',
-      description: 'Check backend connection and data',
-      icon: 'bug',
-      href: '/debug-data' as const,
-    },
   ];
 
   const handleAdminOption = (href: string) => {
@@ -388,7 +381,6 @@ export default function AdminScreen() {
             else if (option.id === 'financial') hasAccess = canAccessFinancialSummary(currentUser);
             else if (option.id === 'bulk-update') hasAccess = canAccessBulkUpdate(currentUser);
             else if (option.id === 'settings') hasAccess = canAccessSettings(currentUser);
-            else if (option.id === 'debug') hasAccess = user?.isAdmin || false;
             
             if (!hasAccess) return null;
             
