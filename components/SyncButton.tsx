@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Upload, CheckCircle, AlertCircle, Clock } from 'lucide-react-native';
-import { trpc } from '@/lib/trpc';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/contexts/EventsContext';
+import { supabaseService } from '@/utils/supabaseService';
 
 interface SyncButtonProps {
   eventId?: string;
@@ -15,9 +16,6 @@ export function SyncButton({ eventId }: SyncButtonProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
-  const syncMembersMutation = trpc.sync.members.useMutation();
-  const syncEventMutation = trpc.sync.events.useMutation();
-
   const handleSync = async () => {
     if (!currentUser?.isAdmin) {
       Alert.alert('Error', 'Only admins can sync data');
@@ -28,163 +26,65 @@ export function SyncButton({ eventId }: SyncButtonProps) {
     
     try {
       console.log('🔄 Starting sync process...');
+      let syncedCount = 0;
+      let failedCount = 0;
 
-      await syncMembersMutation.mutateAsync({
-        members: members.map(m => ({
-          id: m.id,
-          name: m.name,
-          pin: m.pin,
-          isAdmin: m.isAdmin,
-          email: m.email,
-          phone: m.phone,
-          handicap: m.handicap,
-          rolexPoints: m.rolexPoints,
-          createdAt: m.createdAt,
-          fullName: m.fullName,
-          username: m.username,
-          membershipType: m.membershipType,
-          gender: m.gender,
-          address: m.address,
-          city: m.city,
-          state: m.state,
-          flight: m.flight,
-          rolexFlight: m.rolexFlight,
-          currentHandicap: m.currentHandicap,
-          dateOfBirth: m.dateOfBirth,
-          emergencyContactName: m.emergencyContactName,
-          emergencyContactPhone: m.emergencyContactPhone,
-          joinDate: m.joinDate,
-          profilePhotoUrl: m.profilePhotoUrl,
-          adjustedHandicap: m.adjustedHandicap,
-          ghin: m.ghin,
-        })),
-        syncedBy: currentUser.id,
-      });
-      console.log('✅ Members synced');
+      console.log('📊 Syncing members to Supabase...');
+      for (const member of members) {
+        try {
+          await supabaseService.members.update(member.id, member);
+          syncedCount++;
+        } catch (error) {
+          console.error('❌ Failed to sync member:', member.id, error);
+          failedCount++;
+        }
+      }
+      console.log(`✅ Members synced: ${syncedCount} success, ${failedCount} failed`);
 
       if (eventId) {
         const event = events.find(e => e.id === eventId);
         if (event) {
-          await syncEventMutation.mutateAsync({
-            event: {
-              id: event.id,
-              name: event.name,
-              date: event.date,
-              venue: event.venue,
-              status: event.status,
-              startDate: event.startDate,
-              endDate: event.endDate,
-              location: event.location,
-              course: event.course,
-              description: event.description,
-              memo: event.memo,
-              registrationDeadline: event.registrationDeadline,
-              maxParticipants: event.maxParticipants,
-              createdAt: event.createdAt,
-              createdBy: event.createdBy,
-              type: event.type,
-              photoUrl: event.photoUrl,
-              entryFee: event.entryFee,
-              numberOfDays: event.numberOfDays,
-              address: event.address,
-              city: event.city,
-              state: event.state,
-              zipcode: event.zipcode,
-              day1StartTime: event.day1StartTime,
-              day1StartPeriod: event.day1StartPeriod,
-              day1Course: event.day1Course,
-              day1StartType: event.day1StartType,
-              day1LeadingHole: event.day1LeadingHole,
-              day1Par: event.day1Par,
-              day1HolePars: event.day1HolePars,
-              day2StartTime: event.day2StartTime,
-              day2StartPeriod: event.day2StartPeriod,
-              day2Course: event.day2Course,
-              day2StartType: event.day2StartType,
-              day2LeadingHole: event.day2LeadingHole,
-              day2Par: event.day2Par,
-              day2HolePars: event.day2HolePars,
-              day3StartTime: event.day3StartTime,
-              day3StartPeriod: event.day3StartPeriod,
-              day3Course: event.day3Course,
-              day3StartType: event.day3StartType,
-              day3LeadingHole: event.day3LeadingHole,
-              day3Par: event.day3Par,
-              day3HolePars: event.day3HolePars,
-              flightACutoff: event.flightACutoff,
-              flightBCutoff: event.flightBCutoff,
-              flightATeebox: event.flightATeebox,
-              flightBTeebox: event.flightBTeebox,
-              flightLTeebox: event.flightLTeebox,
-              registeredPlayers: event.registeredPlayers,
-            },
-            syncedBy: currentUser.id,
-          });
-          console.log('✅ Event synced');
+          try {
+            await supabaseService.events.update(event.id, event);
+            console.log('✅ Event synced:', event.id);
+            syncedCount++;
+          } catch (error) {
+            console.error('❌ Failed to sync event:', event.id, error);
+            failedCount++;
+          }
         }
       } else {
+        console.log('📊 Syncing all events to Supabase...');
         for (const event of events) {
-          await syncEventMutation.mutateAsync({
-            event: {
-              id: event.id,
-              name: event.name,
-              date: event.date,
-              venue: event.venue,
-              status: event.status,
-              startDate: event.startDate,
-              endDate: event.endDate,
-              location: event.location,
-              course: event.course,
-              description: event.description,
-              memo: event.memo,
-              registrationDeadline: event.registrationDeadline,
-              maxParticipants: event.maxParticipants,
-              createdAt: event.createdAt,
-              createdBy: event.createdBy,
-              type: event.type,
-              photoUrl: event.photoUrl,
-              entryFee: event.entryFee,
-              numberOfDays: event.numberOfDays,
-              address: event.address,
-              city: event.city,
-              state: event.state,
-              zipcode: event.zipcode,
-              day1StartTime: event.day1StartTime,
-              day1StartPeriod: event.day1StartPeriod,
-              day1Course: event.day1Course,
-              day1StartType: event.day1StartType,
-              day1LeadingHole: event.day1LeadingHole,
-              day1Par: event.day1Par,
-              day1HolePars: event.day1HolePars,
-              day2StartTime: event.day2StartTime,
-              day2StartPeriod: event.day2StartPeriod,
-              day2Course: event.day2Course,
-              day2StartType: event.day2StartType,
-              day2LeadingHole: event.day2LeadingHole,
-              day2Par: event.day2Par,
-              day2HolePars: event.day2HolePars,
-              day3StartTime: event.day3StartTime,
-              day3StartPeriod: event.day3StartPeriod,
-              day3Course: event.day3Course,
-              day3StartType: event.day3StartType,
-              day3LeadingHole: event.day3LeadingHole,
-              day3Par: event.day3Par,
-              day3HolePars: event.day3HolePars,
-              flightACutoff: event.flightACutoff,
-              flightBCutoff: event.flightBCutoff,
-              flightATeebox: event.flightATeebox,
-              flightBTeebox: event.flightBTeebox,
-              flightLTeebox: event.flightLTeebox,
-              registeredPlayers: event.registeredPlayers,
-            },
-            syncedBy: currentUser.id,
-          });
+          try {
+            await supabaseService.events.update(event.id, event);
+            syncedCount++;
+          } catch (error) {
+            console.error('❌ Failed to sync event:', event.id, error);
+            failedCount++;
+          }
         }
-        console.log('✅ All events synced');
+        console.log(`✅ All events synced: ${syncedCount} success, ${failedCount} failed`);
       }
 
-      setLastSyncTime(new Date());
-      Alert.alert('Success', 'Data synced successfully to server');
+      const syncTime = new Date();
+      setLastSyncTime(syncTime);
+      
+      const statusKey = `sync_status_${eventId || 'all'}`;
+      await AsyncStorage.setItem(statusKey, JSON.stringify({
+        lastSyncedAt: syncTime.toISOString(),
+        syncedCount,
+        failedCount
+      }));
+      
+      if (failedCount === 0) {
+        Alert.alert('Success', `Data synced successfully! ${syncedCount} items synced.`);
+      } else {
+        Alert.alert(
+          'Sync Completed', 
+          `${syncedCount} items synced successfully. ${failedCount} items failed to sync.`
+        );
+      }
     } catch (error) {
       console.error('❌ Sync failed:', error);
       Alert.alert('Error', 'Failed to sync data. Please try again.');
@@ -233,12 +133,31 @@ export function SyncButton({ eventId }: SyncButtonProps) {
 }
 
 export function SyncStatusIndicator({ eventId }: { eventId?: string }) {
-  const syncStatusQuery = trpc.sync.status.useQuery({
-    entityType: eventId ? 'event' : 'members',
-    entityId: eventId,
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
-  if (syncStatusQuery.isLoading) {
+  useEffect(() => {
+    const checkSyncStatus = async () => {
+      try {
+        setIsLoading(true);
+        const statusKey = `sync_status_${eventId || 'all'}`;
+        const storedStatus = await AsyncStorage.getItem(statusKey);
+        
+        if (storedStatus) {
+          const parsed = JSON.parse(storedStatus);
+          setLastSyncedAt(new Date(parsed.lastSyncedAt));
+        }
+      } catch (error) {
+        console.error('Failed to load sync status:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkSyncStatus();
+  }, [eventId]);
+
+  if (isLoading) {
     return (
       <View style={styles.statusContainer}>
         <ActivityIndicator size="small" color="#6B7280" />
@@ -247,30 +166,29 @@ export function SyncStatusIndicator({ eventId }: { eventId?: string }) {
     );
   }
 
-  const syncStatus = syncStatusQuery.data;
-  const isRecent = syncStatus && 
-    (Date.now() - new Date(syncStatus.lastSyncedAt).getTime()) < 3600000;
+  const isRecent = lastSyncedAt && 
+    (Date.now() - lastSyncedAt.getTime()) < 3600000;
 
   return (
     <View style={styles.statusContainer}>
-      {syncStatus && isRecent ? (
+      {lastSyncedAt && isRecent ? (
         <>
           <CheckCircle size={16} color="#10B981" />
           <Text style={styles.statusTextSuccess}>
-            Synced {new Date(syncStatus.lastSyncedAt).toLocaleString()}
+            Synced {lastSyncedAt.toLocaleString()}
           </Text>
         </>
-      ) : syncStatus ? (
+      ) : lastSyncedAt ? (
         <>
           <Clock size={16} color="#F59E0B" />
           <Text style={styles.statusTextWarning}>
-            Last synced {new Date(syncStatus.lastSyncedAt).toLocaleString()}
+            Last synced {lastSyncedAt.toLocaleString()}
           </Text>
         </>
       ) : (
         <>
           <AlertCircle size={16} color="#EF4444" />
-          <Text style={styles.statusTextError}>Not synced yet</Text>
+          <Text style={styles.statusTextError}>Ready to sync</Text>
         </>
       )}
     </View>
