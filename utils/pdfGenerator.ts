@@ -870,7 +870,7 @@ function buildRegistrationTextContent(
       const totalCost = entryFee * (1 + numberOfGuests);
       const isPaid = reg.paymentStatus === 'paid';
       
-      const paymentText = !isPaid ? ' \x1b[31m[UNPAID]\x1b[0m' : '';
+      const paymentText = !isPaid ? ' **UNPAID**' : '';
       textContent += `${itemNumber}. ${member.name} ${totalCost}${paymentText}\n`;
       
       if (guestNames.length > 0) {
@@ -951,7 +951,7 @@ function buildRegistrationTextContent(
         const handicap = getDisplayHandicap(member as any, reg, event, useCourseHandicap, 1);
         const entryFee = Number(event.entryFee) || 0;
         const isPaid = reg.paymentStatus === 'paid';
-        const paymentText = !isPaid ? ' \x1b[31m[UNPAID]\x1b[0m' : '';
+        const paymentText = !isPaid ? ' **UNPAID**' : '';
         
         if (includeHandicap) {
           textContent += `${itemNumber}. ${member.name} - ${handicap} ${entryFee}${paymentText}\n`;
