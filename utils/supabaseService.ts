@@ -181,18 +181,30 @@ export const supabaseService = {
       if (error) throw error;
     },
     
-    register: async (eventId: string, memberId: string) => {
-      const { error } = await supabase.from('event_registrations').insert({
+    register: async (eventId: string, memberId: string, isSponsor?: boolean) => {
+      const insertData: any = {
         event_id: eventId,
         member_id: memberId,
         status: 'registered',
         payment_status: 'pending',
-      });
+      };
+      
+      if (isSponsor !== undefined) {
+        insertData.is_sponsor = isSponsor;
+      }
+      
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .insert(insertData)
+        .select()
+        .single();
       
       if (error) {
         console.error('[supabaseService] Registration error:', error);
         throw new Error(`Failed to register: ${error.message}`);
       }
+      
+      return data;
     },
     
     unregister: async (eventId: string, memberId: string) => {
@@ -319,18 +331,27 @@ export const supabaseService = {
         throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
       }
       
-      const { error } = await supabase.from('event_registrations').insert({
+      const insertData: any = {
         event_id: registration.eventId,
         member_id: registration.memberId,
         status: registration.status || 'registered',
         payment_status: registration.paymentStatus || 'unpaid',
-        player_phone: registration.playerPhone,
-        adjusted_handicap: registration.adjustedHandicap,
-        number_of_guests: registration.numberOfGuests || 0,
-        guest_names: registration.guestNames,
-        is_sponsor: registration.isSponsor || false,
-      });
+      };
+      
+      if (registration.playerPhone !== undefined) insertData.player_phone = registration.playerPhone;
+      if (registration.adjustedHandicap !== undefined) insertData.adjusted_handicap = registration.adjustedHandicap;
+      if (registration.numberOfGuests !== undefined) insertData.number_of_guests = registration.numberOfGuests;
+      if (registration.guestNames !== undefined) insertData.guest_names = registration.guestNames;
+      if (registration.isSponsor !== undefined) insertData.is_sponsor = registration.isSponsor;
+      
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .insert(insertData)
+        .select()
+        .single();
+      
       if (error) throw error;
+      return data;
     },
     
     update: async (registrationId: string, updates: any) => {

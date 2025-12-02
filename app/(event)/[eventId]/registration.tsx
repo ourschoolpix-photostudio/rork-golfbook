@@ -155,7 +155,7 @@ export default function EventRegistrationScreen() {
 
   const registerMutation = useMutation({
     mutationFn: ({ eventId, memberId, isSponsor }: { eventId: string; memberId: string; isSponsor?: boolean }) => 
-      supabaseService.events.register(eventId, memberId),
+      supabaseService.events.register(eventId, memberId, isSponsor),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events', eventId] });
       queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
