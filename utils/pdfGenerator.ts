@@ -1136,7 +1136,7 @@ function buildCheckInHTMLContent(
   <title>${event.name} - Check-In List</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    @page { size: letter; margin: 0.75in; }
+    @page { size: letter; margin: 0.5in 0.75in; }
     body { 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: white;
@@ -1244,7 +1244,7 @@ function buildCheckInHTMLContent(
     }
     .unpaid-badge {
       display: inline-block;
-      background: #FF5722;
+      background: #FF0000;
       color: white;
       font-size: 8px;
       font-weight: 700;
