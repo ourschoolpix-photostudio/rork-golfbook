@@ -41,6 +41,11 @@ async function generateNativePDF(
   try {
     console.log('[pdfGenerator] Generating PDF with expo-print...');
     
+    const timestamp = Date.now();
+    const date = new Date().toISOString().split('T')[0];
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
+    const filename = `${timestamp}-${date}-${cleanEventName}-day${activeDay}.pdf`;
+    
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
       base64: false,
@@ -63,11 +68,16 @@ async function generateNativePDF(
 
 function generateWebPDF(htmlContent: string, eventName: string, activeDay: number): void {
   try {
+    const timestamp = Date.now();
+    const date = new Date().toISOString().split('T')[0];
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
+    const filename = `${timestamp}-${date}-${cleanEventName}-day${activeDay}.html`;
+    
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${eventName.replace(/\s+/g, '-')}_groupings_day${activeDay}.html`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -331,6 +341,11 @@ async function generateNativeRegistrationPDF(
   try {
     console.log('[pdfGenerator] Generating registration PDF with expo-print...');
     
+    const timestamp = Date.now();
+    const date = new Date().toISOString().split('T')[0];
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
+    const filename = `${timestamp}-${date}-${cleanEventName}-registrations.pdf`;
+    
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
       base64: false,
@@ -353,11 +368,16 @@ async function generateNativeRegistrationPDF(
 
 function generateWebRegistrationPDF(htmlContent: string, eventName: string): void {
   try {
+    const timestamp = Date.now();
+    const date = new Date().toISOString().split('T')[0];
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
+    const filename = `${timestamp}-${date}-${cleanEventName}-registrations.html`;
+    
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${eventName.replace(/\s+/g, '-')}_registrations.html`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -925,6 +945,11 @@ async function generateNativeCheckInPDF(
   try {
     console.log('[pdfGenerator] Generating check-in PDF with expo-print...');
     
+    const timestamp = Date.now();
+    const date = new Date().toISOString().split('T')[0];
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
+    const filename = `${timestamp}-${date}-${cleanEventName}-check-in.pdf`;
+    
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
       base64: false,
@@ -947,11 +972,16 @@ async function generateNativeCheckInPDF(
 
 function generateWebCheckInPDF(htmlContent: string, eventName: string): void {
   try {
+    const timestamp = Date.now();
+    const date = new Date().toISOString().split('T')[0];
+    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '-');
+    const filename = `${timestamp}-${date}-${cleanEventName}-check-in.html`;
+    
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${eventName.replace(/\s+/g, '-')}_check-in.html`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
