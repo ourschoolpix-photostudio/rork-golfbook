@@ -213,24 +213,39 @@ export default function EventRegistrationScreen() {
         setActiveSort('abc');
       }
       
-      const registeredPlayerIds = Array.from(new Set(foundEvent.registeredPlayers || []));
-      const registered = allMembers.filter(m => registeredPlayerIds.includes(m.id));
-      setSelectedPlayers(registered);
-
       const loadRegs = async () => {
         const regs = registrationsQuery.data || [];
         console.log('[registration] Loaded regs from backend:', regs);
         
         await registrationCache.cacheRegistrations(foundEvent.id, regs);
         
+        const registered: Member[] = [];
         const regMap: Record<string, any> = {};
+        
         regs.forEach(reg => {
-          const memberName = allMembers.find(m => m.id === reg.memberId)?.name;
-          if (memberName) {
-            regMap[memberName] = {
+          if (reg.isCustomGuest) {
+            console.log('[registration] 🎯 Processing custom guest:', reg.customGuestName);
+            const customGuestMember: Member = {
+              id: reg.id,
+              name: reg.customGuestName || 'Unknown Guest',
+              handicap: 0,
+              membershipType: 'guest' as const,
+              pin: '',
+              isAdmin: false,
+              ghin: undefined,
+              email: undefined,
+              phone: undefined,
+              address: undefined,
+              rolexPoints: 0,
+              profilePhotoUrl: undefined,
+              createdAt: new Date().toISOString(),
+            };
+            registered.push(customGuestMember);
+            
+            regMap[customGuestMember.name] = {
               id: reg.id,
               eventId: reg.eventId,
-              playerName: memberName,
+              playerName: customGuestMember.name,
               playerPhone: reg.playerPhone,
               paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
               paymentMethod: 'zelle',
@@ -238,10 +253,32 @@ export default function EventRegistrationScreen() {
               numberOfGuests: reg.numberOfGuests || 0,
               guestNames: reg.guestNames || null,
               isSponsor: reg.isSponsor || false,
+              isCustomGuest: true,
             };
+          } else if (reg.memberId) {
+            const member = allMembers.find(m => m.id === reg.memberId);
+            if (member) {
+              registered.push(member);
+              regMap[member.name] = {
+                id: reg.id,
+                eventId: reg.eventId,
+                playerName: member.name,
+                playerPhone: reg.playerPhone,
+                paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
+                paymentMethod: 'zelle',
+                adjustedHandicap: reg.adjustedHandicap,
+                numberOfGuests: reg.numberOfGuests || 0,
+                guestNames: reg.guestNames || null,
+                isSponsor: reg.isSponsor || false,
+                isCustomGuest: false,
+              };
+            }
           }
         });
+        
+        console.log('[registration] Built registered players list:', registered.length);
         console.log('[registration] Built regMap:', regMap);
+        setSelectedPlayers(registered);
         setRegistrations(regMap);
       };
       
@@ -445,7 +482,8 @@ export default function EventRegistrationScreen() {
     console.log('[registration] 🗑️ REMOVE PLAYER STARTED - playerId:', playerId);
     const playerToRemove = selectedPlayers.find((p) => p.id === playerId);
     console.log('[registration] Player to remove:', playerToRemove?.name);
-    const isCustomGuest = playerToRemove?.membershipType === 'guest' && playerToRemove?.id.startsWith('guest_');
+    const playerReg = registrations[playerToRemove?.name || ''];
+    const isCustomGuest = playerReg?.isCustomGuest || false;
     console.log('[registration] Is custom guest:', isCustomGuest);
     
     if (event && currentUser) {
@@ -495,24 +533,19 @@ export default function EventRegistrationScreen() {
     }
 
     if (playerToRemove) {
-      const backendReg = registrationsQuery.data?.find((r: any) => r.memberId === playerId);
-      console.log('[registration] Backend registration found:', !!backendReg);
+      const playerReg = registrations[playerToRemove.name];
+      console.log('[registration] Backend registration found:', !!playerReg);
       
-      if (backendReg) {
-        console.log('[registration] Backend registration will be handled by unregister mutation');
-      }
-      
-      if (isCustomGuest) {
+      if (isCustomGuest && playerReg) {
         try {
-          console.log('[registration] Deleting custom guest member record:', playerId);
-          await deleteMemberMutation.mutateAsync({ memberId: playerId });
-          console.log('[registration] ✓ Custom guest member record deleted from database');
-          
-          const updatedMembers = members.filter(m => m.id !== playerId);
-          setMembers(updatedMembers);
-          console.log('[registration] ✓ Custom guest removed from members state');
+          console.log('[registration] Deleting custom guest registration directly:', playerReg.id);
+          await supabase
+            .from('event_registrations')
+            .delete()
+            .eq('id', playerReg.id);
+          console.log('[registration] ✓ Custom guest registration deleted from database');
         } catch (error) {
-          console.error('[registration] ❌ Error deleting custom guest member:', error);
+          console.error('[registration] ❌ Error deleting custom guest registration:', error);
         }
       }
       
