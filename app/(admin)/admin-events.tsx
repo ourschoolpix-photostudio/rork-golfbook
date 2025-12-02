@@ -16,7 +16,7 @@ import { AddEventModal } from '@/components/AddEventModal';
 import { AdminFooter } from '@/components/AdminFooter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Event } from '@/types';
-import { SyncButton, SyncStatusIndicator } from '@/components/SyncButton';
+
 import { supabaseService } from '@/utils/supabaseService';
 import { formatDateForDisplay } from '@/utils/dateUtils';
 
@@ -680,10 +680,7 @@ export default function AdminEventsScreen() {
         </View>
       </View>
 
-      <View style={styles.syncContainer}>
-        <SyncStatusIndicator />
-        <SyncButton />
-      </View>
+
 
       <FlatList
           data={events}
@@ -844,7 +841,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   listContent: {
-    paddingTop: 161,
+    paddingTop: 105,
     paddingHorizontal: 16,
     paddingBottom: 100,
   },
@@ -990,20 +987,5 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#fff',
   },
-  syncContainer: {
-    position: 'absolute' as const,
-    top: 105,
-    left: 16,
-    right: 16,
-    zIndex: 1001,
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    gap: 8,
-  },
+
 });
