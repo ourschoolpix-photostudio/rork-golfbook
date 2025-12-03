@@ -193,19 +193,14 @@ export default function TablesScreen() {
     console.log('[tables] registrationsData exists:', !!registrationsData);
     console.log('[tables] registrationsData length:', registrationsData?.length || 0);
     console.log('[tables] allMembers length:', allMembers?.length || 0);
-    console.log('[tables] allMembers sample:', allMembers?.slice(0, 3).map(m => ({ id: m.id, name: m.name })));
     
-    if (!eventData || !registrationsData) {
-      console.log('[tables] ❌ No event or registrations data - returning empty array');
+    if (!registrationsData || registrationsData.length === 0) {
+      console.log('[tables] ❌ No registrations data - returning empty array');
       return [];
     }
     
-    if (!allMembers || allMembers.length === 0) {
-      console.log('[tables] ⚠️ No members data available');
-    }
-    
     console.log('[tables] Processing', registrationsData.length, 'registrations');
-    console.log('[tables] Event registered players:', eventData.registeredPlayers?.length || 0);
+    console.log('[tables] Full registrations data:', JSON.stringify(registrationsData.slice(0, 3), null, 2));
     
     const assignedGuestIds = new Set<string>();
     tables.forEach((table) => {
@@ -233,15 +228,16 @@ export default function TablesScreen() {
             return null;
           }
           
+          console.log('[tables] ✅ Adding custom guest:', reg.custom_guest_name);
           return {
             id: guestId,
             name: reg.custom_guest_name || 'Unknown Guest',
             memberId: undefined,
           } as Guest;
-        } else {
+        } else if (reg.member_id) {
           const member = allMembers.find((m: any) => m.id === reg.member_id);
           if (!member) {
-            console.log('[tables] Member not found for registration:', reg.member_id);
+            console.log('[tables] ⚠️ Member not found for registration:', reg.member_id);
             return null;
           }
           if (assignedGuestIds.has(member.id)) {
@@ -249,11 +245,15 @@ export default function TablesScreen() {
             return null;
           }
           
+          console.log('[tables] ✅ Adding member:', member.name);
           return {
             id: member.id,
             name: member.name,
             memberId: member.id,
           } as Guest;
+        } else {
+          console.log('[tables] ⚠️ Registration has no member_id and is not custom guest - skipping');
+          return null;
         }
       })
       .filter((g): g is Guest => g !== null)
@@ -263,7 +263,7 @@ export default function TablesScreen() {
     console.log('[tables] Guest names:', guests.map(g => ({ id: g.id, name: g.name })));
     console.log('[tables] 🔍 REGISTERED GUESTS CALCULATION COMPLETE');
     return guests;
-  }, [eventData, registrationsData, allMembers, tables]);
+  }, [registrationsData, allMembers, tables]);
 
   const handleCreateTables = (count: number, label: string) => {
     const newTables: Table[] = [];
