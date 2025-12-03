@@ -166,15 +166,31 @@ export default function TablesScreen() {
     }
   }, [tableAssignmentsData]);
 
+  const { data: eventData } = useQuery({
+    queryKey: ['events', eventId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!eventId,
+  });
+
   const registeredGuests = useMemo(() => {
     console.log('[tables] 🔍 REGISTERED GUESTS CALCULATION STARTED');
+    console.log('[tables] eventData exists:', !!eventData);
     console.log('[tables] registrationsData exists:', !!registrationsData);
     console.log('[tables] registrationsData length:', registrationsData?.length || 0);
     console.log('[tables] allMembers length:', allMembers?.length || 0);
     console.log('[tables] allMembers sample:', allMembers?.slice(0, 3).map(m => ({ id: m.id, name: m.name })));
     
-    if (!registrationsData) {
-      console.log('[tables] ❌ No registrations data - returning empty array');
+    if (!eventData || !registrationsData) {
+      console.log('[tables] ❌ No event or registrations data - returning empty array');
       return [];
     }
     
@@ -183,6 +199,7 @@ export default function TablesScreen() {
     }
     
     console.log('[tables] Processing', registrationsData.length, 'registrations');
+    console.log('[tables] Event registered players:', eventData.registeredPlayers?.length || 0);
     
     const assignedGuestIds = new Set<string>();
     tables.forEach((table) => {
@@ -240,7 +257,7 @@ export default function TablesScreen() {
     console.log('[tables] Guest names:', guests.map(g => ({ id: g.id, name: g.name })));
     console.log('[tables] 🔍 REGISTERED GUESTS CALCULATION COMPLETE');
     return guests;
-  }, [registrationsData, allMembers, tables]);
+  }, [eventData, registrationsData, allMembers, tables]);
 
   const handleCreateTables = (count: number, label: string) => {
     const newTables: Table[] = [];
