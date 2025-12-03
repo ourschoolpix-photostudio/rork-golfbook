@@ -59,12 +59,18 @@ export default function TablesScreen() {
   const { data: registrationsData, isLoading: registrationsLoading } = useQuery({
     queryKey: ['registrations', eventId],
     queryFn: async () => {
+      console.log('[tables] 🔍 Fetching registrations for eventId:', eventId);
       const { data, error } = await supabase
         .from('event_registrations')
         .select('*')
         .eq('event_id', eventId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('[tables] ❌ Error fetching registrations:', error);
+        throw error;
+      }
+      console.log('[tables] ✅ Fetched registrations:', data?.length || 0);
+      console.log('[tables] 📊 Sample data:', data?.slice(0, 2));
       return data;
     },
     enabled: !!eventId,
@@ -165,6 +171,7 @@ export default function TablesScreen() {
     console.log('[tables] registrationsData exists:', !!registrationsData);
     console.log('[tables] registrationsData length:', registrationsData?.length || 0);
     console.log('[tables] allMembers length:', allMembers?.length || 0);
+    console.log('[tables] allMembers sample:', allMembers?.slice(0, 3).map(m => ({ id: m.id, name: m.name })));
     
     if (!registrationsData) {
       console.log('[tables] ❌ No registrations data - returning empty array');
