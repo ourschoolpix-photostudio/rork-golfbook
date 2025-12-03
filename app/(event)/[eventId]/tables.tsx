@@ -161,28 +161,37 @@ export default function TablesScreen() {
   }, [tableAssignmentsData]);
 
   const registeredGuests = useMemo(() => {
-    if (!registrationsData || !allMembers) return [];
+    if (!registrationsData) return [];
     
     const assignedGuestIds = new Set<string>();
     tables.forEach((table) => {
       table.guests.forEach((guest) => {
-        if (guest.memberId) {
-          assignedGuestIds.add(guest.memberId);
-        }
+        assignedGuestIds.add(guest.id);
       });
     });
 
     return registrationsData
       .map((reg: any) => {
-        const member = allMembers.find((m: any) => m.id === reg.member_id);
-        if (!member) return null;
-        if (assignedGuestIds.has(member.id)) return null;
-        
-        return {
-          id: member.id,
-          name: member.name,
-          memberId: member.id,
-        } as Guest;
+        if (reg.is_custom_guest) {
+          const guestId = `custom-${reg.id}`;
+          if (assignedGuestIds.has(guestId)) return null;
+          
+          return {
+            id: guestId,
+            name: reg.custom_guest_name || 'Unknown Guest',
+            memberId: undefined,
+          } as Guest;
+        } else {
+          const member = allMembers.find((m: any) => m.id === reg.member_id);
+          if (!member) return null;
+          if (assignedGuestIds.has(member.id)) return null;
+          
+          return {
+            id: member.id,
+            name: member.name,
+            memberId: member.id,
+          } as Guest;
+        }
       })
       .filter((g): g is Guest => g !== null)
       .sort((a, b) => a.name.localeCompare(b.name));
