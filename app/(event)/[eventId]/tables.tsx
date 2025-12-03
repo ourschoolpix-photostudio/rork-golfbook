@@ -161,12 +161,21 @@ export default function TablesScreen() {
   }, [tableAssignmentsData]);
 
   const registeredGuests = useMemo(() => {
+    console.log('[tables] 🔍 REGISTERED GUESTS CALCULATION STARTED');
+    console.log('[tables] registrationsData exists:', !!registrationsData);
+    console.log('[tables] registrationsData length:', registrationsData?.length || 0);
+    console.log('[tables] allMembers length:', allMembers?.length || 0);
+    
     if (!registrationsData) {
-      console.log('[tables] No registrations data');
+      console.log('[tables] ❌ No registrations data - returning empty array');
       return [];
     }
     
-    console.log('[tables] Processing registrations:', registrationsData.length, 'registrations');
+    if (!allMembers || allMembers.length === 0) {
+      console.log('[tables] ⚠️ No members data available');
+    }
+    
+    console.log('[tables] Processing', registrationsData.length, 'registrations');
     
     const assignedGuestIds = new Set<string>();
     tables.forEach((table) => {
@@ -175,11 +184,17 @@ export default function TablesScreen() {
       });
     });
     
-    console.log('[tables] Assigned guest IDs:', Array.from(assignedGuestIds));
+    console.log('[tables] Currently assigned guest IDs:', Array.from(assignedGuestIds));
+    console.log('[tables] Number of tables:', tables.length);
 
     const guests = registrationsData
       .map((reg: any) => {
-        console.log('[tables] Processing registration:', reg);
+        console.log('[tables] 📋 Processing registration:', {
+          id: reg.id,
+          member_id: reg.member_id,
+          is_custom_guest: reg.is_custom_guest,
+          custom_guest_name: reg.custom_guest_name,
+        });
         
         if (reg.is_custom_guest) {
           const guestId = `custom-${reg.id}`;
@@ -214,7 +229,9 @@ export default function TablesScreen() {
       .filter((g): g is Guest => g !== null)
       .sort((a, b) => a.name.localeCompare(b.name));
     
-    console.log('[tables] Final unassigned guests:', guests.length, guests.map(g => g.name));
+    console.log('[tables] ✅ Final unassigned guests:', guests.length);
+    console.log('[tables] Guest names:', guests.map(g => ({ id: g.id, name: g.name })));
+    console.log('[tables] 🔍 REGISTERED GUESTS CALCULATION COMPLETE');
     return guests;
   }, [registrationsData, allMembers, tables]);
 
