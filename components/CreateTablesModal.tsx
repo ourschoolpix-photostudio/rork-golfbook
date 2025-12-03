@@ -76,7 +76,6 @@ export function CreateTablesModal({
                 placeholder="Enter label (A, B, C, etc.)"
                 value={tableLabel}
                 onChangeText={setTableLabel}
-                maxLength={3}
                 autoCapitalize="characters"
                 autoFocus
               />
