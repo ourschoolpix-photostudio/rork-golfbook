@@ -243,3 +243,19 @@ export interface Course {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Guest {
+  id: string;
+  name: string;
+  memberId?: string;
+}
+
+export interface TableAssignment {
+  id: string;
+  eventId: string;
+  tableLabel: string;
+  tableNumber: number;
+  guestSlots: Guest[];
+  createdAt: string;
+  updatedAt: string;
+}
