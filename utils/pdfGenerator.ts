@@ -1,7 +1,8 @@
 import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
-import type { Member, Event } from '@/types';
+import type { Member, Event, Grouping } from '@/types';
+import { type LabelOverride } from '@/utils/groupingsHelper';
 
 interface RegistrationPDFOptions {
   registrations: any[];
@@ -727,6 +728,206 @@ function buildRegistrationHTMLContent(
 </body>
 </html>`;
   }
+}
+
+interface GroupingsPDFOptions {
+  groups: Grouping[];
+  event: Event;
+  activeDay: number;
+  eventName: string;
+  labelOverride: LabelOverride;
+  members: Member[];
+}
+
+export async function generateGroupingsPDF(options: GroupingsPDFOptions): Promise<void> {
+  try {
+    console.log('[pdfGenerator] Starting groupings PDF generation...');
+    const { groups, event, activeDay, eventName, labelOverride, members } = options;
+    const htmlContent = buildGroupingsHTMLContent(groups, event, activeDay, eventName, labelOverride, members);
+
+    if (Platform.OS === 'web') {
+      return generateWebPDF(htmlContent, eventName, 'Groupings');
+    }
+
+    return generateNativePDF(htmlContent, eventName, 'Groupings');
+  } catch (error) {
+    console.error('[pdfGenerator] Groupings PDF error:', error);
+    throw error;
+  }
+}
+
+function buildGroupingsHTMLContent(
+  groups: Grouping[],
+  event: Event,
+  activeDay: number,
+  eventName: string,
+  labelOverride: LabelOverride,
+  members: Member[]
+): string {
+  let groupsHTML = '';
+
+  groups.forEach((group, idx) => {
+    let label = '';
+    
+    if (labelOverride === 'teeTime') {
+      const dayStartTime = activeDay === 1 ? event.day1StartTime : activeDay === 2 ? event.day2StartTime : event.day3StartTime;
+      const dayStartPeriod = activeDay === 1 ? event.day1StartPeriod : activeDay === 2 ? event.day2StartPeriod : event.day3StartPeriod;
+      const startTime = dayStartTime ? parseInt(dayStartTime) : 8;
+      const period = dayStartPeriod || 'AM';
+      
+      const totalMinutes = idx * 8;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      let hour = startTime + hours;
+      let currentPeriod = period;
+      
+      if (period === 'AM' && hour >= 12) {
+        currentPeriod = 'PM';
+        if (hour > 12) hour -= 12;
+      } else if (period === 'PM' && hour >= 12) {
+        if (hour > 12) hour -= 12;
+      }
+      
+      label = `${hour}:${minutes.toString().padStart(2, '0')} ${currentPeriod}`;
+    } else if (labelOverride === 'shotgun') {
+      const leadingHole = activeDay === 1 ? event.day1LeadingHole : activeDay === 2 ? event.day2LeadingHole : event.day3LeadingHole;
+      const hole = leadingHole ? parseInt(leadingHole) + idx : idx + 1;
+      label = `Hole ${hole}`;
+    } else {
+      label = `Group ${idx + 1}`;
+    }
+
+    const playersInGroup = group.slots.filter(slot => slot !== null);
+    
+    if (playersInGroup.length === 0) return;
+
+    groupsHTML += `
+      <div class="group-card">
+        <div class="group-header">${label}</div>
+    `;
+
+    playersInGroup.forEach((memberId) => {
+      if (!memberId) return;
+      const member = members.find(m => m.id === memberId);
+      if (!member) return;
+
+      groupsHTML += `
+        <div class="player-row">
+          <div class="player-name">${member.name}</div>
+        </div>
+      `;
+    });
+
+    groupsHTML += `
+      </div>
+    `;
+  });
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
+  const dateRange = event.endDate && event.endDate !== event.date 
+    ? `${formatDate(event.date)} - ${formatDate(event.endDate)}` 
+    : formatDate(event.date);
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${eventName} - Groupings Day ${activeDay}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @page { size: letter; margin: 0.5in 0.75in; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: white;
+      padding: 20px;
+      font-size: 10px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      border-bottom: 3px solid #1B5E20;
+      padding-bottom: 12px;
+    }
+    .header-title {
+      font-size: 22px;
+      font-weight: bold;
+      color: #1B5E20;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+    .header-subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .venue-date-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      font-size: 11px;
+      color: #666;
+      margin-top: 5px;
+    }
+    .venue-text, .date-text {
+      font-size: 11px;
+      color: #666;
+    }
+    .groups-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-top: 10px;
+    }
+    .group-card {
+      border: 2px solid #1B5E20;
+      border-radius: 8px;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+    .group-header {
+      background: #1B5E20;
+      color: white;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .player-row {
+      padding: 8px 12px;
+      border-bottom: 1px solid #E0E0E0;
+    }
+    .player-row:last-child {
+      border-bottom: none;
+    }
+    .player-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">${eventName}</div>
+    <div class="header-subtitle">Day ${activeDay} Groupings</div>
+    <div class="venue-date-row">
+      ${event.location ? `<span class="venue-text">${event.location}</span>` : ''}
+      <span class="date-text">${dateRange}</span>
+    </div>
+  </div>
+  <div class="groups-container">
+    ${groupsHTML}
+  </div>
+</body>
+</html>`;
 }
 
 function buildRegistrationTextContent(
