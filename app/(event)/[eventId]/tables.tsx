@@ -199,8 +199,10 @@ export default function TablesScreen() {
       return [];
     }
     
-    console.log('[tables] Processing', registrationsData.length, 'registrations');
-    console.log('[tables] Full registrations data:', JSON.stringify(registrationsData.slice(0, 3), null, 2));
+    console.log('[tables] 📊 Sample registration structure:', {
+      firstReg: registrationsData[0],
+      keys: registrationsData[0] ? Object.keys(registrationsData[0]) : [],
+    });
     
     const assignedGuestIds = new Set<string>();
     tables.forEach((table) => {
@@ -216,28 +218,32 @@ export default function TablesScreen() {
       .map((reg: any) => {
         console.log('[tables] 📋 Processing registration:', {
           id: reg.id,
-          member_id: reg.member_id,
-          is_custom_guest: reg.is_custom_guest,
-          custom_guest_name: reg.custom_guest_name,
+          memberId: reg.memberId || reg.member_id,
+          isCustomGuest: reg.isCustomGuest || reg.is_custom_guest,
+          customGuestName: reg.customGuestName || reg.custom_guest_name,
         });
         
-        if (reg.is_custom_guest) {
+        const isCustomGuest = reg.isCustomGuest || reg.is_custom_guest;
+        const memberId = reg.memberId || reg.member_id;
+        const customGuestName = reg.customGuestName || reg.custom_guest_name;
+        
+        if (isCustomGuest) {
           const guestId = `custom-${reg.id}`;
           if (assignedGuestIds.has(guestId)) {
             console.log('[tables] Custom guest already assigned:', guestId);
             return null;
           }
           
-          console.log('[tables] ✅ Adding custom guest:', reg.custom_guest_name);
+          console.log('[tables] ✅ Adding custom guest:', customGuestName);
           return {
             id: guestId,
-            name: reg.custom_guest_name || 'Unknown Guest',
+            name: customGuestName || 'Unknown Guest',
             memberId: undefined,
           } as Guest;
-        } else if (reg.member_id) {
-          const member = allMembers.find((m: any) => m.id === reg.member_id);
+        } else if (memberId) {
+          const member = allMembers.find((m: any) => m.id === memberId);
           if (!member) {
-            console.log('[tables] ⚠️ Member not found for registration:', reg.member_id);
+            console.log('[tables] ⚠️ Member not found for registration:', memberId);
             return null;
           }
           if (assignedGuestIds.has(member.id)) {
@@ -252,7 +258,7 @@ export default function TablesScreen() {
             memberId: member.id,
           } as Guest;
         } else {
-          console.log('[tables] ⚠️ Registration has no member_id and is not custom guest - skipping');
+          console.log('[tables] ⚠️ Registration has no memberId and is not custom guest - skipping');
           return null;
         }
       })
