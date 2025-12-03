@@ -70,7 +70,13 @@ export default function TablesScreen() {
         throw error;
       }
       console.log('[tables] ✅ Fetched registrations:', data?.length || 0);
-      console.log('[tables] 📊 Sample data:', data?.slice(0, 2));
+      console.log('[tables] 📊 Full registration data:', JSON.stringify(data, null, 2));
+      console.log('[tables] 📊 Sample fields from first registration:', data?.[0] ? {
+        id: data[0].id,
+        member_id: data[0].member_id,
+        is_custom_guest: data[0].is_custom_guest,
+        custom_guest_name: data[0].custom_guest_name,
+      } : 'No data');
       return data;
     },
     enabled: !!eventId,
