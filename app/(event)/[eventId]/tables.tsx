@@ -161,7 +161,12 @@ export default function TablesScreen() {
   }, [tableAssignmentsData]);
 
   const registeredGuests = useMemo(() => {
-    if (!registrationsData) return [];
+    if (!registrationsData) {
+      console.log('[tables] No registrations data');
+      return [];
+    }
+    
+    console.log('[tables] Processing registrations:', registrationsData.length, 'registrations');
     
     const assignedGuestIds = new Set<string>();
     tables.forEach((table) => {
@@ -169,12 +174,19 @@ export default function TablesScreen() {
         assignedGuestIds.add(guest.id);
       });
     });
+    
+    console.log('[tables] Assigned guest IDs:', Array.from(assignedGuestIds));
 
-    return registrationsData
+    const guests = registrationsData
       .map((reg: any) => {
+        console.log('[tables] Processing registration:', reg);
+        
         if (reg.is_custom_guest) {
           const guestId = `custom-${reg.id}`;
-          if (assignedGuestIds.has(guestId)) return null;
+          if (assignedGuestIds.has(guestId)) {
+            console.log('[tables] Custom guest already assigned:', guestId);
+            return null;
+          }
           
           return {
             id: guestId,
@@ -183,8 +195,14 @@ export default function TablesScreen() {
           } as Guest;
         } else {
           const member = allMembers.find((m: any) => m.id === reg.member_id);
-          if (!member) return null;
-          if (assignedGuestIds.has(member.id)) return null;
+          if (!member) {
+            console.log('[tables] Member not found for registration:', reg.member_id);
+            return null;
+          }
+          if (assignedGuestIds.has(member.id)) {
+            console.log('[tables] Member already assigned:', member.id, member.name);
+            return null;
+          }
           
           return {
             id: member.id,
@@ -195,6 +213,9 @@ export default function TablesScreen() {
       })
       .filter((g): g is Guest => g !== null)
       .sort((a, b) => a.name.localeCompare(b.name));
+    
+    console.log('[tables] Final unassigned guests:', guests.length, guests.map(g => g.name));
+    return guests;
   }, [registrationsData, allMembers, tables]);
 
   const handleCreateTables = (count: number, label: string) => {
@@ -428,7 +449,7 @@ export default function TablesScreen() {
         )}
 
         <View style={styles.contentWrapper}>
-          {isAdmin && registeredGuests.length > 0 && (
+          {isAdmin && (
             <View style={styles.guestsSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionCount}>{registeredGuests.length}</Text>
