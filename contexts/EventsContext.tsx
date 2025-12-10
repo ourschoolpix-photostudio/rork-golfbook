@@ -201,6 +201,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
           flight_a_teebox: eventWithDefaults.flightATeebox,
           flight_b_teebox: eventWithDefaults.flightBTeebox,
           flight_l_teebox: eventWithDefaults.flightLTeebox,
+          archived: eventWithDefaults.archived || false,
+          archived_at: eventWithDefaults.archivedAt,
         });
         
         if (error) throw error;
