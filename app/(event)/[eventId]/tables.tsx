@@ -251,10 +251,11 @@ export default function TablesScreen() {
             const guestName = guestNames[i] || 'Unknown Guest';
             const guestOfGuestId = `custom-${reg.id}-guest-${i}`;
             if (!assignedGuestIds.has(guestOfGuestId)) {
-              console.log('[tables] ✅ Adding custom guest\'s guest:', guestName);
+              const formattedName = `${customGuestName || 'Unknown Guest'} (${guestName})`;
+              console.log('[tables] ✅ Adding custom guest\'s guest:', formattedName);
               guests.push({
                 id: guestOfGuestId,
-                name: guestName,
+                name: formattedName,
                 memberId: undefined,
               } as Guest);
             }
@@ -283,10 +284,11 @@ export default function TablesScreen() {
             const guestName = guestNames[i] || 'Unknown Guest';
             const guestOfGuestId = `${memberId}-guest-${i}`;
             if (!assignedGuestIds.has(guestOfGuestId)) {
-              console.log('[tables] ✅ Adding member\'s guest:', guestName);
+              const formattedName = `${member.name} (${guestName})`;
+              console.log('[tables] ✅ Adding member\'s guest:', formattedName);
               guests.push({
                 id: guestOfGuestId,
-                name: guestName,
+                name: formattedName,
                 memberId: undefined,
               } as Guest);
             }
