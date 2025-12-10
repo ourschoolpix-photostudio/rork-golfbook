@@ -254,7 +254,7 @@ export default function TablesScreen() {
               console.log('[tables] ✅ Adding custom guest\'s guest:', guestName);
               guests.push({
                 id: guestOfGuestId,
-                name: `${customGuestName}\n${customGuestName} - ${guestName}`,
+                name: guestName,
                 memberId: undefined,
               } as Guest);
             }
@@ -286,7 +286,7 @@ export default function TablesScreen() {
               console.log('[tables] ✅ Adding member\'s guest:', guestName);
               guests.push({
                 id: guestOfGuestId,
-                name: `${member.name}\n${member.name} - ${guestName}`,
+                name: guestName,
                 memberId: undefined,
               } as Guest);
             }
