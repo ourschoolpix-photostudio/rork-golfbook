@@ -169,7 +169,9 @@ CREATE TABLE IF NOT EXISTS events (
   closest_to_pin TEXT,
   
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  last_synced_at TIMESTAMPTZ
+  last_synced_at TIMESTAMPTZ,
+  archived BOOLEAN DEFAULT false NOT NULL,
+  archived_at TIMESTAMPTZ
 );
 
 -- Add course_id columns if they don't exist

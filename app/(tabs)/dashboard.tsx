@@ -11,6 +11,7 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ import { supabaseService } from '@/utils/supabaseService';
 
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
+import { DuplicateEventModal } from '@/components/DuplicateEventModal';
 import { Member, Event } from '@/types';
 import { formatDateForDisplay } from '@/utils/dateUtils';
 
@@ -32,8 +34,10 @@ export default function DashboardScreen() {
   const [userProfile, setUserProfile] = useState<Member | null>(null);
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [detailsModalVisible, setDetailsModalVisible] = useState<boolean>(false);
+  const [duplicateModalVisible, setDuplicateModalVisible] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
 
   const registrationsQuery = useQuery({
     queryKey: ['all-event-registrations', contextEvents?.length || 0],
@@ -84,6 +88,36 @@ export default function DashboardScreen() {
       setEvents(sortedEvents);
     }
   }, [contextEvents, eventsLoading]);
+
+  const activeEvents = events.filter(e => !e.archived);
+  const archivedEvents = events.filter(e => e.archived);
+
+  const archivedEventsByYear = archivedEvents.reduce<Record<string, Event[]>>((acc, event) => {
+    const year = event.date ? new Date(event.date).getFullYear().toString() : 'Unknown';
+    if (!acc[year]) {
+      acc[year] = [];
+    }
+    acc[year].push(event);
+    return acc;
+  }, {});
+
+  const sortedYears = Object.keys(archivedEventsByYear).sort((a, b) => {
+    if (a === 'Unknown') return 1;
+    if (b === 'Unknown') return -1;
+    return parseInt(b) - parseInt(a);
+  });
+
+  const toggleYear = (year: string) => {
+    setExpandedYears(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(year)) {
+        newSet.delete(year);
+      } else {
+        newSet.add(year);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     if (registrationsQuery.data) {
@@ -253,6 +287,48 @@ export default function DashboardScreen() {
     }
   };
 
+  const { updateEvent, addEvent } = useEvents();
+
+  const handleArchiveEvent = async (event: Event) => {
+    try {
+      await updateEvent(event.id, {
+        archived: true,
+        archivedAt: new Date().toISOString(),
+      });
+      Alert.alert('Success', 'Event archived successfully');
+    } catch (error) {
+      console.error('Error archiving event:', error);
+      Alert.alert('Error', 'Failed to archive event');
+    }
+  };
+
+  const handleUnarchiveEvent = async (event: Event) => {
+    try {
+      await updateEvent(event.id, {
+        archived: false,
+        archivedAt: undefined,
+      });
+      Alert.alert('Success', 'Event unarchived successfully');
+    } catch (error) {
+      console.error('Error unarchiving event:', error);
+      Alert.alert('Error', 'Failed to unarchive event');
+    }
+  };
+
+  const handleDuplicate = (event: Event) => {
+    setSelectedEvent(event);
+    setDuplicateModalVisible(true);
+  };
+
+  const handleDuplicateEvent = async (newEvent: Event) => {
+    try {
+      await addEvent(newEvent);
+    } catch (error) {
+      console.error('Error duplicating event:', error);
+      throw error;
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -332,70 +408,174 @@ export default function DashboardScreen() {
             <ActivityIndicator size="large" color="#007AFF" />
             <Text style={styles.loadingText}>Loading events...</Text>
           </View>
-        ) : events.length === 0 ? (
+        ) : activeEvents.length === 0 && archivedEvents.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No events created yet</Text>
             <Text style={styles.emptySubtext}>Events will appear here once created by admin</Text>
           </View>
         ) : (
-          <FlatList
-            scrollEnabled={false}
-            data={events}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.eventCard}
-                activeOpacity={0.8}
-                onPress={() => {
-                  console.log('Navigating to event:', item.id);
-                  router.push(`/(event)/${item.id}/registration` as any);
-                }}
-              >
-                <View style={styles.eventPhoto}>
-                  <Image
-                    source={{ uri: (item.photoUrl && item.photoUrl.trim() !== '') ? item.photoUrl : 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80' }}
-                    style={styles.photoPlaceholder}
-                  />
-                  <TouchableOpacity
-                    style={styles.viewDetailsButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleViewDetails(item);
-                    }}
-                  >
-                    <Text style={styles.viewDetailsButtonText}>View Details</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.eventContent}>
-                  <Text style={styles.eventName}>{item.name}</Text>
-                  <Text style={styles.eventDetail}>📍 {item.location}</Text>
-                  <Text style={styles.eventDetail}>
-                    📅 {formatDateRange(item.date || '', item.endDate || '')}
-                  </Text>
-
-                  <View style={styles.scheduleSection}>
-                    {formatSchedule(item).map((schedule, index) => (
-                      <Text key={index} style={styles.scheduleTime}>
-                        {schedule}
-                      </Text>
-                    ))}
+          <>
+            <FlatList
+              scrollEnabled={false}
+              data={activeEvents}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.eventCard}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    console.log('Navigating to event:', item.id);
+                    router.push(`/(event)/${item.id}/registration` as any);
+                  }}
+                >
+                  <View style={styles.eventPhoto}>
+                    <Image
+                      source={{ uri: (item.photoUrl && item.photoUrl.trim() !== '') ? item.photoUrl : 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80' }}
+                      style={styles.photoPlaceholder}
+                    />
+                    <TouchableOpacity
+                      style={styles.viewDetailsButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(item);
+                      }}
+                    >
+                      <Text style={styles.viewDetailsButtonText}>View Details</Text>
+                    </TouchableOpacity>
                   </View>
+                  <View style={styles.eventContent}>
+                    <Text style={styles.eventName}>{item.name}</Text>
+                    <Text style={styles.eventDetail}>📍 {item.location}</Text>
+                    <Text style={styles.eventDetail}>
+                      📅 {formatDateRange(item.date || '', item.endDate || '')}
+                    </Text>
 
-                  <Text style={styles.eventPlayers}>
-                    {item.type === 'social' ? 'Attendees:' : 'Players registered:'} {getEventAttendeeCount(item)}
-                  </Text>
-
-                  {item.entryFee && (
-                    <View style={styles.entryFeeBadge}>
-                      <Text style={styles.entryFeeText}>${item.entryFee}</Text>
+                    <View style={styles.scheduleSection}>
+                      {formatSchedule(item).map((schedule, index) => (
+                        <Text key={index} style={styles.scheduleTime}>
+                          {schedule}
+                        </Text>
+                      ))}
                     </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            )}
-          />
+
+                    <Text style={styles.eventPlayers}>
+                      {item.type === 'social' ? 'Attendees:' : 'Players registered:'} {getEventAttendeeCount(item)}
+                    </Text>
+
+                    {item.entryFee && (
+                      <View style={styles.entryFeeBadge}>
+                        <Text style={styles.entryFeeText}>${item.entryFee}</Text>
+                      </View>
+                    )}
+                    
+                    {currentUser?.isAdmin && (
+                      <View style={styles.eventActions}>
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleArchiveEvent(item);
+                          }}
+                        >
+                          <Text style={styles.actionButtonText}>Archive</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleDuplicate(item);
+                          }}
+                        >
+                          <Text style={styles.actionButtonText}>Duplicate</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+
+            {sortedYears.map((year) => (
+              <View key={year} style={styles.archivedYearCard}>
+                <TouchableOpacity
+                  style={styles.yearHeader}
+                  onPress={() => toggleYear(year)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.yearText}>{year} Archived Events ({archivedEventsByYear[year].length})</Text>
+                  <Text style={styles.yearIcon}>{expandedYears.has(year) ? '▼' : '▶'}</Text>
+                </TouchableOpacity>
+                {expandedYears.has(year) && (
+                  <FlatList
+                    scrollEnabled={false}
+                    data={archivedEventsByYear[year]}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.eventCard}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          console.log('Navigating to event:', item.id);
+                          router.push(`/(event)/${item.id}/registration` as any);
+                        }}
+                      >
+                        <View style={styles.eventPhoto}>
+                          <Image
+                            source={{ uri: (item.photoUrl && item.photoUrl.trim() !== '') ? item.photoUrl : 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80' }}
+                            style={styles.photoPlaceholder}
+                          />
+                          <View style={styles.archivedBadge}>
+                            <Text style={styles.archivedBadgeText}>ARCHIVED</Text>
+                          </View>
+                        </View>
+                        <View style={styles.eventContent}>
+                          <Text style={styles.eventName}>{item.name}</Text>
+                          <Text style={styles.eventDetail}>📍 {item.location}</Text>
+                          <Text style={styles.eventDetail}>
+                            📅 {formatDateRange(item.date || '', item.endDate || '')}
+                          </Text>
+
+                          {currentUser?.isAdmin && (
+                            <View style={styles.eventActions}>
+                              <TouchableOpacity
+                                style={styles.actionButton}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  handleUnarchiveEvent(item);
+                                }}
+                              >
+                                <Text style={styles.actionButtonText}>Unarchive</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.actionButton}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  handleDuplicate(item);
+                                }}
+                              >
+                                <Text style={styles.actionButtonText}>Duplicate</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  />
+                )}
+              </View>
+            ))}
+          </>
         )}
       </ScrollView>
+      
+      {selectedEvent && (
+        <DuplicateEventModal
+          visible={duplicateModalVisible}
+          event={selectedEvent}
+          onClose={() => setDuplicateModalVisible(false)}
+          onDuplicate={handleDuplicateEvent}
+        />
+      )}
     </View>
     </>
   );
@@ -661,5 +841,68 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     marginTop: 8,
+  },
+  eventActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  actionButton: {
+    backgroundColor: '#374151',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    flex: 1,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  archivedYearCard: {
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  yearHeader: {
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  yearText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#374151',
+  },
+  yearIcon: {
+    fontSize: 14,
+    color: '#666',
+  },
+  archivedBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  archivedBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#fff',
+    letterSpacing: 0.5,
   },
 });

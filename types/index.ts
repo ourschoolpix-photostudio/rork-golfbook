@@ -132,6 +132,8 @@ export interface Event {
   lowGrossTrophy?: boolean;
   lowGrossCashPrize?: string;
   closestToPin?: string;
+  archived?: boolean;
+  archivedAt?: string;
 }
 
 export interface EventRegistration {

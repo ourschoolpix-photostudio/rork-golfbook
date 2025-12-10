@@ -106,6 +106,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         flightATeebox: e.flight_a_teebox,
         flightBTeebox: e.flight_b_teebox,
         flightLTeebox: e.flight_l_teebox,
+        archived: e.archived || false,
+        archivedAt: e.archived_at,
         registeredPlayers: registrationsByEvent.get(e.id) || [],
       }));
       
@@ -272,6 +274,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         if (updates.flightATeebox !== undefined) supabaseUpdates.flight_a_teebox = updates.flightATeebox;
         if (updates.flightBTeebox !== undefined) supabaseUpdates.flight_b_teebox = updates.flightBTeebox;
         if (updates.flightLTeebox !== undefined) supabaseUpdates.flight_l_teebox = updates.flightLTeebox;
+        if (updates.archived !== undefined) supabaseUpdates.archived = updates.archived;
+        if (updates.archivedAt !== undefined) supabaseUpdates.archived_at = updates.archivedAt;
         
         const { error } = await supabase
           .from('events')
