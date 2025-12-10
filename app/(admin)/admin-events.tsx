@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   Alert,
   Image,
@@ -107,7 +107,7 @@ type EventFormType = {
 export default function AdminEventsScreen() {
   const { currentUser } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
-  const [showArchived, setShowArchived] = useState<boolean>(false);
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
   const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -232,11 +232,9 @@ export default function AdminEventsScreen() {
       const data = await supabaseService.events.getAll();
       console.log('✅ Admin Events - Events from Supabase:', data.length);
       const sortedEvents = [...data].sort((a, b) => {
-        if (a.archived && !b.archived) return 1;
-        if (!a.archived && b.archived) return -1;
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA;
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        return dateB - dateA;
       });
       setEvents(sortedEvents);
     } catch (error) {
@@ -736,6 +734,18 @@ export default function AdminEventsScreen() {
       Alert.alert('Error', `Failed to unarchive event: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
+
+  const toggleYear = (year: string) => {
+    setExpandedYears(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(year)) {
+        newSet.delete(year);
+      } else {
+        newSet.add(year);
+      }
+      return newSet;
+    });
+  };
   
   return (
     <View style={styles.container}>
@@ -743,14 +753,6 @@ export default function AdminEventsScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Events</Text>
           <View style={styles.headerButtons}>
-            <TouchableOpacity
-              style={[styles.filterButton, showArchived && styles.filterButtonActive]}
-              onPress={() => setShowArchived(!showArchived)}
-            >
-              <Text style={[styles.filterButtonText, showArchived && styles.filterButtonTextActive]}>
-                {showArchived ? 'Hide Archived' : 'Show Archived'}
-              </Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={styles.addButton}
               onPress={() => {
@@ -767,13 +769,13 @@ export default function AdminEventsScreen() {
 
 
 
-      <FlatList
-          data={showArchived ? events : events.filter(e => !e.archived)}
-          keyExtractor={(item) => item.id}
+      <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
+        >
+          {events.filter(e => !e.archived).map((item) => (
             <TouchableOpacity 
+              key={item.id}
               style={styles.eventCard}
               onPress={() => handleEditEvent(item)}
             >
@@ -783,11 +785,6 @@ export default function AdminEventsScreen() {
                     source={{ uri: item.photoUrl }} 
                     style={styles.eventPhoto}
                   />
-                  {item.archived && (
-                    <View style={styles.archivedBadge}>
-                      <Text style={styles.archivedBadgeText}>ARCHIVED</Text>
-                    </View>
-                  )}
                 </View>
               )}
               <View style={styles.eventContent}>
@@ -813,27 +810,15 @@ export default function AdminEventsScreen() {
                 ) : null}
                 <Text style={styles.eventPlayers}>{item.type === 'social' ? 'Attendees:' : 'Players:'} {getEventAttendeeCount(item)}</Text>
                 <View style={styles.eventActionsRow}>
-                  {!item.archived ? (
-                    <TouchableOpacity
-                      style={styles.archiveButton}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleArchiveEvent(item);
-                      }}
-                    >
-                      <Text style={styles.archiveButtonText}>Archive</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.unarchiveButton}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleUnarchiveEvent(item);
-                      }}
-                    >
-                      <Text style={styles.unarchiveButtonText}>Unarchive</Text>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity
+                    style={styles.archiveButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleArchiveEvent(item);
+                    }}
+                  >
+                    <Text style={styles.archiveButtonText}>Archive</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.deleteButtonCircle}
                     onPress={(e) => {
@@ -851,9 +836,108 @@ export default function AdminEventsScreen() {
                 ) : null}
               </View>
             </TouchableOpacity>
-          )}
-          ListEmptyComponent={<Text style={styles.emptyText}>No events found.</Text>}
-        />
+          ))}
+
+          {(() => {
+            const archivedEvents = events.filter(e => e.archived);
+            const archivedEventsByYear = archivedEvents.reduce<Record<string, Event[]>>((acc, event) => {
+              const year = event.date ? new Date(event.date).getFullYear().toString() : 'Unknown';
+              if (!acc[year]) {
+                acc[year] = [];
+              }
+              acc[year].push(event);
+              return acc;
+            }, {});
+
+            const sortedYears = Object.keys(archivedEventsByYear).sort((a, b) => {
+              if (a === 'Unknown') return 1;
+              if (b === 'Unknown') return -1;
+              return parseInt(b) - parseInt(a);
+            });
+
+            return sortedYears.map((year) => (
+              <View key={year} style={styles.archivedYearCard}>
+                <TouchableOpacity
+                  style={styles.yearHeader}
+                  onPress={() => toggleYear(year)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.yearText}>{year} Archived Events ({archivedEventsByYear[year].length})</Text>
+                  <Text style={styles.yearIcon}>{expandedYears.has(year) ? '▼' : '▶'}</Text>
+                </TouchableOpacity>
+                {expandedYears.has(year) && archivedEventsByYear[year].map((item) => (
+                  <TouchableOpacity 
+                    key={item.id}
+                    style={styles.eventCard}
+                    onPress={() => handleEditEvent(item)}
+                  >
+                    {item.photoUrl && (
+                      <View style={styles.photoContainer}>
+                        <Image 
+                          source={{ uri: item.photoUrl }} 
+                          style={styles.eventPhoto}
+                        />
+                        <View style={styles.archivedBadge}>
+                          <Text style={styles.archivedBadgeText}>ARCHIVED</Text>
+                        </View>
+                      </View>
+                    )}
+                    <View style={styles.eventContent}>
+                      <Text style={styles.eventName}>{item.eventName || item.name || 'Event'}</Text>
+                      <Text style={styles.eventDetail}>📍 {item.course || item.location || 'TBA'}</Text>
+                      <Text style={styles.eventDetail}>📅 {formatDateRange(item.startDate || item.date || '', item.endDate || '')}</Text>
+                      {item.numberOfDays && (item.day1StartTime || item.day2StartTime || item.day3StartTime) ? (
+                        <Text style={styles.eventDetail}>{formatSchedule({
+                          numberOfDays: item.numberOfDays as 1 | 2 | 3 | undefined,
+                          day1StartTime: item.day1StartTime,
+                          day1StartPeriod: item.day1StartPeriod,
+                          day1StartType: item.day1StartType,
+                          day1Course: item.day1Course,
+                          day2StartTime: item.day2StartTime,
+                          day2StartPeriod: item.day2StartPeriod,
+                          day2StartType: item.day2StartType,
+                          day2Course: item.day2Course,
+                          day3StartTime: item.day3StartTime,
+                          day3StartPeriod: item.day3StartPeriod,
+                          day3StartType: item.day3StartType,
+                          day3Course: item.day3Course,
+                        })}</Text>
+                      ) : null}
+                      <Text style={styles.eventPlayers}>{item.type === 'social' ? 'Attendees:' : 'Players:'} {getEventAttendeeCount(item)}</Text>
+                      <View style={styles.eventActionsRow}>
+                        <TouchableOpacity
+                          style={styles.unarchiveButton}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleUnarchiveEvent(item);
+                          }}
+                        >
+                          <Text style={styles.unarchiveButtonText}>Unarchive</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.deleteButtonCircle}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleDeleteEvent(item.id);
+                          }}
+                        >
+                          <Ionicons name="close" size={24} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                      {item.entryFee ? (
+                        <View style={styles.entryFeeBadge}>
+                          <Text style={styles.entryFeeText}>💰 ${item.entryFee}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ));
+          })()}
+
+          {events.length === 0 && <Text style={styles.emptyText}>No events found.</Text>}
+        </ScrollView>
 
         <AddEventModal
           visible={modalVisible}
@@ -952,23 +1036,7 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
   },
-  filterButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  filterButtonActive: {
-    backgroundColor: '#fff',
-  },
-  filterButtonText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#fff',
-  },
-  filterButtonTextActive: {
-    color: '#003366',
-  },
+
   addButton: {
     width: 40,
     height: 40,
@@ -1172,5 +1240,34 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#fff',
   },
-
+  archivedYearCard: {
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  yearHeader: {
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  yearText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#374151',
+  },
+  yearIcon: {
+    fontSize: 14,
+    color: '#666',
+  },
 });
