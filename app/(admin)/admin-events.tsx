@@ -10,7 +10,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+
 import { Ionicons } from '@expo/vector-icons';
 import { AddEventModal } from '@/components/AddEventModal';
 import { AdminFooter } from '@/components/AdminFooter';
@@ -105,9 +105,9 @@ type EventFormType = {
 };
 
 export default function AdminEventsScreen() {
-  const router = useRouter();
   const { currentUser } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
+  const [showArchived, setShowArchived] = useState<boolean>(false);
   const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -232,6 +232,8 @@ export default function AdminEventsScreen() {
       const data = await supabaseService.events.getAll();
       console.log('✅ Admin Events - Events from Supabase:', data.length);
       const sortedEvents = [...data].sort((a, b) => {
+        if (a.archived && !b.archived) return 1;
+        if (!a.archived && b.archived) return -1;
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return timeB - timeA;
@@ -704,29 +706,69 @@ export default function AdminEventsScreen() {
       return (event.registeredPlayers || []).length;
     }
   };
+
+  const handleArchiveEvent = async (event: Event) => {
+    try {
+      console.log('📦 [AdminEvents] Archiving event:', event.id);
+      await supabaseService.events.update(event.id, {
+        archived: true,
+        archivedAt: new Date().toISOString(),
+      });
+      Alert.alert('Success', 'Event archived successfully');
+      await loadEvents();
+    } catch (error) {
+      console.error('❌ [AdminEvents] Error archiving event:', error instanceof Error ? error.message : JSON.stringify(error));
+      Alert.alert('Error', `Failed to archive event: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleUnarchiveEvent = async (event: Event) => {
+    try {
+      console.log('📤 [AdminEvents] Unarchiving event:', event.id);
+      await supabaseService.events.update(event.id, {
+        archived: false,
+        archivedAt: undefined,
+      });
+      Alert.alert('Success', 'Event unarchived successfully');
+      await loadEvents();
+    } catch (error) {
+      console.error('❌ [AdminEvents] Error unarchiving event:', error instanceof Error ? error.message : JSON.stringify(error));
+      Alert.alert('Error', `Failed to unarchive event: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
   
   return (
     <View style={styles.container}>
       <View style={styles.customHeaderWrapper}>
         <View style={styles.header}>
           <Text style={styles.title}>Events</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              setEditingId(null);
-              resetForm();
-              setModalVisible(true);
-            }}
-          >
-            <Ionicons name="add" size={24} color="#fff" />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={[styles.filterButton, showArchived && styles.filterButtonActive]}
+              onPress={() => setShowArchived(!showArchived)}
+            >
+              <Text style={[styles.filterButtonText, showArchived && styles.filterButtonTextActive]}>
+                {showArchived ? 'Hide Archived' : 'Show Archived'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                setEditingId(null);
+                resetForm();
+                setModalVisible(true);
+              }}
+            >
+              <Ionicons name="add" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
 
 
       <FlatList
-          data={events}
+          data={showArchived ? events : events.filter(e => !e.archived)}
           keyExtractor={(item) => item.id}
           style={{ flex: 1 }}
           contentContainerStyle={styles.listContent}
@@ -736,10 +778,17 @@ export default function AdminEventsScreen() {
               onPress={() => handleEditEvent(item)}
             >
               {item.photoUrl && (
-                <Image 
-                  source={{ uri: item.photoUrl }} 
-                  style={styles.eventPhoto}
-                />
+                <View style={styles.photoContainer}>
+                  <Image 
+                    source={{ uri: item.photoUrl }} 
+                    style={styles.eventPhoto}
+                  />
+                  {item.archived && (
+                    <View style={styles.archivedBadge}>
+                      <Text style={styles.archivedBadgeText}>ARCHIVED</Text>
+                    </View>
+                  )}
+                </View>
               )}
               <View style={styles.eventContent}>
                 <Text style={styles.eventName}>{item.eventName || item.name || 'Event'}</Text>
@@ -763,15 +812,38 @@ export default function AdminEventsScreen() {
                   })}</Text>
                 ) : null}
                 <Text style={styles.eventPlayers}>{item.type === 'social' ? 'Attendees:' : 'Players:'} {getEventAttendeeCount(item)}</Text>
-                <TouchableOpacity
-                  style={styles.deleteButtonCircle}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleDeleteEvent(item.id);
-                  }}
-                >
-                  <Ionicons name="close" size={24} color="#fff" />
-                </TouchableOpacity>
+                <View style={styles.eventActionsRow}>
+                  {!item.archived ? (
+                    <TouchableOpacity
+                      style={styles.archiveButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleArchiveEvent(item);
+                      }}
+                    >
+                      <Text style={styles.archiveButtonText}>Archive</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.unarchiveButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleUnarchiveEvent(item);
+                      }}
+                    >
+                      <Text style={styles.unarchiveButtonText}>Unarchive</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.deleteButtonCircle}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeleteEvent(item.id);
+                    }}
+                  >
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
                 {item.entryFee ? (
                   <View style={styles.entryFeeBadge}>
                     <Text style={styles.entryFeeText}>💰 ${item.entryFee}</Text>
@@ -872,10 +944,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  addButton: {
+  headerButtons: {
     position: 'absolute' as 'absolute',
     right: 16,
     top: 60,
+    flexDirection: 'row' as 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  filterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  filterButtonActive: {
+    backgroundColor: '#fff',
+  },
+  filterButtonText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  filterButtonTextActive: {
+    color: '#003366',
+  },
+  addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -899,10 +993,30 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
+  photoContainer: {
+    width: '100%',
+    height: 200,
+    position: 'relative' as const,
+  },
   eventPhoto: {
     width: '100%',
     height: 200,
     resizeMode: 'cover' as const,
+  },
+  archivedBadge: {
+    position: 'absolute' as const,
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  archivedBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#fff',
+    letterSpacing: 0.5,
   },
   eventContent: {
     padding: 16,
@@ -925,7 +1039,35 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '500' as const,
     marginTop: 4,
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  eventActionsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  archiveButton: {
+    backgroundColor: '#374151',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  archiveButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  unarchiveButton: {
+    backgroundColor: '#34C759',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  unarchiveButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   deleteButtonCircle: {
     position: 'absolute' as const,

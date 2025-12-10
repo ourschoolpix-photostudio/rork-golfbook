@@ -58,6 +58,8 @@ const mapEventFromDB = (e: any) => ({
   flightATeebox: e.flight_a_teebox,
   flightBTeebox: e.flight_b_teebox,
   flightLTeebox: e.flight_l_teebox,
+  archived: e.archived || false,
+  archivedAt: e.archived_at,
 });
 
 export const supabaseService = {
@@ -163,6 +165,8 @@ export const supabaseService = {
       if (updates.photoUrl !== undefined) supabaseUpdates.photo_url = updates.photoUrl;
       if (updates.entryFee !== undefined) supabaseUpdates.entry_fee = updates.entryFee;
       if (updates.numberOfDays !== undefined) supabaseUpdates.number_of_days = updates.numberOfDays;
+      if (updates.archived !== undefined) supabaseUpdates.archived = updates.archived;
+      if (updates.archivedAt !== undefined) supabaseUpdates.archived_at = updates.archivedAt;
 
       const { error } = await supabase
         .from('events')
