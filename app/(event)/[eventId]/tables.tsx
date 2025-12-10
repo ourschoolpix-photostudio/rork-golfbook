@@ -214,56 +214,90 @@ export default function TablesScreen() {
     console.log('[tables] Currently assigned guest IDs:', Array.from(assignedGuestIds));
     console.log('[tables] Number of tables:', tables.length);
 
-    const guests = registrationsData
-      .map((reg: any) => {
-        console.log('[tables] 📋 Processing registration:', {
-          id: reg.id,
-          memberId: reg.memberId || reg.member_id,
-          isCustomGuest: reg.isCustomGuest || reg.is_custom_guest,
-          customGuestName: reg.customGuestName || reg.custom_guest_name,
-        });
-        
-        const isCustomGuest = reg.isCustomGuest || reg.is_custom_guest;
-        const memberId = reg.memberId || reg.member_id;
-        const customGuestName = reg.customGuestName || reg.custom_guest_name;
-        
-        if (isCustomGuest) {
-          const guestId = `custom-${reg.id}`;
-          if (assignedGuestIds.has(guestId)) {
-            console.log('[tables] Custom guest already assigned:', guestId);
-            return null;
-          }
-          
+    const guests: Guest[] = [];
+    
+    registrationsData.forEach((reg: any) => {
+      console.log('[tables] 📋 Processing registration:', {
+        id: reg.id,
+        memberId: reg.memberId || reg.member_id,
+        isCustomGuest: reg.isCustomGuest || reg.is_custom_guest,
+        customGuestName: reg.customGuestName || reg.custom_guest_name,
+        numberOfGuests: reg.numberOfGuests || reg.number_of_guests,
+        guestNames: reg.guestNames || reg.guest_names,
+      });
+      
+      const isCustomGuest = reg.isCustomGuest || reg.is_custom_guest;
+      const memberId = reg.memberId || reg.member_id;
+      const customGuestName = reg.customGuestName || reg.custom_guest_name;
+      const numberOfGuests = reg.numberOfGuests || reg.number_of_guests || 0;
+      const guestNamesRaw = reg.guestNames || reg.guest_names || '';
+      
+      if (isCustomGuest) {
+        const guestId = `custom-${reg.id}`;
+        if (!assignedGuestIds.has(guestId)) {
           console.log('[tables] ✅ Adding custom guest:', customGuestName);
-          return {
+          guests.push({
             id: guestId,
             name: customGuestName || 'Unknown Guest',
             memberId: undefined,
-          } as Guest;
-        } else if (memberId) {
-          const member = allMembers.find((m: any) => m.id === memberId);
-          if (!member) {
-            console.log('[tables] ⚠️ Member not found for registration:', memberId);
-            return null;
+          } as Guest);
+        } else {
+          console.log('[tables] Custom guest already assigned:', guestId);
+        }
+        
+        if (numberOfGuests > 0) {
+          const guestNames = guestNamesRaw.split('\n').map((n: string) => n.trim()).filter((n: string) => n !== '');
+          for (let i = 0; i < numberOfGuests; i++) {
+            const guestName = guestNames[i] || 'Unknown Guest';
+            const guestOfGuestId = `custom-${reg.id}-guest-${i}`;
+            if (!assignedGuestIds.has(guestOfGuestId)) {
+              console.log('[tables] ✅ Adding custom guest\'s guest:', guestName);
+              guests.push({
+                id: guestOfGuestId,
+                name: `${guestName} (Guest of ${customGuestName})`,
+                memberId: undefined,
+              } as Guest);
+            }
           }
-          if (assignedGuestIds.has(member.id)) {
-            console.log('[tables] Member already assigned:', member.id, member.name);
-            return null;
-          }
-          
+        }
+      } else if (memberId) {
+        const member = allMembers.find((m: any) => m.id === memberId);
+        if (!member) {
+          console.log('[tables] ⚠️ Member not found for registration:', memberId);
+          return;
+        }
+        if (!assignedGuestIds.has(member.id)) {
           console.log('[tables] ✅ Adding member:', member.name);
-          return {
+          guests.push({
             id: member.id,
             name: member.name,
             memberId: member.id,
-          } as Guest;
+          } as Guest);
         } else {
-          console.log('[tables] ⚠️ Registration has no memberId and is not custom guest - skipping');
-          return null;
+          console.log('[tables] Member already assigned:', member.id, member.name);
         }
-      })
-      .filter((g): g is Guest => g !== null)
-      .sort((a, b) => a.name.localeCompare(b.name));
+        
+        if (numberOfGuests > 0) {
+          const guestNames = guestNamesRaw.split('\n').map((n: string) => n.trim()).filter((n: string) => n !== '');
+          for (let i = 0; i < numberOfGuests; i++) {
+            const guestName = guestNames[i] || 'Unknown Guest';
+            const guestOfGuestId = `${memberId}-guest-${i}`;
+            if (!assignedGuestIds.has(guestOfGuestId)) {
+              console.log('[tables] ✅ Adding member\'s guest:', guestName);
+              guests.push({
+                id: guestOfGuestId,
+                name: `${guestName} (Guest of ${member.name})`,
+                memberId: undefined,
+              } as Guest);
+            }
+          }
+        }
+      } else {
+        console.log('[tables] ⚠️ Registration has no memberId and is not custom guest - skipping');
+      }
+    });
+    
+    guests.sort((a, b) => a.name.localeCompare(b.name));
     
     console.log('[tables] ✅ Final unassigned guests:', guests.length);
     console.log('[tables] Guest names:', guests.map(g => ({ id: g.id, name: g.name })));
