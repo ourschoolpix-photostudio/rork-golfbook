@@ -291,27 +291,31 @@ export default function DashboardScreen() {
 
   const handleArchiveEvent = async (event: Event) => {
     try {
+      console.log('📦 [Dashboard] Archiving event:', event.id);
       await updateEvent(event.id, {
         archived: true,
         archivedAt: new Date().toISOString(),
       });
       Alert.alert('Success', 'Event archived successfully');
     } catch (error) {
-      console.error('Error archiving event:', error);
-      Alert.alert('Error', 'Failed to archive event');
+      console.error('❌ [Dashboard] Error archiving event:', error instanceof Error ? error.message : JSON.stringify(error));
+      console.error('❌ [Dashboard] Full error object:', error);
+      Alert.alert('Error', `Failed to archive event: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const handleUnarchiveEvent = async (event: Event) => {
     try {
+      console.log('📤 [Dashboard] Unarchiving event:', event.id);
       await updateEvent(event.id, {
         archived: false,
         archivedAt: undefined,
       });
       Alert.alert('Success', 'Event unarchived successfully');
     } catch (error) {
-      console.error('Error unarchiving event:', error);
-      Alert.alert('Error', 'Failed to unarchive event');
+      console.error('❌ [Dashboard] Error unarchiving event:', error instanceof Error ? error.message : JSON.stringify(error));
+      console.error('❌ [Dashboard] Full error object:', error);
+      Alert.alert('Error', `Failed to unarchive event: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -322,9 +326,11 @@ export default function DashboardScreen() {
 
   const handleDuplicateEvent = async (newEvent: Event) => {
     try {
+      console.log('📋 [Dashboard] Duplicating event:', newEvent.name);
       await addEvent(newEvent);
     } catch (error) {
-      console.error('Error duplicating event:', error);
+      console.error('❌ [Dashboard] Error duplicating event:', error instanceof Error ? error.message : JSON.stringify(error));
+      console.error('❌ [Dashboard] Full error object:', error);
       throw error;
     }
   };

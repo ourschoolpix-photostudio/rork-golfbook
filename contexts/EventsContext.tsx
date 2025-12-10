@@ -288,7 +288,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       console.log('✅ [EventsContext] Event updated successfully');
       await fetchEvents();
     } catch (error) {
-      console.error('❌ [EventsContext] Exception updating event:', error);
+      console.error('❌ [EventsContext] Exception updating event:', error instanceof Error ? error.message : JSON.stringify(error));
+      console.error('❌ [EventsContext] Full error object:', error);
       throw error;
     }
   }, [fetchEvents, useLocalStorage]);
