@@ -18,7 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Event } from '@/types';
 
 import { supabaseService } from '@/utils/supabaseService';
-import { formatDateForDisplay } from '@/utils/dateUtils';
+import { formatDateForDisplay, convertToISODate } from '@/utils/dateUtils';
 import { useQuery } from '@tanstack/react-query';
 
 type EventFormType = {
@@ -335,6 +335,14 @@ export default function AdminEventsScreen() {
       return;
     }
 
+    const convertedStartDate = convertToISODate(form.startDate);
+    const convertedEndDate = convertToISODate(form.endDate);
+
+    if (!convertedStartDate) {
+      Alert.alert('Error', 'Please enter a valid start date in MM/DD/YYYY format');
+      return;
+    }
+
     try {
       if (editingId) {
         await supabaseService.events.update(editingId, {
@@ -342,9 +350,9 @@ export default function AdminEventsScreen() {
             name: form.eventName,
             venue: form.course,
             location: form.course,
-            date: form.startDate,
-            startDate: form.startDate,
-            endDate: form.endDate,
+            date: convertedStartDate,
+            startDate: convertedStartDate,
+            endDate: convertedEndDate,
             photoUrl: form.photoUrl,
             entryFee: form.entryFee,
             status: form.status,
@@ -427,9 +435,9 @@ export default function AdminEventsScreen() {
           name: form.eventName,
           venue: form.course,
           location: form.course,
-          date: form.startDate,
-          startDate: form.startDate,
-          endDate: form.endDate,
+          date: convertedStartDate,
+          startDate: convertedStartDate,
+          endDate: convertedEndDate,
           status: form.status,
           type: form.type,
           photoUrl: form.photoUrl,

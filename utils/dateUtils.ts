@@ -110,6 +110,26 @@ function parseDateString(dateStr: string): Date | null {
   return null;
 }
 
+export function convertToISODate(dateStr: string): string {
+  if (!dateStr || !dateStr.trim()) return '';
+  
+  if (dateStr.includes('-') && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateStr;
+  }
+  
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const month = parts[0].padStart(2, '0');
+      const day = parts[1].padStart(2, '0');
+      const year = parts[2];
+      return `${year}-${month}-${day}`;
+    }
+  }
+  
+  return '';
+}
+
 export function formatDateAsFullDay(dateStr: string | null | undefined, numberOfDays: number | null | undefined, dayNumber: number): string {
   if (!dateStr) return `Day ${dayNumber}`;
   
