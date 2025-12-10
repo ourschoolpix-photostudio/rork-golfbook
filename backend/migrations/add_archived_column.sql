@@ -24,12 +24,12 @@ BEGIN
     ELSE
         RAISE NOTICE 'archived_at column already exists';
     END IF;
-END $$;
-
--- Ensure all existing events have archived set to false
-UPDATE events SET archived = false WHERE archived IS NULL;
-
--- Create index for archived column to improve query performance
-CREATE INDEX IF NOT EXISTS idx_events_archived ON events(archived);
-
-RAISE NOTICE '✅ Archived columns added successfully to events table';
+    
+    -- Ensure all existing events have archived set to false
+    UPDATE events SET archived = false WHERE archived IS NULL;
+    
+    -- Create index for archived column to improve query performance
+    CREATE INDEX IF NOT EXISTS idx_events_archived ON events(archived);
+    
+    RAISE NOTICE '✅ Archived columns added successfully to events table';
+END $;
