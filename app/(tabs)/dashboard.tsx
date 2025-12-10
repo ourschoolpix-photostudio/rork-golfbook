@@ -763,9 +763,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   entryFeeBadge: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
+    alignSelf: 'flex-start',
     backgroundColor: '#007AFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -775,6 +773,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
+    marginTop: 8,
   },
   entryFeeText: {
     fontSize: 16,
