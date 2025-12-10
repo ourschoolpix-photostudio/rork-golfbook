@@ -11,7 +11,6 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -19,7 +18,6 @@ import { supabaseService } from '@/utils/supabaseService';
 
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
-import { DuplicateEventModal } from '@/components/DuplicateEventModal';
 import { Member, Event } from '@/types';
 import { formatDateForDisplay } from '@/utils/dateUtils';
 
@@ -34,13 +32,12 @@ export default function DashboardScreen() {
   const [userProfile, setUserProfile] = useState<Member | null>(null);
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [detailsModalVisible, setDetailsModalVisible] = useState<boolean>(false);
-  const [duplicateModalVisible, setDuplicateModalVisible] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
 
   const registrationsQuery = useQuery({
-    queryKey: ['all-event-registrations', contextEvents?.length || 0],
+    queryKey: ['all-event-registrations', contextEvents],
     queryFn: async () => {
       const allRegistrations: Record<string, any[]> = {};
       if (contextEvents && contextEvents.length > 0) {
@@ -287,53 +284,7 @@ export default function DashboardScreen() {
     }
   };
 
-  const { updateEvent, addEvent } = useEvents();
 
-  const handleArchiveEvent = async (event: Event) => {
-    try {
-      console.log('📦 [Dashboard] Archiving event:', event.id);
-      await updateEvent(event.id, {
-        archived: true,
-        archivedAt: new Date().toISOString(),
-      });
-      Alert.alert('Success', 'Event archived successfully');
-    } catch (error) {
-      console.error('❌ [Dashboard] Error archiving event:', error instanceof Error ? error.message : JSON.stringify(error));
-      console.error('❌ [Dashboard] Full error object:', error);
-      Alert.alert('Error', `Failed to archive event: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-
-  const handleUnarchiveEvent = async (event: Event) => {
-    try {
-      console.log('📤 [Dashboard] Unarchiving event:', event.id);
-      await updateEvent(event.id, {
-        archived: false,
-        archivedAt: undefined,
-      });
-      Alert.alert('Success', 'Event unarchived successfully');
-    } catch (error) {
-      console.error('❌ [Dashboard] Error unarchiving event:', error instanceof Error ? error.message : JSON.stringify(error));
-      console.error('❌ [Dashboard] Full error object:', error);
-      Alert.alert('Error', `Failed to unarchive event: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-
-  const handleDuplicate = (event: Event) => {
-    setSelectedEvent(event);
-    setDuplicateModalVisible(true);
-  };
-
-  const handleDuplicateEvent = async (newEvent: Event) => {
-    try {
-      console.log('📋 [Dashboard] Duplicating event:', newEvent.name);
-      await addEvent(newEvent);
-    } catch (error) {
-      console.error('❌ [Dashboard] Error duplicating event:', error instanceof Error ? error.message : JSON.stringify(error));
-      console.error('❌ [Dashboard] Full error object:', error);
-      throw error;
-    }
-  };
 
   return (
     <>
@@ -473,29 +424,6 @@ export default function DashboardScreen() {
                         <Text style={styles.entryFeeText}>${item.entryFee}</Text>
                       </View>
                     )}
-                    
-                    {currentUser?.isAdmin && (
-                      <View style={styles.eventActions}>
-                        <TouchableOpacity
-                          style={styles.actionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleArchiveEvent(item);
-                          }}
-                        >
-                          <Text style={styles.actionButtonText}>Archive</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.actionButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleDuplicate(item);
-                          }}
-                        >
-                          <Text style={styles.actionButtonText}>Duplicate</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
                   </View>
                 </TouchableOpacity>
               )}
@@ -540,29 +468,6 @@ export default function DashboardScreen() {
                           <Text style={styles.eventDetail}>
                             📅 {formatDateRange(item.date || '', item.endDate || '')}
                           </Text>
-
-                          {currentUser?.isAdmin && (
-                            <View style={styles.eventActions}>
-                              <TouchableOpacity
-                                style={styles.actionButton}
-                                onPress={(e) => {
-                                  e.stopPropagation();
-                                  handleUnarchiveEvent(item);
-                                }}
-                              >
-                                <Text style={styles.actionButtonText}>Unarchive</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={styles.actionButton}
-                                onPress={(e) => {
-                                  e.stopPropagation();
-                                  handleDuplicate(item);
-                                }}
-                              >
-                                <Text style={styles.actionButtonText}>Duplicate</Text>
-                              </TouchableOpacity>
-                            </View>
-                          )}
                         </View>
                       </TouchableOpacity>
                     )}
@@ -573,15 +478,6 @@ export default function DashboardScreen() {
           </>
         )}
       </ScrollView>
-      
-      {selectedEvent && (
-        <DuplicateEventModal
-          visible={duplicateModalVisible}
-          event={selectedEvent}
-          onClose={() => setDuplicateModalVisible(false)}
-          onDuplicate={handleDuplicateEvent}
-        />
-      )}
     </View>
     </>
   );
@@ -847,24 +743,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-  eventActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  actionButton: {
-    backgroundColor: '#374151',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    flex: 1,
-    alignItems: 'center',
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
+
   archivedYearCard: {
     marginBottom: 16,
     backgroundColor: '#fff',

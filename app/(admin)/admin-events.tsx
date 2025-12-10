@@ -13,6 +13,7 @@ import {
 
 import { Ionicons } from '@expo/vector-icons';
 import { AddEventModal } from '@/components/AddEventModal';
+import { DuplicateEventModal } from '@/components/DuplicateEventModal';
 import { AdminFooter } from '@/components/AdminFooter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Event } from '@/types';
@@ -109,6 +110,8 @@ export default function AdminEventsScreen() {
   const [events, setEvents] = useState<Event[]>([]);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
   const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
+  const [duplicateModalVisible, setDuplicateModalVisible] = useState(false);
+  const [eventToDuplicate, setEventToDuplicate] = useState<Event | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pinModalVisible, setPinModalVisible] = useState(false);
@@ -198,7 +201,7 @@ export default function AdminEventsScreen() {
   });
 
   const registrationsQuery = useQuery({
-    queryKey: ['all-admin-event-registrations', events.length],
+    queryKey: ['all-admin-event-registrations', events],
     queryFn: async () => {
       const allRegistrations: Record<string, any[]> = {};
       if (events && events.length > 0) {
@@ -754,6 +757,25 @@ export default function AdminEventsScreen() {
       return newSet;
     });
   };
+
+  const handleDuplicate = (event: Event) => {
+    setEventToDuplicate(event);
+    setDuplicateModalVisible(true);
+  };
+
+  const handleDuplicateEvent = async (newEvent: Event) => {
+    try {
+      console.log('📋 [AdminEvents] Duplicating event:', newEvent.name);
+      await supabaseService.events.create(newEvent);
+      Alert.alert('Success', 'Event duplicated successfully');
+      await loadEvents();
+      setDuplicateModalVisible(false);
+    } catch (error) {
+      console.error('❌ [AdminEvents] Error duplicating event:', error instanceof Error ? error.message : JSON.stringify(error));
+      Alert.alert('Error', 'Failed to duplicate event');
+      throw error;
+    }
+  };
   
   return (
     <View style={styles.container}>
@@ -826,6 +848,15 @@ export default function AdminEventsScreen() {
                     }}
                   >
                     <Text style={styles.archiveButtonText}>Archive</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.duplicateButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDuplicate(item);
+                    }}
+                  >
+                    <Text style={styles.duplicateButtonText}>Duplicate</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.deleteButtonCircle}
@@ -923,6 +954,15 @@ export default function AdminEventsScreen() {
                           <Text style={styles.unarchiveButtonText}>Unarchive</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
+                          style={styles.duplicateButton}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleDuplicate(item);
+                          }}
+                        >
+                          <Text style={styles.duplicateButtonText}>Duplicate</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
                           style={styles.deleteButtonCircle}
                           onPress={(e) => {
                             e.stopPropagation();
@@ -1001,6 +1041,18 @@ export default function AdminEventsScreen() {
             </View>
           </View>
         </Modal>
+
+        {eventToDuplicate && (
+          <DuplicateEventModal
+            visible={duplicateModalVisible}
+            event={eventToDuplicate}
+            onClose={() => {
+              setDuplicateModalVisible(false);
+              setEventToDuplicate(null);
+            }}
+            onDuplicate={handleDuplicateEvent}
+          />
+        )}
 
       <AdminFooter />
     </View>
@@ -1141,6 +1193,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   unarchiveButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  duplicateButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  duplicateButtonText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '600' as const,
