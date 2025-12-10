@@ -32,4 +32,4 @@ BEGIN
     CREATE INDEX IF NOT EXISTS idx_events_archived ON events(archived);
     
     RAISE NOTICE '✅ Archived columns added successfully to events table';
-END $;
+END $$;
