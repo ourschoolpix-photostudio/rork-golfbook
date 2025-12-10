@@ -1146,9 +1146,6 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   deleteButtonCircle: {
-    position: 'absolute' as const,
-    top: 16,
-    right: 16,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -1160,10 +1157,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
+    marginLeft: 'auto' as 'auto',
   },
   entryFeeBadge: {
     position: 'absolute' as const,
-    bottom: 16,
+    top: 0,
     right: 16,
     backgroundColor: '#007AFF',
     paddingHorizontal: 8,
