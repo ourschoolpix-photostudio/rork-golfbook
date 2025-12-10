@@ -27,7 +27,7 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { registrationService } from '@/utils/registrationService';
 import { registrationCache } from '@/utils/registrationCache';
-import { generateRegistrationPDF, generateRegistrationText, generateCheckInPDF } from '@/utils/pdfGenerator';
+import { generateRegistrationPDF, generateRegistrationText, generateCheckInPDF, generateInvoicePDF } from '@/utils/pdfGenerator';
 import * as Clipboard from 'expo-clipboard';
 import { Member, User, Event } from '@/types';
 import { EventPlayerModal } from '@/components/EventPlayerModal';
@@ -85,6 +85,7 @@ export default function EventRegistrationScreen() {
   const [textPreviewModalVisible, setTextPreviewModalVisible] = useState(false);
   const [generatedTextContent, setGeneratedTextContent] = useState<string>('');
   const [includeHandicapForPDF, setIncludeHandicapForPDF] = useState<boolean>(false);
+  const [generatingInvoiceForPlayer, setGeneratingInvoiceForPlayer] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -985,6 +986,45 @@ export default function EventRegistrationScreen() {
     }
   };
 
+  const handleEmailInvoice = async (player: Member, playerReg: any) => {
+    try {
+      setGeneratingInvoiceForPlayer(player.id);
+      console.log('[registration] 📧 Generating invoice for:', player.name);
+      
+      if (!event) {
+        Alert.alert('Error', 'Event not found');
+        return;
+      }
+
+      const shouldOpenEmail = !!player.email;
+      
+      if (!shouldOpenEmail) {
+        Alert.alert(
+          'No Email Address', 
+          `${player.name} does not have an email address on file. The invoice PDF will be created and you can share it manually.`,
+          [{ text: 'OK' }]
+        );
+      }
+
+      await generateInvoicePDF(
+        {
+          registration: playerReg,
+          member: player,
+          event,
+          orgInfo,
+        },
+        shouldOpenEmail
+      );
+      
+      console.log('[registration] ✅ Invoice generated successfully');
+    } catch (error) {
+      console.error('[registration] ❌ Invoice generation error:', error);
+      Alert.alert('Error', 'Failed to generate invoice. Please try again.');
+    } finally {
+      setGeneratingInvoiceForPlayer(null);
+    }
+  };
+
   const getPlayersFlights = useMemo((): Record<string, Member[]> => {
     const flights: Record<string, Member[]> = { A: [], B: [], C: [], L: [] };
 
@@ -1569,6 +1609,21 @@ export default function EventRegistrationScreen() {
                             </View>
                           )}
                         </View>
+                        
+                        {canViewRegistration(currentUser) && playerReg && (
+                          <TouchableOpacity
+                            style={styles.emailInvoiceButton}
+                            onPress={() => handleEmailInvoice(player, playerReg)}
+                            disabled={generatingInvoiceForPlayer === player.id}
+                            activeOpacity={0.7}
+                          >
+                            {generatingInvoiceForPlayer === player.id ? (
+                              <ActivityIndicator size="small" color="#007AFF" />
+                            ) : (
+                              <Ionicons name="mail-outline" size={18} color="#007AFF" />
+                            )}
+                          </TouchableOpacity>
+                        )}
                       </View>
 
                       {canViewRegistration(currentUser) && (
@@ -2328,6 +2383,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     zIndex: 10,
+    flex: 1,
+  },
+  emailInvoiceButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E3F2FD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
   },
   badgesColumn: {
     gap: 4,

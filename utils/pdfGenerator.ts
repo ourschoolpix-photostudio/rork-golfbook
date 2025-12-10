@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
+import * as MailComposer from 'expo-mail-composer';
 import type { Member, Event, Grouping } from '@/types';
 import { type LabelOverride } from '@/utils/groupingsHelper';
 
@@ -1046,4 +1047,366 @@ function buildRegistrationTextContent(
   }
 
   return textContent;
+}
+
+interface InvoicePDFOptions {
+  registration: any;
+  member: Member;
+  event: Event;
+  orgInfo?: { name?: string; logoUrl?: string };
+}
+
+export async function generateInvoicePDF(
+  options: InvoicePDFOptions,
+  openEmail: boolean = false
+): Promise<string | void> {
+  try {
+    console.log('[pdfGenerator] Starting invoice PDF generation...');
+    const { registration, member, event, orgInfo } = options;
+    const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
+
+    if (Platform.OS === 'web') {
+      generateWebPDF(htmlContent, `${event.name}-Invoice`, 'Invoice');
+      return;
+    }
+
+    const now = new Date();
+    const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+    const yymmdd = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+    const cleanEventName = event.name.replace(/[^a-zA-Z0-9]/g, '');
+    const cleanMemberName = member.name.replace(/[^a-zA-Z0-9]/g, '');
+    const filename = `${hhmm}${yymmdd}${cleanEventName}${cleanMemberName}Invoice.pdf`;
+
+    const { uri } = await Print.printToFileAsync({
+      html: htmlContent,
+      base64: false,
+    });
+
+    console.log('[pdfGenerator] Invoice PDF created at:', uri);
+
+    if (openEmail && member.email && await MailComposer.isAvailableAsync()) {
+      const isAvailable = await MailComposer.isAvailableAsync();
+      if (isAvailable) {
+        await MailComposer.composeAsync({
+          recipients: [member.email],
+          subject: `${event.name} - Registration Invoice`,
+          body: `Dear ${member.name},\n\nThank you for registering for ${event.name}. Please find your invoice attached.\n\nEvent Details:\nDate: ${event.date}${event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}\nLocation: ${event.location || event.venue}\nEntry Fee: ${event.entryFee}\n\nBest regards,\n${orgInfo?.name || 'Event Organizer'}`,
+          attachments: [uri],
+        });
+      }
+    } else if (!openEmail) {
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share Invoice PDF',
+          UTI: 'com.adobe.pdf',
+        });
+      }
+    }
+
+    return uri;
+  } catch (error) {
+    console.error('[pdfGenerator] Invoice PDF error:', error);
+    throw error;
+  }
+}
+
+function buildInvoiceHTMLContent(
+  registration: any,
+  member: Member,
+  event: Event,
+  orgInfo?: { name?: string; logoUrl?: string }
+): string {
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
+  const dateRange = event.endDate && event.endDate !== event.date 
+    ? `${formatDate(event.date)} - ${formatDate(event.endDate)}` 
+    : formatDate(event.date);
+
+  const invoiceDate = formatDate(new Date().toISOString().split('T')[0]);
+  const entryFee = Number(event.entryFee) || 0;
+  const numberOfGuests = registration?.numberOfGuests || 0;
+  const isSponsor = registration?.isSponsor || false;
+  const totalPeople = isSponsor ? 0 : 1 + numberOfGuests;
+  const subtotal = entryFee * totalPeople;
+  const tax = 0;
+  const total = subtotal + tax;
+  const isPaid = registration?.paymentStatus === 'paid';
+  const amountDue = isPaid ? 0 : total;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice - ${event.name}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @page { size: letter; margin: 0.75in; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: white;
+      padding: 20px;
+      font-size: 11px;
+      color: #333;
+    }
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 30px;
+      border-bottom: 3px solid #1B5E20;
+      padding-bottom: 20px;
+    }
+    .logo-section {
+      flex: 1;
+    }
+    .logo {
+      max-height: 80px;
+      max-width: 200px;
+      height: auto;
+      width: auto;
+    }
+    .org-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1B5E20;
+      margin-bottom: 5px;
+    }
+    .invoice-title-section {
+      text-align: right;
+    }
+    .invoice-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1B5E20;
+      margin-bottom: 10px;
+    }
+    .invoice-number {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .invoice-date {
+      font-size: 12px;
+      color: #666;
+    }
+    .invoice-details {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+    .detail-section {
+      flex: 1;
+    }
+    .detail-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1B5E20;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .detail-row {
+      margin-bottom: 5px;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: #666;
+    }
+    .items-table {
+      width: 100%;
+      margin-bottom: 30px;
+      border-collapse: collapse;
+    }
+    .items-table th {
+      background: #1B5E20;
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .items-table td {
+      padding: 12px;
+      border-bottom: 1px solid #E0E0E0;
+      font-size: 11px;
+    }
+    .items-table tr:last-child td {
+      border-bottom: none;
+    }
+    .text-right {
+      text-align: right;
+    }
+    .totals-section {
+      margin-left: auto;
+      width: 300px;
+      margin-bottom: 30px;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 15px;
+      font-size: 12px;
+    }
+    .total-row.subtotal {
+      background: #F5F5F5;
+    }
+    .total-row.grand-total {
+      background: #1B5E20;
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 5px;
+    }
+    .payment-status {
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .payment-status.paid {
+      background: #E8F5E9;
+      color: #2E7D32;
+      border: 2px solid #2E7D32;
+    }
+    .payment-status.unpaid {
+      background: #FFF9E6;
+      color: #F57C00;
+      border: 2px solid #F57C00;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #E0E0E0;
+      text-align: center;
+      font-size: 10px;
+      color: #999;
+    }
+    ${isSponsor ? `
+    .sponsor-badge {
+      display: inline-block;
+      background: #FF9500;
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+    ` : ''}
+  </style>
+</head>
+<body>
+  <div class="invoice-header">
+    <div class="logo-section">
+      ${orgInfo?.logoUrl ? `<img src="${orgInfo.logoUrl}" alt="Logo" class="logo" />` : ''}
+      ${orgInfo?.name ? `<div class="org-name">${orgInfo.name}</div>` : ''}
+    </div>
+    <div class="invoice-title-section">
+      <div class="invoice-title">INVOICE</div>
+      <div class="invoice-number">Invoice #: ${registration?.id?.substring(0, 8).toUpperCase() || 'N/A'}</div>
+      <div class="invoice-date">Date: ${invoiceDate}</div>
+    </div>
+  </div>
+
+  ${isSponsor ? '<div class="sponsor-badge">SPONSOR REGISTRATION</div>' : ''}
+
+  <div class="invoice-details">
+    <div class="detail-section">
+      <div class="detail-title">Bill To:</div>
+      <div class="detail-row"><strong>${member.name}</strong></div>
+      ${member.email ? `<div class="detail-row">${member.email}</div>` : ''}
+      ${member.phone ? `<div class="detail-row">${member.phone}</div>` : ''}
+      ${member.address ? `<div class="detail-row">${member.address}</div>` : ''}
+      ${member.city || member.state ? `<div class="detail-row">${member.city || ''}${member.city && member.state ? ', ' : ''}${member.state || ''}</div>` : ''}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">Event Details:</div>
+      <div class="detail-row"><strong>${event.name}</strong></div>
+      <div class="detail-row">${dateRange}</div>
+      ${event.location ? `<div class="detail-row">${event.location}</div>` : ''}
+      ${event.address ? `<div class="detail-row">${event.address}</div>` : ''}
+      ${event.city || event.state ? `<div class="detail-row">${event.city || ''}${event.city && event.state ? ', ' : ''}${event.state || ''} ${event.zipcode || ''}</div>` : ''}
+    </div>
+  </div>
+
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th class="text-right">Quantity</th>
+        <th class="text-right">Unit Price</th>
+        <th class="text-right">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${!isSponsor ? `
+      <tr>
+        <td>${event.name} - Entry Fee</td>
+        <td class="text-right">1</td>
+        <td class="text-right">${entryFee.toFixed(2)}</td>
+        <td class="text-right">${entryFee.toFixed(2)}</td>
+      </tr>
+      ` : ''}
+      ${!isSponsor && numberOfGuests > 0 ? `
+      <tr>
+        <td>Additional Guest${numberOfGuests > 1 ? 's' : ''}</td>
+        <td class="text-right">${numberOfGuests}</td>
+        <td class="text-right">${entryFee.toFixed(2)}</td>
+        <td class="text-right">${(entryFee * numberOfGuests).toFixed(2)}</td>
+      </tr>
+      ` : ''}
+      ${isSponsor ? `
+      <tr>
+        <td>${event.name} - Sponsor Registration<br/><em style="font-size: 10px; color: #666;">Thank you for your generous sponsorship!</em></td>
+        <td class="text-right">1</td>
+        <td class="text-right">$0.00</td>
+        <td class="text-right">$0.00</td>
+      </tr>
+      ` : ''}
+    </tbody>
+  </table>
+
+  <div class="totals-section">
+    <div class="total-row subtotal">
+      <span>Subtotal:</span>
+      <span>${subtotal.toFixed(2)}</span>
+    </div>
+    <div class="total-row">
+      <span>Tax:</span>
+      <span>${tax.toFixed(2)}</span>
+    </div>
+    <div class="total-row grand-total">
+      <span>Total:</span>
+      <span>${total.toFixed(2)}</span>
+    </div>
+  </div>
+
+  <div class="payment-status ${isPaid ? 'paid' : 'unpaid'}">
+    ${isPaid ? '✓ PAID IN FULL' : `AMOUNT DUE: ${amountDue.toFixed(2)}`}
+  </div>
+
+  ${registration?.guestNames ? `
+  <div style="margin-bottom: 20px; padding: 15px; background: #F5F5F5; border-radius: 8px;">
+    <div style="font-weight: 700; margin-bottom: 8px; color: #1B5E20;">Guest Names:</div>
+    <div style="font-size: 11px; line-height: 1.6; white-space: pre-line;">${registration.guestNames}</div>
+  </div>
+  ` : ''}
+
+  <div class="footer">
+    <p>Thank you for your registration!</p>
+    <p>If you have any questions, please contact the event organizer.</p>
+  </div>
+</body>
+</html>`;
 }

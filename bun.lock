@@ -37,6 +37,7 @@
         "expo-linking": "~8.0.8",
         "expo-local-authentication": "~17.0.7",
         "expo-location": "~19.0.7",
+        "expo-mail-composer": "~15.0.8",
         "expo-print": "~15.0.7",
         "expo-router": "~6.0.13",
         "expo-sharing": "~14.0.7",
@@ -1063,6 +1064,8 @@
     "expo-local-authentication": ["expo-local-authentication@17.0.7", "", { "dependencies": { "invariant": "^2.2.4" }, "peerDependencies": { "expo": "*" } }, "sha512-yRWcgYn/OIwxEDEk7cM7tRjQSHaTp5hpKwzq+g9NmSMJ1etzUzt0yGzkDiOjObj3YqFo0ucyDJ8WfanLhZDtMw=="],
 
     "expo-location": ["expo-location@19.0.7", "", { "peerDependencies": { "expo": "*" } }, "sha512-YNkh4r9E6ECbPkBCAMG5A5yHDgS0pw+Rzyd0l2ZQlCtjkhlODB55nMCKr5CZnUI0mXTkaSm8CwfoCO8n2MpYfg=="],
+
+    "expo-mail-composer": ["expo-mail-composer@15.0.8", "", { "peerDependencies": { "expo": "*" } }, "sha512-v9oGZ+523ByMXxH6C82V96otbIbQEFTyk1AhBX02nFTlUpg+qlGCV5fycMGDRxfsWmRGRVfX+0K3zwpIz1NmuQ=="],
 
     "expo-modules-autolinking": ["expo-modules-autolinking@3.0.19", "", { "dependencies": { "@expo/spawn-async": "^1.7.2", "chalk": "^4.1.0", "commander": "^7.2.0", "glob": "^10.4.2", "require-from-string": "^2.0.2", "resolve-from": "^5.0.0" }, "bin": { "expo-modules-autolinking": "bin/expo-modules-autolinking.js" } }, "sha512-tSMYGnfZmAaN77X8iMLiaSgbCFnA7eh6s2ac09J2N2N0Rcf2RCE27jg0c0XenTMTWUcM4QvLhsNHof/WtlKqPw=="],
 
