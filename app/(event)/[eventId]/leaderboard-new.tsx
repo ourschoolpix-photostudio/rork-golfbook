@@ -223,14 +223,14 @@ export default function LeaderboardNewScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Trophy size={20} color="#fff" />
-          <Text style={styles.headerTitle}>LIVE LEADERBOARD</Text>
+          <Text style={styles.headerTitle}>LEADERBOARD</Text>
           <TouchableOpacity 
             onPress={handleRefresh} 
             style={styles.refreshButton}
             disabled={isRefetching}
           >
             <RefreshCw 
-              size={20} 
+              size={18} 
               color="#fff" 
               style={isRefetching ? styles.refreshing : undefined}
             />
@@ -354,7 +354,7 @@ export default function LeaderboardNewScreen() {
               <Trophy size={64} color="#999" />
               <Text style={styles.emptyTitle}>No Scores Yet</Text>
               <Text style={styles.emptyText}>
-                Scores will appear here in real-time as they are submitted during the tournament.
+                Scores will appear here as they are submitted during the tournament.
               </Text>
             </View>
           ) : (
@@ -491,11 +491,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700' as const,
     color: '#fff',
-    flex: 1,
-    textAlign: 'center' as const,
   },
   refreshButton: {
     padding: 4,
+    position: 'absolute' as const,
+    right: 16,
   },
   refreshing: {
     opacity: 0.5,
@@ -556,8 +556,8 @@ const styles = StyleSheet.create({
   },
   dayButton: {
     flex: 1,
-    height: 38,
-    paddingHorizontal: 6,
+    height: 40,
+    paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1.5,
     borderColor: '#1B5E20',
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B5E20',
   },
   dayButtonText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600' as const,
     color: '#1B5E20',
     textAlign: 'center' as const,
@@ -611,8 +611,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center' as const,
-    paddingHorizontal: 32,
-    lineHeight: 24,
+    marginBottom: 16,
   },
   podiumCard: {
     backgroundColor: '#fff',
@@ -677,7 +676,7 @@ const styles = StyleSheet.create({
     color: '#1B5E20',
   },
   restOfFieldContainer: {
-    marginTop: 24,
+    marginTop: 0,
   },
   restOfFieldTitle: {
     fontSize: 14,
