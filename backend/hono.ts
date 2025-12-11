@@ -15,7 +15,7 @@ app.use("*", cors({
 console.log('🔧 [Hono] Mounting tRPC handler for PayPal routes');
 
 app.use(
-  '/api/trpc/*',
+  '/trpc/*',
   trpcServer({
     router: appRouter,
     createContext,

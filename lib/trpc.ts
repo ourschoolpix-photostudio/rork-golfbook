@@ -31,9 +31,10 @@ const getBaseUrl = () => {
       debuggerHost: Constants.manifest?.debuggerHost,
       manifest2: Constants.manifest2?.extra?.expoGo?.debuggerHost
     });
+    
+    console.log('⚠️ [tRPC] Could not determine backend URL from constants, using empty string');
   }
 
-  console.error('❌ [tRPC] Could not determine backend URL');
   return '';
 };
 
