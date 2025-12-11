@@ -1087,10 +1087,138 @@ export async function generateInvoicePDF(
     if (openEmail && member.email && await MailComposer.isAvailableAsync()) {
       const isAvailable = await MailComposer.isAvailableAsync();
       if (isAvailable) {
+        const entryFee = Number(event.entryFee) || 0;
+        const numberOfGuests = registration?.numberOfGuests || 0;
+        const isSponsor = registration?.isSponsor || false;
+        const totalPeople = isSponsor ? 0 : 1 + numberOfGuests;
+        const total = entryFee * totalPeople;
+        const isPaid = registration?.paymentStatus === 'paid';
+        
+        const formatDate = (dateStr: string) => {
+          const date = new Date(dateStr + 'T00:00:00');
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const year = date.getFullYear();
+          return `${month}/${day}/${year}`;
+        };
+        
+        const dateRange = event.endDate && event.endDate !== event.date 
+          ? `${formatDate(event.date)} - ${formatDate(event.endDate)}` 
+          : formatDate(event.date);
+
+        let emailBody = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #1B5E20; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { background: #f9f9f9; padding: 20px; border: 1px solid #e0e0e0; border-top: none; }
+    .section { background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .section-title { font-weight: 700; color: #1B5E20; margin-bottom: 10px; font-size: 16px; }
+    .detail-row { margin-bottom: 8px; }
+    .detail-label { font-weight: 600; color: #666; }
+    .total-section { background: #E8F5E9; padding: 15px; border-radius: 8px; margin-top: 15px; }
+    .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 18px; font-weight: 700; color: #1B5E20; }
+    .payment-status { padding: 15px; border-radius: 8px; text-align: center; font-weight: 700; margin-top: 15px; }
+    .paid { background: #E8F5E9; color: #2E7D32; border: 2px solid #2E7D32; }
+    .unpaid { background: #FFF9E6; color: #F57C00; border: 2px solid #F57C00; }
+    .payment-instructions { background: #E3F2FD; padding: 15px; border-radius: 8px; border: 2px solid #1976D2; margin-top: 15px; }
+    .payment-instructions h3 { color: #1976D2; margin-top: 0; }
+    .sponsor-badge { background: #FF9500; color: white; padding: 10px 20px; border-radius: 20px; display: inline-block; margin-bottom: 15px; }
+    .footer { text-align: center; color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Registration Invoice</h1>
+  </div>
+  <div class="content">`;
+
+        if (isSponsor) {
+          emailBody += `
+    <div class="sponsor-badge">SPONSOR REGISTRATION</div>`;
+        }
+
+        emailBody += `
+    <div class="section">
+      <div class="section-title">Member Information</div>
+      <div class="detail-row"><span class="detail-label">Name:</span> ${member.name}</div>
+      ${member.email ? `<div class="detail-row"><span class="detail-label">Email:</span> ${member.email}</div>` : ''}
+      ${member.phone ? `<div class="detail-row"><span class="detail-label">Phone:</span> ${member.phone}</div>` : ''}
+    </div>
+
+    <div class="section">
+      <div class="section-title">Event Details</div>
+      <div class="detail-row"><span class="detail-label">Event:</span> ${event.name}</div>
+      <div class="detail-row"><span class="detail-label">Date:</span> ${dateRange}</div>
+      ${event.location ? `<div class="detail-row"><span class="detail-label">Location:</span> ${event.location}</div>` : ''}
+    </div>`;
+
+        if (!isSponsor) {
+          emailBody += `
+    <div class="section">
+      <div class="section-title">Registration Details</div>
+      <div class="detail-row"><span class="detail-label">Entry Fee:</span> ${entryFee.toFixed(2)}</div>
+      ${numberOfGuests > 0 ? `<div class="detail-row"><span class="detail-label">Guests:</span> ${numberOfGuests} × ${entryFee.toFixed(2)} = ${(entryFee * numberOfGuests).toFixed(2)}</div>` : ''}
+    </div>`;
+        } else {
+          emailBody += `
+    <div class="section">
+      <div class="section-title">Thank You!</div>
+      <p>Thank you for your generous sponsorship! Your registration is complimentary.</p>
+    </div>`;
+        }
+
+        emailBody += `
+    <div class="total-section">
+      <div class="total-row">
+        <span>Total Amount:</span>
+        <span>${total.toFixed(2)}</span>
+      </div>
+    </div>
+
+    <div class="payment-status ${isPaid ? 'paid' : 'unpaid'}">
+      ${isPaid ? '✓ PAID IN FULL' : `AMOUNT DUE: ${total.toFixed(2)}`}
+    </div>`;
+
+        if (!isPaid && (orgInfo?.zellePhone || orgInfo?.paypalClientId)) {
+          emailBody += `
+    <div class="payment-instructions">
+      <h3>Payment Instructions</h3>
+      <p>Please complete your payment using one of the following methods:</p>`;
+          
+          if (orgInfo?.zellePhone) {
+            emailBody += `
+      <p><strong>Option 1: Zelle</strong><br/>Send payment to: <strong>${orgInfo.zellePhone}</strong></p>`;
+          }
+          
+          if (orgInfo?.paypalClientId) {
+            emailBody += `
+      <p><strong>Option 2: PayPal</strong><br/>Visit: <a href="https://www.paypal.com/${orgInfo.paypalMode === 'live' ? 'paypalme' : 'sandbox'}" style="color: #1976D2;">PayPal Payment Link</a></p>`;
+          }
+          
+          emailBody += `
+    </div>`;
+        }
+
+        emailBody += `
+    <div class="footer">
+      <p>Thank you for your registration!</p>
+      <p>A detailed PDF invoice is attached to this email for your records.</p>
+      <p>If you have any questions, please contact the event organizer.</p>
+      ${orgInfo?.name ? `<p><strong>${orgInfo.name}</strong></p>` : ''}
+    </div>
+  </div>
+</body>
+</html>`;
+
         await MailComposer.composeAsync({
           recipients: [member.email],
           subject: `${event.name} - Registration Invoice`,
-          body: `Dear ${member.name},\n\nThank you for registering for ${event.name}. Please find your invoice attached.\n\nEvent Details:\nDate: ${event.date}${event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}\nLocation: ${event.location || event.venue}\nEntry Fee: ${event.entryFee}\n\nBest regards,\n${orgInfo?.name || 'Event Organizer'}`,
+          body: emailBody,
+          isHtml: true,
           attachments: [uri],
         });
       }
