@@ -79,9 +79,9 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         phone: data.phone,
         zellePhone: data.zelle_phone,
         logoUrl: data.logo_url,
-        paypalClientId: data.paypal_client_id,
-        paypalClientSecret: data.paypal_client_secret,
-        paypalMode: data.paypal_mode,
+        paypalClientId: (data.paypal_client_id || '').trim(),
+        paypalClientSecret: (data.paypal_client_secret || '').trim(),
+        paypalMode: data.paypal_mode || 'sandbox',
         rolexPlacementPoints: data.rolex_placement_points,
         rolexAttendancePoints: data.rolex_attendance_points,
         rolexBonusPoints: data.rolex_bonus_points,
@@ -89,8 +89,10 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       
       console.log('✅ [SettingsContext] Successfully fetched settings');
       console.log('✅ [SettingsContext] Mapped settings:', {
-        paypalClientId: settings.paypalClientId,
-        paypalClientSecret: settings.paypalClientSecret,
+        hasPaypalClientId: !!settings.paypalClientId,
+        paypalClientIdLength: settings.paypalClientId?.length || 0,
+        hasPaypalClientSecret: !!settings.paypalClientSecret,
+        paypalClientSecretLength: settings.paypalClientSecret?.length || 0,
         paypalMode: settings.paypalMode,
       });
       

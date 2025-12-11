@@ -95,9 +95,27 @@ export function PayPalInvoiceModal({
   const handlePayPalPayment = async () => {
     if (!canRegister() || !event) return;
 
-    const hasPayPalCredentials = orgInfo.paypalClientId && orgInfo.paypalClientId.trim() !== '';
+    console.log('[PayPalInvoiceModal] 🔍 Checking PayPal credentials...');
+    console.log('[PayPalInvoiceModal] orgInfo:', {
+      hasClientId: !!orgInfo.paypalClientId,
+      clientIdLength: orgInfo.paypalClientId?.length || 0,
+      hasClientSecret: !!orgInfo.paypalClientSecret,
+      clientSecretLength: orgInfo.paypalClientSecret?.length || 0,
+      mode: orgInfo.paypalMode,
+    });
+
+    const trimmedClientId = (orgInfo.paypalClientId || '').trim();
+    const trimmedClientSecret = (orgInfo.paypalClientSecret || '').trim();
+    const hasPayPalCredentials = trimmedClientId !== '' && trimmedClientSecret !== '';
+    
+    console.log('[PayPalInvoiceModal] After trimming:', {
+      hasCredentials: hasPayPalCredentials,
+      clientIdLength: trimmedClientId.length,
+      clientSecretLength: trimmedClientSecret.length,
+    });
     
     if (!hasPayPalCredentials) {
+      console.error('[PayPalInvoiceModal] ❌ PayPal credentials missing or empty');
       Alert.alert(
         'PayPal Not Configured',
         'PayPal payment has not been configured by the administrator. Please contact them or use an alternative payment method.',
@@ -112,11 +130,6 @@ export function PayPalInvoiceModal({
       console.log('[PayPalInvoiceModal] 🚀 Starting PayPal payment flow...');
       console.log('[PayPalInvoiceModal] Event:', event.name);
       console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
-      console.log('[PayPalInvoiceModal] PayPal credentials:', {
-        hasClientId: !!orgInfo.paypalClientId,
-        hasClientSecret: !!orgInfo.paypalClientSecret,
-        mode: orgInfo.paypalMode,
-      });
       
       console.log('[PayPalInvoiceModal] Creating PayPal order directly...');
       const paymentResponse = await createPayPalOrder({

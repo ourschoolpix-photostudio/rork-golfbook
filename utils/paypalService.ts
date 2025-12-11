@@ -52,22 +52,29 @@ async function getPayPalAccessToken(
 ): Promise<string> {
   console.log('[PayPalService] Getting PayPal access token...');
   console.log('[PayPalService] Mode:', mode);
-  console.log('[PayPalService] Client ID length:', clientId?.length || 0);
-  console.log('[PayPalService] Client Secret length:', clientSecret?.length || 0);
-  console.log('[PayPalService] Client ID prefix:', clientId?.substring(0, 20) + '...');
-  console.log('[PayPalService] Client ID full:', clientId);
-  console.log('[PayPalService] Client Secret full:', clientSecret);
+  console.log('[PayPalService] Client ID length (raw):', clientId?.length || 0);
+  console.log('[PayPalService] Client Secret length (raw):', clientSecret?.length || 0);
   
   if (!clientId || !clientSecret) {
     throw new Error('PayPal Client ID and Secret are required');
   }
   
-  if (clientId.trim() === '' || clientSecret.trim() === '') {
-    throw new Error('PayPal credentials cannot be empty');
+  const trimmedClientId = clientId.trim();
+  const trimmedClientSecret = clientSecret.trim();
+  
+  console.log('[PayPalService] Client ID length (trimmed):', trimmedClientId.length);
+  console.log('[PayPalService] Client Secret length (trimmed):', trimmedClientSecret.length);
+  console.log('[PayPalService] Client ID prefix:', trimmedClientId.substring(0, 20) + '...');
+  console.log('[PayPalService] Client Secret prefix:', trimmedClientSecret.substring(0, 20) + '...');
+  
+  if (trimmedClientId === '' || trimmedClientSecret === '') {
+    throw new Error('PayPal credentials cannot be empty after trimming');
   }
   
-  const auth = base64Encode(`${clientId}:${clientSecret}`);
-  console.log('[PayPalService] Auth string length:', auth.length);
+  const authString = `${trimmedClientId}:${trimmedClientSecret}`;
+  const auth = base64Encode(authString);
+  console.log('[PayPalService] Auth credentials string length:', authString.length);
+  console.log('[PayPalService] Base64 auth length:', auth.length);
   const baseUrl = PAYPAL_API_BASE[mode];
   console.log('[PayPalService] Requesting token from:', `${baseUrl}/v1/oauth2/token`);
   const response = await fetch(`${baseUrl}/v1/oauth2/token`, {
