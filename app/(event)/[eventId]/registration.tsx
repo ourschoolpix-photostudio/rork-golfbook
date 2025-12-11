@@ -1650,14 +1650,12 @@ export default function EventRegistrationScreen() {
                         
                         {currentUser?.isAdmin && playerReg && (
                           <View style={styles.emailButtonContainer}>
-                            {!playerReg.emailSent && (
-                              <View style={styles.emailNotificationDot} />
-                            )}
+                            <View style={[
+                              styles.emailNotificationDot,
+                              playerReg.emailSent && styles.emailSentDot,
+                            ]} />
                             <TouchableOpacity
-                              style={[
-                                styles.emailInvoiceButton,
-                                playerReg.emailSent && styles.emailInvoiceButtonSent,
-                              ]}
+                              style={styles.emailInvoiceButton}
                               onPress={() => handleEmailInvoice(player, playerReg)}
                               disabled={generatingInvoiceForPlayer === player.id}
                               activeOpacity={0.7}
@@ -1666,9 +1664,9 @@ export default function EventRegistrationScreen() {
                                 <ActivityIndicator size="small" color="#007AFF" />
                               ) : (
                                 <Ionicons 
-                                  name={playerReg.emailSent ? "checkmark-circle" : "mail-outline"} 
+                                  name="mail-outline" 
                                   size={18} 
-                                  color={playerReg.emailSent ? "#34C759" : "#007AFF"} 
+                                  color="#007AFF" 
                                 />
                               )}
                             </TouchableOpacity>
@@ -3108,7 +3106,7 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
     zIndex: 10,
   },
-  emailInvoiceButtonSent: {
-    backgroundColor: '#E8F5E9',
+  emailSentDot: {
+    backgroundColor: '#34C759',
   },
 });
