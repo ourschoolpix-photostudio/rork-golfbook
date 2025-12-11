@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Image, TouchableOpaci
 import { EventFooter } from '@/components/EventFooter';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
-import { getDisplayHandicap } from '@/utils/handicapHelper';
+import { getDisplayHandicap, calculateTournamentFlight } from '@/utils/handicapHelper';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Member, Event } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +15,7 @@ interface LeaderboardEntry {
   netScore: number;
   handicap: number;
   position: number;
+  flight: string;
   registration?: any;
 }
 
@@ -122,29 +123,40 @@ export default function LeaderboardNewScreen() {
       
       const handicap = getDisplayHandicap(member, registration, event as Event, false, 1);
       const netScore = grossScore - handicap;
+      
+      const flight = calculateTournamentFlight(
+        member,
+        Number(event.flightACutoff) || undefined,
+        Number(event.flightBCutoff) || undefined,
+        registration,
+        event as Event,
+        false,
+        1
+      );
 
-      console.log('[LeaderboardNew] Player:', member.name, 'Flight:', registration.flight, 'Scores count:', playerScores.length, 'Gross:', grossScore, 'Net:', netScore);
+      console.log('[LeaderboardNew] Player:', member.name, 'Flight:', flight, 'Scores count:', playerScores.length, 'Gross:', grossScore, 'Net:', netScore);
 
       allEntries.push({
         member,
         grossScore,
         netScore,
         handicap,
+        flight,
         position: 0,
         registration,
       });
     });
 
     console.log('[LeaderboardNew] All entries before filtering:', allEntries.length);
-    console.log('[LeaderboardNew] Sample registration flights:', allEntries.slice(0, 3).map(e => ({
+    console.log('[LeaderboardNew] Sample calculated flights:', allEntries.slice(0, 3).map(e => ({
       name: e.member.name,
-      flight: e.registration?.flight,
-      flightType: typeof e.registration?.flight
+      flight: e.flight,
+      handicap: e.handicap
     })));
 
-    let flightAEntries = allEntries.filter(e => e.registration?.flight === 'A');
-    let flightBEntries = allEntries.filter(e => e.registration?.flight === 'B');
-    const noFlightEntries = allEntries.filter(e => !e.registration?.flight);
+    let flightAEntries = allEntries.filter(e => e.flight === 'A');
+    let flightBEntries = allEntries.filter(e => e.flight === 'B');
+    const noFlightEntries = allEntries.filter(e => !e.flight || e.flight === '—');
 
     console.log('[LeaderboardNew] Flight A entries:', flightAEntries.length, 'Flight B entries:', flightBEntries.length, 'No flight:', noFlightEntries.length);
 
@@ -284,7 +296,7 @@ export default function LeaderboardNewScreen() {
                       </View>
                       <View style={styles.playerInfo}>
                         <Text style={styles.playerName}>{entry.member.name}</Text>
-                        <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
+                        <Text style={styles.playerHandicap}>Handicap: {entry.handicap} • Flight {entry.flight}</Text>
                       </View>
                       <View style={styles.scoresContainer}>
                         <View style={styles.scoreItem}>
@@ -308,7 +320,7 @@ export default function LeaderboardNewScreen() {
                           </View>
                           <View style={styles.rowPlayerInfo}>
                             <Text style={styles.rowPlayerName}>{entry.member.name}</Text>
-                            <Text style={styles.rowPlayerHandicap}>Handicap: {entry.handicap}</Text>
+                            <Text style={styles.rowPlayerHandicap}>Handicap: {entry.handicap} • Flight {entry.flight}</Text>
                           </View>
                           <View style={styles.rowScores}>
                             <Text style={styles.rowNetScore}>{entry.netScore}</Text>
@@ -337,7 +349,7 @@ export default function LeaderboardNewScreen() {
                       </View>
                       <View style={styles.playerInfo}>
                         <Text style={styles.playerName}>{entry.member.name}</Text>
-                        <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
+                        <Text style={styles.playerHandicap}>Handicap: {entry.handicap} • Flight {entry.flight}</Text>
                       </View>
                       <View style={styles.scoresContainer}>
                         <View style={styles.scoreItem}>
@@ -361,7 +373,7 @@ export default function LeaderboardNewScreen() {
                           </View>
                           <View style={styles.rowPlayerInfo}>
                             <Text style={styles.rowPlayerName}>{entry.member.name}</Text>
-                            <Text style={styles.rowPlayerHandicap}>Handicap: {entry.handicap}</Text>
+                            <Text style={styles.rowPlayerHandicap}>Handicap: {entry.handicap} • Flight {entry.flight}</Text>
                           </View>
                           <View style={styles.rowScores}>
                             <Text style={styles.rowNetScore}>{entry.netScore}</Text>
