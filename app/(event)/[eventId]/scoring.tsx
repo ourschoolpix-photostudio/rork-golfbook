@@ -265,7 +265,7 @@ export default function ScoringScreen() {
       loadMyGroup(event, currentUser.id, selectedDay);
       loadScores();
     }
-  }, [selectedDay]);
+  }, [selectedDay, event, currentUser, eventId, loadMyGroup, loadScores]);
 
   const handlePreviousHole = () => {
     setCurrentHole(prev => {
