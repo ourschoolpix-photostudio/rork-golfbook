@@ -26,29 +26,48 @@ export default function LeaderboardScreen() {
     queryKey: ['events', eventId],
     queryFn: () => supabaseService.events.get(eventId || ''),
     enabled: !!eventId,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const { data: allMembers = [], isLoading: membersLoading } = useQuery({
     queryKey: ['members'],
     queryFn: () => supabaseService.members.getAll(),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
     queryKey: ['registrations', eventId],
     queryFn: () => supabaseService.registrations.getAll(eventId || ''),
     enabled: !!eventId,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const { data: scores = [], isLoading: scoresLoading } = useQuery({
     queryKey: ['scores', eventId],
     queryFn: () => supabaseService.scores.getAll(eventId || ''),
     enabled: !!eventId,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   useRealtimeScores(eventId || '', !!eventId);
 
   const leaderboard = useMemo(() => {
-    if (!event || !allMembers.length) return [];
+    console.log('[Leaderboard] Computing leaderboard:', {
+      hasEvent: !!event,
+      membersCount: allMembers.length,
+      registeredPlayersCount: event?.registeredPlayers?.length || 0,
+      scoresCount: scores.length,
+      registrationsCount: registrations.length,
+    });
+
+    if (!event || !allMembers.length || !event.registeredPlayers) {
+      console.log('[Leaderboard] Missing required data for leaderboard');
+      return [];
+    }
 
     const registeredPlayerIds = new Set(event.registeredPlayers || []);
     const entries: LeaderboardEntry[] = [];
