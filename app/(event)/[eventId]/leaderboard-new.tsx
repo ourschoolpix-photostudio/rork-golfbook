@@ -330,6 +330,7 @@ export default function LeaderboardNewScreen() {
 
                 {leaderboard.rolex.length > 3 && (
                   <View style={styles.restOfFieldContainer}>
+                    <Text style={styles.restOfFieldTitle}>Rest of Field</Text>
                     {leaderboard.rolex.slice(3).map((entry) => (
                       <View key={entry.member.id} style={styles.leaderboardRow}>
                         <View style={styles.positionBox}>
@@ -392,6 +393,7 @@ export default function LeaderboardNewScreen() {
 
                   {leaderboard.flightA.length > 3 && (
                     <View style={styles.restOfFieldContainer}>
+                      <Text style={styles.restOfFieldTitle}>Rest of Field</Text>
                       {leaderboard.flightA.slice(3).map((entry) => (
                         <View key={entry.member.id} style={styles.leaderboardRow}>
                           <View style={styles.positionBox}>
@@ -445,6 +447,7 @@ export default function LeaderboardNewScreen() {
 
                   {leaderboard.flightB.length > 3 && (
                     <View style={styles.restOfFieldContainer}>
+                      <Text style={styles.restOfFieldTitle}>Rest of Field</Text>
                       {leaderboard.flightB.slice(3).map((entry) => (
                         <View key={entry.member.id} style={styles.leaderboardRow}>
                           <View style={styles.positionBox}>
@@ -676,7 +679,7 @@ const styles = StyleSheet.create({
     color: '#1B5E20',
   },
   restOfFieldContainer: {
-    marginTop: 0,
+    marginTop: 24,
   },
   restOfFieldTitle: {
     fontSize: 14,
