@@ -1036,11 +1036,27 @@ export default function EventRegistrationScreen() {
       console.log('[registration] ✅ Invoice generated successfully');
     } catch (error) {
       console.error('[registration] ❌ Invoice generation error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('[registration] Error details:', errorMessage);
-      if (error instanceof Error && error.stack) {
-        console.error('[registration] Stack trace:', error.stack);
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        console.error('[registration] Error message:', error.message);
+        if (error.stack) {
+          console.error('[registration] Stack trace:', error.stack);
+        }
+      } else if (typeof error === 'object' && error !== null) {
+        try {
+          errorMessage = JSON.stringify(error);
+          console.error('[registration] Error object (stringified):', errorMessage);
+        } catch {
+          errorMessage = String(error);
+          console.error('[registration] Error string:', errorMessage);
+        }
+      } else {
+        errorMessage = String(error);
+        console.error('[registration] Error (as string):', errorMessage);
       }
+      
       Alert.alert('Error', `Failed to generate invoice: ${errorMessage}`);
     } finally {
       setGeneratingInvoiceForPlayer(null);
