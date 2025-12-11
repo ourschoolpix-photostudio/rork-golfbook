@@ -349,7 +349,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     return games.find(g => g.id === gameId);
   }, [games]);
 
-  return useMemo(() => ({
+  return {
     games,
     inProgressGames,
     completedGames,
@@ -360,5 +360,5 @@ export const [GamesProvider, useGames] = createContextHook(() => {
     completeGame,
     deleteGame,
     getGame,
-  }), [games, inProgressGames, completedGames, isLoading, createGame, updateGame, updateGameScores, completeGame, deleteGame, getGame]);
+  };
 });
