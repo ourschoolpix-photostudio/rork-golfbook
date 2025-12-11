@@ -53,7 +53,9 @@ export default function ScoringScreen() {
     queryKey: ['scores', eventId],
     queryFn: () => supabaseService.scores.getAll(eventId || ''),
     enabled: !!eventId,
-    refetchInterval: 10000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchInterval: 5000,
     refetchIntervalInBackground: false,
   });
   const { shouldUseOfflineMode, addPendingOperation } = useOfflineMode();
@@ -416,11 +418,10 @@ export default function ScoringScreen() {
       console.log('[scoring] ✅ Submitted scores atomically for:', scoresSubmitted);
       
       await refetchScores();
-      await loadScores();
       
       Alert.alert(
         'Success',
-        `Scores submitted successfully for Day ${selectedDay}!`,
+        `Scores submitted successfully for Day ${selectedDay}!\n\nLeaderboard will update automatically.`,
         [{ text: 'OK' }]
       );
     } catch (error) {

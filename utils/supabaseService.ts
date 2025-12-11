@@ -654,7 +654,10 @@ export const supabaseService = {
         error = result.error;
       } else {
         console.log('[supabaseService.scores.submit] Inserting new score');
+        
+        const scoreId = `${eventId}-${memberId}-day${day}`;
         const insertPayload = {
+          id: scoreId,
           event_id: eventId,
           member_id: memberId,
           day,
