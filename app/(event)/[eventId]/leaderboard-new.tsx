@@ -176,39 +176,33 @@ export default function LeaderboardNewScreen() {
       return a.netScore - b.netScore;
     });
 
-    let currentPosition = 1;
-    let previousNetScore: number | null = null;
-
-    flightAEntries.forEach((entry, index) => {
-      if (previousNetScore === null || entry.netScore !== previousNetScore) {
-        currentPosition = index + 1;
+    const flightAWithPositions = flightAEntries.map((entry, index, arr) => {
+      let position = index + 1;
+      if (index > 0 && entry.netScore === arr[index - 1].netScore) {
+        position = (arr[index - 1] as any)._tournamentPosition;
       }
-      entry.position = currentPosition;
-      previousNetScore = entry.netScore;
+      return { ...entry, position, _tournamentPosition: position };
     });
 
-    currentPosition = 1;
-    previousNetScore = null;
-    flightBEntries.forEach((entry, index) => {
-      if (previousNetScore === null || entry.netScore !== previousNetScore) {
-        currentPosition = index + 1;
+    const flightBWithPositions = flightBEntries.map((entry, index, arr) => {
+      let position = index + 1;
+      if (index > 0 && entry.netScore === arr[index - 1].netScore) {
+        position = (arr[index - 1] as any)._tournamentPosition;
       }
-      entry.position = currentPosition;
-      previousNetScore = entry.netScore;
+      return { ...entry, position, _tournamentPosition: position };
     });
 
-    const rolexEntries = [...allEntries].sort((a, b) => a.netScore - b.netScore);
-    currentPosition = 1;
-    previousNetScore = null;
-    rolexEntries.forEach((entry, index) => {
-      if (previousNetScore === null || entry.netScore !== previousNetScore) {
-        currentPosition = index + 1;
-      }
-      entry.position = currentPosition;
-      previousNetScore = entry.netScore;
-    });
+    const rolexEntries = [...allEntries]
+      .sort((a, b) => a.netScore - b.netScore)
+      .map((entry, index, arr) => {
+        let position = index + 1;
+        if (index > 0 && entry.netScore === arr[index - 1].netScore) {
+          position = (arr[index - 1] as any)._rolexPosition;
+        }
+        return { ...entry, position, _rolexPosition: position };
+      });
 
-    return { flightA: flightAEntries, flightB: flightBEntries, rolex: rolexEntries };
+    return { flightA: flightAWithPositions, flightB: flightBWithPositions, rolex: rolexEntries };
   }, [eventQuery.data, membersQuery.data, registrationsQuery.data, scoresQuery.data, selectedDay, eventId]);
 
   const isLoading = eventQuery.isLoading || membersQuery.isLoading || registrationsQuery.isLoading || scoresQuery.isLoading;
