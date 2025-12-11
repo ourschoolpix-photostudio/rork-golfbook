@@ -255,6 +255,7 @@ export default function EventRegistrationScreen() {
               guestNames: reg.guestNames || null,
               isSponsor: reg.isSponsor || false,
               isCustomGuest: true,
+              emailSent: reg.emailSent || false,
             };
           } else if (reg.memberId) {
             const member = allMembers.find(m => m.id === reg.memberId);
@@ -272,6 +273,7 @@ export default function EventRegistrationScreen() {
                 guestNames: reg.guestNames || null,
                 isSponsor: reg.isSponsor || false,
                 isCustomGuest: false,
+                emailSent: reg.emailSent || false,
               };
             }
           }
@@ -1021,6 +1023,14 @@ export default function EventRegistrationScreen() {
         shouldOpenEmail
       );
       
+      if (playerReg?.id) {
+        await updateRegistrationMutation.mutateAsync({
+          registrationId: playerReg.id,
+          updates: { emailSent: true },
+        });
+        console.log('[registration] ✅ Email sent status updated');
+      }
+      
       console.log('[registration] ✅ Invoice generated successfully');
     } catch (error) {
       console.error('[registration] ❌ Invoice generation error:', error);
@@ -1616,18 +1626,30 @@ export default function EventRegistrationScreen() {
                         </View>
                         
                         {currentUser?.isAdmin && playerReg && (
-                          <TouchableOpacity
-                            style={styles.emailInvoiceButton}
-                            onPress={() => handleEmailInvoice(player, playerReg)}
-                            disabled={generatingInvoiceForPlayer === player.id}
-                            activeOpacity={0.7}
-                          >
-                            {generatingInvoiceForPlayer === player.id ? (
-                              <ActivityIndicator size="small" color="#007AFF" />
-                            ) : (
-                              <Ionicons name="mail-outline" size={18} color="#007AFF" />
+                          <View style={styles.emailButtonContainer}>
+                            {!playerReg.emailSent && (
+                              <View style={styles.emailNotificationDot} />
                             )}
-                          </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[
+                                styles.emailInvoiceButton,
+                                playerReg.emailSent && styles.emailInvoiceButtonSent,
+                              ]}
+                              onPress={() => handleEmailInvoice(player, playerReg)}
+                              disabled={generatingInvoiceForPlayer === player.id}
+                              activeOpacity={0.7}
+                            >
+                              {generatingInvoiceForPlayer === player.id ? (
+                                <ActivityIndicator size="small" color="#007AFF" />
+                              ) : (
+                                <Ionicons 
+                                  name={playerReg.emailSent ? "checkmark-circle" : "mail-outline"} 
+                                  size={18} 
+                                  color={playerReg.emailSent ? "#34C759" : "#007AFF"} 
+                                />
+                              )}
+                            </TouchableOpacity>
+                          </View>
                         )}
                       </View>
 
@@ -3047,5 +3069,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  emailButtonContainer: {
+    position: 'relative' as const,
+  },
+  emailNotificationDot: {
+    position: 'absolute' as const,
+    top: -4,
+    right: 24,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FF3B30',
+    borderWidth: 2,
+    borderColor: '#fff',
+    zIndex: 10,
+  },
+  emailInvoiceButtonSent: {
+    backgroundColor: '#E8F5E9',
   },
 });

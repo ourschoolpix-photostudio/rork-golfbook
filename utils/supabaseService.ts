@@ -411,6 +411,7 @@ export const supabaseService = {
         isCustomGuest: r.is_custom_guest,
         customGuestName: r.custom_guest_name,
         registeredAt: r.registered_at,
+        emailSent: r.email_sent || false,
         member: r.members,
       }));
     },
@@ -453,6 +454,7 @@ export const supabaseService = {
       if (updates.numberOfGuests !== undefined) supabaseUpdates.number_of_guests = updates.numberOfGuests;
       if (updates.guestNames !== undefined) supabaseUpdates.guest_names = updates.guestNames;
       if (updates.isSponsor !== undefined) supabaseUpdates.is_sponsor = updates.isSponsor;
+      if (updates.emailSent !== undefined) supabaseUpdates.email_sent = updates.emailSent;
       
       const { error } = await supabase
         .from('event_registrations')
