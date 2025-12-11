@@ -292,6 +292,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+    pointerEvents: 'none' as const,
   },
   locationBadgeText: {
     fontSize: 10,
