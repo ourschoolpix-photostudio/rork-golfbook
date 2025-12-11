@@ -1259,10 +1259,18 @@ export async function generateInvoicePDF(
 
       // Add final details (memo/description)
       if (event.memo || event.description) {
+        const details = event.memo || event.description || '';
+        const detailLines = details.split('\n').filter((line: string) => line.trim() !== '');
+        let detailsHTML = '<ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">';
+        detailLines.forEach((line: string) => {
+          detailsHTML += `<li style="margin-bottom: 6px;">${line.trim()}</li>`;
+        });
+        detailsHTML += '</ul>';
+        
         emailBody += `
     <div class="section">
-      <div class="section-title">Event Information</div>
-      <div style="line-height: 1.6; color: #555;">${event.memo || event.description || ''}</div>
+      <div class="section-title">Event Details</div>
+      ${detailsHTML}
     </div>`;
       }
 
@@ -1271,8 +1279,8 @@ export async function generateInvoicePDF(
         emailBody += `
     <div class="section">
       <div class="section-title">Registration Details</div>
-      <div class="detail-row"><span class="detail-label">Entry Fee:</span> ${entryFee.toFixed(2)}</div>
-      ${numberOfGuests > 0 ? `<div class="detail-row"><span class="detail-label">Guests:</span> ${numberOfGuests} × ${entryFee.toFixed(2)} = ${(entryFee * numberOfGuests).toFixed(2)}</div>` : ''}
+      <div class="detail-row"><span class="detail-label">Entry Fee:</span> \${entryFee.toFixed(2)}</div>
+      ${numberOfGuests > 0 ? `<div class="detail-row"><span class="detail-label">Guests:</span> ${numberOfGuests} × \${entryFee.toFixed(2)} = \${(entryFee * numberOfGuests).toFixed(2)}</div>` : ''}
     </div>`;
       } else {
         emailBody += `
