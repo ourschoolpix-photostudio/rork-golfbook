@@ -17,7 +17,7 @@ import { TournamentTermsModal } from './TournamentTermsModal';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { formatDateAsFullDay } from '@/utils/dateUtils';
 import { useSettings } from '@/contexts/SettingsContext';
-import { trpc } from '@/lib/trpc';
+import { createPayPalOrder } from '@/utils/paypalService';
 
 interface PayPalInvoiceModalProps {
   visible: boolean;
@@ -92,8 +92,6 @@ export function PayPalInvoiceModal({
     return hasRequiredInfo() && agreeToTerms && !isSubmitting;
   };
 
-  const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
-
   const handlePayPalPayment = async () => {
     if (!canRegister() || !event) return;
 
@@ -114,13 +112,21 @@ export function PayPalInvoiceModal({
       console.log('[PayPalInvoiceModal] 🚀 Starting PayPal payment flow...');
       console.log('[PayPalInvoiceModal] Event:', event.name);
       console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
+      console.log('[PayPalInvoiceModal] PayPal credentials:', {
+        hasClientId: !!orgInfo.paypalClientId,
+        hasClientSecret: !!orgInfo.paypalClientSecret,
+        mode: orgInfo.paypalMode,
+      });
       
-      console.log('[PayPalInvoiceModal] Creating PayPal order via backend...');
-      const paymentResponse = await createPaymentMutation.mutateAsync({
+      console.log('[PayPalInvoiceModal] Creating PayPal order directly...');
+      const paymentResponse = await createPayPalOrder({
         amount: totalAmount,
         eventName: event.name,
         eventId: event.id,
         playerEmail: email.trim(),
+        paypalClientId: orgInfo.paypalClientId,
+        paypalClientSecret: orgInfo.paypalClientSecret,
+        paypalMode: orgInfo.paypalMode,
       });
 
       console.log('[PayPalInvoiceModal] ✅ Payment order created:', paymentResponse);
