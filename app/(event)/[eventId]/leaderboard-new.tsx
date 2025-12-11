@@ -136,11 +136,22 @@ export default function LeaderboardNewScreen() {
     });
 
     console.log('[LeaderboardNew] All entries before filtering:', allEntries.length);
+    console.log('[LeaderboardNew] Sample registration flights:', allEntries.slice(0, 3).map(e => ({
+      name: e.member.name,
+      flight: e.registration?.flight,
+      flightType: typeof e.registration?.flight
+    })));
 
-    const flightAEntries = allEntries.filter(e => e.registration?.flight === 'A');
-    const flightBEntries = allEntries.filter(e => e.registration?.flight === 'B');
+    let flightAEntries = allEntries.filter(e => e.registration?.flight === 'A');
+    let flightBEntries = allEntries.filter(e => e.registration?.flight === 'B');
+    const noFlightEntries = allEntries.filter(e => !e.registration?.flight);
 
-    console.log('[LeaderboardNew] Flight A entries:', flightAEntries.length, 'Flight B entries:', flightBEntries.length);
+    console.log('[LeaderboardNew] Flight A entries:', flightAEntries.length, 'Flight B entries:', flightBEntries.length, 'No flight:', noFlightEntries.length);
+
+    if (noFlightEntries.length > 0) {
+      console.log('[LeaderboardNew] Players without flight assignment found, putting them in Flight A');
+      flightAEntries = [...flightAEntries, ...noFlightEntries];
+    }
 
     flightAEntries.sort((a, b) => a.netScore - b.netScore);
     flightBEntries.sort((a, b) => a.netScore - b.netScore);
