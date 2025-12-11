@@ -168,28 +168,16 @@ export default function LeaderboardNewScreen() {
     flightAEntries.sort((a, b) => a.netScore - b.netScore);
     flightBEntries.sort((a, b) => a.netScore - b.netScore);
 
-    console.log('[LeaderboardNew] BEFORE POSITION ASSIGNMENT - Flight A entries:', flightAEntries.map(e => ({
-      name: e.member.name,
-      netScore: e.netScore,
-      position: e.position
-    })));
-
     let currentPosition = 1;
     let previousNetScore: number | null = null;
+
     flightAEntries.forEach((entry, index) => {
       if (previousNetScore === null || entry.netScore !== previousNetScore) {
         currentPosition = index + 1;
       }
       entry.position = currentPosition;
       previousNetScore = entry.netScore;
-      console.log('[LeaderboardNew] Flight A position:', entry.member.name, 'Position:', entry.position, 'NetScore:', entry.netScore, 'Index:', index);
     });
-
-    console.log('[LeaderboardNew] AFTER POSITION ASSIGNMENT - Flight A entries:', flightAEntries.map(e => ({
-      name: e.member.name,
-      netScore: e.netScore,
-      position: e.position
-    })));
 
     currentPosition = 1;
     previousNetScore = null;
