@@ -644,9 +644,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   leaderCard: {
-    backgroundColor: '#FFF9E6',
-    borderColor: '#FFB84D',
-    borderWidth: 1,
+    backgroundColor: '#FFFACD',
+    borderColor: '#FFB347',
+    borderWidth: 1.5,
   },
   positionBadge: {
     width: 40,
