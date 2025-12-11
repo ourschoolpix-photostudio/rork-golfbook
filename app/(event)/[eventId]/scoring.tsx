@@ -11,7 +11,7 @@ import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
 import { supabaseService } from '@/utils/supabaseService';
 import { getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
-import { useRealtimeScores, useRealtimeGroupings } from '@/utils/useRealtimeSubscription';
+
 import { useOfflineMode } from '@/contexts/OfflineModeContext';
 
 export default function ScoringScreen() {
@@ -215,7 +215,7 @@ export default function ScoringScreen() {
       setMyGroup([]);
       setMyGrouping(null);
     }
-  }, [updateHoleBasedOnStartType, eventGroupings, allMembers, eventRegistrations, groupingsLoading, membersLoading, registrationsLoading]);
+  }, [updateHoleBasedOnStartType, eventGroupings, allMembers, eventRegistrations, groupingsLoading, membersLoading, registrationsLoading, useCourseHandicap]);
 
   const loadScores = useCallback(async () => {
     try {
@@ -239,7 +239,7 @@ export default function ScoringScreen() {
     } catch (error) {
       console.error('[scoring] Error loading scores:', error);
     }
-  }, [eventId, selectedDay, scoresLoading]);
+  }, [eventId, selectedDay, scoresLoading, eventScores]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -263,24 +263,10 @@ export default function ScoringScreen() {
   }, [event, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, loadMyGroup]);
 
   useEffect(() => {
-    if (eventId && !scoresLoading && eventScores) {
-      const scoresMap: { [playerId: string]: { [hole: number]: number } } = {};
-
-      const dayScores = eventScores.filter((s: any) => s.day === selectedDay);
-      dayScores.forEach((score: any) => {
-        const holes: { [hole: number]: number } = {};
-        (score.holes || []).forEach((holeScore: number, index: number) => {
-          if (holeScore > 0) {
-            holes[index + 1] = holeScore;
-          }
-        });
-        scoresMap[score.memberId] = holes;
-      });
-
-      setHoleScores(scoresMap);
-      console.log('[scoring] Loaded scores for day', selectedDay, ':', scoresMap);
+    if (eventId && !scoresLoading) {
+      loadScores();
     }
-  }, [eventId, selectedDay, scoresLoading]);
+  }, [eventId, selectedDay, scoresLoading, loadScores]);
 
   const handlePreviousHole = () => {
     setCurrentHole(prev => {
