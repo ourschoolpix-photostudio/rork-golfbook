@@ -27,7 +27,7 @@ const DEFAULT_MEMBER: Member = {
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
   const { orgInfo } = useSettings();
-  const useLocalStorage = orgInfo?.useLocalStorage || false;
+  const useLocalStorage = useMemo(() => orgInfo?.useLocalStorage || false, [orgInfo?.useLocalStorage]);
   
   const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

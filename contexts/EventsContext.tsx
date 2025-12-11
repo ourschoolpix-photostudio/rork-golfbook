@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const [EventsProvider, useEvents] = createContextHook(() => {
   const { orgInfo } = useSettings();
-  const useLocalStorage = orgInfo?.useLocalStorage || false;
+  const useLocalStorage = useMemo(() => orgInfo?.useLocalStorage || false, [orgInfo?.useLocalStorage]);
   
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
