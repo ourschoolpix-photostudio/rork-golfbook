@@ -1053,7 +1053,7 @@ interface InvoicePDFOptions {
   registration: any;
   member: Member;
   event: Event;
-  orgInfo?: { name?: string; logoUrl?: string };
+  orgInfo?: { name?: string; logoUrl?: string; zellePhone?: string; paypalClientId?: string; paypalMode?: 'sandbox' | 'live' };
 }
 
 export async function generateInvoicePDF(
@@ -1115,7 +1115,7 @@ function buildInvoiceHTMLContent(
   registration: any,
   member: Member,
   event: Event,
-  orgInfo?: { name?: string; logoUrl?: string }
+  orgInfo?: { name?: string; logoUrl?: string; zellePhone?: string; paypalClientId?: string; paypalMode?: 'sandbox' | 'live' }
 ): string {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00');
@@ -1400,6 +1400,27 @@ function buildInvoiceHTMLContent(
   <div style="margin-bottom: 20px; padding: 15px; background: #F5F5F5; border-radius: 8px;">
     <div style="font-weight: 700; margin-bottom: 8px; color: #1B5E20;">Guest Names:</div>
     <div style="font-size: 11px; line-height: 1.6; white-space: pre-line;">${registration.guestNames}</div>
+  </div>
+  ` : ''}
+
+  ${!isPaid && (orgInfo?.zellePhone || orgInfo?.paypalClientId) ? `
+  <div style="margin-bottom: 20px; padding: 20px; background: #E3F2FD; border: 2px solid #1976D2; border-radius: 8px;">
+    <div style="font-weight: 700; margin-bottom: 12px; color: #1976D2; font-size: 14px;">Payment Instructions</div>
+    <div style="font-size: 11px; line-height: 1.8; color: #333;">
+      <p style="margin-bottom: 10px;">Please complete your payment using one of the following methods:</p>
+      ${orgInfo?.zellePhone ? `
+      <div style="margin-bottom: 12px;">
+        <div style="font-weight: 700; color: #1976D2; margin-bottom: 4px;">Option 1: Zelle</div>
+        <div>Send payment to: <strong>${orgInfo.zellePhone}</strong></div>
+      </div>
+      ` : ''}
+      ${orgInfo?.paypalClientId ? `
+      <div style="margin-bottom: 8px;">
+        <div style="font-weight: 700; color: #1976D2; margin-bottom: 4px;">Option 2: PayPal</div>
+        <div>Visit: <a href="https://www.paypal.com/${orgInfo.paypalMode === 'live' ? 'paypalme' : 'sandbox'}" style="color: #1976D2; text-decoration: underline;">PayPal Payment Link</a></div>
+      </div>
+      ` : ''}
+    </div>
   </div>
   ` : ''}
 
