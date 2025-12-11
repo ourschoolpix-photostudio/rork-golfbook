@@ -15,6 +15,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ChevronDown, ChevronUp } from 'lucide-react-native';
 
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
@@ -34,6 +36,7 @@ export default function DashboardScreen() {
   const [detailsModalVisible, setDetailsModalVisible] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
   const registrationsQuery = useQuery({
     queryKey: ['all-event-registrations', contextEvents],
@@ -64,8 +67,34 @@ export default function DashboardScreen() {
       if (refetchRegistrations) {
         refetchRegistrations();
       }
+      loadExpandedEventId();
     }, [refreshEvents, refetchRegistrations])
   );
+
+  const loadExpandedEventId = async () => {
+    try {
+      const storedId = await AsyncStorage.getItem('dashboard_expanded_event_id');
+      if (storedId) {
+        setExpandedEventId(storedId);
+      }
+    } catch (error) {
+      console.error('Error loading expanded event ID:', error);
+    }
+  };
+
+  const toggleEventExpand = async (eventId: string) => {
+    const newExpandedId = expandedEventId === eventId ? null : eventId;
+    setExpandedEventId(newExpandedId);
+    try {
+      if (newExpandedId) {
+        await AsyncStorage.setItem('dashboard_expanded_event_id', newExpandedId);
+      } else {
+        await AsyncStorage.removeItem('dashboard_expanded_event_id');
+      }
+    } catch (error) {
+      console.error('Error saving expanded event ID:', error);
+    }
+  };
 
   useEffect(() => {
     console.log('🔄 Dashboard - Events state:', {
@@ -347,57 +376,83 @@ export default function DashboardScreen() {
             scrollEnabled={false}
             data={activeEvents}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.eventCard}
-                activeOpacity={0.8}
-                onPress={() => {
-                  console.log('Navigating to event:', item.id);
-                  router.push(`/(event)/${item.id}/registration` as any);
-                }}
-              >
-                <View style={styles.eventPhoto}>
-                  <Image
-                    source={{ uri: (item.photoUrl && item.photoUrl.trim() !== '') ? item.photoUrl : 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80' }}
-                    style={styles.photoPlaceholder}
-                  />
+            renderItem={({ item }) => {
+              const isExpanded = expandedEventId === item.id;
+              return (
+                <View style={styles.eventCard}>
                   <TouchableOpacity
-                    style={styles.viewDetailsButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleViewDetails(item);
-                    }}
+                    style={styles.eventCardHeader}
+                    activeOpacity={0.8}
+                    onPress={() => toggleEventExpand(item.id)}
                   >
-                    <Text style={styles.viewDetailsButtonText}>View Details</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.eventContent}>
-                  <Text style={styles.eventName}>{item.name}</Text>
-                  <Text style={styles.eventDetail}>📍 {item.location}</Text>
-                  <Text style={styles.eventDetail}>
-                    📅 {formatDateRange(item.date || '', item.endDate || '')}
-                  </Text>
-
-                  <View style={styles.scheduleSection}>
-                    {formatSchedule(item).map((schedule, index) => (
-                      <Text key={index} style={styles.scheduleTime}>
-                        {schedule}
+                    <View style={styles.eventHeaderContent}>
+                      <Text style={styles.eventNameCollapsed}>{item.name}</Text>
+                      <Text style={styles.eventDateCollapsed}>
+                        {formatDateRange(item.date || '', item.endDate || '')}
                       </Text>
-                    ))}
-                  </View>
-
-                  <Text style={styles.eventPlayers}>
-                    {item.type === 'social' ? 'Attendees:' : 'Players registered:'} {getEventAttendeeCount(item)}
-                  </Text>
-
-                  {item.entryFee && (
-                    <View style={styles.entryFeeBadge}>
-                      <Text style={styles.entryFeeText}>${item.entryFee}</Text>
                     </View>
+                    <View style={styles.expandIcon}>
+                      {isExpanded ? (
+                        <ChevronUp size={24} color="#007AFF" />
+                      ) : (
+                        <ChevronDown size={24} color="#666" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+
+                  {isExpanded && (
+                    <TouchableOpacity
+                      style={styles.eventExpandedContent}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        console.log('Navigating to event:', item.id);
+                        router.push(`/(event)/${item.id}/registration` as any);
+                      }}
+                    >
+                      <View style={styles.eventPhoto}>
+                        <Image
+                          source={{ uri: (item.photoUrl && item.photoUrl.trim() !== '') ? item.photoUrl : 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80' }}
+                          style={styles.photoPlaceholder}
+                        />
+                        <TouchableOpacity
+                          style={styles.viewDetailsButton}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleViewDetails(item);
+                          }}
+                        >
+                          <Text style={styles.viewDetailsButtonText}>View Details</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.eventContent}>
+                        <Text style={styles.eventDetail}>📍 {item.location}</Text>
+                        <Text style={styles.eventDetail}>
+                          📅 {formatDateRange(item.date || '', item.endDate || '')}
+                        </Text>
+
+                        <View style={styles.scheduleSection}>
+                          {formatSchedule(item).map((schedule, index) => (
+                            <Text key={index} style={styles.scheduleTime}>
+                              {schedule}
+                            </Text>
+                          ))}
+                        </View>
+
+                        <Text style={styles.eventPlayers}>
+                          {item.type === 'social' ? 'Attendees:' : 'Players registered:'} {getEventAttendeeCount(item)}
+                        </Text>
+
+                        {item.entryFee && (
+                          <View style={styles.entryFeeBadge}>
+                            <Text style={styles.entryFeeText}>${item.entryFee}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
                   )}
                 </View>
-              </TouchableOpacity>
-            )}
+              );
+            }}
           />
         )}
       </ScrollView>
@@ -532,6 +587,35 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
+  },
+  eventCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+  },
+  eventHeaderContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  eventNameCollapsed: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  eventDateCollapsed: {
+    fontSize: 13,
+    color: '#666',
+  },
+  expandIcon: {
+    padding: 4,
+  },
+  eventExpandedContent: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
   eventPhoto: {
     width: '100%',
