@@ -26,33 +26,23 @@ export default function LeaderboardScreen() {
     queryKey: ['events', eventId],
     queryFn: () => supabaseService.events.get(eventId || ''),
     enabled: !!eventId,
-    staleTime: 0,
-    refetchOnMount: 'always',
   });
 
   const { data: allMembers = [], isLoading: membersLoading } = useQuery({
     queryKey: ['members'],
     queryFn: () => supabaseService.members.getAll(),
-    staleTime: 0,
-    refetchOnMount: 'always',
   });
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
     queryKey: ['registrations', eventId],
     queryFn: () => supabaseService.registrations.getAll(eventId || ''),
     enabled: !!eventId,
-    staleTime: 0,
-    refetchOnMount: 'always',
   });
 
   const { data: scores = [], isLoading: scoresLoading } = useQuery({
     queryKey: ['scores', eventId],
     queryFn: () => supabaseService.scores.getAll(eventId || ''),
     enabled: !!eventId,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchInterval: 5000,
-    refetchIntervalInBackground: false,
   });
 
   useRealtimeScores(eventId || '', !!eventId);

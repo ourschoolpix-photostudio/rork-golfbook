@@ -53,10 +53,6 @@ export default function ScoringScreen() {
     queryKey: ['scores', eventId],
     queryFn: () => supabaseService.scores.getAll(eventId || ''),
     enabled: !!eventId,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchInterval: 5000,
-    refetchIntervalInBackground: false,
   });
   const { shouldUseOfflineMode, addPendingOperation } = useOfflineMode();
   
@@ -266,12 +262,10 @@ export default function ScoringScreen() {
   useEffect(() => {
     if (event && currentUser && eventId) {
       console.log('[scoring] useEffect triggered - selectedDay changed to:', selectedDay);
-      (async () => {
-        await loadMyGroup(event, currentUser.id, selectedDay);
-        await loadScores();
-      })();
+      loadMyGroup(event, currentUser.id, selectedDay);
+      loadScores();
     }
-  }, [selectedDay, event?.id, currentUser?.id, eventId]);
+  }, [selectedDay]);
 
   const handlePreviousHole = () => {
     setCurrentHole(prev => {
