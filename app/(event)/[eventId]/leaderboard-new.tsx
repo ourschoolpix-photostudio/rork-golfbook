@@ -358,6 +358,10 @@ export default function LeaderboardNewScreen() {
                       <View style={styles.cardLeft}>
                         {entry.position === 1 ? (
                           <Trophy size={32} color="#FFD700" fill="#FFD700" style={styles.trophyIcon} />
+                        ) : entry.position === 2 ? (
+                          <Trophy size={32} color="#B0C4DE" fill="#B0C4DE" style={styles.trophyIcon} />
+                        ) : entry.position === 3 ? (
+                          <Trophy size={32} color="#CD7F32" fill="#CD7F32" style={styles.trophyIcon} />
                         ) : (
                           <View style={styles.positionCircle}>
                             <Text style={styles.positionNumberCircle}>#{entry.position}</Text>
@@ -397,6 +401,10 @@ export default function LeaderboardNewScreen() {
                       <View style={styles.cardLeft}>
                         {entry.position === 1 ? (
                           <Trophy size={32} color="#FFD700" fill="#FFD700" style={styles.trophyIcon} />
+                        ) : entry.position === 2 ? (
+                          <Trophy size={32} color="#B0C4DE" fill="#B0C4DE" style={styles.trophyIcon} />
+                        ) : entry.position === 3 ? (
+                          <Trophy size={32} color="#CD7F32" fill="#CD7F32" style={styles.trophyIcon} />
                         ) : (
                           <View style={styles.positionCircle}>
                             <Text style={styles.positionNumberCircle}>#{entry.position}</Text>
