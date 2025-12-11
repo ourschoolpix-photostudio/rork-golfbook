@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import * as MailComposer from 'expo-mail-composer';
+import { createPayPalOrder } from '@/utils/paypalService';
 import type { Member, Event, Grouping } from '@/types';
 import { type LabelOverride } from '@/utils/groupingsHelper';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
@@ -1049,7 +1050,7 @@ interface InvoicePDFOptions {
   registration: any;
   member: Member;
   event: Event;
-  orgInfo?: { name?: string; logoUrl?: string; zellePhone?: string; paypalClientId?: string; paypalMode?: 'sandbox' | 'live' };
+  orgInfo?: { name?: string; logoUrl?: string; zellePhone?: string; paypalClientId?: string; paypalClientSecret?: string; paypalMode?: 'sandbox' | 'live' };
 }
 
 export async function generateInvoicePDF(
@@ -1308,9 +1309,37 @@ export async function generateInvoicePDF(
       <p><strong>Option 1: Zelle</strong><br/>Send payment to: <strong>${formattedPhone}</strong></p>`;
         }
         
-        if (orgInfo?.paypalClientId) {
-          emailBody += `
-      <p><strong>Option 2: PayPal</strong><br/>Visit: <a href="https://www.paypal.com/${orgInfo.paypalMode === 'live' ? 'paypalme' : 'sandbox'}" style="color: #1976D2;">PayPal Payment Link</a></p>`;
+        if (orgInfo?.paypalClientId && orgInfo?.paypalClientSecret) {
+          try {
+            console.log('[pdfGenerator] 🎯 Creating PayPal order for email invoice...');
+            const serviceFeePercentage = 0.05;
+            const subtotal = total;
+            const serviceFeeAmount = subtotal * serviceFeePercentage;
+            const totalWithFee = subtotal + serviceFeeAmount;
+            
+            const paypalOrder = await createPayPalOrder({
+              amount: totalWithFee,
+              eventName: event.name,
+              eventId: event.id,
+              playerEmail: member.email,
+              paypalClientId: orgInfo.paypalClientId,
+              paypalClientSecret: orgInfo.paypalClientSecret,
+              paypalMode: orgInfo.paypalMode || 'sandbox',
+            });
+            
+            console.log('[pdfGenerator] ✅ PayPal order created:', paypalOrder.orderId);
+            console.log('[pdfGenerator] 📧 Including approval URL in email:', paypalOrder.approvalUrl);
+            
+            emailBody += `
+      <p><strong>Option 2: PayPal</strong><br/>
+      <a href="${paypalOrder.approvalUrl}" style="display: inline-block; background: #0070BA; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 700; margin-top: 8px;">Pay ${totalWithFee.toFixed(2)} with PayPal</a><br/>
+      <span style="font-size: 12px; color: #666; margin-top: 4px; display: inline-block;">Includes ${serviceFeeAmount.toFixed(2)} service fee</span></p>`;
+          } catch (error) {
+            console.error('[pdfGenerator] ❌ Failed to create PayPal order for email:', error);
+            emailBody += `
+      <p><strong>Option 2: PayPal</strong><br/>
+      <span style="color: #DC2626;">PayPal payment link unavailable. Please contact the event organizer or use Zelle.</span></p>`;
+          }
         }
         
         emailBody += `
