@@ -63,6 +63,13 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       
       if (error && error.code !== 'PGRST116') throw error;
       
+      console.log('📥 [SettingsContext] Raw data from Supabase:', data);
+      console.log('📥 [SettingsContext] PayPal fields:', {
+        paypal_client_id: data?.paypal_client_id,
+        paypal_client_secret: data?.paypal_client_secret,
+        paypal_mode: data?.paypal_mode,
+      });
+      
       const settings = data ? {
         name: data.name,
         address: data.address,
@@ -81,6 +88,11 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       } : {};
       
       console.log('✅ [SettingsContext] Successfully fetched settings');
+      console.log('✅ [SettingsContext] Mapped settings:', {
+        paypalClientId: settings.paypalClientId,
+        paypalClientSecret: settings.paypalClientSecret,
+        paypalMode: settings.paypalMode,
+      });
       
       const settingsWithDefaults: OrganizationInfo = {
         ...DEFAULT_ORG_INFO,

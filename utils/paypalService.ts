@@ -54,7 +54,9 @@ async function getPayPalAccessToken(
   console.log('[PayPalService] Mode:', mode);
   console.log('[PayPalService] Client ID length:', clientId?.length || 0);
   console.log('[PayPalService] Client Secret length:', clientSecret?.length || 0);
-  console.log('[PayPalService] Client ID prefix:', clientId?.substring(0, 10) + '...');
+  console.log('[PayPalService] Client ID prefix:', clientId?.substring(0, 20) + '...');
+  console.log('[PayPalService] Client ID full:', clientId);
+  console.log('[PayPalService] Client Secret full:', clientSecret);
   
   if (!clientId || !clientSecret) {
     throw new Error('PayPal Client ID and Secret are required');
@@ -65,7 +67,9 @@ async function getPayPalAccessToken(
   }
   
   const auth = base64Encode(`${clientId}:${clientSecret}`);
+  console.log('[PayPalService] Auth string length:', auth.length);
   const baseUrl = PAYPAL_API_BASE[mode];
+  console.log('[PayPalService] Requesting token from:', `${baseUrl}/v1/oauth2/token`);
   const response = await fetch(`${baseUrl}/v1/oauth2/token`, {
     method: 'POST',
     headers: {

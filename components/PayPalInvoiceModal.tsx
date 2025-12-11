@@ -112,6 +112,15 @@ export function PayPalInvoiceModal({
       console.log('[PayPalInvoiceModal] 🚀 Starting PayPal payment flow...');
       console.log('[PayPalInvoiceModal] Event:', event.name);
       console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
+      console.log('[PayPalInvoiceModal] PayPal Config:', {
+        hasClientId: !!orgInfo.paypalClientId,
+        clientIdLength: orgInfo.paypalClientId?.length || 0,
+        hasClientSecret: !!orgInfo.paypalClientSecret,
+        clientSecretLength: orgInfo.paypalClientSecret?.length || 0,
+        mode: orgInfo.paypalMode,
+        clientIdFull: orgInfo.paypalClientId,
+        clientSecretFull: orgInfo.paypalClientSecret,
+      });
       
       console.log('[PayPalInvoiceModal] Creating PayPal order...');
       const paymentResponse = await createPayPalOrder({
