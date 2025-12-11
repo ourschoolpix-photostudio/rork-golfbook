@@ -628,7 +628,7 @@ export const supabaseService = {
         total_score: totalScore,
       });
       
-      const { error } = await supabase.from('scores').upsert({
+      const { data, error } = await supabase.from('scores').upsert({
         event_id: eventId,
         member_id: memberId,
         day,
@@ -636,14 +636,16 @@ export const supabaseService = {
         total_score: totalScore,
         submitted_by: submittedBy,
         updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'event_id,member_id,day',
-        ignoreDuplicates: false,
       });
+      
+      console.log('[supabaseService.scores.submit] Upsert result:', { data, error });
       
       if (error) {
         console.error('[supabaseService.scores.submit] Error submitting score:', error);
-        throw error;
+        console.error('[supabaseService.scores.submit] Error details:', JSON.stringify(error, null, 2));
+        console.error('[supabaseService.scores.submit] Error message:', error.message);
+        console.error('[supabaseService.scores.submit] Error code:', error.code);
+        throw new Error(`Failed to submit score: ${error.message} (code: ${error.code})`);
       }
       
       console.log('[supabaseService.scores.submit] ✅ Score submitted successfully');

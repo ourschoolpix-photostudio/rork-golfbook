@@ -190,7 +190,9 @@ export default function ScoringModal({ visible, slots, label, onClose, onSaveSco
       onClose();
     } catch (error) {
       console.error('[ScoringModal] ❌ Error during save:', error);
-      alert('Error saving scores. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error, null, 2);
+      console.error('[ScoringModal] ❌ Error details:', errorMessage);
+      alert(`Error saving scores: ${errorMessage}`);
     }
   };
 
