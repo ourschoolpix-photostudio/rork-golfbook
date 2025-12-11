@@ -321,8 +321,8 @@ export default function LeaderboardNewScreen() {
                         <Text style={[styles.scoreValue, styles.netScoreValue]}>{entry.netScore}</Text>
                       </View>
                       <View style={styles.scoreItem}>
-                        <Text style={styles.scoreLabel}>Gross</Text>
-                        <Text style={styles.scoreValue}>{entry.grossScore}</Text>
+                        <Text style={styles.scoreLabel}>Rolex Pts</Text>
+                        <Text style={styles.scoreValue}>{entry.member.rolexPoints || 0}</Text>
                       </View>
                     </View>
                   </View>
@@ -341,7 +341,7 @@ export default function LeaderboardNewScreen() {
                         </View>
                         <View style={styles.rowScores}>
                           <Text style={styles.rowNetScore}>{entry.netScore}</Text>
-                          <Text style={styles.rowGrossScore}>({entry.grossScore})</Text>
+                          <Text style={styles.rowGrossScore}>Pts: {entry.member.rolexPoints || 0}</Text>
                         </View>
                       </View>
                     ))}
