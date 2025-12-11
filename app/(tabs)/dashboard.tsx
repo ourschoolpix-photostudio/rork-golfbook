@@ -34,7 +34,6 @@ export default function DashboardScreen() {
   const [detailsModalVisible, setDetailsModalVisible] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
-  const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
 
   const registrationsQuery = useQuery({
     queryKey: ['all-event-registrations', contextEvents],
@@ -88,33 +87,6 @@ export default function DashboardScreen() {
 
   const activeEvents = events.filter(e => !e.archived);
   const archivedEvents = events.filter(e => e.archived);
-
-  const archivedEventsByYear = archivedEvents.reduce<Record<string, Event[]>>((acc, event) => {
-    const year = event.date ? new Date(event.date).getFullYear().toString() : 'Unknown';
-    if (!acc[year]) {
-      acc[year] = [];
-    }
-    acc[year].push(event);
-    return acc;
-  }, {});
-
-  const sortedYears = Object.keys(archivedEventsByYear).sort((a, b) => {
-    if (a === 'Unknown') return 1;
-    if (b === 'Unknown') return -1;
-    return parseInt(b) - parseInt(a);
-  });
-
-  const toggleYear = (year: string) => {
-    setExpandedYears(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(year)) {
-        newSet.delete(year);
-      } else {
-        newSet.add(year);
-      }
-      return newSet;
-    });
-  };
 
   useEffect(() => {
     if (registrationsQuery.data) {
@@ -429,52 +401,16 @@ export default function DashboardScreen() {
               )}
             />
 
-            {sortedYears.map((year) => (
-              <View key={year} style={styles.archivedYearCard}>
-                <TouchableOpacity
-                  style={styles.yearHeader}
-                  onPress={() => toggleYear(year)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.yearText}>{year} Archived Events ({archivedEventsByYear[year].length})</Text>
-                  <Text style={styles.yearIcon}>{expandedYears.has(year) ? '▼' : '▶'}</Text>
-                </TouchableOpacity>
-                {expandedYears.has(year) && (
-                  <FlatList
-                    scrollEnabled={false}
-                    data={archivedEventsByYear[year]}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={styles.eventCard}
-                        activeOpacity={0.8}
-                        onPress={() => {
-                          console.log('Navigating to event:', item.id);
-                          router.push(`/(event)/${item.id}/registration` as any);
-                        }}
-                      >
-                        <View style={styles.eventPhoto}>
-                          <Image
-                            source={{ uri: (item.photoUrl && item.photoUrl.trim() !== '') ? item.photoUrl : 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80' }}
-                            style={styles.photoPlaceholder}
-                          />
-                          <View style={styles.archivedBadge}>
-                            <Text style={styles.archivedBadgeText}>ARCHIVED</Text>
-                          </View>
-                        </View>
-                        <View style={styles.eventContent}>
-                          <Text style={styles.eventName}>{item.name}</Text>
-                          <Text style={styles.eventDetail}>📍 {item.location}</Text>
-                          <Text style={styles.eventDetail}>
-                            📅 {formatDateRange(item.date || '', item.endDate || '')}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    )}
-                  />
-                )}
-              </View>
-            ))}
+            {archivedEvents.length > 0 && (
+              <TouchableOpacity
+                style={styles.archivedLink}
+                onPress={() => router.push('/(tabs)/archived' as any)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.archivedLinkText}>View Archived Events ({archivedEvents.length})</Text>
+                <Text style={styles.archivedLinkIcon}>→</Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
       </ScrollView>
@@ -744,49 +680,30 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  archivedYearCard: {
-    marginBottom: 16,
-    backgroundColor: '#fff',
+  archivedLink: {
+    backgroundColor: '#374151',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderRadius: 12,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  yearHeader: {
-    backgroundColor: '#f8f8f8',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    marginTop: 8,
+    marginBottom: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
-  yearText: {
+  archivedLinkText: {
     fontSize: 16,
-    fontWeight: '700' as const,
-    color: '#374151',
-  },
-  yearIcon: {
-    fontSize: 14,
-    color: '#666',
-  },
-  archivedBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  archivedBadgeText: {
-    fontSize: 11,
-    fontWeight: '700' as const,
+    fontWeight: '600' as const,
     color: '#fff',
-    letterSpacing: 0.5,
+  },
+  archivedLinkIcon: {
+    fontSize: 20,
+    color: '#fff',
+    fontWeight: '700' as const,
   },
 });

@@ -109,6 +109,12 @@ export default function TabLayout() {
             headerRight: () => null,
           }}
         />
+        <Tabs.Screen
+          name="archived"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
       {currentUser?.isAdmin && (
         <NotificationsModal
