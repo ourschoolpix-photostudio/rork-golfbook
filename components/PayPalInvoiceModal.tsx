@@ -15,6 +15,7 @@ import { Member, Event } from '@/types';
 import { TournamentTermsModal } from './TournamentTermsModal';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { formatDateAsFullDay } from '@/utils/dateUtils';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface PayPalInvoiceModalProps {
   visible: boolean;
@@ -31,6 +32,7 @@ export function PayPalInvoiceModal({
   onClose,
   onRegister,
 }: PayPalInvoiceModalProps) {
+  const { orgInfo } = useSettings();
   const [ghin, setGhin] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -91,9 +93,20 @@ export function PayPalInvoiceModal({
   const handlePayPalPayment = async () => {
     if (!canRegister() || !event) return;
 
+    const hasPayPalCredentials = orgInfo.paypalClientId && orgInfo.paypalClientId.trim() !== '';
+    
+    if (!hasPayPalCredentials) {
+      Alert.alert(
+        'PayPal Not Configured',
+        'PayPal payment has not been configured by the administrator. Please contact them or use an alternative payment method.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
-      'PayPal Not Available',
-      'PayPal payment integration is currently disabled. Please contact the administrator to use alternative payment methods.',
+      'PayPal Payment',
+      'PayPal payment integration is coming soon. For now, please use Zelle for payment.',
       [{ text: 'OK' }]
     );
   };
