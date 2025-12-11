@@ -43,58 +43,92 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     if (event.flightATrophy1st) {
       const cash = event.flightACashPrize1st ? ` + $${event.flightACashPrize1st} Cash` : '';
       items.push({ label: 'Flight A - 1st Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightACashPrize1st) {
+      items.push({ label: 'Flight A - 1st Place No Trophy $' + event.flightACashPrize1st + ' cash only', value: '💵' });
     }
+
     if (event.flightATrophy2nd) {
       const cash = event.flightACashPrize2nd ? ` + $${event.flightACashPrize2nd} Cash` : '';
       items.push({ label: 'Flight A - 2nd Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightACashPrize2nd) {
+      items.push({ label: 'Flight A - 2nd Place No Trophy $' + event.flightACashPrize2nd + ' cash only', value: '💵' });
     }
+
     if (event.flightATrophy3rd) {
       const cash = event.flightACashPrize3rd ? ` + $${event.flightACashPrize3rd} Cash` : '';
       items.push({ label: 'Flight A - 3rd Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightACashPrize3rd) {
+      items.push({ label: 'Flight A - 3rd Place No Trophy $' + event.flightACashPrize3rd + ' cash only', value: '💵' });
     }
 
     if (event.flightBTrophy1st) {
       const cash = event.flightBCashPrize1st ? ` + $${event.flightBCashPrize1st} Cash` : '';
       items.push({ label: 'Flight B - 1st Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightBCashPrize1st) {
+      items.push({ label: 'Flight B - 1st Place No Trophy $' + event.flightBCashPrize1st + ' cash only', value: '💵' });
     }
+
     if (event.flightBTrophy2nd) {
       const cash = event.flightBCashPrize2nd ? ` + $${event.flightBCashPrize2nd} Cash` : '';
       items.push({ label: 'Flight B - 2nd Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightBCashPrize2nd) {
+      items.push({ label: 'Flight B - 2nd Place No Trophy $' + event.flightBCashPrize2nd + ' cash only', value: '💵' });
     }
+
     if (event.flightBTrophy3rd) {
       const cash = event.flightBCashPrize3rd ? ` + $${event.flightBCashPrize3rd} Cash` : '';
       items.push({ label: 'Flight B - 3rd Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightBCashPrize3rd) {
+      items.push({ label: 'Flight B - 3rd Place No Trophy $' + event.flightBCashPrize3rd + ' cash only', value: '💵' });
     }
 
     if (event.flightCTrophy1st) {
       const cash = event.flightCCashPrize1st ? ` + $${event.flightCCashPrize1st} Cash` : '';
       items.push({ label: 'Flight C - 1st Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightCCashPrize1st) {
+      items.push({ label: 'Flight C - 1st Place No Trophy $' + event.flightCCashPrize1st + ' cash only', value: '💵' });
     }
+
     if (event.flightCTrophy2nd) {
       const cash = event.flightCCashPrize2nd ? ` + $${event.flightCCashPrize2nd} Cash` : '';
       items.push({ label: 'Flight C - 2nd Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightCCashPrize2nd) {
+      items.push({ label: 'Flight C - 2nd Place No Trophy $' + event.flightCCashPrize2nd + ' cash only', value: '💵' });
     }
+
     if (event.flightCTrophy3rd) {
       const cash = event.flightCCashPrize3rd ? ` + $${event.flightCCashPrize3rd} Cash` : '';
       items.push({ label: 'Flight C - 3rd Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightCCashPrize3rd) {
+      items.push({ label: 'Flight C - 3rd Place No Trophy $' + event.flightCCashPrize3rd + ' cash only', value: '💵' });
     }
 
     if (event.flightLTrophy1st) {
       const cash = event.flightLCashPrize1st ? ` + $${event.flightLCashPrize1st} Cash` : '';
       items.push({ label: 'Flight L - 1st Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightLCashPrize1st) {
+      items.push({ label: 'Flight L - 1st Place No Trophy $' + event.flightLCashPrize1st + ' cash only', value: '💵' });
     }
+
     if (event.flightLTrophy2nd) {
       const cash = event.flightLCashPrize2nd ? ` + $${event.flightLCashPrize2nd} Cash` : '';
       items.push({ label: 'Flight L - 2nd Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightLCashPrize2nd) {
+      items.push({ label: 'Flight L - 2nd Place No Trophy $' + event.flightLCashPrize2nd + ' cash only', value: '💵' });
     }
+
     if (event.flightLTrophy3rd) {
       const cash = event.flightLCashPrize3rd ? ` + $${event.flightLCashPrize3rd} Cash` : '';
       items.push({ label: 'Flight L - 3rd Place Trophy' + cash, value: '🏆' });
+    } else if (event.flightLCashPrize3rd) {
+      items.push({ label: 'Flight L - 3rd Place No Trophy $' + event.flightLCashPrize3rd + ' cash only', value: '💵' });
     }
 
     if (event.lowGrossTrophy) {
       const cash = event.lowGrossCashPrize ? ` + $${event.lowGrossCashPrize} Cash` : '';
       items.push({ label: 'Low Gross Trophy' + cash, value: '🏆' });
+    } else if (event.lowGrossCashPrize) {
+      items.push({ label: 'Low Gross No Trophy $' + event.lowGrossCashPrize + ' cash only', value: '💵' });
     }
 
     if (event.closestToPin) {
