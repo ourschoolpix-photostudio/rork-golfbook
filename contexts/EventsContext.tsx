@@ -1,5 +1,5 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Event, EventRegistration, Grouping, Score, EventRolexPoints, FinancialRecord } from '@/types';
 import { localStorageService } from '@/utils/localStorageService';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -13,8 +13,9 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
   
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const fetchEventsRef = useRef<(() => Promise<void>) | null>(null);
 
-  const fetchEvents = useCallback(async () => {
+  const fetchEventsInternal = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -157,9 +158,15 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     }
   }, [useLocalStorage]);
 
+  fetchEventsRef.current = fetchEventsInternal;
+
+  const fetchEvents = useCallback(async () => {
+    await fetchEventsRef.current?.();
+  }, []);
+
   useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    fetchEventsInternal();
+  }, [fetchEventsInternal]);
 
   const addEvent = useCallback(async (event: Event) => {
     try {
