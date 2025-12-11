@@ -75,17 +75,17 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
       console.log('[CreateGameModal] Fetching courses for member:', currentUser?.id);
       let query = supabase.from('courses').select('*');
       
-      query = query.eq('source_type', 'admin');
+      query = query.eq('source', 'admin');
       query = query.order('name', { ascending: true });
       
       const { data, error } = await query;
       
       if (error) {
-        console.error('[CreateGameModal] Error fetching courses:', error);
+        console.error('[CreateGameModal] Error fetching courses:', JSON.stringify(error));
         throw new Error(`Failed to fetch courses: ${error.message}`);
       }
 
-      const courses = data.map(course => ({
+      const courses = (data || []).map(course => ({
         id: course.id,
         name: course.name,
         par: course.par,
@@ -95,7 +95,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
         courseRating: course.course_rating,
         memberId: course.member_id,
         isPublic: course.is_public,
-        source: course.source_type,
+        source: course.source,
         createdAt: course.created_at,
         updatedAt: course.updated_at,
       }));

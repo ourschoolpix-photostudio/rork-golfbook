@@ -15,18 +15,18 @@ const getAllProcedure = publicProcedure
       let query = ctx.supabase.from('courses').select('*');
       
       if (input?.source === 'admin') {
-        query = query.eq('source_type', 'admin');
+        query = query.eq('source', 'admin');
       } else if (input?.source === 'personal') {
         if (input?.memberId) {
-          query = query.eq('source_type', 'personal').eq('member_id', input.memberId);
+          query = query.eq('source', 'personal').eq('member_id', input.memberId);
         } else {
-          query = query.eq('source_type', 'personal');
+          query = query.eq('source', 'personal');
         }
       } else {
         if (input?.memberId) {
-          query = query.or(`source_type.eq.admin,and(source_type.eq.personal,member_id.eq.${input.memberId})`);
+          query = query.or(`source.eq.admin,and(source.eq.personal,member_id.eq.${input.memberId})`);
         } else {
-          query = query.eq('source_type', 'admin');
+          query = query.eq('source', 'admin');
         }
       }
       
@@ -49,7 +49,7 @@ const getAllProcedure = publicProcedure
         courseRating: course.course_rating,
         memberId: course.member_id,
         isPublic: course.is_public,
-        source: course.source_type,
+        source: course.source,
         createdAt: course.created_at,
         updatedAt: course.updated_at,
       }));
@@ -89,7 +89,7 @@ const createProcedure = publicProcedure
           slope_rating: input.slopeRating,
           course_rating: input.courseRating,
           is_public: input.isPublic || false,
-          source_type: input.source || 'personal',
+          source: input.source || 'personal',
         })
         .select()
         .single();
@@ -110,7 +110,7 @@ const createProcedure = publicProcedure
         courseRating: data.course_rating,
         memberId: data.member_id,
         isPublic: data.is_public,
-        source: data.source_type,
+        source: data.source,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };
@@ -169,7 +169,7 @@ const updateProcedure = publicProcedure
         courseRating: data.course_rating,
         memberId: data.member_id,
         isPublic: data.is_public,
-        source: data.source_type,
+        source: data.source,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };
