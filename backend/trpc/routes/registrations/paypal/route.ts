@@ -111,7 +111,7 @@ const getPayPalAccessToken = async (): Promise<string> => {
         const errorData = JSON.parse(responseText);
         errorDetails = JSON.stringify(errorData, null, 2);
         console.error('[PayPal] Parsed error data:', errorDetails);
-      } catch (_e) {
+      } catch {
         errorDetails = responseText;
       }
       
@@ -220,7 +220,7 @@ export const createPaymentProcedure = publicProcedure
         try {
           errorData = JSON.parse(errorText);
           console.error('[PayPal] Parsed error:', JSON.stringify(errorData, null, 2));
-        } catch (_e) {
+        } catch {
           console.error('[PayPal] Could not parse error as JSON');
         }
         throw new Error(`Failed to create PayPal order: ${response.status} - ${errorText}`);
@@ -289,7 +289,7 @@ export const capturePaymentProcedure = publicProcedure
         try {
           errorData = JSON.parse(errorText);
           console.error('[PayPal] Parsed error:', JSON.stringify(errorData, null, 2));
-        } catch (_e) {
+        } catch {
           console.error('[PayPal] Could not parse error as JSON');
         }
         throw new Error(`Failed to capture PayPal payment: ${response.status} - ${errorText}`);

@@ -4,7 +4,6 @@ import { trpcServer } from '@hono/trpc-server';
 import { appRouter } from '@/backend/trpc/app-router';
 import { createContext } from '@/backend/trpc/create-context';
 
-const api = new Hono();
 const app = new Hono();
 
 app.use("*", cors({
@@ -13,10 +12,11 @@ app.use("*", cors({
   allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
-console.log('🔧 [Hono] Mounting tRPC handler for PayPal routes at /api/trpc');
+console.log('🔧 [Hono] Setting up tRPC server for PayPal routes');
+console.log('🔧 [Hono] tRPC will be available at: /api/trpc/*');
 
-api.use(
-  '/trpc/*',
+app.use(
+  '/api/trpc/*',
   trpcServer({
     router: appRouter,
     createContext,
@@ -26,18 +26,21 @@ api.use(
   })
 );
 
-app.route('/api', api);
-
-app.get("/", (c) => {
-  console.log('🏠 [Hono] Root endpoint hit');
-  return c.json({ status: "ok", message: "API is running" });
+app.get("/api", (c) => {
+  console.log('🏠 [Hono] API root endpoint hit');
+  return c.json({ 
+    status: "ok", 
+    message: "API is running",
+    timestamp: new Date().toISOString()
+  });
 });
 
-app.get("/health", (c) => {
-  console.log('🏫 [Hono] Health check hit');
+app.get("/api/health", (c) => {
+  console.log('🏫 [Hono] Health check endpoint hit');
   return c.json({ 
     status: "ok", 
     timestamp: new Date().toISOString(),
+    message: 'Backend is healthy',
     env: {
       hasSupabaseUrl: !!process.env.EXPO_PUBLIC_SUPABASE_URL,
       hasSupabaseKey: !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
@@ -47,6 +50,7 @@ app.get("/health", (c) => {
 
 app.onError((err, c) => {
   console.error('❌ [Hono] Server error:', err);
+  console.error('❌ [Hono] Error stack:', err.stack);
   return c.json({
     error: {
       message: err.message || 'Internal server error',
@@ -57,12 +61,18 @@ app.onError((err, c) => {
 
 app.notFound((c) => {
   console.warn('⚠️ [Hono] 404 Not Found:', c.req.url);
+  console.warn('⚠️ [Hono] Path:', c.req.path);
+  console.warn('⚠️ [Hono] Method:', c.req.method);
   return c.json({
     error: 'Not Found',
     path: c.req.url,
     method: c.req.method,
-    registeredRoutes: ['/', '/health']
+    message: 'The requested endpoint does not exist',
+    availableRoutes: ['/api', '/api/health', '/api/trpc/*']
   }, 404);
 });
+
+console.log('✅ [Hono] Server configuration complete');
+console.log('✅ [Hono] Registered routes: /api, /api/health, /api/trpc/*');
 
 export default app;
