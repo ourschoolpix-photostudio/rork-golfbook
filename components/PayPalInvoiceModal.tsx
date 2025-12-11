@@ -89,7 +89,7 @@ export function PayPalInvoiceModal({
       setNumberOfGuests('');
       setGuestNames('');
     }
-  }, [visible, currentUser]);
+  }, [visible, currentUser?.id]);
 
   if (!event || !currentUser) return null;
 
