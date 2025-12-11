@@ -628,21 +628,46 @@ export const supabaseService = {
         total_score: totalScore,
       });
       
-      const { data, error } = await supabase.from('scores').upsert(
-        {
-          event_id: eventId,
-          member_id: memberId,
-          day,
-          holes,
-          total_score: totalScore,
-          submitted_by: submittedBy,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'event_id,member_id,day',
-          ignoreDuplicates: false,
-        }
-      );
+      const { data: existingScore } = await supabase
+        .from('scores')
+        .select('id')
+        .eq('event_id', eventId)
+        .eq('member_id', memberId)
+        .eq('day', day)
+        .single();
+
+      let data, error;
+      
+      if (existingScore) {
+        console.log('[supabaseService.scores.submit] Updating existing score:', existingScore.id);
+        const result = await supabase
+          .from('scores')
+          .update({
+            holes,
+            total_score: totalScore,
+            submitted_by: submittedBy,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingScore.id)
+          .select();
+        data = result.data;
+        error = result.error;
+      } else {
+        console.log('[supabaseService.scores.submit] Inserting new score');
+        const result = await supabase
+          .from('scores')
+          .insert({
+            event_id: eventId,
+            member_id: memberId,
+            day,
+            holes,
+            total_score: totalScore,
+            submitted_by: submittedBy,
+          })
+          .select();
+        data = result.data;
+        error = result.error;
+      }
       
       console.log('[supabaseService.scores.submit] Upsert result:', { data, error });
       
