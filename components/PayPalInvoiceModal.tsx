@@ -16,7 +16,8 @@ import { Member, Event } from '@/types';
 import { TournamentTermsModal } from './TournamentTermsModal';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { formatDateAsFullDay } from '@/utils/dateUtils';
-import { trpc } from '@/lib/trpc';
+import { supabase } from '@/integrations/supabase/client';
+import { createPayPalOrder } from '@/utils/paypalService';
 
 interface PayPalInvoiceModalProps {
   visible: boolean;
@@ -42,7 +43,42 @@ export function PayPalInvoiceModal({
   const [numberOfGuests, setNumberOfGuests] = useState('');
   const [guestNames, setGuestNames] = useState('');
 
-  const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
+  const [paypalConfig, setPaypalConfig] = useState<{
+    clientId: string;
+    clientSecret: string;
+    mode: 'sandbox' | 'live';
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchPayPalConfig = async () => {
+      try {
+        console.log('[PayPalInvoiceModal] Fetching PayPal config from database...');
+        const { data, error } = await supabase
+          .from('organization_settings')
+          .select('paypal_client_id, paypal_client_secret, paypal_mode')
+          .eq('id', '00000000-0000-0000-0000-000000000001')
+          .single();
+
+        if (error) {
+          console.error('[PayPalInvoiceModal] Error fetching PayPal config:', error);
+          return;
+        }
+
+        if (data) {
+          setPaypalConfig({
+            clientId: data.paypal_client_id || '',
+            clientSecret: data.paypal_client_secret || '',
+            mode: (data.paypal_mode || 'sandbox') as 'sandbox' | 'live',
+          });
+          console.log('[PayPalInvoiceModal] PayPal config loaded successfully');
+        }
+      } catch (error) {
+        console.error('[PayPalInvoiceModal] Failed to fetch PayPal config:', error);
+      }
+    };
+
+    fetchPayPalConfig();
+  }, []);
 
   useEffect(() => {
     if (visible && currentUser) {
@@ -95,20 +131,41 @@ export function PayPalInvoiceModal({
   const handlePayPalPayment = async () => {
     if (!canRegister() || !event) return;
 
-    console.log('[PayPalInvoiceModal] 🔍 Starting PayPal payment via backend...');
+    console.log('[PayPalInvoiceModal] 🔍 Starting PayPal payment...');
     console.log('[PayPalInvoiceModal] Event:', event.name);
     console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
+
+    if (!paypalConfig) {
+      Alert.alert(
+        'PayPal Configuration Missing',
+        'PayPal credentials are not configured. Please contact an administrator.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (!paypalConfig.clientId || !paypalConfig.clientSecret) {
+      Alert.alert(
+        'PayPal Configuration Incomplete',
+        'PayPal credentials are incomplete. Please ask an administrator to configure PayPal in Admin Settings.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      console.log('[PayPalInvoiceModal] 🚀 Calling backend tRPC endpoint...');
+      console.log('[PayPalInvoiceModal] 🚀 Creating PayPal order...');
       
-      const paymentResponse = await createPaymentMutation.mutateAsync({
+      const paymentResponse = await createPayPalOrder({
         amount: totalAmount,
         eventName: event.name,
         eventId: event.id,
         playerEmail: email.trim(),
+        paypalClientId: paypalConfig.clientId,
+        paypalClientSecret: paypalConfig.clientSecret,
+        paypalMode: paypalConfig.mode,
       });
 
       console.log('[PayPalInvoiceModal] ✅ Payment order created:', paymentResponse);
