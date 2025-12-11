@@ -351,109 +351,45 @@ export default function LeaderboardNewScreen() {
               </Text>
             </View>
           ) : (
-            <>
-              {leaderboard.flightA.length > 0 && (
-                <>
-                  <View style={styles.flightSeparator}>
-                    <Text style={styles.flightLabel}>Flight A</Text>
-                  </View>
-                  {leaderboard.flightA.map((entry) => {
-                    const getPodiumColor = (pos: number): string => {
-                      switch (pos) {
-                        case 1: return '#FFD700';
-                        case 2: return '#C0C0C0';
-                        case 3: return '#CD7F32';
-                        default: return '#1B5E20';
-                      }
-                    };
-
-                    return (
-                      <View 
-                        key={entry.member.id} 
-                        style={[
-                          styles.podiumCard,
-                          entry.position <= 3 && styles.leaderCard,
-                          entry.position <= 3 && { borderLeftColor: getPodiumColor(entry.position) }
-                        ]}
-                      >
-                        <View style={styles.positionBadge}>
-                          {entry.position <= 3 ? (
-                            <Medal size={20} color={getPodiumColor(entry.position)} fill={getPodiumColor(entry.position)} />
-                          ) : (
-                            <Text style={styles.positionText}>#{entry.position}</Text>
-                          )}
-                        </View>
-                        <View style={styles.playerInfo}>
-                          <Text style={styles.playerName}>{entry.member.name}</Text>
-                          <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
-                        </View>
-                        <View style={styles.scoresContainer}>
-                          <View style={styles.scoreItem}>
-                            <Text style={styles.scoreLabel}>Net</Text>
-                            <Text style={[styles.scoreValue, styles.netScoreValue]}>{entry.netScore}</Text>
-                          </View>
-                          <View style={styles.scoreItem}>
-                            <Text style={styles.scoreLabel}>Gross</Text>
-                            <Text style={styles.scoreValue}>{entry.grossScore}</Text>
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </>
-              )}
-
-              {leaderboard.flightB.length > 0 && (
-                <>
-                  <View style={[styles.flightSeparator, { marginTop: leaderboard.flightA.length > 0 ? 32 : 0 }]}>
-                    <Text style={styles.flightLabel}>Flight B</Text>
-                  </View>
-                  {leaderboard.flightB.map((entry) => {
-                    const getPodiumColor = (pos: number): string => {
-                      switch (pos) {
-                        case 1: return '#FFD700';
-                        case 2: return '#C0C0C0';
-                        case 3: return '#CD7F32';
-                        default: return '#1B5E20';
-                      }
-                    };
-
-                    return (
-                      <View 
-                        key={entry.member.id} 
-                        style={[
-                          styles.podiumCard,
-                          entry.position <= 3 && styles.leaderCard,
-                          entry.position <= 3 && { borderLeftColor: getPodiumColor(entry.position) }
-                        ]}
-                      >
-                        <View style={styles.positionBadge}>
-                          {entry.position <= 3 ? (
-                            <Medal size={20} color={getPodiumColor(entry.position)} fill={getPodiumColor(entry.position)} />
-                          ) : (
-                            <Text style={styles.positionText}>#{entry.position}</Text>
-                          )}
-                        </View>
-                        <View style={styles.playerInfo}>
-                          <Text style={styles.playerName}>{entry.member.name}</Text>
-                          <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
-                        </View>
-                        <View style={styles.scoresContainer}>
-                          <View style={styles.scoreItem}>
-                            <Text style={styles.scoreLabel}>Net</Text>
-                            <Text style={[styles.scoreValue, styles.netScoreValue]}>{entry.netScore}</Text>
-                          </View>
-                          <View style={styles.scoreItem}>
-                            <Text style={styles.scoreLabel}>Gross</Text>
-                            <Text style={styles.scoreValue}>{entry.grossScore}</Text>
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </>
-              )}
-            </>
+            [...leaderboard.flightA, ...leaderboard.flightB].map((entry) => (
+              <View 
+                key={entry.member.id} 
+                style={[
+                  styles.regularCard,
+                  entry.position === 1 && styles.leaderCard,
+                ]}
+              >
+                <View style={[styles.positionBadge, entry.position === 1 && styles.leaderBadge]}>
+                  {entry.position === 1 ? (
+                    <Trophy size={20} color="#FFD700" />
+                  ) : (
+                    <Text style={styles.positionText}>#{entry.position}</Text>
+                  )}
+                </View>
+                <View style={styles.playerInfo}>
+                  <Text style={styles.playerName}>{entry.member.name}</Text>
+                  <Text style={styles.playerDetails}>
+                    HDC: {entry.handicap}
+                  </Text>
+                  <Text style={styles.playerDetails}>
+                    Flight: {entry.flight}
+                  </Text>
+                  <Text style={styles.playerDetails}>
+                    Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
+                  </Text>
+                  <Text style={styles.scoreText}>
+                    Total: {entry.grossScore === 0 ? '—' : entry.grossScore}
+                  </Text>
+                  <Text style={styles.scoreText}>
+                    Net Score: {entry.netScore === 0 ? '—' : entry.netScore}
+                  </Text>
+                </View>
+                <View style={styles.pointsContainer}>
+                  <Text style={styles.pointsValue}>0</Text>
+                  <Text style={styles.pointsLabel}>pts</Text>
+                </View>
+              </View>
+            ))
           )}
         </ScrollView>
       </SafeAreaView>
@@ -629,14 +565,13 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     marginBottom: 16,
   },
-  podiumCard: {
+  regularCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    borderLeftWidth: 6,
     flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    alignItems: 'flex-start' as const,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -646,30 +581,58 @@ const styles = StyleSheet.create({
   leaderCard: {
     backgroundColor: '#FFFACD',
     borderColor: '#FFB347',
-    borderWidth: 1.5,
+    borderWidth: 2,
+    borderRadius: 12,
   },
   positionBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#2196F3',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     marginRight: 12,
   },
+  leaderBadge: {
+    backgroundColor: '#fff',
+  },
   positionText: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700' as const,
-    color: '#1B5E20',
+    color: '#fff',
   },
   playerInfo: {
     flex: 1,
   },
   playerName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700' as const,
-    color: '#333',
-    marginBottom: 4,
+    color: '#D32F2F',
+    marginBottom: 8,
+  },
+  playerDetails: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 2,
+  },
+  scoreText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#D32F2F',
+    marginBottom: 2,
+  },
+  pointsContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  pointsValue: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    color: '#FFB300',
+  },
+  pointsLabel: {
+    fontSize: 12,
+    color: '#999',
   },
   playerHandicap: {
     fontSize: 12,
@@ -695,6 +658,20 @@ const styles = StyleSheet.create({
   },
   netScoreValue: {
     color: '#1B5E20',
+  },
+  podiumCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 6,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   flightSeparator: {
     backgroundColor: '#1B5E20',
