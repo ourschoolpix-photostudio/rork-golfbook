@@ -2,7 +2,6 @@ import { createTRPCReact } from "@trpc/react-query";
 import { httpLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -15,26 +14,8 @@ const getBaseUrl = () => {
     return webUrl;
   }
 
-  if (__DEV__) {
-    const debuggerHost = Constants.expoConfig?.hostUri?.split(':').shift() || 
-                         Constants.manifest?.debuggerHost?.split(':').shift() ||
-                         Constants.manifest2?.extra?.expoGo?.debuggerHost?.split(':').shift();
-    
-    if (debuggerHost) {
-      const devUrl = `http://${debuggerHost}:8081`;
-      console.log('🔧 [tRPC] Using dev server URL:', devUrl);
-      return devUrl;
-    }
-    
-    console.log('🔍 [tRPC] Available Constants:', {
-      hostUri: Constants.expoConfig?.hostUri,
-      debuggerHost: Constants.manifest?.debuggerHost,
-      manifest2: Constants.manifest2?.extra?.expoGo?.debuggerHost
-    });
-    
-    console.log('⚠️ [tRPC] Could not determine backend URL from constants, using empty string');
-  }
-
+  console.log('⚠️ [tRPC] API routes only work on web platform');
+  console.log('⚠️ [tRPC] For native platforms, use direct Supabase calls or edge functions');
   return '';
 };
 
@@ -96,8 +77,13 @@ export const trpcClient = trpc.createClient({
             
             if (response.status === 404) {
               isBackendAvailable = false;
-              console.error('❌ [tRPC] 404 Error - Backend endpoint not found. Check if backend is running and API_BASE_URL is correct.');
-              console.error('❌ [tRPC] Expected endpoint:', `${getBaseUrl()}/api/trpc`);
+              if (Platform.OS !== 'web') {
+                console.error('❌ [tRPC] API routes are not available on native platforms.');
+                console.error('⚠️ [tRPC] Note: This is normal. PayPal and other features use direct Supabase calls instead.');
+              } else {
+                console.error('❌ [tRPC] 404 Error - Backend endpoint not found.');
+                console.error('❌ [tRPC] Expected endpoint:', `${getBaseUrl()}/api/trpc`);
+              }
             }
             
             try {

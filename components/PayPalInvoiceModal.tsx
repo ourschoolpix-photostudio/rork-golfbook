@@ -132,6 +132,7 @@ export function PayPalInvoiceModal({
     if (!canRegister() || !event) return;
 
     console.log('[PayPalInvoiceModal] 🔍 Starting PayPal payment...');
+    console.log('[PayPalInvoiceModal] ✅ Using direct PayPal service (not tRPC)');
     console.log('[PayPalInvoiceModal] Event:', event.name);
     console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
 
@@ -156,7 +157,12 @@ export function PayPalInvoiceModal({
     setIsSubmitting(true);
 
     try {
-      console.log('[PayPalInvoiceModal] 🚀 Creating PayPal order...');
+      console.log('[PayPalInvoiceModal] 🚀 Creating PayPal order via direct service...');
+      console.log('[PayPalInvoiceModal] PayPal config:', {
+        hasClientId: !!paypalConfig.clientId,
+        hasClientSecret: !!paypalConfig.clientSecret,
+        mode: paypalConfig.mode,
+      });
       
       const paymentResponse = await createPayPalOrder({
         amount: totalAmount,
@@ -167,6 +173,8 @@ export function PayPalInvoiceModal({
         paypalClientSecret: paypalConfig.clientSecret,
         paypalMode: paypalConfig.mode,
       });
+      
+      console.log('[PayPalInvoiceModal] ✅ Successfully created order without tRPC');
 
       console.log('[PayPalInvoiceModal] ✅ Payment order created:', paymentResponse);
       console.log('[PayPalInvoiceModal] Order ID:', paymentResponse.orderId);
