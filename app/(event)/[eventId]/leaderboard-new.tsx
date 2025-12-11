@@ -118,14 +118,9 @@ export default function LeaderboardNewScreen() {
         return s.day === selectedDay;
       });
 
-      console.log('[LeaderboardNew] Player:', member.name, 'Flight:', registration.flight, 'Scores:', playerScores.length);
-
       const grossScore = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
       
-      if (grossScore === 0) {
-        console.log('[LeaderboardNew] Skipping player with no score:', member.name);
-        return;
-      }
+      console.log('[LeaderboardNew] Player:', member.name, 'Flight:', registration.flight, 'Scores count:', playerScores.length, 'Gross:', grossScore);
 
       const handicap = getDisplayHandicap(member, registration, event as Event, false, 1);
       const netScore = grossScore - handicap;
