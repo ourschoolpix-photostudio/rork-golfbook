@@ -17,7 +17,7 @@ import { TournamentTermsModal } from './TournamentTermsModal';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { formatDateAsFullDay } from '@/utils/dateUtils';
 import { useSettings } from '@/contexts/SettingsContext';
-import { trpc } from '@/lib/trpc';
+import { createPayPalOrder } from '@/utils/paypalService';
 
 interface PayPalInvoiceModalProps {
   visible: boolean;
@@ -43,8 +43,6 @@ export function PayPalInvoiceModal({
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [numberOfGuests, setNumberOfGuests] = useState('');
   const [guestNames, setGuestNames] = useState('');
-
-  const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
 
   useEffect(() => {
     if (visible && currentUser) {
@@ -115,12 +113,15 @@ export function PayPalInvoiceModal({
       console.log('[PayPalInvoiceModal] Event:', event.name);
       console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
       
-      console.log('[PayPalInvoiceModal] Creating PayPal order via tRPC...');
-      const paymentResponse = await createPaymentMutation.mutateAsync({
+      console.log('[PayPalInvoiceModal] Creating PayPal order...');
+      const paymentResponse = await createPayPalOrder({
         amount: totalAmount,
         eventName: event.name,
         eventId: event.id,
         playerEmail: email.trim(),
+        paypalClientId: orgInfo.paypalClientId,
+        paypalClientSecret: orgInfo.paypalClientSecret,
+        paypalMode: orgInfo.paypalMode,
       });
 
       console.log('[PayPalInvoiceModal] ✅ Payment order created:', paymentResponse);
