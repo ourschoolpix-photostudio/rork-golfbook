@@ -991,7 +991,7 @@ function buildRegistrationTextContent(
       const isPaid = reg.paymentStatus === 'paid';
       
       const paymentText = !isPaid ? ' **UNPAID**' : '';
-      textContent += `${itemNumber}. ${member.name} $${totalCost}${paymentText}\n`;
+      textContent += `${itemNumber}. ${member.name} ${totalCost.toFixed(2)}${paymentText}\n`;
       
       if (guestNames.length > 0) {
         guestNames.forEach((guestName: string) => {
@@ -1033,9 +1033,9 @@ function buildRegistrationTextContent(
       const paymentText = !isPaid ? ' **UNPAID**' : '';
       
       if (includeHandicap) {
-        textContent += `${itemNumber}. ${member.name} - ${handicap} $${entryFee}${paymentText}\n`;
+        textContent += `${itemNumber}. ${member.name} - ${handicap} ${entryFee.toFixed(2)}${paymentText}\n`;
       } else {
-        textContent += `${itemNumber}. ${member.name} $${entryFee}${paymentText}\n`;
+        textContent += `${itemNumber}. ${member.name} ${entryFee.toFixed(2)}${paymentText}\n`;
       }
     });
 
