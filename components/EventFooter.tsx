@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Users, Grid3x3, Target, Award, DollarSign, LayoutGrid } from 'lucide-react-native';
+import { Home, Users, Grid3x3, Target, Award, DollarSign, LayoutGrid, Sparkles } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { OfflineModeToggle } from '@/components/OfflineModeToggle';
@@ -102,6 +102,7 @@ export function EventFooter({
       { id: 'groupings', icon: Grid3x3, label: 'Groupings' },
       { id: 'scoring', icon: Target, label: 'Scoring' },
       { id: 'rolex', icon: Award, label: 'Leader' },
+      { id: 'leaderboard-new', icon: Sparkles, label: 'NEW' },
     ] : [
       { id: 'tables', icon: LayoutGrid, label: 'Tables' },
     ]),
