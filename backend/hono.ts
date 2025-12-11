@@ -1,5 +1,8 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { trpcServer } from '@hono/trpc-server';
+import { appRouter } from '@/backend/trpc/app-router';
+import { createContext } from '@/backend/trpc/create-context';
 
 const app = new Hono();
 
@@ -9,7 +12,18 @@ app.use("*", cors({
   allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
-console.log('🔧 [Hono] tRPC has been disabled - app now uses direct Supabase calls');
+console.log('🔧 [Hono] Mounting tRPC handler for PayPal routes');
+
+app.use(
+  '/api/trpc/*',
+  trpcServer({
+    router: appRouter,
+    createContext,
+    onError({ error, path }) {
+      console.error(`❌ [tRPC] Error in ${path}:`, error);
+    },
+  })
+);
 
 app.get("/", (c) => {
   console.log('🏠 [Hono] Root endpoint hit');
