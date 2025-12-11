@@ -58,6 +58,33 @@ const mapEventFromDB = (e: any) => ({
   flightATeebox: e.flight_a_teebox,
   flightBTeebox: e.flight_b_teebox,
   flightLTeebox: e.flight_l_teebox,
+  flightATrophy1st: e.flight_a_trophy_1st,
+  flightATrophy2nd: e.flight_a_trophy_2nd,
+  flightATrophy3rd: e.flight_a_trophy_3rd,
+  flightBTrophy1st: e.flight_b_trophy_1st,
+  flightBTrophy2nd: e.flight_b_trophy_2nd,
+  flightBTrophy3rd: e.flight_b_trophy_3rd,
+  flightCTrophy1st: e.flight_c_trophy_1st,
+  flightCTrophy2nd: e.flight_c_trophy_2nd,
+  flightCTrophy3rd: e.flight_c_trophy_3rd,
+  flightLTrophy1st: e.flight_l_trophy_1st,
+  flightLTrophy2nd: e.flight_l_trophy_2nd,
+  flightLTrophy3rd: e.flight_l_trophy_3rd,
+  flightACashPrize1st: e.flight_a_cash_prize_1st,
+  flightACashPrize2nd: e.flight_a_cash_prize_2nd,
+  flightACashPrize3rd: e.flight_a_cash_prize_3rd,
+  flightBCashPrize1st: e.flight_b_cash_prize_1st,
+  flightBCashPrize2nd: e.flight_b_cash_prize_2nd,
+  flightBCashPrize3rd: e.flight_b_cash_prize_3rd,
+  flightCCashPrize1st: e.flight_c_cash_prize_1st,
+  flightCCashPrize2nd: e.flight_c_cash_prize_2nd,
+  flightCCashPrize3rd: e.flight_c_cash_prize_3rd,
+  flightLCashPrize1st: e.flight_l_cash_prize_1st,
+  flightLCashPrize2nd: e.flight_l_cash_prize_2nd,
+  flightLCashPrize3rd: e.flight_l_cash_prize_3rd,
+  lowGrossTrophy: e.low_gross_trophy,
+  lowGrossCashPrize: e.low_gross_cash_prize,
+  closestToPin: e.closest_to_pin,
   archived: e.archived || false,
   archivedAt: e.archived_at,
 });
@@ -165,6 +192,65 @@ export const supabaseService = {
       if (updates.photoUrl !== undefined) supabaseUpdates.photo_url = updates.photoUrl;
       if (updates.entryFee !== undefined) supabaseUpdates.entry_fee = updates.entryFee;
       if (updates.numberOfDays !== undefined) supabaseUpdates.number_of_days = updates.numberOfDays;
+      if (updates.day1StartTime !== undefined) supabaseUpdates.day1_start_time = updates.day1StartTime;
+      if (updates.day1StartPeriod !== undefined) supabaseUpdates.day1_start_period = updates.day1StartPeriod;
+      if (updates.day1EndTime !== undefined) supabaseUpdates.day1_end_time = updates.day1EndTime;
+      if (updates.day1EndPeriod !== undefined) supabaseUpdates.day1_end_period = updates.day1EndPeriod;
+      if (updates.day1Course !== undefined) supabaseUpdates.day1_course = updates.day1Course;
+      if (updates.day1StartType !== undefined) supabaseUpdates.day1_start_type = updates.day1StartType;
+      if (updates.day1LeadingHole !== undefined) supabaseUpdates.day1_leading_hole = updates.day1LeadingHole;
+      if (updates.day1Par !== undefined) supabaseUpdates.day1_par = updates.day1Par;
+      if (updates.day1HolePars !== undefined) supabaseUpdates.day1_hole_pars = updates.day1HolePars;
+      if (updates.day2StartTime !== undefined) supabaseUpdates.day2_start_time = updates.day2StartTime;
+      if (updates.day2StartPeriod !== undefined) supabaseUpdates.day2_start_period = updates.day2StartPeriod;
+      if (updates.day2EndTime !== undefined) supabaseUpdates.day2_end_time = updates.day2EndTime;
+      if (updates.day2EndPeriod !== undefined) supabaseUpdates.day2_end_period = updates.day2EndPeriod;
+      if (updates.day2Course !== undefined) supabaseUpdates.day2_course = updates.day2Course;
+      if (updates.day2StartType !== undefined) supabaseUpdates.day2_start_type = updates.day2StartType;
+      if (updates.day2LeadingHole !== undefined) supabaseUpdates.day2_leading_hole = updates.day2LeadingHole;
+      if (updates.day2Par !== undefined) supabaseUpdates.day2_par = updates.day2Par;
+      if (updates.day2HolePars !== undefined) supabaseUpdates.day2_hole_pars = updates.day2HolePars;
+      if (updates.day3StartTime !== undefined) supabaseUpdates.day3_start_time = updates.day3StartTime;
+      if (updates.day3StartPeriod !== undefined) supabaseUpdates.day3_start_period = updates.day3StartPeriod;
+      if (updates.day3EndTime !== undefined) supabaseUpdates.day3_end_time = updates.day3EndTime;
+      if (updates.day3EndPeriod !== undefined) supabaseUpdates.day3_end_period = updates.day3EndPeriod;
+      if (updates.day3Course !== undefined) supabaseUpdates.day3_course = updates.day3Course;
+      if (updates.day3StartType !== undefined) supabaseUpdates.day3_start_type = updates.day3StartType;
+      if (updates.day3LeadingHole !== undefined) supabaseUpdates.day3_leading_hole = updates.day3LeadingHole;
+      if (updates.day3Par !== undefined) supabaseUpdates.day3_par = updates.day3Par;
+      if (updates.day3HolePars !== undefined) supabaseUpdates.day3_hole_pars = updates.day3HolePars;
+      if (updates.flightACutoff !== undefined) supabaseUpdates.flight_a_cutoff = updates.flightACutoff;
+      if (updates.flightBCutoff !== undefined) supabaseUpdates.flight_b_cutoff = updates.flightBCutoff;
+      if (updates.flightATeebox !== undefined) supabaseUpdates.flight_a_teebox = updates.flightATeebox;
+      if (updates.flightBTeebox !== undefined) supabaseUpdates.flight_b_teebox = updates.flightBTeebox;
+      if (updates.flightLTeebox !== undefined) supabaseUpdates.flight_l_teebox = updates.flightLTeebox;
+      if (updates.flightATrophy1st !== undefined) supabaseUpdates.flight_a_trophy_1st = updates.flightATrophy1st;
+      if (updates.flightATrophy2nd !== undefined) supabaseUpdates.flight_a_trophy_2nd = updates.flightATrophy2nd;
+      if (updates.flightATrophy3rd !== undefined) supabaseUpdates.flight_a_trophy_3rd = updates.flightATrophy3rd;
+      if (updates.flightBTrophy1st !== undefined) supabaseUpdates.flight_b_trophy_1st = updates.flightBTrophy1st;
+      if (updates.flightBTrophy2nd !== undefined) supabaseUpdates.flight_b_trophy_2nd = updates.flightBTrophy2nd;
+      if (updates.flightBTrophy3rd !== undefined) supabaseUpdates.flight_b_trophy_3rd = updates.flightBTrophy3rd;
+      if (updates.flightCTrophy1st !== undefined) supabaseUpdates.flight_c_trophy_1st = updates.flightCTrophy1st;
+      if (updates.flightCTrophy2nd !== undefined) supabaseUpdates.flight_c_trophy_2nd = updates.flightCTrophy2nd;
+      if (updates.flightCTrophy3rd !== undefined) supabaseUpdates.flight_c_trophy_3rd = updates.flightCTrophy3rd;
+      if (updates.flightLTrophy1st !== undefined) supabaseUpdates.flight_l_trophy_1st = updates.flightLTrophy1st;
+      if (updates.flightLTrophy2nd !== undefined) supabaseUpdates.flight_l_trophy_2nd = updates.flightLTrophy2nd;
+      if (updates.flightLTrophy3rd !== undefined) supabaseUpdates.flight_l_trophy_3rd = updates.flightLTrophy3rd;
+      if (updates.flightACashPrize1st !== undefined) supabaseUpdates.flight_a_cash_prize_1st = updates.flightACashPrize1st;
+      if (updates.flightACashPrize2nd !== undefined) supabaseUpdates.flight_a_cash_prize_2nd = updates.flightACashPrize2nd;
+      if (updates.flightACashPrize3rd !== undefined) supabaseUpdates.flight_a_cash_prize_3rd = updates.flightACashPrize3rd;
+      if (updates.flightBCashPrize1st !== undefined) supabaseUpdates.flight_b_cash_prize_1st = updates.flightBCashPrize1st;
+      if (updates.flightBCashPrize2nd !== undefined) supabaseUpdates.flight_b_cash_prize_2nd = updates.flightBCashPrize2nd;
+      if (updates.flightBCashPrize3rd !== undefined) supabaseUpdates.flight_b_cash_prize_3rd = updates.flightBCashPrize3rd;
+      if (updates.flightCCashPrize1st !== undefined) supabaseUpdates.flight_c_cash_prize_1st = updates.flightCCashPrize1st;
+      if (updates.flightCCashPrize2nd !== undefined) supabaseUpdates.flight_c_cash_prize_2nd = updates.flightCCashPrize2nd;
+      if (updates.flightCCashPrize3rd !== undefined) supabaseUpdates.flight_c_cash_prize_3rd = updates.flightCCashPrize3rd;
+      if (updates.flightLCashPrize1st !== undefined) supabaseUpdates.flight_l_cash_prize_1st = updates.flightLCashPrize1st;
+      if (updates.flightLCashPrize2nd !== undefined) supabaseUpdates.flight_l_cash_prize_2nd = updates.flightLCashPrize2nd;
+      if (updates.flightLCashPrize3rd !== undefined) supabaseUpdates.flight_l_cash_prize_3rd = updates.flightLCashPrize3rd;
+      if (updates.lowGrossTrophy !== undefined) supabaseUpdates.low_gross_trophy = updates.lowGrossTrophy;
+      if (updates.lowGrossCashPrize !== undefined) supabaseUpdates.low_gross_cash_prize = updates.lowGrossCashPrize;
+      if (updates.closestToPin !== undefined) supabaseUpdates.closest_to_pin = updates.closestToPin;
       if (updates.archived !== undefined) supabaseUpdates.archived = updates.archived;
       if (updates.archivedAt !== undefined) supabaseUpdates.archived_at = updates.archivedAt;
 

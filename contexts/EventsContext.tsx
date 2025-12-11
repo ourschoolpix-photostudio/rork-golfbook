@@ -106,6 +106,33 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         flightATeebox: e.flight_a_teebox,
         flightBTeebox: e.flight_b_teebox,
         flightLTeebox: e.flight_l_teebox,
+        flightATrophy1st: e.flight_a_trophy_1st,
+        flightATrophy2nd: e.flight_a_trophy_2nd,
+        flightATrophy3rd: e.flight_a_trophy_3rd,
+        flightBTrophy1st: e.flight_b_trophy_1st,
+        flightBTrophy2nd: e.flight_b_trophy_2nd,
+        flightBTrophy3rd: e.flight_b_trophy_3rd,
+        flightCTrophy1st: e.flight_c_trophy_1st,
+        flightCTrophy2nd: e.flight_c_trophy_2nd,
+        flightCTrophy3rd: e.flight_c_trophy_3rd,
+        flightLTrophy1st: e.flight_l_trophy_1st,
+        flightLTrophy2nd: e.flight_l_trophy_2nd,
+        flightLTrophy3rd: e.flight_l_trophy_3rd,
+        flightACashPrize1st: e.flight_a_cash_prize_1st,
+        flightACashPrize2nd: e.flight_a_cash_prize_2nd,
+        flightACashPrize3rd: e.flight_a_cash_prize_3rd,
+        flightBCashPrize1st: e.flight_b_cash_prize_1st,
+        flightBCashPrize2nd: e.flight_b_cash_prize_2nd,
+        flightBCashPrize3rd: e.flight_b_cash_prize_3rd,
+        flightCCashPrize1st: e.flight_c_cash_prize_1st,
+        flightCCashPrize2nd: e.flight_c_cash_prize_2nd,
+        flightCCashPrize3rd: e.flight_c_cash_prize_3rd,
+        flightLCashPrize1st: e.flight_l_cash_prize_1st,
+        flightLCashPrize2nd: e.flight_l_cash_prize_2nd,
+        flightLCashPrize3rd: e.flight_l_cash_prize_3rd,
+        lowGrossTrophy: e.low_gross_trophy,
+        lowGrossCashPrize: e.low_gross_cash_prize,
+        closestToPin: e.closest_to_pin,
         archived: e.archived || false,
         archivedAt: e.archived_at,
         registeredPlayers: registrationsByEvent.get(e.id) || [],
@@ -201,6 +228,33 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
           flight_a_teebox: eventWithDefaults.flightATeebox,
           flight_b_teebox: eventWithDefaults.flightBTeebox,
           flight_l_teebox: eventWithDefaults.flightLTeebox,
+          flight_a_trophy_1st: eventWithDefaults.flightATrophy1st,
+          flight_a_trophy_2nd: eventWithDefaults.flightATrophy2nd,
+          flight_a_trophy_3rd: eventWithDefaults.flightATrophy3rd,
+          flight_b_trophy_1st: eventWithDefaults.flightBTrophy1st,
+          flight_b_trophy_2nd: eventWithDefaults.flightBTrophy2nd,
+          flight_b_trophy_3rd: eventWithDefaults.flightBTrophy3rd,
+          flight_c_trophy_1st: eventWithDefaults.flightCTrophy1st,
+          flight_c_trophy_2nd: eventWithDefaults.flightCTrophy2nd,
+          flight_c_trophy_3rd: eventWithDefaults.flightCTrophy3rd,
+          flight_l_trophy_1st: eventWithDefaults.flightLTrophy1st,
+          flight_l_trophy_2nd: eventWithDefaults.flightLTrophy2nd,
+          flight_l_trophy_3rd: eventWithDefaults.flightLTrophy3rd,
+          flight_a_cash_prize_1st: eventWithDefaults.flightACashPrize1st,
+          flight_a_cash_prize_2nd: eventWithDefaults.flightACashPrize2nd,
+          flight_a_cash_prize_3rd: eventWithDefaults.flightACashPrize3rd,
+          flight_b_cash_prize_1st: eventWithDefaults.flightBCashPrize1st,
+          flight_b_cash_prize_2nd: eventWithDefaults.flightBCashPrize2nd,
+          flight_b_cash_prize_3rd: eventWithDefaults.flightBCashPrize3rd,
+          flight_c_cash_prize_1st: eventWithDefaults.flightCCashPrize1st,
+          flight_c_cash_prize_2nd: eventWithDefaults.flightCCashPrize2nd,
+          flight_c_cash_prize_3rd: eventWithDefaults.flightCCashPrize3rd,
+          flight_l_cash_prize_1st: eventWithDefaults.flightLCashPrize1st,
+          flight_l_cash_prize_2nd: eventWithDefaults.flightLCashPrize2nd,
+          flight_l_cash_prize_3rd: eventWithDefaults.flightLCashPrize3rd,
+          low_gross_trophy: eventWithDefaults.lowGrossTrophy,
+          low_gross_cash_prize: eventWithDefaults.lowGrossCashPrize,
+          closest_to_pin: eventWithDefaults.closestToPin,
           archived: eventWithDefaults.archived || false,
           archived_at: eventWithDefaults.archivedAt,
         });
@@ -276,6 +330,33 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         if (updates.flightATeebox !== undefined) supabaseUpdates.flight_a_teebox = updates.flightATeebox;
         if (updates.flightBTeebox !== undefined) supabaseUpdates.flight_b_teebox = updates.flightBTeebox;
         if (updates.flightLTeebox !== undefined) supabaseUpdates.flight_l_teebox = updates.flightLTeebox;
+        if (updates.flightATrophy1st !== undefined) supabaseUpdates.flight_a_trophy_1st = updates.flightATrophy1st;
+        if (updates.flightATrophy2nd !== undefined) supabaseUpdates.flight_a_trophy_2nd = updates.flightATrophy2nd;
+        if (updates.flightATrophy3rd !== undefined) supabaseUpdates.flight_a_trophy_3rd = updates.flightATrophy3rd;
+        if (updates.flightBTrophy1st !== undefined) supabaseUpdates.flight_b_trophy_1st = updates.flightBTrophy1st;
+        if (updates.flightBTrophy2nd !== undefined) supabaseUpdates.flight_b_trophy_2nd = updates.flightBTrophy2nd;
+        if (updates.flightBTrophy3rd !== undefined) supabaseUpdates.flight_b_trophy_3rd = updates.flightBTrophy3rd;
+        if (updates.flightCTrophy1st !== undefined) supabaseUpdates.flight_c_trophy_1st = updates.flightCTrophy1st;
+        if (updates.flightCTrophy2nd !== undefined) supabaseUpdates.flight_c_trophy_2nd = updates.flightCTrophy2nd;
+        if (updates.flightCTrophy3rd !== undefined) supabaseUpdates.flight_c_trophy_3rd = updates.flightCTrophy3rd;
+        if (updates.flightLTrophy1st !== undefined) supabaseUpdates.flight_l_trophy_1st = updates.flightLTrophy1st;
+        if (updates.flightLTrophy2nd !== undefined) supabaseUpdates.flight_l_trophy_2nd = updates.flightLTrophy2nd;
+        if (updates.flightLTrophy3rd !== undefined) supabaseUpdates.flight_l_trophy_3rd = updates.flightLTrophy3rd;
+        if (updates.flightACashPrize1st !== undefined) supabaseUpdates.flight_a_cash_prize_1st = updates.flightACashPrize1st;
+        if (updates.flightACashPrize2nd !== undefined) supabaseUpdates.flight_a_cash_prize_2nd = updates.flightACashPrize2nd;
+        if (updates.flightACashPrize3rd !== undefined) supabaseUpdates.flight_a_cash_prize_3rd = updates.flightACashPrize3rd;
+        if (updates.flightBCashPrize1st !== undefined) supabaseUpdates.flight_b_cash_prize_1st = updates.flightBCashPrize1st;
+        if (updates.flightBCashPrize2nd !== undefined) supabaseUpdates.flight_b_cash_prize_2nd = updates.flightBCashPrize2nd;
+        if (updates.flightBCashPrize3rd !== undefined) supabaseUpdates.flight_b_cash_prize_3rd = updates.flightBCashPrize3rd;
+        if (updates.flightCCashPrize1st !== undefined) supabaseUpdates.flight_c_cash_prize_1st = updates.flightCCashPrize1st;
+        if (updates.flightCCashPrize2nd !== undefined) supabaseUpdates.flight_c_cash_prize_2nd = updates.flightCCashPrize2nd;
+        if (updates.flightCCashPrize3rd !== undefined) supabaseUpdates.flight_c_cash_prize_3rd = updates.flightCCashPrize3rd;
+        if (updates.flightLCashPrize1st !== undefined) supabaseUpdates.flight_l_cash_prize_1st = updates.flightLCashPrize1st;
+        if (updates.flightLCashPrize2nd !== undefined) supabaseUpdates.flight_l_cash_prize_2nd = updates.flightLCashPrize2nd;
+        if (updates.flightLCashPrize3rd !== undefined) supabaseUpdates.flight_l_cash_prize_3rd = updates.flightLCashPrize3rd;
+        if (updates.lowGrossTrophy !== undefined) supabaseUpdates.low_gross_trophy = updates.lowGrossTrophy;
+        if (updates.lowGrossCashPrize !== undefined) supabaseUpdates.low_gross_cash_prize = updates.lowGrossCashPrize;
+        if (updates.closestToPin !== undefined) supabaseUpdates.closest_to_pin = updates.closestToPin;
         if (updates.archived !== undefined) supabaseUpdates.archived = updates.archived;
         if (updates.archivedAt !== undefined) supabaseUpdates.archived_at = updates.archivedAt;
         
