@@ -305,7 +305,7 @@ export default function LeaderboardNewScreen() {
                   key={entry.member.id} 
                   style={[
                     styles.playerCard, 
-                    entry.position === 1 && styles.firstPlaceCard
+                    entry.position === 1 && styles.leaderCard
                   ]}
                 >
                   <View style={styles.cardLeft}>
@@ -352,7 +352,7 @@ export default function LeaderboardNewScreen() {
                       key={entry.member.id} 
                       style={[
                         styles.playerCard, 
-                        entry.position === 1 && styles.firstPlaceCard
+                        entry.position <= 3 && styles.leaderCard
                       ]}
                     >
                       <View style={styles.cardLeft}>
@@ -391,7 +391,7 @@ export default function LeaderboardNewScreen() {
                       key={entry.member.id} 
                       style={[
                         styles.playerCard, 
-                        entry.position === 1 && styles.firstPlaceCard
+                        entry.position <= 3 && styles.leaderCard
                       ]}
                     >
                       <View style={styles.cardLeft}>
@@ -611,6 +611,11 @@ const styles = StyleSheet.create({
   firstPlaceCard: {
     borderWidth: 3,
     borderColor: '#FFD700',
+  },
+  leaderCard: {
+    backgroundColor: '#FFF9E6',
+    borderWidth: 2,
+    borderColor: '#FFB84D',
   },
   cardLeft: {
     width: 60,
