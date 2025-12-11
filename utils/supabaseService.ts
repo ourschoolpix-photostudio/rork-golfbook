@@ -628,15 +628,21 @@ export const supabaseService = {
         total_score: totalScore,
       });
       
-      const { data, error } = await supabase.from('scores').upsert({
-        event_id: eventId,
-        member_id: memberId,
-        day,
-        holes,
-        total_score: totalScore,
-        submitted_by: submittedBy,
-        updated_at: new Date().toISOString(),
-      });
+      const { data, error } = await supabase.from('scores').upsert(
+        {
+          event_id: eventId,
+          member_id: memberId,
+          day,
+          holes,
+          total_score: totalScore,
+          submitted_by: submittedBy,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'event_id,member_id,day',
+          ignoreDuplicates: false,
+        }
+      );
       
       console.log('[supabaseService.scores.submit] Upsert result:', { data, error });
       
