@@ -30,29 +30,34 @@ export default function ScoringScreen() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
 
-  const { data: eventData, isLoading: eventLoading } = useQuery({
+  const { data: eventData, isLoading: eventLoading, error: eventError } = useQuery({
     queryKey: ['events', eventId],
     queryFn: () => supabaseService.events.get(eventId || ''),
     enabled: !!eventId,
+    retry: 2,
   });
-  const { data: allMembers = [], isLoading: membersLoading } = useQuery({
+  const { data: allMembers = [], isLoading: membersLoading, error: membersError } = useQuery({
     queryKey: ['members'],
     queryFn: () => supabaseService.members.getAll(),
+    retry: 2,
   });
-  const { data: eventRegistrations = [], isLoading: registrationsLoading } = useQuery({
+  const { data: eventRegistrations = [], isLoading: registrationsLoading, error: registrationsError } = useQuery({
     queryKey: ['registrations', eventId],
     queryFn: () => supabaseService.registrations.getAll(eventId || ''),
     enabled: !!eventId,
+    retry: 2,
   });
-  const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings } = useQuery({
+  const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings, error: groupingsError } = useQuery({
     queryKey: ['groupings', eventId],
     queryFn: () => supabaseService.groupings.getAll(eventId || ''),
     enabled: !!eventId,
+    retry: 2,
   });
-  const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores } = useQuery({
+  const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores, error: scoresError } = useQuery({
     queryKey: ['scores', eventId],
     queryFn: () => supabaseService.scores.getAll(eventId || ''),
     enabled: !!eventId,
+    retry: 2,
   });
   const { shouldUseOfflineMode, addPendingOperation } = useOfflineMode();
   
@@ -466,6 +471,7 @@ export default function ScoringScreen() {
   ];
 
   const isLoading = eventLoading || membersLoading || registrationsLoading || groupingsLoading || scoresLoading;
+  const hasErrors = eventError || membersError || registrationsError || groupingsError || scoresError;
   
   console.log('[scoring] 🔍 Loading states:', {
     eventLoading,
@@ -481,6 +487,16 @@ export default function ScoringScreen() {
     myGroupLength: myGroup.length,
   });
   
+  if (hasErrors) {
+    console.error('[scoring] ❌ Query errors:', {
+      eventError,
+      membersError,
+      registrationsError,
+      groupingsError,
+      scoresError,
+    });
+  }
+  
   if (isLoading) {
     return (
       <>
@@ -491,6 +507,11 @@ export default function ScoringScreen() {
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ fontSize: 16, color: '#666' }}>Loading...</Text>
             <Text style={{ fontSize: 12, color: '#999', marginTop: 8 }}>Fetching event data</Text>
+            {hasErrors && (
+              <Text style={{ fontSize: 12, color: '#d32f2f', marginTop: 8, textAlign: 'center', paddingHorizontal: 20 }}>
+                Error loading data. Check console for details.
+              </Text>
+            )}
           </View>
         </SafeAreaView>
         <EventFooter />
