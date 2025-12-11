@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -47,7 +47,7 @@ export default function ScoringScreen() {
     enabled: !!eventId,
     retry: 2,
   });
-  const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings, error: groupingsError } = useQuery({
+  const { data: eventGroupings = [], isLoading: groupingsLoading, error: groupingsError } = useQuery({
     queryKey: ['groupings', eventId],
     queryFn: () => supabaseService.groupings.getAll(eventId || ''),
     enabled: !!eventId,
@@ -59,7 +59,7 @@ export default function ScoringScreen() {
     enabled: !!eventId,
     retry: 2,
   });
-  const { shouldUseOfflineMode, addPendingOperation } = useOfflineMode();
+  const { shouldUseOfflineMode } = useOfflineMode();
   
   useRealtimeScores(eventId || '', !!eventId);
   useRealtimeGroupings(eventId || '', !!eventId);
@@ -214,7 +214,7 @@ export default function ScoringScreen() {
       setMyGroup([]);
       setMyGrouping(null);
     }
-  }, [updateHoleBasedOnStartType, eventGroupings, allMembers, eventRegistrations, groupingsLoading, membersLoading, registrationsLoading, useCourseHandicap]);
+  }, [updateHoleBasedOnStartType, eventGroupings, allMembers, eventRegistrations, groupingsLoading, membersLoading, registrationsLoading]);
 
   const loadScores = useCallback(async () => {
     try {
@@ -240,40 +240,32 @@ export default function ScoringScreen() {
     }
   }, [eventId, selectedDay, eventScores, scoresLoading]);
 
-  const loadData = useCallback(async () => {
-    try {
+  useEffect(() => {
+    const loadUser = async () => {
       const user = await authService.getCurrentUser();
       setCurrentUser(user);
-
-      if (!eventId || eventLoading) return;
-
-      if (eventData) {
-        setEvent(eventData as Event);
-
-        if (user) {
-          await loadMyGroup(eventData as Event, user.id, selectedDay);
-        }
-      }
-
-      await loadScores();
-    } catch (error) {
-      console.error('[scoring] Error loading data:', error);
-    }
-  }, [eventId, selectedDay, loadMyGroup, loadScores, eventData, eventLoading]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
+    };
+    loadUser();
+  }, []);
 
   useEffect(() => {
-    if (event && currentUser && eventId) {
-      console.log('[scoring] useEffect triggered - selectedDay changed to:', selectedDay);
+    if (eventData) {
+      setEvent(eventData as Event);
+    }
+  }, [eventData]);
+
+  useEffect(() => {
+    if (event && currentUser && eventId && !groupingsLoading && !membersLoading && !registrationsLoading) {
+      console.log('[scoring] Loading group for day:', selectedDay);
       loadMyGroup(event, currentUser.id, selectedDay);
+    }
+  }, [event, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, loadMyGroup]);
+
+  useEffect(() => {
+    if (eventId && !scoresLoading) {
       loadScores();
     }
-  }, [selectedDay, event, currentUser, eventId, loadMyGroup, loadScores]);
+  }, [eventId, selectedDay, scoresLoading, eventScores, loadScores]);
 
   const handlePreviousHole = () => {
     setCurrentHole(prev => {
