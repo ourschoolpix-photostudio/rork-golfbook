@@ -343,77 +343,75 @@ export default function DashboardScreen() {
             <Text style={styles.emptySubtext}>Events will appear here once created by admin</Text>
           </View>
         ) : (
-          <>
-            <FlatList
-              scrollEnabled={false}
-              data={activeEvents}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.eventCard}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    console.log('Navigating to event:', item.id);
-                    router.push(`/(event)/${item.id}/registration` as any);
-                  }}
-                >
-                  <View style={styles.eventPhoto}>
-                    <Image
-                      source={{ uri: (item.photoUrl && item.photoUrl.trim() !== '') ? item.photoUrl : 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80' }}
-                      style={styles.photoPlaceholder}
-                    />
-                    <TouchableOpacity
-                      style={styles.viewDetailsButton}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleViewDetails(item);
-                      }}
-                    >
-                      <Text style={styles.viewDetailsButtonText}>View Details</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.eventContent}>
-                    <Text style={styles.eventName}>{item.name}</Text>
-                    <Text style={styles.eventDetail}>📍 {item.location}</Text>
-                    <Text style={styles.eventDetail}>
-                      📅 {formatDateRange(item.date || '', item.endDate || '')}
-                    </Text>
-
-                    <View style={styles.scheduleSection}>
-                      {formatSchedule(item).map((schedule, index) => (
-                        <Text key={index} style={styles.scheduleTime}>
-                          {schedule}
-                        </Text>
-                      ))}
-                    </View>
-
-                    <Text style={styles.eventPlayers}>
-                      {item.type === 'social' ? 'Attendees:' : 'Players registered:'} {getEventAttendeeCount(item)}
-                    </Text>
-
-                    {item.entryFee && (
-                      <View style={styles.entryFeeBadge}>
-                        <Text style={styles.entryFeeText}>${item.entryFee}</Text>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              )}
-            />
-
-            {archivedEvents.length > 0 && (
+          <FlatList
+            scrollEnabled={false}
+            data={activeEvents}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
               <TouchableOpacity
-                style={styles.archivedLink}
-                onPress={() => router.push('/(tabs)/archived' as any)}
-                activeOpacity={0.7}
+                style={styles.eventCard}
+                activeOpacity={0.8}
+                onPress={() => {
+                  console.log('Navigating to event:', item.id);
+                  router.push(`/(event)/${item.id}/registration` as any);
+                }}
               >
-                <Text style={styles.archivedLinkText}>View Archived Events ({archivedEvents.length})</Text>
-                <Text style={styles.archivedLinkIcon}>→</Text>
+                <View style={styles.eventPhoto}>
+                  <Image
+                    source={{ uri: (item.photoUrl && item.photoUrl.trim() !== '') ? item.photoUrl : 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800&q=80' }}
+                    style={styles.photoPlaceholder}
+                  />
+                  <TouchableOpacity
+                    style={styles.viewDetailsButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleViewDetails(item);
+                    }}
+                  >
+                    <Text style={styles.viewDetailsButtonText}>View Details</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.eventContent}>
+                  <Text style={styles.eventName}>{item.name}</Text>
+                  <Text style={styles.eventDetail}>📍 {item.location}</Text>
+                  <Text style={styles.eventDetail}>
+                    📅 {formatDateRange(item.date || '', item.endDate || '')}
+                  </Text>
+
+                  <View style={styles.scheduleSection}>
+                    {formatSchedule(item).map((schedule, index) => (
+                      <Text key={index} style={styles.scheduleTime}>
+                        {schedule}
+                      </Text>
+                    ))}
+                  </View>
+
+                  <Text style={styles.eventPlayers}>
+                    {item.type === 'social' ? 'Attendees:' : 'Players registered:'} {getEventAttendeeCount(item)}
+                  </Text>
+
+                  {item.entryFee && (
+                    <View style={styles.entryFeeBadge}>
+                      <Text style={styles.entryFeeText}>${item.entryFee}</Text>
+                    </View>
+                  )}
+                </View>
               </TouchableOpacity>
             )}
-          </>
+          />
         )}
       </ScrollView>
+
+      {archivedEvents.length > 0 && (
+        <TouchableOpacity
+          style={styles.archivedLinkStationary}
+          onPress={() => router.push('/(tabs)/archived' as any)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.archivedLinkText}>View Archived Events ({archivedEvents.length})</Text>
+          <Text style={styles.archivedLinkIcon}>→</Text>
+        </TouchableOpacity>
+      )}
     </View>
     </>
   );
@@ -695,6 +693,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
+  },
+  archivedLinkStationary: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+    backgroundColor: '#2d3748',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#1a202c',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: -2 },
   },
   archivedLinkText: {
     fontSize: 16,
