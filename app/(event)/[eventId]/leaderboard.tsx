@@ -59,27 +59,25 @@ export default function LeaderboardScreen() {
     console.log('[Leaderboard] Computing leaderboard:', {
       hasEvent: !!event,
       membersCount: allMembers.length,
-      registeredPlayersCount: event?.registeredPlayers?.length || 0,
-      scoresCount: scores.length,
       registrationsCount: registrations.length,
+      scoresCount: scores.length,
     });
 
-    if (!event || !allMembers.length || !event.registeredPlayers) {
+    if (!event || !allMembers.length || !registrations.length) {
       console.log('[Leaderboard] Missing required data for leaderboard');
       return [];
     }
 
-    const registeredPlayerIds = new Set(event.registeredPlayers || []);
     const entries: LeaderboardEntry[] = [];
 
-    registeredPlayerIds.forEach((playerId) => {
-      const member = allMembers.find((m: any) => m.id === playerId);
+    registrations.forEach((registration: any) => {
+      if (!registration.memberId) return;
+      
+      const member = allMembers.find((m: any) => m.id === registration.memberId);
       if (!member) return;
-
-      const registration = registrations.find((r: any) => r.memberId === playerId);
       
       const playerScores = scores.filter((s: any) => {
-        if (s.memberId !== playerId) return false;
+        if (s.memberId !== registration.memberId) return false;
         if (selectedDay === 'all') return true;
         return s.day === selectedDay;
       });
