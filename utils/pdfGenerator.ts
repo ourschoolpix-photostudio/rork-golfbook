@@ -1123,11 +1123,13 @@ export async function generateInvoicePDF(
     </div>
 
     <div class="section">
-      <div class="section-title">Event Details</div>
-      <div class="detail-row"><span class="detail-label">Event:</span> ${event.name}</div>
-      <div class="detail-row"><span class="detail-label">Date:</span> ${dateRange}</div>
-      ${event.location ? `<div class="detail-row"><span class="detail-label">Location:</span> ${event.location}</div>` : ''}
-      ${event.numberOfDays ? `<div class="detail-row"><span class="detail-label">Number of Days:</span> ${event.numberOfDays}</div>` : ''}
+      <div class="section-title">Event Information</div>
+      <ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">
+        <li><span class="detail-label">Event:</span> ${event.name}</li>
+        <li><span class="detail-label">Date:</span> ${dateRange}</li>
+        ${event.location ? `<li><span class="detail-label">Location:</span> ${event.location}</li>` : ''}
+        ${event.numberOfDays ? `<li><span class="detail-label">Number of Days:</span> ${event.numberOfDays}</li>` : ''}
+      </ul>
     </div>`;
 
       // Add day-by-day details
