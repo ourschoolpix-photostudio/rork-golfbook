@@ -314,7 +314,13 @@ export default function EventRegistrationScreen() {
           const key = `useCourseHandicap_${eventId}`;
           const value = await AsyncStorage.getItem(key);
           if (value !== null) {
-            setUseCourseHandicap(value === 'true');
+            const boolValue = value === 'true';
+            setUseCourseHandicap(prev => {
+              if (prev !== boolValue) {
+                return boolValue;
+              }
+              return prev;
+            });
           }
         } catch (error) {
           console.error('[registration] Error loading course handicap setting:', error);
@@ -322,9 +328,6 @@ export default function EventRegistrationScreen() {
       }
     };
     loadCourseHandicapSetting();
-    
-    const interval = setInterval(loadCourseHandicapSetting, 500);
-    return () => clearInterval(interval);
   }, [eventId]);
 
   useEffect(() => {
@@ -842,7 +845,7 @@ export default function EventRegistrationScreen() {
       setSelectedPlayers(updatedSelectedPlayers);
 
       let playerReg = registrations[updatedPlayer.name];
-      console.log('[registration] �� Found player registration in local state:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
+      console.log('[registration] 🔍 Found player registration in local state:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
       
       if (!playerReg) {
         console.log('[registration] 🔍 Registration not in local state, fetching from backend by memberId...');
