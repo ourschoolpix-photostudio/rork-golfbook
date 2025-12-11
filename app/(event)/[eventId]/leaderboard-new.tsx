@@ -21,7 +21,7 @@ interface LeaderboardEntry {
 
 export default function LeaderboardNewScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
-  const [selectedDay, setSelectedDay] = useState<number | 'all'>('all');
+  const [selectedDay, setSelectedDay] = useState<number | 'all' | 'rolex'>('all');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   const eventQuery = useQuery({
@@ -86,7 +86,7 @@ export default function LeaderboardNewScreen() {
     setLastUpdate(new Date());
   }, []);
 
-  const leaderboard = useMemo<{ flightA: LeaderboardEntry[]; flightB: LeaderboardEntry[] }>(() => {
+  const leaderboard = useMemo<{ flightA: LeaderboardEntry[]; flightB: LeaderboardEntry[]; rolex: LeaderboardEntry[] }>(() => {
     const event = eventQuery.data;
     const members = membersQuery.data || [];
     const registrations = registrationsQuery.data || [];
@@ -102,7 +102,7 @@ export default function LeaderboardNewScreen() {
 
     if (!event || members.length === 0 || registrations.length === 0) {
       console.log('[LeaderboardNew] Missing data:', { event: !!event, members: members.length, registrations: registrations.length });
-      return { flightA: [], flightB: [] };
+      return { flightA: [], flightB: [], rolex: [] };
     }
 
     const allEntries: LeaderboardEntry[] = [];
@@ -188,7 +188,18 @@ export default function LeaderboardNewScreen() {
       previousNetScore = entry.netScore;
     });
 
-    return { flightA: flightAEntries, flightB: flightBEntries };
+    const rolexEntries = [...allEntries].sort((a, b) => a.netScore - b.netScore);
+    currentPosition = 1;
+    previousNetScore = null;
+    rolexEntries.forEach((entry, index) => {
+      if (previousNetScore === null || entry.netScore !== previousNetScore) {
+        currentPosition = index + 1;
+      }
+      entry.position = currentPosition;
+      previousNetScore = entry.netScore;
+    });
+
+    return { flightA: flightAEntries, flightB: flightBEntries, rolex: rolexEntries };
   }, [eventQuery.data, membersQuery.data, registrationsQuery.data, scoresQuery.data, selectedDay]);
 
   const isLoading = eventQuery.isLoading || membersQuery.isLoading || registrationsQuery.isLoading || scoresQuery.isLoading;
@@ -203,7 +214,7 @@ export default function LeaderboardNewScreen() {
     }
   };
 
-  const handleDaySelect = useCallback((day: number | 'all') => {
+  const handleDaySelect = useCallback((day: number | 'all' | 'rolex') => {
     setSelectedDay(day);
   }, []);
 
@@ -240,29 +251,39 @@ export default function LeaderboardNewScreen() {
           </View>
         )}
 
-        {eventQuery.data?.numberOfDays && eventQuery.data.numberOfDays > 1 && (
-          <View style={styles.daySelector}>
-            <TouchableOpacity
-              style={[styles.dayButton, selectedDay === 'all' && styles.dayButtonActive]}
-              onPress={() => handleDaySelect('all')}
-            >
-              <Text style={[styles.dayButtonText, selectedDay === 'all' && styles.dayButtonTextActive]}>
-                All Days
-              </Text>
-            </TouchableOpacity>
-            {Array.from({ length: eventQuery.data.numberOfDays }, (_, i) => i + 1).map((day) => (
+        <View style={styles.daySelector}>
+          {eventQuery.data?.numberOfDays && eventQuery.data.numberOfDays > 1 && (
+            <>
               <TouchableOpacity
-                key={day}
-                style={[styles.dayButton, selectedDay === day && styles.dayButtonActive]}
-                onPress={() => handleDaySelect(day)}
+                style={[styles.dayButton, selectedDay === 'all' && styles.dayButtonActive]}
+                onPress={() => handleDaySelect('all')}
               >
-                <Text style={[styles.dayButtonText, selectedDay === day && styles.dayButtonTextActive]}>
-                  Day {day}
+                <Text style={[styles.dayButtonText, selectedDay === 'all' && styles.dayButtonTextActive]}>
+                  All Days
                 </Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        )}
+              {Array.from({ length: eventQuery.data.numberOfDays }, (_, i) => i + 1).map((day) => (
+                <TouchableOpacity
+                  key={day}
+                  style={[styles.dayButton, selectedDay === day && styles.dayButtonActive]}
+                  onPress={() => handleDaySelect(day)}
+                >
+                  <Text style={[styles.dayButtonText, selectedDay === day && styles.dayButtonTextActive]}>
+                    Day {day}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+          <TouchableOpacity
+            style={[styles.dayButton, selectedDay === 'rolex' && styles.dayButtonActive]}
+            onPress={() => handleDaySelect('rolex')}
+          >
+            <Text style={[styles.dayButtonText, selectedDay === 'rolex' && styles.dayButtonTextActive]}>
+              Rolex Points
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           {isLoading ? (
@@ -270,6 +291,64 @@ export default function LeaderboardNewScreen() {
               <ActivityIndicator size="large" color="#1B5E20" />
               <Text style={styles.loadingText}>Loading leaderboard...</Text>
             </View>
+          ) : selectedDay === 'rolex' ? (
+            leaderboard.rolex.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Trophy size={64} color="#999" />
+                <Text style={styles.emptyTitle}>No Scores Yet</Text>
+                <Text style={styles.emptyText}>
+                  Scores will appear here in real-time as they are submitted during the tournament.
+                </Text>
+              </View>
+            ) : (
+              <>
+                {leaderboard.rolex.slice(0, 3).map((entry) => (
+                  <View key={entry.member.id} style={[styles.podiumCard, { borderLeftColor: getPodiumColor(entry.position) }]}>
+                    <View style={styles.positionBadge}>
+                      {entry.position <= 3 ? (
+                        <Medal size={20} color={getPodiumColor(entry.position)} fill={getPodiumColor(entry.position)} />
+                      ) : (
+                        <Text style={styles.positionText}>#{entry.position}</Text>
+                      )}
+                    </View>
+                    <View style={styles.playerInfo}>
+                      <Text style={styles.playerName}>{entry.member.name}</Text>
+                      <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
+                    </View>
+                    <View style={styles.scoresContainer}>
+                      <View style={styles.scoreItem}>
+                        <Text style={styles.scoreLabel}>Net</Text>
+                        <Text style={[styles.scoreValue, styles.netScoreValue]}>{entry.netScore}</Text>
+                      </View>
+                      <View style={styles.scoreItem}>
+                        <Text style={styles.scoreLabel}>Gross</Text>
+                        <Text style={styles.scoreValue}>{entry.grossScore}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+
+                {leaderboard.rolex.length > 3 && (
+                  <View style={styles.restOfFieldContainer}>
+                    {leaderboard.rolex.slice(3).map((entry) => (
+                      <View key={entry.member.id} style={styles.leaderboardRow}>
+                        <View style={styles.positionBox}>
+                          <Text style={styles.positionNumber}>{entry.position}</Text>
+                        </View>
+                        <View style={styles.rowPlayerInfo}>
+                          <Text style={styles.rowPlayerName}>{entry.member.name}</Text>
+                          <Text style={styles.rowPlayerHandicap}>Handicap: {entry.handicap}</Text>
+                        </View>
+                        <View style={styles.rowScores}>
+                          <Text style={styles.rowNetScore}>{entry.netScore}</Text>
+                          <Text style={styles.rowGrossScore}>({entry.grossScore})</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </>
+            )
           ) : leaderboard.flightA.length === 0 && leaderboard.flightB.length === 0 ? (
             <View style={styles.emptyState}>
               <Trophy size={64} color="#999" />
@@ -477,8 +556,8 @@ const styles = StyleSheet.create({
   },
   dayButton: {
     flex: 1,
-    height: 40,
-    paddingHorizontal: 8,
+    height: 38,
+    paddingHorizontal: 6,
     borderRadius: 6,
     borderWidth: 1.5,
     borderColor: '#1B5E20',
@@ -490,7 +569,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B5E20',
   },
   dayButtonText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600' as const,
     color: '#1B5E20',
     textAlign: 'center' as const,
