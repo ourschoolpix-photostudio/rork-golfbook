@@ -1138,7 +1138,7 @@ export async function generateInvoicePDF(
     </div>
 
     <div class="section">
-      <div class="section-title">Event Information</div>
+      <div class="section-title">${event.type === 'tournament' ? 'Tournament Information' : 'Venue Information'}</div>
       <ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">
         <li style="margin-bottom: 6px;">Event: ${event.name}</li>
         <li style="margin-bottom: 6px;">Date: ${dateRange}</li>
@@ -1271,7 +1271,7 @@ export async function generateInvoicePDF(
         
         emailBody += `
     <div class="section">
-      <div class="section-title">Event Details</div>
+      <div class="section-title">Registration Includes</div>
       ${detailsHTML}
     </div>`;
       }
@@ -1306,7 +1306,7 @@ export async function generateInvoicePDF(
         if (orgInfo?.zellePhone) {
           const formattedPhone = formatPhoneNumber(orgInfo.zellePhone);
           emailBody += `
-      <p><strong>Option 1: Zelle</strong><br/>Send payment to: <strong>${formattedPhone}</strong></p>`;
+      <p><strong>Option 1: Zelle (${total.toFixed(2)})</strong><br/>Send payment to: <strong>${formattedPhone}</strong><br/><span style="font-size: 12px; color: #666; font-style: italic;">No fees for Zelle payments</span></p>`;
         }
         
         if (orgInfo?.paypalClientId && orgInfo?.paypalClientSecret) {
