@@ -217,27 +217,39 @@ export default function ScoringScreen() {
     }
   }, [updateHoleBasedOnStartType, eventGroupings, allMembers, eventRegistrations, groupingsLoading, membersLoading, registrationsLoading, useCourseHandicap]);
 
-  const loadScores = useCallback(async () => {
-    try {
-      if (!eventId || scoresLoading) return;
-      
-      const scoresMap: { [playerId: string]: { [hole: number]: number } } = {};
+  useEffect(() => {
+    const loadScores = () => {
+      try {
+        if (!eventId || scoresLoading) return;
+        
+        const scoresMap: { [playerId: string]: { [hole: number]: number } } = {};
 
-      const dayScores = eventScores.filter((s: any) => s.day === selectedDay);
-      dayScores.forEach((score: any) => {
-        const holes: { [hole: number]: number } = {};
-        (score.holes || []).forEach((holeScore: number, index: number) => {
-          if (holeScore > 0) {
-            holes[index + 1] = holeScore;
-          }
+        const dayScores = eventScores.filter((s: any) => s.day === selectedDay);
+        dayScores.forEach((score: any) => {
+          const holes: { [hole: number]: number } = {};
+          (score.holes || []).forEach((holeScore: number, index: number) => {
+            if (holeScore > 0) {
+              holes[index + 1] = holeScore;
+            }
+          });
+          scoresMap[score.memberId] = holes;
         });
-        scoresMap[score.memberId] = holes;
-      });
 
-      setHoleScores(scoresMap);
-      console.log('[scoring] Loaded scores for day', selectedDay, ':', scoresMap);
-    } catch (error) {
-      console.error('[scoring] Error loading scores:', error);
+        setHoleScores(prev => {
+          const hasChanged = JSON.stringify(prev) !== JSON.stringify(scoresMap);
+          if (hasChanged) {
+            console.log('[scoring] Loaded scores for day', selectedDay, ':', scoresMap);
+            return scoresMap;
+          }
+          return prev;
+        });
+      } catch (error) {
+        console.error('[scoring] Error loading scores:', error);
+      }
+    };
+    
+    if (eventId && !scoresLoading) {
+      loadScores();
     }
   }, [eventId, selectedDay, scoresLoading, eventScores]);
 
@@ -262,11 +274,7 @@ export default function ScoringScreen() {
     }
   }, [event, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, loadMyGroup]);
 
-  useEffect(() => {
-    if (eventId && !scoresLoading) {
-      loadScores();
-    }
-  }, [eventId, selectedDay, scoresLoading, loadScores]);
+
 
   const handlePreviousHole = () => {
     setCurrentHole(prev => {

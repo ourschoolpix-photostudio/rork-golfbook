@@ -4,7 +4,6 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Image, TouchableOpaci
 import { EventFooter } from '@/components/EventFooter';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
-import { useRealtimeScores } from '@/utils/useRealtimeSubscription';
 import { getDisplayHandicap } from '@/utils/handicapHelper';
 import { useState, useMemo } from 'react';
 import { Member, Event } from '@/types';
@@ -106,7 +105,7 @@ export default function LeaderboardScreen() {
     });
 
     return entries;
-  }, [event, allMembers, scores, registrations, selectedDay]);
+  }, [event, selectedDay, scores, registrations, allMembers]);
 
   const isLoading = eventLoading || membersLoading || registrationsLoading || scoresLoading;
 
