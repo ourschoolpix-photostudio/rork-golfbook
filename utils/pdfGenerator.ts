@@ -1369,7 +1369,12 @@ export async function generateInvoicePDF(
     }
   } catch (error) {
     console.error('[pdfGenerator] Invoice generation error:', error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error generating invoice';
+    console.error('[pdfGenerator] Error details:', errorMessage);
+    if (error instanceof Error && error.stack) {
+      console.error('[pdfGenerator] Stack trace:', error.stack);
+    }
+    throw error instanceof Error ? error : new Error(errorMessage);
   }
 }
 

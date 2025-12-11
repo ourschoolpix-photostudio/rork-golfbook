@@ -231,6 +231,8 @@ export async function createPayPalOrder(
     };
   } catch (error) {
     console.error('[PayPalService] ❌ Error creating PayPal order:', error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error creating PayPal order';
+    console.error('[PayPalService] Error details:', errorMessage);
+    throw error instanceof Error ? error : new Error(errorMessage);
   }
 }

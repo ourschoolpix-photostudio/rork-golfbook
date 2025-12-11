@@ -769,10 +769,12 @@ export default function EventRegistrationScreen() {
       console.log('[Registration] ✅ Registration completed successfully!');
     } catch (error) {
       console.error('[Registration] ❌ ERROR during registration:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       if (error instanceof Error) {
         console.error('[Registration] Error message:', error.message);
         console.error('[Registration] Error stack:', error.stack);
       }
+      Alert.alert('Registration Error', `Failed to register: ${errorMessage}`);
       throw error;
     }
   };
@@ -1034,7 +1036,12 @@ export default function EventRegistrationScreen() {
       console.log('[registration] ✅ Invoice generated successfully');
     } catch (error) {
       console.error('[registration] ❌ Invoice generation error:', error);
-      Alert.alert('Error', 'Failed to generate invoice. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('[registration] Error details:', errorMessage);
+      if (error instanceof Error && error.stack) {
+        console.error('[registration] Stack trace:', error.stack);
+      }
+      Alert.alert('Error', `Failed to generate invoice: ${errorMessage}`);
     } finally {
       setGeneratingInvoiceForPlayer(null);
     }
