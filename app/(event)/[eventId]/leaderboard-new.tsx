@@ -362,12 +362,24 @@ export default function LeaderboardNewScreen() {
                       key={entry.member.id} 
                       style={[
                         styles.regularCard,
-                        entry.position === 1 && styles.leaderCard,
+                        entry.position <= 3 && styles.leaderCard,
+                        entry.position === 1 && { backgroundColor: '#FFFACD', borderLeftColor: '#FFD700', borderLeftWidth: 6 },
+                        entry.position === 2 && { backgroundColor: '#F0F8FF', borderLeftColor: '#C0C0C0', borderLeftWidth: 6 },
+                        entry.position === 3 && { backgroundColor: '#FFF8DC', borderLeftColor: '#CD7F32', borderLeftWidth: 6 },
                       ]}
                     >
-                      <View style={[styles.positionBadge, entry.position === 1 && styles.leaderBadge]}>
+                      <View style={[
+                        styles.positionBadge,
+                        entry.position === 1 && { backgroundColor: '#fff' },
+                        entry.position === 2 && { backgroundColor: '#fff' },
+                        entry.position === 3 && { backgroundColor: '#fff' },
+                      ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={20} color="#FFD700" />
+                          <Trophy size={20} color="#FFD700" fill="#FFD700" />
+                        ) : entry.position === 2 ? (
+                          <Medal size={20} color="#C0C0C0" fill="#C0C0C0" />
+                        ) : entry.position === 3 ? (
+                          <Medal size={20} color="#CD7F32" fill="#CD7F32" />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
@@ -409,12 +421,24 @@ export default function LeaderboardNewScreen() {
                       key={entry.member.id} 
                       style={[
                         styles.regularCard,
-                        entry.position === 1 && styles.leaderCard,
+                        entry.position <= 3 && styles.leaderCard,
+                        entry.position === 1 && { backgroundColor: '#FFFACD', borderLeftColor: '#FFD700', borderLeftWidth: 6 },
+                        entry.position === 2 && { backgroundColor: '#F0F8FF', borderLeftColor: '#C0C0C0', borderLeftWidth: 6 },
+                        entry.position === 3 && { backgroundColor: '#FFF8DC', borderLeftColor: '#CD7F32', borderLeftWidth: 6 },
                       ]}
                     >
-                      <View style={[styles.positionBadge, entry.position === 1 && styles.leaderBadge]}>
+                      <View style={[
+                        styles.positionBadge,
+                        entry.position === 1 && { backgroundColor: '#fff' },
+                        entry.position === 2 && { backgroundColor: '#fff' },
+                        entry.position === 3 && { backgroundColor: '#fff' },
+                      ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={20} color="#FFD700" />
+                          <Trophy size={20} color="#FFD700" fill="#FFD700" />
+                        ) : entry.position === 2 ? (
+                          <Medal size={20} color="#C0C0C0" fill="#C0C0C0" />
+                        ) : entry.position === 3 ? (
+                          <Medal size={20} color="#CD7F32" fill="#CD7F32" />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
