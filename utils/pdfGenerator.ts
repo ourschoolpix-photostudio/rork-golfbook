@@ -1126,7 +1126,129 @@ export async function generateInvoicePDF(
       <div class="detail-row"><span class="detail-label">Event:</span> ${event.name}</div>
       <div class="detail-row"><span class="detail-label">Date:</span> ${dateRange}</div>
       ${event.location ? `<div class="detail-row"><span class="detail-label">Location:</span> ${event.location}</div>` : ''}
+      ${event.numberOfDays ? `<div class="detail-row"><span class="detail-label">Number of Days:</span> ${event.numberOfDays}</div>` : ''}
     </div>`;
+
+      // Add day-by-day details
+      const daysDetails: string[] = [];
+      if (event.numberOfDays && event.numberOfDays >= 1) {
+        for (let day = 1; day <= event.numberOfDays; day++) {
+          const dayKey = `day${day}` as const;
+          const startTime = (event as any)[`${dayKey}StartTime`];
+          const startPeriod = (event as any)[`${dayKey}StartPeriod`];
+          const startType = (event as any)[`${dayKey}StartType`];
+          const course = (event as any)[`${dayKey}Course`];
+          
+          if (startTime || startType || course) {
+            let dayDetail = `<div style="margin-top: 12px; padding: 12px; background: #f5f5f5; border-left: 3px solid #1B5E20; border-radius: 4px;">`;
+            dayDetail += `<div style="font-weight: 700; color: #1B5E20; margin-bottom: 6px;">Day ${day}</div>`;
+            
+            if (course) {
+              dayDetail += `<div class="detail-row"><span class="detail-label">Course:</span> ${course}</div>`;
+            }
+            
+            if (startType) {
+              const startTypeFormatted = startType === 'tee-time' ? 'Tee Time' : 'Shotgun';
+              dayDetail += `<div class="detail-row"><span class="detail-label">Start Type:</span> ${startTypeFormatted}</div>`;
+            }
+            
+            if (startTime && startPeriod) {
+              dayDetail += `<div class="detail-row"><span class="detail-label">Start Time:</span> ${startTime} ${startPeriod}</div>`;
+            }
+            
+            dayDetail += `</div>`;
+            daysDetails.push(dayDetail);
+          }
+        }
+      }
+      
+      if (daysDetails.length > 0) {
+        emailBody += `
+    <div class="section">
+      <div class="section-title">Daily Schedule</div>
+      ${daysDetails.join('')}
+    </div>`;
+      }
+
+      // Add trophy and prize details
+      const trophyDetails: string[] = [];
+      
+      if (event.type === 'tournament') {
+        const flights = ['A', 'B', 'C', 'L'];
+        
+        for (const flight of flights) {
+          const trophies: string[] = [];
+          const prizes: string[] = [];
+          
+          if ((event as any)[`flight${flight}Trophy1st`]) trophies.push('1st Place');
+          if ((event as any)[`flight${flight}Trophy2nd`]) trophies.push('2nd Place');
+          if ((event as any)[`flight${flight}Trophy3rd`]) trophies.push('3rd Place');
+          
+          const prize1st = (event as any)[`flight${flight}CashPrize1st`];
+          const prize2nd = (event as any)[`flight${flight}CashPrize2nd`];
+          const prize3rd = (event as any)[`flight${flight}CashPrize3rd`];
+          
+          if (prize1st) prizes.push(`1st: ${prize1st}`);
+          if (prize2nd) prizes.push(`2nd: ${prize2nd}`);
+          if (prize3rd) prizes.push(`3rd: ${prize3rd}`);
+          
+          if (trophies.length > 0 || prizes.length > 0) {
+            let flightDetail = `<div style="margin-bottom: 8px;">`;
+            flightDetail += `<div style="font-weight: 600; color: #1B5E20;">Flight ${flight}:</div>`;
+            
+            if (trophies.length > 0) {
+              flightDetail += `<div style="margin-left: 12px;">Trophies: ${trophies.join(', ')}</div>`;
+            }
+            
+            if (prizes.length > 0) {
+              flightDetail += `<div style="margin-left: 12px;">Prizes: ${prizes.join(', ')}</div>`;
+            }
+            
+            flightDetail += `</div>`;
+            trophyDetails.push(flightDetail);
+          }
+        }
+        
+        // Low gross
+        if (event.lowGrossTrophy || event.lowGrossCashPrize) {
+          let lowGrossDetail = `<div style="margin-bottom: 8px;">`;
+          lowGrossDetail += `<div style="font-weight: 600; color: #1B5E20;">Low Gross:</div>`;
+          
+          if (event.lowGrossTrophy) {
+            lowGrossDetail += `<div style="margin-left: 12px;">Trophy: Yes</div>`;
+          }
+          
+          if (event.lowGrossCashPrize) {
+            lowGrossDetail += `<div style="margin-left: 12px;">Prize: ${event.lowGrossCashPrize}</div>`;
+          }
+          
+          lowGrossDetail += `</div>`;
+          trophyDetails.push(lowGrossDetail);
+        }
+        
+        // Closest to pin
+        if (event.closestToPin) {
+          trophyDetails.push(`<div style="margin-bottom: 8px;"><div style="font-weight: 600; color: #1B5E20;">Closest to Pin:</div><div style="margin-left: 12px;">${event.closestToPin}</div></div>`);
+        }
+      }
+      
+      if (trophyDetails.length > 0) {
+        emailBody += `
+    <div class="section">
+      <div class="section-title">Trophies & Prizes</div>
+      ${trophyDetails.join('')}
+    </div>`;
+      }
+
+      // Add final details (memo/description)
+      if (event.memo || event.description) {
+        emailBody += `
+    <div class="section">
+      <div class="section-title">Event Information</div>
+      <div style="line-height: 1.6; color: #555;">${event.memo || event.description || ''}</div>
+    </div>`;
+      }
+
 
       if (!isSponsor) {
         emailBody += `
