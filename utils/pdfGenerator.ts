@@ -4,6 +4,7 @@ import * as Print from 'expo-print';
 import * as MailComposer from 'expo-mail-composer';
 import type { Member, Event, Grouping } from '@/types';
 import { type LabelOverride } from '@/utils/groupingsHelper';
+import { formatPhoneNumber } from '@/utils/phoneFormatter';
 
 interface RegistrationPDFOptions {
   registrations: any[];
@@ -1118,7 +1119,7 @@ export async function generateInvoicePDF(
       <div class="section-title">Member Information</div>
       <div class="detail-row"><span class="detail-label">Name:</span> ${member.name}</div>
       ${member.email ? `<div class="detail-row"><span class="detail-label">Email:</span> ${member.email}</div>` : ''}
-      ${member.phone ? `<div class="detail-row"><span class="detail-label">Phone:</span> ${member.phone}</div>` : ''}
+      ${member.phone ? `<div class="detail-row"><span class="detail-label">Phone:</span> ${formatPhoneNumber(member.phone)}</div>` : ''}
     </div>
 
     <div class="section">
@@ -1284,8 +1285,9 @@ export async function generateInvoicePDF(
       <p>Please complete your payment using one of the following methods:</p>`;
         
         if (orgInfo?.zellePhone) {
+          const formattedPhone = formatPhoneNumber(orgInfo.zellePhone);
           emailBody += `
-      <p><strong>Option 1: Zelle</strong><br/>Send payment to: <strong>${orgInfo.zellePhone}</strong></p>`;
+      <p><strong>Option 1: Zelle</strong><br/>Send payment to: <strong>${formattedPhone}</strong></p>`;
         }
         
         if (orgInfo?.paypalClientId) {
@@ -1539,7 +1541,7 @@ export function buildInvoiceHTMLContent(
       <div class="detail-title">Bill To:</div>
       <div class="detail-row"><strong>${member.name}</strong></div>
       ${member.email ? `<div class="detail-row">${member.email}</div>` : ''}
-      ${member.phone ? `<div class="detail-row">${member.phone}</div>` : ''}
+      ${member.phone ? `<div class="detail-row">${formatPhoneNumber(member.phone)}</div>` : ''}
       ${member.address ? `<div class="detail-row">${member.address}</div>` : ''}
       ${member.city || member.state ? `<div class="detail-row">${member.city || ''}${member.city && member.state ? ', ' : ''}${member.state || ''}</div>` : ''}
     </div>
@@ -1624,7 +1626,7 @@ export function buildInvoiceHTMLContent(
       ${orgInfo?.zellePhone ? `
       <div style="margin-bottom: 12px;">
         <div style="font-weight: 700; color: #1976D2; margin-bottom: 4px;">Option 1: Zelle</div>
-        <div>Send payment to: <strong>${orgInfo.zellePhone}</strong></div>
+        <div>Send payment to: <strong>${formatPhoneNumber(orgInfo.zellePhone)}</strong></div>
       </div>
       ` : ''}
       ${orgInfo?.paypalClientId ? `
