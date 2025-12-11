@@ -17,7 +17,7 @@ import { TournamentTermsModal } from './TournamentTermsModal';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { formatDateAsFullDay } from '@/utils/dateUtils';
 import { useSettings } from '@/contexts/SettingsContext';
-import { createPayPalOrder } from '@/utils/paypalService';
+import { trpc } from '@/lib/trpc';
 
 interface PayPalInvoiceModalProps {
   visible: boolean;
@@ -92,6 +92,8 @@ export function PayPalInvoiceModal({
     return hasRequiredInfo() && agreeToTerms && !isSubmitting;
   };
 
+  const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
+
   const handlePayPalPayment = async () => {
     if (!canRegister() || !event) return;
 
@@ -112,25 +114,13 @@ export function PayPalInvoiceModal({
       console.log('[PayPalInvoiceModal] 🚀 Starting PayPal payment flow...');
       console.log('[PayPalInvoiceModal] Event:', event.name);
       console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
-      console.log('[PayPalInvoiceModal] PayPal Config:', {
-        hasClientId: !!orgInfo.paypalClientId,
-        clientIdLength: orgInfo.paypalClientId?.length || 0,
-        hasClientSecret: !!orgInfo.paypalClientSecret,
-        clientSecretLength: orgInfo.paypalClientSecret?.length || 0,
-        mode: orgInfo.paypalMode,
-        clientIdFull: orgInfo.paypalClientId,
-        clientSecretFull: orgInfo.paypalClientSecret,
-      });
       
-      console.log('[PayPalInvoiceModal] Creating PayPal order...');
-      const paymentResponse = await createPayPalOrder({
+      console.log('[PayPalInvoiceModal] Creating PayPal order via backend...');
+      const paymentResponse = await createPaymentMutation.mutateAsync({
         amount: totalAmount,
         eventName: event.name,
         eventId: event.id,
         playerEmail: email.trim(),
-        paypalClientId: orgInfo.paypalClientId,
-        paypalClientSecret: orgInfo.paypalClientSecret,
-        paypalMode: orgInfo.paypalMode,
       });
 
       console.log('[PayPalInvoiceModal] ✅ Payment order created:', paymentResponse);
