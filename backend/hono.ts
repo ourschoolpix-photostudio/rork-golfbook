@@ -4,6 +4,7 @@ import { trpcServer } from '@hono/trpc-server';
 import { appRouter } from '@/backend/trpc/app-router';
 import { createContext } from '@/backend/trpc/create-context';
 
+const api = new Hono();
 const app = new Hono();
 
 app.use("*", cors({
@@ -12,9 +13,9 @@ app.use("*", cors({
   allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
-console.log('🔧 [Hono] Mounting tRPC handler for PayPal routes');
+console.log('🔧 [Hono] Mounting tRPC handler for PayPal routes at /api/trpc');
 
-app.use(
+api.use(
   '/trpc/*',
   trpcServer({
     router: appRouter,
@@ -24,6 +25,8 @@ app.use(
     },
   })
 );
+
+app.route('/api', api);
 
 app.get("/", (c) => {
   console.log('🏠 [Hono] Root endpoint hit');
