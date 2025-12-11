@@ -104,11 +104,29 @@ export function PayPalInvoiceModal({
       return;
     }
 
-    Alert.alert(
-      'PayPal Payment',
-      'PayPal payment integration is coming soon. For now, please use Zelle for payment.',
-      [{ text: 'OK' }]
-    );
+    try {
+      await onRegister(
+        ghin.trim(),
+        email.trim(),
+        phone.trim(),
+        isSocialEvent ? guestCount : undefined,
+        isSocialEvent && guestCount > 0 ? guestNames : undefined,
+        'paid'
+      );
+      onClose();
+      Alert.alert(
+        'Success',
+        'You have been registered for the event! Your payment will be processed via PayPal.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('[PayPalInvoiceModal] Registration error:', error);
+      Alert.alert(
+        'Error',
+        'Failed to register for the event. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   return (
