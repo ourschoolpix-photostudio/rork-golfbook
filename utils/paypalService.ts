@@ -50,10 +50,22 @@ async function getPayPalAccessToken(
   clientSecret: string,
   mode: 'sandbox' | 'live'
 ): Promise<string> {
+  console.log('[PayPalService] Getting PayPal access token...');
+  console.log('[PayPalService] Mode:', mode);
+  console.log('[PayPalService] Client ID length:', clientId?.length || 0);
+  console.log('[PayPalService] Client Secret length:', clientSecret?.length || 0);
+  console.log('[PayPalService] Client ID prefix:', clientId?.substring(0, 10) + '...');
+  
+  if (!clientId || !clientSecret) {
+    throw new Error('PayPal Client ID and Secret are required');
+  }
+  
+  if (clientId.trim() === '' || clientSecret.trim() === '') {
+    throw new Error('PayPal credentials cannot be empty');
+  }
+  
   const auth = base64Encode(`${clientId}:${clientSecret}`);
   const baseUrl = PAYPAL_API_BASE[mode];
-
-  console.log('[PayPalService] Getting PayPal access token...');
   const response = await fetch(`${baseUrl}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
@@ -65,8 +77,20 @@ async function getPayPalAccessToken(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[PayPalService] Failed to get access token:', errorText);
-    throw new Error(`Failed to get PayPal access token: ${response.statusText}`);
+    console.error('[PayPalService] Failed to get access token');
+    console.error('[PayPalService] Response status:', response.status);
+    console.error('[PayPalService] Response error:', errorText);
+    console.error('[PayPalService] Base URL used:', baseUrl);
+    
+    let errorDetails = '';
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorDetails = errorJson.error_description || errorJson.error || errorText;
+    } catch {
+      errorDetails = errorText;
+    }
+    
+    throw new Error(`Failed to get PayPal access token: ${errorDetails}`);
   }
 
   const data = await response.json();
