@@ -113,8 +113,14 @@ export default function ScoringScreen() {
           const key = `useCourseHandicap_${eventId}`;
           const value = await AsyncStorage.getItem(key);
           if (value !== null) {
-            setUseCourseHandicap(value === 'true');
-            console.log('[scoring] Loaded course handicap setting:', value === 'true');
+            const shouldUseCourseHandicap = value === 'true';
+            setUseCourseHandicap(prev => {
+              if (prev !== shouldUseCourseHandicap) {
+                console.log('[scoring] Loaded course handicap setting:', shouldUseCourseHandicap);
+                return shouldUseCourseHandicap;
+              }
+              return prev;
+            });
           }
         } catch (error) {
           console.error('[scoring] Error loading course handicap setting:', error);
@@ -122,9 +128,6 @@ export default function ScoringScreen() {
       }
     };
     loadCourseHandicapSetting();
-    
-    const interval = setInterval(loadCourseHandicapSetting, 500);
-    return () => clearInterval(interval);
   }, [eventId]);
 
   const loadMyGroup = useCallback(async (golfEvent: Event, userId: string, dayNumber: number) => {
@@ -462,7 +465,23 @@ export default function ScoringScreen() {
     'CART 2 - Passenger',
   ];
 
-  if (eventLoading || membersLoading || registrationsLoading || groupingsLoading || scoresLoading) {
+  const isLoading = eventLoading || membersLoading || registrationsLoading || groupingsLoading || scoresLoading;
+  
+  console.log('[scoring] 🔍 Loading states:', {
+    eventLoading,
+    membersLoading,
+    registrationsLoading,
+    groupingsLoading,
+    scoresLoading,
+    hasEventData: !!eventData,
+    hasMembersData: allMembers.length,
+    hasRegistrationsData: eventRegistrations.length,
+    hasGroupingsData: eventGroupings.length,
+    hasScoresData: eventScores.length,
+    myGroupLength: myGroup.length,
+  });
+  
+  if (isLoading) {
     return (
       <>
         <SafeAreaView style={styles.container}>
@@ -471,6 +490,7 @@ export default function ScoringScreen() {
           </View>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ fontSize: 16, color: '#666' }}>Loading...</Text>
+            <Text style={{ fontSize: 12, color: '#999', marginTop: 8 }}>Fetching event data</Text>
           </View>
         </SafeAreaView>
         <EventFooter />
