@@ -25,6 +25,7 @@ import { supabaseService } from '@/utils/supabaseService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useSettings } from '@/contexts/SettingsContext';
+import { formatDateForDisplay } from '@/utils/dateUtils';
 import { registrationService } from '@/utils/registrationService';
 import { registrationCache } from '@/utils/registrationCache';
 import { generateRegistrationPDF, generateRegistrationText, generateCheckInPDF, generateInvoicePDF } from '@/utils/pdfGenerator';
@@ -841,7 +842,7 @@ export default function EventRegistrationScreen() {
       setSelectedPlayers(updatedSelectedPlayers);
 
       let playerReg = registrations[updatedPlayer.name];
-      console.log('[registration] 🔍 Found player registration in local state:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
+      console.log('[registration] �� Found player registration in local state:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
       
       if (!playerReg) {
         console.log('[registration] 🔍 Registration not in local state, fetching from backend by memberId...');
@@ -1317,8 +1318,8 @@ export default function EventRegistrationScreen() {
           <View style={styles.bottomInfoOverlay}>
             <Text style={styles.eventLocationOverlay}>{event.location}</Text>
             <Text style={styles.eventDateOverlay}>
-              {event.date}
-              {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
+              {formatDateForDisplay(event.date)}
+              {event.endDate && event.endDate !== event.date ? `-${formatDateForDisplay(event.endDate)}` : ''}
             </Text>
           </View>
           <View style={styles.entryFeeBadge}>
