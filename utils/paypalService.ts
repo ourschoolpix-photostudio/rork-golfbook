@@ -89,6 +89,12 @@ async function getPayPalAccessToken(
   console.log('[PayPalService] Requesting token from:', `${baseUrl}/v1/oauth2/token`);
   console.log('[PayPalService] Using mode:', mode, '| Base URL:', baseUrl);
   
+  if (mode === 'live' && (trimmedClientId.toLowerCase().includes('sandbox') || trimmedClientId.startsWith('AZ'))) {
+    console.error('[PayPalService] ⚠️⚠️⚠️ CRITICAL ERROR: You are using LIVE mode but your Client ID appears to be from SANDBOX!');
+    console.error('[PayPalService] Live Client IDs start with "A" and are ~80 chars. Sandbox IDs start with "AZ" or contain "sandbox".');
+    throw new Error('PayPal Configuration Error: Sandbox credentials cannot be used in Live mode. Please:\n\n1. Go to Admin Settings\n2. Switch to Sandbox mode, OR\n3. Enter your Live PayPal credentials from https://developer.paypal.com/dashboard (Live tab)');
+  }
+  
   const response = await fetch(`${baseUrl}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
@@ -127,9 +133,21 @@ async function getPayPalAccessToken(
     
     if (mode === 'live') {
       console.error('[PayPalService] ⚠️ You are using LIVE mode. Make sure your PayPal account is approved for live transactions.');
+      console.error('[PayPalService] ⚠️ MOST COMMON ISSUE: You are using sandbox credentials in live mode!');
+      console.error('[PayPalService] ⚠️ SOLUTION: In Admin Settings, either:');
+      console.error('[PayPalService]    • Switch PayPal Mode to "Sandbox", OR');
+      console.error('[PayPalService]    • Enter your LIVE credentials from https://developer.paypal.com (Live tab)');
     }
     
-    throw new Error(`Failed to get PayPal access token: ${errorDetails}. Check console logs for troubleshooting tips.`);
+    let userMessage = `PayPal Authentication Failed: ${errorDetails}`;
+    
+    if (response.status === 401 && mode === 'live') {
+      userMessage = 'PayPal Authentication Failed.\n\nMOST LIKELY CAUSE: You are using Sandbox credentials in Live mode.\n\nSOLUTION:\n\n1. Open Admin Settings\n2. Scroll to PayPal Configuration\n3. Either:\n   • Change mode to "Sandbox", OR\n   • Enter your Live credentials from https://developer.paypal.com\n\nTo get Live credentials:\n1. Go to https://developer.paypal.com/dashboard\n2. Click "Live" tab (not Sandbox)\n3. Go to "My Apps & Credentials"\n4. Create or select an app\n5. Copy Client ID and Secret\n6. Paste in Admin Settings\n\nCheck console for detailed logs.';
+    } else if (response.status === 401 && mode === 'sandbox') {
+      userMessage = 'PayPal Authentication Failed.\n\nYour Sandbox credentials appear to be incorrect.\n\nSOLUTION:\n\n1. Go to https://developer.paypal.com/dashboard\n2. Click "Sandbox" tab\n3. Go to "My Apps & Credentials"\n4. Create or select an app\n5. Copy Client ID and Secret (click "Show" to reveal secret)\n6. Paste in Admin Settings\n\nMake sure there are no extra spaces when copying!';
+    }
+    
+    throw new Error(userMessage);
   }
 
   const data = await response.json();

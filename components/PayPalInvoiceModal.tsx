@@ -185,15 +185,10 @@ export function PayPalInvoiceModal({
       }
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      let userFriendlyMessage = errorMessage;
-      
-      if (errorMessage.includes('Client Authentication failed')) {
-        userFriendlyMessage = `PayPal credentials are invalid or incorrect.\n\nPlease check that:\n• Credentials match the selected mode (${orgInfo.paypalMode})\n• Credentials are copied correctly from developer.paypal.com\n• There are no extra spaces\n• You have saved the credentials in Admin Settings\n\nCheck the console logs for detailed troubleshooting steps.`;
-      }
       
       Alert.alert(
         'PayPal Error',
-        userFriendlyMessage,
+        errorMessage,
         [{ text: 'OK' }]
       );
     } finally {
