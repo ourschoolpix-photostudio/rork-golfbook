@@ -1839,41 +1839,45 @@ export default function EventRegistrationScreen() {
                     </TouchableOpacity>
                     {selectedForBulkAdd.has(member.id) && (
                       <>
-                        <View style={styles.guestCountInputContainer}>
-                          <Text style={styles.guestCountLabel}>Number of Guests:</Text>
-                          <TextInput
-                            style={styles.guestCountInput}
-                            value={playerGuestCounts[member.id] || ''}
-                            onChangeText={(text) => {
-                              setPlayerGuestCounts({
-                                ...playerGuestCounts,
-                                [member.id]: text,
-                              });
-                            }}
-                            keyboardType="number-pad"
-                            placeholder="0"
-                          />
-                        </View>
+                        {event?.type === 'social' && (
+                          <>
+                            <View style={styles.guestCountInputContainer}>
+                              <Text style={styles.guestCountLabel}>Number of Guests:</Text>
+                              <TextInput
+                                style={styles.guestCountInput}
+                                value={playerGuestCounts[member.id] || ''}
+                                onChangeText={(text) => {
+                                  setPlayerGuestCounts({
+                                    ...playerGuestCounts,
+                                    [member.id]: text,
+                                  });
+                                }}
+                                keyboardType="number-pad"
+                                placeholder="0"
+                              />
+                            </View>
 
-                        {parseInt(playerGuestCounts[member.id], 10) > 0 && (
-                          <View style={styles.guestCountInputContainer}>
-                            <Text style={styles.guestCountLabel}>
-                              Guest Name{parseInt(playerGuestCounts[member.id], 10) > 1 ? 's' : ''}:
-                            </Text>
-                            <TextInput
-                              style={[styles.guestCountInput, styles.textInputMultiline]}
-                              value={playerGuestNames[member.id] || ''}
-                              onChangeText={(text) => {
-                                setPlayerGuestNames({
-                                  ...playerGuestNames,
-                                  [member.id]: text,
-                                });
-                              }}
-                              placeholder={parseInt(playerGuestCounts[member.id], 10) > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
-                              multiline
-                              numberOfLines={Math.min(parseInt(playerGuestCounts[member.id], 10) || 1, 4)}
-                            />
-                          </View>
+                            {parseInt(playerGuestCounts[member.id], 10) > 0 && (
+                              <View style={styles.guestCountInputContainer}>
+                                <Text style={styles.guestCountLabel}>
+                                  Guest Name{parseInt(playerGuestCounts[member.id], 10) > 1 ? 's' : ''}:
+                                </Text>
+                                <TextInput
+                                  style={[styles.guestCountInput, styles.textInputMultiline]}
+                                  value={playerGuestNames[member.id] || ''}
+                                  onChangeText={(text) => {
+                                    setPlayerGuestNames({
+                                      ...playerGuestNames,
+                                      [member.id]: text,
+                                    });
+                                  }}
+                                  placeholder={parseInt(playerGuestCounts[member.id], 10) > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
+                                  multiline
+                                  numberOfLines={Math.min(parseInt(playerGuestCounts[member.id], 10) || 1, 4)}
+                                />
+                              </View>
+                            )}
+                          </>
                         )}
                         
                         <TouchableOpacity
