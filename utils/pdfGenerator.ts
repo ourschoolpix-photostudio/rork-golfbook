@@ -1119,7 +1119,7 @@ export async function generateInvoicePDF(
 </head>
 <body>
   <div class="header">
-    <h1>Registration Invoice</h1>
+    <h1>${isPaid ? 'PAYMENT CONFIRMATION' : 'REGISTRATION INVOICE'}</h1>
   </div>
   <div class="content">`;
 
