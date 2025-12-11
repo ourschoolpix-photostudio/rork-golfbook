@@ -239,7 +239,7 @@ export default function ScoringScreen() {
     } catch (error) {
       console.error('[scoring] Error loading scores:', error);
     }
-  }, [eventId, selectedDay, eventScores, scoresLoading]);
+  }, [eventId, selectedDay, scoresLoading]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -263,10 +263,24 @@ export default function ScoringScreen() {
   }, [event, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, loadMyGroup]);
 
   useEffect(() => {
-    if (eventId && !scoresLoading) {
-      loadScores();
+    if (eventId && !scoresLoading && eventScores) {
+      const scoresMap: { [playerId: string]: { [hole: number]: number } } = {};
+
+      const dayScores = eventScores.filter((s: any) => s.day === selectedDay);
+      dayScores.forEach((score: any) => {
+        const holes: { [hole: number]: number } = {};
+        (score.holes || []).forEach((holeScore: number, index: number) => {
+          if (holeScore > 0) {
+            holes[index + 1] = holeScore;
+          }
+        });
+        scoresMap[score.memberId] = holes;
+      });
+
+      setHoleScores(scoresMap);
+      console.log('[scoring] Loaded scores for day', selectedDay, ':', scoresMap);
     }
-  }, [eventId, selectedDay, scoresLoading, eventScores, loadScores]);
+  }, [eventId, selectedDay, scoresLoading]);
 
   const handlePreviousHole = () => {
     setCurrentHole(prev => {
