@@ -9,6 +9,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Member, Event } from '@/types';
@@ -16,6 +17,7 @@ import { TournamentTermsModal } from './TournamentTermsModal';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { formatDateAsFullDay } from '@/utils/dateUtils';
 import { useSettings } from '@/contexts/SettingsContext';
+import { trpc } from '@/lib/trpc';
 
 interface PayPalInvoiceModalProps {
   visible: boolean;
@@ -37,10 +39,12 @@ export function PayPalInvoiceModal({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [isSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [numberOfGuests, setNumberOfGuests] = useState('');
   const [guestNames, setGuestNames] = useState('');
+
+  const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
 
   useEffect(() => {
     if (visible && currentUser) {
@@ -104,28 +108,69 @@ export function PayPalInvoiceModal({
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      await onRegister(
-        ghin.trim(),
-        email.trim(),
-        phone.trim(),
-        isSocialEvent ? guestCount : undefined,
-        isSocialEvent && guestCount > 0 ? guestNames : undefined,
-        'paid'
-      );
-      onClose();
-      Alert.alert(
-        'Success',
-        'You have been registered for the event! Your payment will be processed via PayPal.',
-        [{ text: 'OK' }]
-      );
+      console.log('[PayPalInvoiceModal] 🚀 Starting PayPal payment flow...');
+      console.log('[PayPalInvoiceModal] Event:', event.name);
+      console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
+      
+      console.log('[PayPalInvoiceModal] Creating PayPal order via tRPC...');
+      const paymentResponse = await createPaymentMutation.mutateAsync({
+        amount: totalAmount,
+        eventName: event.name,
+        eventId: event.id,
+        playerEmail: email.trim(),
+      });
+
+      console.log('[PayPalInvoiceModal] ✅ Payment order created:', paymentResponse);
+      console.log('[PayPalInvoiceModal] Order ID:', paymentResponse.orderId);
+      console.log('[PayPalInvoiceModal] Approval URL:', paymentResponse.approvalUrl);
+
+      if (!paymentResponse.approvalUrl) {
+        throw new Error('No approval URL received from PayPal');
+      }
+
+      console.log('[PayPalInvoiceModal] 🌐 Opening PayPal approval URL...');
+      const supported = await Linking.canOpenURL(paymentResponse.approvalUrl);
+      console.log('[PayPalInvoiceModal] URL supported:', supported);
+      
+      if (supported) {
+        await Linking.openURL(paymentResponse.approvalUrl);
+        console.log('[PayPalInvoiceModal] ✅ PayPal page opened successfully');
+        
+        console.log('[PayPalInvoiceModal] Registering user with payment status pending...');
+        await onRegister(
+          ghin.trim(),
+          email.trim(),
+          phone.trim(),
+          isSocialEvent ? guestCount : undefined,
+          isSocialEvent && guestCount > 0 ? guestNames : undefined,
+          'pending'
+        );
+        
+        onClose();
+        Alert.alert(
+          'PayPal Payment',
+          'You will be redirected to PayPal to complete your payment. After payment, your registration will be marked as paid.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        throw new Error('Cannot open PayPal URL');
+      }
     } catch (error) {
-      console.error('[PayPalInvoiceModal] Registration error:', error);
+      console.error('[PayPalInvoiceModal] ❌ PayPal payment error:', error);
+      if (error instanceof Error) {
+        console.error('[PayPalInvoiceModal] Error message:', error.message);
+        console.error('[PayPalInvoiceModal] Error stack:', error.stack);
+      }
       Alert.alert(
-        'Error',
-        'Failed to register for the event. Please try again.',
+        'PayPal Error',
+        `Failed to create PayPal payment: ${error instanceof Error ? error.message : 'Unknown error'}`,
         [{ text: 'OK' }]
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
