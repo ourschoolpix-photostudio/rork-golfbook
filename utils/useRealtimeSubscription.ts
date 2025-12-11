@@ -33,7 +33,7 @@ export function useRealtimeScores(eventId: string, enabled: boolean = true) {
       console.log('[Realtime] 🔴 Unsubscribing from scores');
       supabase.removeChannel(channel);
     };
-  }, [eventId, enabled, queryClient]);
+  }, [eventId, enabled]);
 }
 
 export function useRealtimeGroupings(eventId: string, enabled: boolean = true) {
@@ -67,7 +67,7 @@ export function useRealtimeGroupings(eventId: string, enabled: boolean = true) {
       console.log('[Realtime] 🔴 Unsubscribing from groupings');
       supabase.removeChannel(channel);
     };
-  }, [eventId, enabled, queryClient]);
+  }, [eventId, enabled]);
 }
 
 export function useRealtimeRegistrations(eventId: string, enabled: boolean = true) {
@@ -101,5 +101,5 @@ export function useRealtimeRegistrations(eventId: string, enabled: boolean = tru
       console.log('[Realtime] 🔴 Unsubscribing from registrations');
       supabase.removeChannel(channel);
     };
-  }, [eventId, enabled, queryClient]);
+  }, [eventId, enabled]);
 }
