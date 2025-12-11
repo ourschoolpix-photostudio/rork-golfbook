@@ -595,9 +595,16 @@ export default function EventRegistrationScreen() {
     console.log('[registration] New status will be:', backendStatus);
     
     try {
+      const updates: any = { paymentStatus: backendStatus };
+      
+      if (currentStatus === 'unpaid' && newStatus === 'paid') {
+        console.log('[registration] 💡 Status changed from unpaid to paid - resetting email indicator');
+        updates.emailSent = false;
+      }
+      
       await updatePaymentStatusMutation.mutateAsync({
         registrationId: playerReg.id,
-        updates: { paymentStatus: backendStatus },
+        updates,
       });
       console.log('[registration] ✅ Payment status toggle completed');
     } catch (error) {
