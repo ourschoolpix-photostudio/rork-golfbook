@@ -45,7 +45,8 @@ export default function LeaderboardScreen() {
     enabled: !!eventId,
   });
 
-  useRealtimeScores(eventId || '', !!eventId);
+  // TEMPORARILY DISABLED for debugging
+  // useRealtimeScores(eventId || '', !!eventId);
 
   const leaderboard = useMemo(() => {
     console.log('[Leaderboard] Computing leaderboard:', {

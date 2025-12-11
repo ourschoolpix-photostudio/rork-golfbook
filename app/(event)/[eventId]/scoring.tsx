@@ -61,8 +61,9 @@ export default function ScoringScreen() {
   });
   const { shouldUseOfflineMode } = useOfflineMode();
   
-  useRealtimeScores(eventId || '', !!eventId);
-  useRealtimeGroupings(eventId || '', !!eventId);
+  // TEMPORARILY DISABLED for debugging
+  // useRealtimeScores(eventId || '', !!eventId);
+  // useRealtimeGroupings(eventId || '', !!eventId);
   
   const submitScoreMutation = useMutation({
     mutationFn: ({ eventId, memberId, day, holes, totalScore, submittedBy }: any) =>
