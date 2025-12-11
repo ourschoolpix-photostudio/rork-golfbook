@@ -91,7 +91,16 @@ export default function LeaderboardNewScreen() {
     const registrations = registrationsQuery.data || [];
     const scores = scoresQuery.data || [];
 
+    console.log('[LeaderboardNew] Computing leaderboard:', {
+      eventId,
+      membersCount: members.length,
+      registrationsCount: registrations.length,
+      scoresCount: scores.length,
+      selectedDay,
+    });
+
     if (!event || members.length === 0 || registrations.length === 0) {
+      console.log('[LeaderboardNew] Missing data:', { event: !!event, members: members.length, registrations: registrations.length });
       return { flightA: [], flightB: [] };
     }
 
@@ -109,9 +118,14 @@ export default function LeaderboardNewScreen() {
         return s.day === selectedDay;
       });
 
+      console.log('[LeaderboardNew] Player:', member.name, 'Flight:', registration.flight, 'Scores:', playerScores.length);
+
       const grossScore = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
       
-      if (grossScore === 0) return;
+      if (grossScore === 0) {
+        console.log('[LeaderboardNew] Skipping player with no score:', member.name);
+        return;
+      }
 
       const handicap = getDisplayHandicap(member, registration, event as Event, false, 1);
       const netScore = grossScore - handicap;
