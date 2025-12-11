@@ -176,6 +176,7 @@ export default function LeaderboardNewScreen() {
       }
       entry.position = currentPosition;
       previousNetScore = entry.netScore;
+      console.log('[LeaderboardNew] Flight A position:', entry.member.name, 'Position:', entry.position, 'NetScore:', entry.netScore, 'Index:', index);
     });
 
     currentPosition = 1;
