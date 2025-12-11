@@ -1124,7 +1124,7 @@ export async function generateInvoicePDF(
 
     <div class="section">
       <div class="section-title">Event Information</div>
-      <ul style="list-style-type: none; margin-left: 0; padding-left: 0;">
+      <ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">
         <li style="margin-bottom: 6px;"><span class="detail-label">Event:</span> ${event.name}</li>
         <li style="margin-bottom: 6px;"><span class="detail-label">Date:</span> ${dateRange}</li>
         ${event.location ? `<li style="margin-bottom: 6px;"><span class="detail-label">Location:</span> ${event.location}</li>` : ''}
