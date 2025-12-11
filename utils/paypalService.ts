@@ -38,8 +38,8 @@ function base64Encode(str: string): string {
     
     result += base64chars.charAt((bitmap >> 18) & 63);
     result += base64chars.charAt((bitmap >> 12) & 63);
-    result += base64chars.charAt(i - 2 < str.length ? (bitmap >> 6) & 63 : 64);
-    result += base64chars.charAt(i - 1 < str.length ? bitmap & 63 : 64);
+    result += (i - 1 < str.length ? base64chars.charAt((bitmap >> 6) & 63) : '=');
+    result += (i < str.length ? base64chars.charAt(bitmap & 63) : '=');
   }
   
   return result;
@@ -50,10 +50,12 @@ async function getPayPalAccessToken(
   clientSecret: string,
   mode: 'sandbox' | 'live'
 ): Promise<string> {
-  console.log('[PayPalService] Getting PayPal access token...');
+  console.log('[PayPalService] 🔐 Getting PayPal access token...');
   console.log('[PayPalService] Mode:', mode);
   console.log('[PayPalService] Client ID length (raw):', clientId?.length || 0);
   console.log('[PayPalService] Client Secret length (raw):', clientSecret?.length || 0);
+  console.log('[PayPalService] Client ID (raw first 10 chars):', clientId?.substring(0, 10) + '...');
+  console.log('[PayPalService] Client Secret (raw first 10 chars):', clientSecret?.substring(0, 10) + '...');
   
   if (!clientId || !clientSecret) {
     throw new Error('PayPal Client ID and Secret are required');
@@ -82,9 +84,13 @@ async function getPayPalAccessToken(
   }
   
   const authString = `${trimmedClientId}:${trimmedClientSecret}`;
+  console.log('[PayPalService] 🔑 Auth string length (before encoding):', authString.length);
+  console.log('[PayPalService] 🔑 Auth string format check: contains colon:', authString.includes(':'));
+  
   const auth = base64Encode(authString);
-  console.log('[PayPalService] Auth credentials string length:', authString.length);
-  console.log('[PayPalService] Base64 auth length:', auth.length);
+  console.log('[PayPalService] 🔐 Base64 auth length (after encoding):', auth.length);
+  console.log('[PayPalService] 🔐 Base64 auth (first 20 chars):', auth.substring(0, 20) + '...');
+  console.log('[PayPalService] 🔐 Base64 auth (last 20 chars): ...' + auth.substring(auth.length - 20));
   const baseUrl = PAYPAL_API_BASE[mode];
   console.log('[PayPalService] Requesting token from:', `${baseUrl}/v1/oauth2/token`);
   console.log('[PayPalService] Using mode:', mode, '| Base URL:', baseUrl);
