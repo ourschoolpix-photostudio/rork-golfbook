@@ -7,6 +7,7 @@ import { supabaseService } from '@/utils/supabaseService';
 import { getDisplayHandicap } from '@/utils/handicapHelper';
 import { useState, useMemo } from 'react';
 import { Member, Event } from '@/types';
+import { useRealtimeScores } from '@/utils/useRealtimeSubscription';
 
 interface LeaderboardEntry {
   member: Member;
@@ -25,27 +26,33 @@ export default function LeaderboardScreen() {
     queryKey: ['events', eventId],
     queryFn: () => supabaseService.events.get(eventId || ''),
     enabled: !!eventId,
+    staleTime: 30000,
+    refetchInterval: 30000,
   });
 
   const { data: allMembers = [], isLoading: membersLoading } = useQuery({
     queryKey: ['members'],
     queryFn: () => supabaseService.members.getAll(),
+    staleTime: 60000,
   });
 
   const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
     queryKey: ['registrations', eventId],
     queryFn: () => supabaseService.registrations.getAll(eventId || ''),
     enabled: !!eventId,
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
 
   const { data: scores = [], isLoading: scoresLoading } = useQuery({
     queryKey: ['scores', eventId],
     queryFn: () => supabaseService.scores.getAll(eventId || ''),
     enabled: !!eventId,
+    staleTime: 10000,
+    refetchInterval: 20000,
   });
 
-  // TEMPORARILY DISABLED for debugging
-  // useRealtimeScores(eventId || '', !!eventId);
+  useRealtimeScores(eventId || '', !!eventId);
 
   const leaderboard = useMemo(() => {
     console.log('[Leaderboard] Computing leaderboard:', {

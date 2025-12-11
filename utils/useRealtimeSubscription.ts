@@ -10,30 +10,42 @@ export function useRealtimeScores(eventId: string, enabled: boolean = true) {
 
     console.log('[Realtime] 🔴 Subscribing to scores for event:', eventId);
 
-    const channel = supabase
-      .channel(`scores-${eventId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'scores',
-          filter: `event_id=eq.${eventId}`,
-        },
-        (payload) => {
-          console.log('[Realtime] 📊 Score change detected:', payload);
-          queryClient.invalidateQueries({ queryKey: ['scores', eventId] });
-        }
-      )
-      .subscribe((status) => {
-        console.log('[Realtime] Scores subscription status:', status);
-      });
+    try {
+      const channel = supabase
+        .channel(`scores-${eventId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'scores',
+            filter: `event_id=eq.${eventId}`,
+          },
+          (payload) => {
+            try {
+              console.log('[Realtime] 📊 Score change detected:', payload);
+              queryClient.invalidateQueries({ queryKey: ['scores', eventId] });
+            } catch (error) {
+              console.error('[Realtime] Error handling score change:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] Scores subscription status:', status);
+        });
 
-    return () => {
-      console.log('[Realtime] 🔴 Unsubscribing from scores');
-      supabase.removeChannel(channel);
-    };
-  }, [eventId, enabled]);
+      return () => {
+        try {
+          console.log('[Realtime] 🔴 Unsubscribing from scores');
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.error('[Realtime] Error unsubscribing from scores:', error);
+        }
+      };
+    } catch (error) {
+      console.error('[Realtime] Error setting up scores subscription:', error);
+    }
+  }, [eventId, enabled, queryClient]);
 }
 
 export function useRealtimeGroupings(eventId: string, enabled: boolean = true) {
@@ -44,30 +56,42 @@ export function useRealtimeGroupings(eventId: string, enabled: boolean = true) {
 
     console.log('[Realtime] 🔴 Subscribing to groupings for event:', eventId);
 
-    const channel = supabase
-      .channel(`groupings-${eventId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'groupings',
-          filter: `event_id=eq.${eventId}`,
-        },
-        (payload) => {
-          console.log('[Realtime] 👥 Grouping change detected:', payload);
-          queryClient.invalidateQueries({ queryKey: ['groupings', eventId] });
-        }
-      )
-      .subscribe((status) => {
-        console.log('[Realtime] Groupings subscription status:', status);
-      });
+    try {
+      const channel = supabase
+        .channel(`groupings-${eventId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'groupings',
+            filter: `event_id=eq.${eventId}`,
+          },
+          (payload) => {
+            try {
+              console.log('[Realtime] 👥 Grouping change detected:', payload);
+              queryClient.invalidateQueries({ queryKey: ['groupings', eventId] });
+            } catch (error) {
+              console.error('[Realtime] Error handling grouping change:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] Groupings subscription status:', status);
+        });
 
-    return () => {
-      console.log('[Realtime] 🔴 Unsubscribing from groupings');
-      supabase.removeChannel(channel);
-    };
-  }, [eventId, enabled]);
+      return () => {
+        try {
+          console.log('[Realtime] 🔴 Unsubscribing from groupings');
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.error('[Realtime] Error unsubscribing from groupings:', error);
+        }
+      };
+    } catch (error) {
+      console.error('[Realtime] Error setting up groupings subscription:', error);
+    }
+  }, [eventId, enabled, queryClient]);
 }
 
 export function useRealtimeRegistrations(eventId: string, enabled: boolean = true) {
@@ -78,28 +102,40 @@ export function useRealtimeRegistrations(eventId: string, enabled: boolean = tru
 
     console.log('[Realtime] 🔴 Subscribing to registrations for event:', eventId);
 
-    const channel = supabase
-      .channel(`registrations-${eventId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'event_registrations',
-          filter: `event_id=eq.${eventId}`,
-        },
-        (payload) => {
-          console.log('[Realtime] 📝 Registration change detected:', payload);
-          queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
-        }
-      )
-      .subscribe((status) => {
-        console.log('[Realtime] Registrations subscription status:', status);
-      });
+    try {
+      const channel = supabase
+        .channel(`registrations-${eventId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'event_registrations',
+            filter: `event_id=eq.${eventId}`,
+          },
+          (payload) => {
+            try {
+              console.log('[Realtime] 📝 Registration change detected:', payload);
+              queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
+            } catch (error) {
+              console.error('[Realtime] Error handling registration change:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] Registrations subscription status:', status);
+        });
 
-    return () => {
-      console.log('[Realtime] 🔴 Unsubscribing from registrations');
-      supabase.removeChannel(channel);
-    };
-  }, [eventId, enabled]);
+      return () => {
+        try {
+          console.log('[Realtime] 🔴 Unsubscribing from registrations');
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.error('[Realtime] Error unsubscribing from registrations:', error);
+        }
+      };
+    } catch (error) {
+      console.error('[Realtime] Error setting up registrations subscription:', error);
+    }
+  }, [eventId, enabled, queryClient]);
 }

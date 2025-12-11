@@ -11,7 +11,7 @@ import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
 import { supabaseService } from '@/utils/supabaseService';
 import { getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
-
+import { useRealtimeScores, useRealtimeGroupings } from '@/utils/useRealtimeSubscription';
 import { useOfflineMode } from '@/contexts/OfflineModeContext';
 
 export default function ScoringScreen() {
@@ -35,35 +35,43 @@ export default function ScoringScreen() {
     queryFn: () => supabaseService.events.get(eventId || ''),
     enabled: !!eventId,
     retry: 2,
+    staleTime: 30000,
+    refetchInterval: 30000,
   });
   const { data: allMembers = [], isLoading: membersLoading, error: membersError } = useQuery({
     queryKey: ['members'],
     queryFn: () => supabaseService.members.getAll(),
     retry: 2,
+    staleTime: 60000,
   });
   const { data: eventRegistrations = [], isLoading: registrationsLoading, error: registrationsError } = useQuery({
     queryKey: ['registrations', eventId],
     queryFn: () => supabaseService.registrations.getAll(eventId || ''),
     enabled: !!eventId,
     retry: 2,
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
   const { data: eventGroupings = [], isLoading: groupingsLoading, error: groupingsError } = useQuery({
     queryKey: ['groupings', eventId],
     queryFn: () => supabaseService.groupings.getAll(eventId || ''),
     enabled: !!eventId,
     retry: 2,
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
   const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores, error: scoresError } = useQuery({
     queryKey: ['scores', eventId],
     queryFn: () => supabaseService.scores.getAll(eventId || ''),
     enabled: !!eventId,
     retry: 2,
+    staleTime: 10000,
+    refetchInterval: 20000,
   });
   const { shouldUseOfflineMode } = useOfflineMode();
   
-  // TEMPORARILY DISABLED for debugging
-  // useRealtimeScores(eventId || '', !!eventId);
-  // useRealtimeGroupings(eventId || '', !!eventId);
+  useRealtimeScores(eventId || '', !!eventId);
+  useRealtimeGroupings(eventId || '', !!eventId);
   
   const submitScoreMutation = useMutation({
     mutationFn: ({ eventId, memberId, day, holes, totalScore, submittedBy }: any) =>
@@ -136,14 +144,14 @@ export default function ScoringScreen() {
     loadCourseHandicapSetting();
   }, [eventId]);
 
-  const loadMyGroup = useCallback(async (golfEvent: Event, userId: string, dayNumber: number) => {
+  const loadMyGroup = useCallback(async (golfEvent: Event, userId: string, dayNumber: number, groupings: any[], members: any[], registrations: any[]) => {
     try {
       if (groupingsLoading || membersLoading || registrationsLoading) {
         console.log('[scoring] Waiting for data to load...');
         return;
       }
 
-      if (eventGroupings.length === 0) {
+      if (groupings.length === 0) {
         console.log('[scoring] No groupings found');
         setMyGroup([]);
         setMyGrouping(null);
@@ -154,17 +162,17 @@ export default function ScoringScreen() {
       setDoubleMode(isDoubleMode);
       console.log('[scoring] Double mode for this event/day:', isDoubleMode);
 
-      const dayGroupings = eventGroupings.filter((g: any) => g.day === dayNumber);
+      const dayGroupings = groupings.filter((g: any) => g.day === dayNumber);
 
       for (const grouping of dayGroupings) {
         if (grouping.slots.includes(userId)) {
           const groupMembers = grouping.slots
             .filter((id: string | null): id is string => id !== null)
             .map((id: string) => {
-              const member = allMembers.find((m: any) => m.id === id);
+              const member = members.find((m: any) => m.id === id);
               if (!member) return null;
               
-              const registration = eventRegistrations.find((r: any) => r.memberId === id);
+              const registration = registrations.find((r: any) => r.memberId === id);
               const effectiveHandicap = getDisplayHandicap(member, registration, golfEvent, useCourseHandicap, dayNumber);
               
               console.log(`[scoring] 🎯 Player ${member.name}: memberId=${id}, registration found=${!!registration}, base handicap=${member.handicap}, adjusted=${registration?.adjustedHandicap}, effective=${effectiveHandicap}, useCourseHandicap=${useCourseHandicap}`);
@@ -215,12 +223,12 @@ export default function ScoringScreen() {
       setMyGroup([]);
       setMyGrouping(null);
     }
-  }, [updateHoleBasedOnStartType, eventGroupings, allMembers, eventRegistrations, groupingsLoading, membersLoading, registrationsLoading, useCourseHandicap]);
+  }, [updateHoleBasedOnStartType, useCourseHandicap, groupingsLoading, membersLoading, registrationsLoading]);
 
   useEffect(() => {
     const loadScores = () => {
       try {
-        if (!eventId || scoresLoading) return;
+        if (!eventId || scoresLoading || eventScores.length === 0) return;
         
         const scoresMap: { [playerId: string]: { [hole: number]: number } } = {};
 
@@ -248,9 +256,7 @@ export default function ScoringScreen() {
       }
     };
     
-    if (eventId && !scoresLoading) {
-      loadScores();
-    }
+    loadScores();
   }, [eventId, selectedDay, scoresLoading, eventScores]);
 
   useEffect(() => {
@@ -268,11 +274,11 @@ export default function ScoringScreen() {
   }, [eventData]);
 
   useEffect(() => {
-    if (event && currentUser && eventId && !groupingsLoading && !membersLoading && !registrationsLoading) {
+    if (event && currentUser && eventId && !groupingsLoading && !membersLoading && !registrationsLoading && eventGroupings.length > 0) {
       console.log('[scoring] Loading group for day:', selectedDay);
-      loadMyGroup(event, currentUser.id, selectedDay);
+      loadMyGroup(event, currentUser.id, selectedDay, eventGroupings, allMembers, eventRegistrations);
     }
-  }, [event, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, loadMyGroup]);
+  }, [event, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, eventGroupings, allMembers, eventRegistrations, loadMyGroup]);
 
 
 
