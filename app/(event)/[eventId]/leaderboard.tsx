@@ -48,7 +48,7 @@ export default function LeaderboardScreen() {
   useRealtimeScores(eventId || '', !!eventId);
 
   const leaderboard = useMemo(() => {
-    if (!event || !allMembers.length || !scores.length) return [];
+    if (!event || !allMembers.length) return [];
 
     const registeredPlayerIds = new Set(event.registeredPlayers || []);
     const entries: LeaderboardEntry[] = [];
@@ -86,14 +86,10 @@ export default function LeaderboardScreen() {
     
     let currentPosition = 1;
     let previousNetScore: number | null = null;
-    let tiedCount = 0;
 
     entries.forEach((entry, index) => {
       if (previousNetScore === null || entry.netScore !== previousNetScore) {
         currentPosition = index + 1;
-        tiedCount = 0;
-      } else {
-        tiedCount++;
       }
       entry.position = currentPosition;
       previousNetScore = entry.netScore;
