@@ -351,45 +351,101 @@ export default function LeaderboardNewScreen() {
               </Text>
             </View>
           ) : (
-            [...leaderboard.flightA, ...leaderboard.flightB].map((entry) => (
-              <View 
-                key={entry.member.id} 
-                style={[
-                  styles.regularCard,
-                  entry.position === 1 && styles.leaderCard,
-                ]}
-              >
-                <View style={[styles.positionBadge, entry.position === 1 && styles.leaderBadge]}>
-                  {entry.position === 1 ? (
-                    <Trophy size={20} color="#FFD700" />
-                  ) : (
-                    <Text style={styles.positionText}>#{entry.position}</Text>
-                  )}
-                </View>
-                <View style={styles.playerInfo}>
-                  <Text style={styles.playerName}>{entry.member.name}</Text>
-                  <Text style={styles.playerDetails}>
-                    HDC: {entry.handicap}
-                  </Text>
-                  <Text style={styles.playerDetails}>
-                    Flight: {entry.flight}
-                  </Text>
-                  <Text style={styles.playerDetails}>
-                    Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
-                  </Text>
-                  <Text style={styles.scoreText}>
-                    Total: {entry.grossScore === 0 ? '—' : entry.grossScore}
-                  </Text>
-                  <Text style={styles.scoreText}>
-                    Net Score: {entry.netScore === 0 ? '—' : entry.netScore}
-                  </Text>
-                </View>
-                <View style={styles.pointsContainer}>
-                  <Text style={styles.pointsValue}>0</Text>
-                  <Text style={styles.pointsLabel}>pts</Text>
-                </View>
-              </View>
-            ))
+            <>
+              {leaderboard.flightA.length > 0 && (
+                <>
+                  <View style={styles.flightSeparator}>
+                    <Text style={styles.flightLabel}>FLIGHT A</Text>
+                  </View>
+                  {leaderboard.flightA.map((entry) => (
+                    <View 
+                      key={entry.member.id} 
+                      style={[
+                        styles.regularCard,
+                        entry.position === 1 && styles.leaderCard,
+                      ]}
+                    >
+                      <View style={[styles.positionBadge, entry.position === 1 && styles.leaderBadge]}>
+                        {entry.position === 1 ? (
+                          <Trophy size={20} color="#FFD700" />
+                        ) : (
+                          <Text style={styles.positionText}>#{entry.position}</Text>
+                        )}
+                      </View>
+                      <View style={styles.playerInfo}>
+                        <Text style={styles.playerName}>{entry.member.name}</Text>
+                        <Text style={styles.playerDetails}>
+                          HDC: {entry.handicap}
+                        </Text>
+                        <Text style={styles.playerDetails}>
+                          Flight: {entry.flight}
+                        </Text>
+                        <Text style={styles.playerDetails}>
+                          Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
+                        </Text>
+                        <Text style={styles.scoreText}>
+                          Total: {entry.grossScore === 0 ? '—' : entry.grossScore}
+                        </Text>
+                        <Text style={styles.scoreText}>
+                          Net Score: {entry.netScore === 0 ? '—' : entry.netScore}
+                        </Text>
+                      </View>
+                      <View style={styles.pointsContainer}>
+                        <Text style={styles.pointsValue}>0</Text>
+                        <Text style={styles.pointsLabel}>pts</Text>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {leaderboard.flightB.length > 0 && (
+                <>
+                  <View style={styles.flightSeparator}>
+                    <Text style={styles.flightLabel}>FLIGHT B</Text>
+                  </View>
+                  {leaderboard.flightB.map((entry) => (
+                    <View 
+                      key={entry.member.id} 
+                      style={[
+                        styles.regularCard,
+                        entry.position === 1 && styles.leaderCard,
+                      ]}
+                    >
+                      <View style={[styles.positionBadge, entry.position === 1 && styles.leaderBadge]}>
+                        {entry.position === 1 ? (
+                          <Trophy size={20} color="#FFD700" />
+                        ) : (
+                          <Text style={styles.positionText}>#{entry.position}</Text>
+                        )}
+                      </View>
+                      <View style={styles.playerInfo}>
+                        <Text style={styles.playerName}>{entry.member.name}</Text>
+                        <Text style={styles.playerDetails}>
+                          HDC: {entry.handicap}
+                        </Text>
+                        <Text style={styles.playerDetails}>
+                          Flight: {entry.flight}
+                        </Text>
+                        <Text style={styles.playerDetails}>
+                          Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
+                        </Text>
+                        <Text style={styles.scoreText}>
+                          Total: {entry.grossScore === 0 ? '—' : entry.grossScore}
+                        </Text>
+                        <Text style={styles.scoreText}>
+                          Net Score: {entry.netScore === 0 ? '—' : entry.netScore}
+                        </Text>
+                      </View>
+                      <View style={styles.pointsContainer}>
+                        <Text style={styles.pointsValue}>0</Text>
+                        <Text style={styles.pointsLabel}>pts</Text>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+            </>
           )}
         </ScrollView>
       </SafeAreaView>
