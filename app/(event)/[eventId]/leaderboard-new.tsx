@@ -115,7 +115,7 @@ export default function LeaderboardNewScreen() {
       
       const playerScores = scores.filter((s: any) => {
         if (s.memberId !== registration.memberId) return false;
-        if (selectedDay === 'all') return true;
+        if (selectedDay === 'all' || selectedDay === 'rolex') return true;
         return s.day === selectedDay;
       });
 
