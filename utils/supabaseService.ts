@@ -528,18 +528,32 @@ export const supabaseService = {
     },
     
     sync: async (eventId: string, groupings: any[]) => {
-      for (const grouping of groupings) {
-        const { error } = await supabase.from('groupings').upsert({
+      console.log('[supabaseService.groupings.sync] Syncing groupings:', groupings.length);
+      
+      const groupingsToUpsert = groupings.map(g => {
+        const id = `${eventId}-day${g.day}-hole${g.hole}`;
+        console.log('[supabaseService.groupings.sync] Preparing grouping:', { id, day: g.day, hole: g.hole, slots: g.slots });
+        return {
+          id,
           event_id: eventId,
-          day: grouping.day,
-          hole: grouping.hole,
-          slots: grouping.slots,
-        }, {
-          onConflict: 'event_id,day,hole'
-        });
-        
-        if (error) throw error;
+          day: g.day,
+          hole: g.hole,
+          slots: g.slots,
+          updated_at: new Date().toISOString(),
+        };
+      });
+      
+      console.log('[supabaseService.groupings.sync] Upserting groupings:', groupingsToUpsert.length);
+      const { error } = await supabase
+        .from('groupings')
+        .upsert(groupingsToUpsert, { onConflict: 'id' });
+      
+      if (error) {
+        console.error('[supabaseService.groupings.sync] Error upserting groupings:', error);
+        throw error;
       }
+      
+      console.log('[supabaseService.groupings.sync] ✅ Successfully synced groupings');
     },
   },
   
