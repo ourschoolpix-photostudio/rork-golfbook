@@ -1610,7 +1610,7 @@ export default function EventRegistrationScreen() {
                           )}
                         </View>
                         
-                        {canViewRegistration(currentUser) && playerReg && (
+                        {currentUser?.isAdmin && playerReg && (
                           <TouchableOpacity
                             style={styles.emailInvoiceButton}
                             onPress={() => handleEmailInvoice(player, playerReg)}
