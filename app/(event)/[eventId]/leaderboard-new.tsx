@@ -120,10 +120,10 @@ export default function LeaderboardNewScreen() {
 
       const grossScore = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
       
-      console.log('[LeaderboardNew] Player:', member.name, 'Flight:', registration.flight, 'Scores count:', playerScores.length, 'Gross:', grossScore);
-
       const handicap = getDisplayHandicap(member, registration, event as Event, false, 1);
       const netScore = grossScore - handicap;
+
+      console.log('[LeaderboardNew] Player:', member.name, 'Flight:', registration.flight, 'Scores count:', playerScores.length, 'Gross:', grossScore, 'Net:', netScore);
 
       allEntries.push({
         member,
@@ -135,8 +135,12 @@ export default function LeaderboardNewScreen() {
       });
     });
 
-    const flightAEntries = allEntries.filter(e => e.registration.flight === 'A');
-    const flightBEntries = allEntries.filter(e => e.registration.flight === 'B');
+    console.log('[LeaderboardNew] All entries before filtering:', allEntries.length);
+
+    const flightAEntries = allEntries.filter(e => e.registration?.flight === 'A');
+    const flightBEntries = allEntries.filter(e => e.registration?.flight === 'B');
+
+    console.log('[LeaderboardNew] Flight A entries:', flightAEntries.length, 'Flight B entries:', flightBEntries.length);
 
     flightAEntries.sort((a, b) => a.netScore - b.netScore);
     flightBEntries.sort((a, b) => a.netScore - b.netScore);
