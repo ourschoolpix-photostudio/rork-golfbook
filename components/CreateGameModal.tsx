@@ -62,7 +62,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
   const [overallBet, setOverallBet] = useState<string>('');
   const [potBet, setPotBet] = useState<string>('');
   const [potPlayers, setPotPlayers] = useState<{ name: string; handicap: string; memberId?: string }[]>([]);
-  const [addedMainPlayersToPot, setAddedMainPlayersToPot] = useState<boolean>(false);
+  const addedMainPlayersToPotRef = React.useRef<boolean>(false);
   const [showMemberPicker, setShowMemberPicker] = useState<boolean>(false);
   const [showPotPlayerPicker, setShowPotPlayerPicker] = useState<boolean>(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
@@ -177,7 +177,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
           .map(pp => pp.memberId)
           .filter(id => id !== undefined) as string[];
         setSelectedPotMemberIds(potMemberIds);
-        setAddedMainPlayersToPot(true);
+        addedMainPlayersToPotRef.current = true;
       }
       
       const mappedPlayers = editingGame.players.map(p => ({
@@ -227,7 +227,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
       setSelectedPotMemberIds([]);
       setShowMemberPicker(false);
       setShowPotPlayerPicker(false);
-      setAddedMainPlayersToPot(false);
+      addedMainPlayersToPotRef.current = false;
     }
   }, [editingGame, visible, members]);
 
@@ -375,7 +375,7 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
   };
 
   React.useEffect(() => {
-    if (potBet && parseFloat(potBet) > 0 && !addedMainPlayersToPot) {
+    if (potBet && parseFloat(potBet) > 0 && !addedMainPlayersToPotRef.current) {
       const activePlayers = players.filter(p => p.name.trim() !== '');
       if (activePlayers.length > 0) {
         const mainPlayersAsPotPlayers = activePlayers.map(p => ({
@@ -388,12 +388,12 @@ export default function CreateGameModal({ visible, onClose, onSave, editingGame 
           .map(p => selectedMemberIds[players.indexOf(p)])
           .filter(id => id);
         setSelectedPotMemberIds(mainPlayerMemberIds);
-        setAddedMainPlayersToPot(true);
+        addedMainPlayersToPotRef.current = true;
       }
     } else if (!potBet || parseFloat(potBet) === 0) {
-      setAddedMainPlayersToPot(false);
+      addedMainPlayersToPotRef.current = false;
     }
-  }, [potBet, players, selectedMemberIds, addedMainPlayersToPot]);
+  }, [potBet, players, selectedMemberIds]);
 
   const handleSelectPotPlayer = (memberId: string) => {
     const member = members.find(m => m.id === memberId);
