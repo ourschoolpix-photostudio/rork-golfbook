@@ -654,19 +654,25 @@ export const supabaseService = {
         error = result.error;
       } else {
         console.log('[supabaseService.scores.submit] Inserting new score');
+        const insertPayload: Record<string, any> = {
+          event_id: eventId,
+          member_id: memberId,
+          day,
+          holes,
+          total_score: totalScore,
+          submitted_by: submittedBy,
+        };
+        
+        delete insertPayload.id;
+        
+        console.log('[supabaseService.scores.submit] Insert payload:', JSON.stringify(insertPayload, null, 2));
         const result = await supabase
           .from('scores')
-          .insert({
-            event_id: eventId,
-            member_id: memberId,
-            day,
-            holes,
-            total_score: totalScore,
-            submitted_by: submittedBy,
-          })
+          .insert([insertPayload])
           .select();
         data = result.data;
         error = result.error;
+        console.log('[supabaseService.scores.submit] Insert result:', { hasData: !!data, error: error ? JSON.stringify(error, null, 2) : null });
       }
       
       console.log('[supabaseService.scores.submit] Upsert result:', { data, error });
