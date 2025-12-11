@@ -24,42 +24,89 @@ export default function ImportMembersScreen() {
         const trimmedLine = line.trim();
         if (!trimmedLine) return;
 
-        let name = trimmedLine;
+        let name = '';
         let handicap = 0;
+        let flight: 'A' | 'B' | 'C' | 'L' = 'A';
+        let rolexFlight: 'A' | 'B' | undefined = undefined;
+        let email = '';
+        let phone = '';
+        let city = '';
+        let state = '';
 
-        // Support multiple formats:
-        // 1. "John Smith, 15" (comma separator)
-        // 2. "John Smith 15" (space-separated, last word is number)
-        // 3. "John Smith\t15" (tab separator)
-        // 4. "John Smith" (name only, handicap defaults to 0)
-
-        // Try comma separator first
+        // Format: Bruce Pham, 15 B B IAMBRUCET@GMAIL.COM 703-203-4198 SPRINGFIELD VA
+        // First name & last name, handicap, flight, rolex flight, email, phone, city, state
+        
         if (trimmedLine.includes(',')) {
-          const parts = trimmedLine.split(',').map(p => p.trim());
-          name = parts[0];
-          const handicapStr = parts[1];
-          if (handicapStr && !isNaN(parseFloat(handicapStr))) {
-            handicap = parseFloat(handicapStr);
+          const [namePart, ...restParts] = trimmedLine.split(',');
+          name = namePart.trim();
+          
+          if (restParts.length > 0) {
+            const dataString = restParts.join(',').trim();
+            const tokens = dataString.split(/\s+/);
+            
+            let i = 0;
+            
+            // Parse handicap (number)
+            if (i < tokens.length && !isNaN(parseFloat(tokens[i]))) {
+              handicap = parseFloat(tokens[i]);
+              i++;
+            }
+            
+            // Parse flight (single letter: A, B, C, or L)
+            if (i < tokens.length && /^[ABCL]$/i.test(tokens[i])) {
+              flight = tokens[i].toUpperCase() as 'A' | 'B' | 'C' | 'L';
+              i++;
+            }
+            
+            // Parse rolex flight (single letter: A or B)
+            if (i < tokens.length && /^[AB]$/i.test(tokens[i])) {
+              rolexFlight = tokens[i].toUpperCase() as 'A' | 'B';
+              i++;
+            }
+            
+            // Parse email (contains @)
+            if (i < tokens.length && tokens[i].includes('@')) {
+              email = tokens[i].toLowerCase();
+              i++;
+            }
+            
+            // Parse phone (contains digits and dashes, like 703-203-4198)
+            if (i < tokens.length && /[0-9-]+/.test(tokens[i]) && tokens[i].includes('-')) {
+              phone = tokens[i];
+              i++;
+            }
+            
+            // Parse city (all remaining words except the last one if it's 2 chars)
+            if (i < tokens.length) {
+              const remaining = tokens.slice(i);
+              
+              // Check if last token is a 2-letter state code
+              if (remaining.length > 0 && /^[A-Z]{2}$/i.test(remaining[remaining.length - 1])) {
+                state = remaining[remaining.length - 1].toUpperCase();
+                
+                // Everything before the state is the city
+                if (remaining.length > 1) {
+                  city = remaining.slice(0, -1).join(' ');
+                }
+              } else {
+                // No state found, all remaining is city
+                city = remaining.join(' ');
+              }
+            }
           }
-        }
-        // Try tab separator
-        else if (trimmedLine.includes('\t')) {
-          const parts = trimmedLine.split('\t').filter(p => p.trim());
-          name = parts[0].trim();
-          const handicapStr = parts[1]?.trim();
-          if (handicapStr && !isNaN(parseFloat(handicapStr))) {
-            handicap = parseFloat(handicapStr);
-          }
-        }
-        // Try space separator (last word should be a number)
-        else {
+        } else {
+          // Fallback: simple format "Name Handicap"
           const parts = trimmedLine.split(/\s+/);
           if (parts.length > 1) {
             const lastPart = parts[parts.length - 1];
             if (!isNaN(parseFloat(lastPart))) {
               handicap = parseFloat(lastPart);
               name = parts.slice(0, -1).join(' ');
+            } else {
+              name = trimmedLine;
             }
+          } else {
+            name = trimmedLine;
           }
         }
 
@@ -72,9 +119,12 @@ export default function ImportMembersScreen() {
             pin: '1111',
             isAdmin: false,
             handicap: handicap,
-            flight: 'A',
-            phone: '',
-            email: '',
+            flight: flight,
+            rolexFlight: rolexFlight,
+            phone: phone,
+            email: email,
+            city: city,
+            state: state,
             profilePhotoUrl: '',
             membershipType: 'active',
             joinDate: new Date().toISOString().split('T')[0],
@@ -150,19 +200,27 @@ export default function ImportMembersScreen() {
             numberOfLines={10}
             value={importData}
             onChangeText={setImportData}
-            placeholder="John Smith, 15&#10;Jane Doe, 8&#10;Bob Johnson 12&#10;Mary Williams&#10;..."
+            placeholder="Bruce Pham, 15 B B IAMBRUCET@GMAIL.COM 703-203-4198 SPRINGFIELD VA&#10;Jane Doe, 8 A A JANE@GMAIL.COM 555-123-4567 ARLINGTON VA&#10;..."
             placeholderTextColor="#999"
           />
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>Format Options:</Text>
-            <Text style={styles.info}>• Name, Handicap → John Smith, 15</Text>
-            <Text style={styles.info}>• Name Handicap → Jane Doe 8</Text>
-            <Text style={styles.info}>• Name only → Bob Johnson (handicap = 0)</Text>
+            <Text style={styles.infoTitle}>Format:</Text>
+            <Text style={styles.info}>Name, Handicap Flight RolexFlight Email Phone City State</Text>
+            <Text style={[styles.infoTitle, { marginTop: 12 }]}>Example:</Text>
+            <Text style={styles.info}>Bruce Pham, 15 B B IAMBRUCET@GMAIL.COM 703-203-4198 SPRINGFIELD VA</Text>
+            <Text style={[styles.infoTitle, { marginTop: 12 }]}>Fields:</Text>
+            <Text style={styles.info}>• Name (required)</Text>
+            <Text style={styles.info}>• Handicap (optional, number)</Text>
+            <Text style={styles.info}>• Flight (optional, A/B/C/L)</Text>
+            <Text style={styles.info}>• Rolex Flight (optional, A/B)</Text>
+            <Text style={styles.info}>• Email (optional)</Text>
+            <Text style={styles.info}>• Phone (optional, ###-###-####)</Text>
+            <Text style={styles.info}>• City (optional)</Text>
+            <Text style={styles.info}>• State (optional, 2-letter code)</Text>
             <Text style={[styles.infoTitle, { marginTop: 12 }]}>Default Settings:</Text>
             <Text style={styles.info}>• PIN: 1111</Text>
-            <Text style={styles.info}>• Flight: A</Text>
             <Text style={styles.info}>• Status: Active</Text>
-            <Text style={styles.infoNote}>(All values can be edited later)</Text>
+            <Text style={styles.infoNote}>(Missing fields will be blank)</Text>
           </View>
         </View>
 
