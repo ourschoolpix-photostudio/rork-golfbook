@@ -1143,6 +1143,7 @@ export async function generateInvoicePDF(
         <li style="margin-bottom: 6px;">Date: ${dateRange}</li>
         ${event.location ? `<li style="margin-bottom: 6px;">Location: ${event.location}</li>` : ''}
         ${event.numberOfDays ? `<li style="margin-bottom: 6px;">Number of Days: ${event.numberOfDays}</li>` : ''}
+        ${!isSponsor ? `<li style="margin-bottom: 6px;">Entry Fee: ${entryFee.toFixed(2)}</li>` : ''}
       </ul>
     </div>`;
 
@@ -1275,14 +1276,7 @@ export async function generateInvoicePDF(
       }
 
 
-      if (!isSponsor) {
-        emailBody += `
-    <div class="section">
-      <div class="section-title">Registration Details</div>
-      <div class="detail-row"><span class="detail-label">Entry Fee:</span> \${entryFee.toFixed(2)}</div>
-      ${numberOfGuests > 0 ? `<div class="detail-row"><span class="detail-label">Guests:</span> ${numberOfGuests} × \${entryFee.toFixed(2)} = \${(entryFee * numberOfGuests).toFixed(2)}</div>` : ''}
-    </div>`;
-      } else {
+      if (isSponsor) {
         emailBody += `
     <div class="section">
       <div class="section-title">Thank You!</div>
