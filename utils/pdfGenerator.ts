@@ -5,6 +5,7 @@ import * as MailComposer from 'expo-mail-composer';
 import type { Member, Event, Grouping } from '@/types';
 import { type LabelOverride } from '@/utils/groupingsHelper';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
+import { calculateTournamentFlight } from '@/utils/handicapHelper';
 
 interface RegistrationPDFOptions {
   registrations: any[];
@@ -1067,6 +1068,18 @@ export async function generateInvoicePDF(
       const total = entryFee * totalPeople;
       const isPaid = registration?.paymentStatus === 'paid';
       
+      const tournamentFlight = event.type === 'tournament' 
+        ? calculateTournamentFlight(
+            member,
+            Number(event.flightACutoff) || undefined,
+            Number(event.flightBCutoff) || undefined,
+            registration,
+            event,
+            false,
+            1
+          )
+        : null;
+      
       const formatDate = (dateStr: string) => {
         const date = new Date(dateStr + 'T00:00:00');
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1120,6 +1133,7 @@ export async function generateInvoicePDF(
       <div class="detail-row"><span class="detail-label">Name:</span> ${member.name}</div>
       ${member.email ? `<div class="detail-row"><span class="detail-label">Email:</span> ${member.email}</div>` : ''}
       ${member.phone ? `<div class="detail-row"><span class="detail-label">Phone:</span> ${formatPhoneNumber(member.phone)}</div>` : ''}
+      ${tournamentFlight ? `<div class="detail-row"><span class="detail-label">Flight:</span> ${tournamentFlight}</div>` : ''}
     </div>
 
     <div class="section">
