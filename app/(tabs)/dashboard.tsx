@@ -426,9 +426,6 @@ export default function DashboardScreen() {
                       </View>
                       <View style={styles.eventContent}>
                         <Text style={styles.eventDetail}>📍 {item.location}</Text>
-                        <Text style={styles.eventDetail}>
-                          📅 {formatDateRange(item.date || '', item.endDate || '')}
-                        </Text>
 
                         <View style={styles.scheduleSection}>
                           {formatSchedule(item).map((schedule, index) => (
