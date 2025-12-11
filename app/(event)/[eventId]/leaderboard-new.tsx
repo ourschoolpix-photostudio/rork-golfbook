@@ -85,17 +85,17 @@ export default function LeaderboardNewScreen() {
     setLastUpdate(new Date());
   }, []);
 
-  const leaderboard = useMemo<LeaderboardEntry[]>(() => {
+  const leaderboard = useMemo<{ flightA: LeaderboardEntry[]; flightB: LeaderboardEntry[] }>(() => {
     const event = eventQuery.data;
     const members = membersQuery.data || [];
     const registrations = registrationsQuery.data || [];
     const scores = scoresQuery.data || [];
 
     if (!event || members.length === 0 || registrations.length === 0) {
-      return [];
+      return { flightA: [], flightB: [] };
     }
 
-    const entries: LeaderboardEntry[] = [];
+    const allEntries: LeaderboardEntry[] = [];
 
     registrations.forEach((registration: any) => {
       if (!registration.memberId) return;
@@ -116,7 +116,7 @@ export default function LeaderboardNewScreen() {
       const handicap = getDisplayHandicap(member, registration, event as Event, false, 1);
       const netScore = grossScore - handicap;
 
-      entries.push({
+      allEntries.push({
         member,
         grossScore,
         netScore,
@@ -126,12 +126,15 @@ export default function LeaderboardNewScreen() {
       });
     });
 
-    entries.sort((a, b) => a.netScore - b.netScore);
-    
+    const flightAEntries = allEntries.filter(e => e.registration.flight === 'A');
+    const flightBEntries = allEntries.filter(e => e.registration.flight === 'B');
+
+    flightAEntries.sort((a, b) => a.netScore - b.netScore);
+    flightBEntries.sort((a, b) => a.netScore - b.netScore);
+
     let currentPosition = 1;
     let previousNetScore: number | null = null;
-
-    entries.forEach((entry, index) => {
+    flightAEntries.forEach((entry, index) => {
       if (previousNetScore === null || entry.netScore !== previousNetScore) {
         currentPosition = index + 1;
       }
@@ -139,7 +142,17 @@ export default function LeaderboardNewScreen() {
       previousNetScore = entry.netScore;
     });
 
-    return entries;
+    currentPosition = 1;
+    previousNetScore = null;
+    flightBEntries.forEach((entry, index) => {
+      if (previousNetScore === null || entry.netScore !== previousNetScore) {
+        currentPosition = index + 1;
+      }
+      entry.position = currentPosition;
+      previousNetScore = entry.netScore;
+    });
+
+    return { flightA: flightAEntries, flightB: flightBEntries };
   }, [eventQuery.data, membersQuery.data, registrationsQuery.data, scoresQuery.data, selectedDay]);
 
   const isLoading = eventQuery.isLoading || membersQuery.isLoading || registrationsQuery.isLoading || scoresQuery.isLoading;
@@ -221,7 +234,7 @@ export default function LeaderboardNewScreen() {
               <ActivityIndicator size="large" color="#1B5E20" />
               <Text style={styles.loadingText}>Loading leaderboard...</Text>
             </View>
-          ) : leaderboard.length === 0 ? (
+          ) : leaderboard.flightA.length === 0 && leaderboard.flightB.length === 0 ? (
             <View style={styles.emptyState}>
               <Trophy size={64} color="#999" />
               <Text style={styles.emptyTitle}>No Scores Yet</Text>
@@ -231,51 +244,110 @@ export default function LeaderboardNewScreen() {
             </View>
           ) : (
             <>
-              {leaderboard.slice(0, 3).map((entry) => (
-                <View key={entry.member.id} style={[styles.podiumCard, { borderLeftColor: getPodiumColor(entry.position) }]}>
-                  <View style={styles.positionBadge}>
-                    {entry.position <= 3 ? (
-                      <Medal size={20} color={getPodiumColor(entry.position)} fill={getPodiumColor(entry.position)} />
-                    ) : (
-                      <Text style={styles.positionText}>#{entry.position}</Text>
-                    )}
+              {leaderboard.flightA.length > 0 && (
+                <>
+                  <View style={styles.flightSeparator}>
+                    <Text style={styles.flightLabel}>Flight A</Text>
                   </View>
-                  <View style={styles.playerInfo}>
-                    <Text style={styles.playerName}>{entry.member.name}</Text>
-                    <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
-                  </View>
-                  <View style={styles.scoresContainer}>
-                    <View style={styles.scoreItem}>
-                      <Text style={styles.scoreLabel}>Net</Text>
-                      <Text style={[styles.scoreValue, styles.netScoreValue]}>{entry.netScore}</Text>
-                    </View>
-                    <View style={styles.scoreItem}>
-                      <Text style={styles.scoreLabel}>Gross</Text>
-                      <Text style={styles.scoreValue}>{entry.grossScore}</Text>
-                    </View>
-                  </View>
-                </View>
-              ))}
-
-              {leaderboard.length > 3 && (
-                <View style={styles.restOfFieldContainer}>
-                  <Text style={styles.restOfFieldTitle}>Rest of Field</Text>
-                  {leaderboard.slice(3).map((entry) => (
-                    <View key={entry.member.id} style={styles.leaderboardRow}>
-                      <View style={styles.positionBox}>
-                        <Text style={styles.positionNumber}>{entry.position}</Text>
+                  {leaderboard.flightA.slice(0, 3).map((entry) => (
+                    <View key={entry.member.id} style={[styles.podiumCard, { borderLeftColor: getPodiumColor(entry.position) }]}>
+                      <View style={styles.positionBadge}>
+                        {entry.position <= 3 ? (
+                          <Medal size={20} color={getPodiumColor(entry.position)} fill={getPodiumColor(entry.position)} />
+                        ) : (
+                          <Text style={styles.positionText}>#{entry.position}</Text>
+                        )}
                       </View>
-                      <View style={styles.rowPlayerInfo}>
-                        <Text style={styles.rowPlayerName}>{entry.member.name}</Text>
-                        <Text style={styles.rowPlayerHandicap}>Handicap: {entry.handicap}</Text>
+                      <View style={styles.playerInfo}>
+                        <Text style={styles.playerName}>{entry.member.name}</Text>
+                        <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
                       </View>
-                      <View style={styles.rowScores}>
-                        <Text style={styles.rowNetScore}>{entry.netScore}</Text>
-                        <Text style={styles.rowGrossScore}>({entry.grossScore})</Text>
+                      <View style={styles.scoresContainer}>
+                        <View style={styles.scoreItem}>
+                          <Text style={styles.scoreLabel}>Net</Text>
+                          <Text style={[styles.scoreValue, styles.netScoreValue]}>{entry.netScore}</Text>
+                        </View>
+                        <View style={styles.scoreItem}>
+                          <Text style={styles.scoreLabel}>Gross</Text>
+                          <Text style={styles.scoreValue}>{entry.grossScore}</Text>
+                        </View>
                       </View>
                     </View>
                   ))}
-                </View>
+
+                  {leaderboard.flightA.length > 3 && (
+                    <View style={styles.restOfFieldContainer}>
+                      {leaderboard.flightA.slice(3).map((entry) => (
+                        <View key={entry.member.id} style={styles.leaderboardRow}>
+                          <View style={styles.positionBox}>
+                            <Text style={styles.positionNumber}>{entry.position}</Text>
+                          </View>
+                          <View style={styles.rowPlayerInfo}>
+                            <Text style={styles.rowPlayerName}>{entry.member.name}</Text>
+                            <Text style={styles.rowPlayerHandicap}>Handicap: {entry.handicap}</Text>
+                          </View>
+                          <View style={styles.rowScores}>
+                            <Text style={styles.rowNetScore}>{entry.netScore}</Text>
+                            <Text style={styles.rowGrossScore}>({entry.grossScore})</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </>
+              )}
+
+              {leaderboard.flightB.length > 0 && (
+                <>
+                  <View style={[styles.flightSeparator, { marginTop: leaderboard.flightA.length > 0 ? 32 : 0 }]}>
+                    <Text style={styles.flightLabel}>Flight B</Text>
+                  </View>
+                  {leaderboard.flightB.slice(0, 3).map((entry) => (
+                    <View key={entry.member.id} style={[styles.podiumCard, { borderLeftColor: getPodiumColor(entry.position) }]}>
+                      <View style={styles.positionBadge}>
+                        {entry.position <= 3 ? (
+                          <Medal size={20} color={getPodiumColor(entry.position)} fill={getPodiumColor(entry.position)} />
+                        ) : (
+                          <Text style={styles.positionText}>#{entry.position}</Text>
+                        )}
+                      </View>
+                      <View style={styles.playerInfo}>
+                        <Text style={styles.playerName}>{entry.member.name}</Text>
+                        <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
+                      </View>
+                      <View style={styles.scoresContainer}>
+                        <View style={styles.scoreItem}>
+                          <Text style={styles.scoreLabel}>Net</Text>
+                          <Text style={[styles.scoreValue, styles.netScoreValue]}>{entry.netScore}</Text>
+                        </View>
+                        <View style={styles.scoreItem}>
+                          <Text style={styles.scoreLabel}>Gross</Text>
+                          <Text style={styles.scoreValue}>{entry.grossScore}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+
+                  {leaderboard.flightB.length > 3 && (
+                    <View style={styles.restOfFieldContainer}>
+                      {leaderboard.flightB.slice(3).map((entry) => (
+                        <View key={entry.member.id} style={styles.leaderboardRow}>
+                          <View style={styles.positionBox}>
+                            <Text style={styles.positionNumber}>{entry.position}</Text>
+                          </View>
+                          <View style={styles.rowPlayerInfo}>
+                            <Text style={styles.rowPlayerName}>{entry.member.name}</Text>
+                            <Text style={styles.rowPlayerHandicap}>Handicap: {entry.handicap}</Text>
+                          </View>
+                          <View style={styles.rowScores}>
+                            <Text style={styles.rowNetScore}>{entry.netScore}</Text>
+                            <Text style={styles.rowGrossScore}>({entry.grossScore})</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </>
               )}
             </>
           )}
@@ -546,5 +618,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     marginTop: 2,
+  },
+  flightSeparator: {
+    backgroundColor: '#1B5E20',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  flightLabel: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#fff',
+    textAlign: 'center' as const,
+    letterSpacing: 1,
   },
 });
