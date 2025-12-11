@@ -987,6 +987,11 @@ export default function EventRegistrationScreen() {
   };
 
   const handleEmailInvoice = async (player: Member, playerReg: any) => {
+    if (!currentUser?.isAdmin) {
+      console.log('[registration] ⛔ Email invoice access denied - not an admin');
+      return;
+    }
+    
     try {
       setGeneratingInvoiceForPlayer(player.id);
       console.log('[registration] 📧 Generating invoice for:', player.name);
