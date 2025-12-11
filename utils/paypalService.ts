@@ -64,11 +64,21 @@ async function getPayPalAccessToken(
   
   console.log('[PayPalService] Client ID length (trimmed):', trimmedClientId.length);
   console.log('[PayPalService] Client Secret length (trimmed):', trimmedClientSecret.length);
-  console.log('[PayPalService] Client ID prefix:', trimmedClientId.substring(0, 20) + '...');
-  console.log('[PayPalService] Client Secret prefix:', trimmedClientSecret.substring(0, 20) + '...');
+  console.log('[PayPalService] Client ID first 10 chars:', trimmedClientId.substring(0, 10) + '...');
+  console.log('[PayPalService] Client ID last 10 chars: ...', trimmedClientId.substring(trimmedClientId.length - 10));
+  console.log('[PayPalService] Client Secret first 10 chars:', trimmedClientSecret.substring(0, 10) + '...');
+  console.log('[PayPalService] Client Secret last 10 chars: ...', trimmedClientSecret.substring(trimmedClientSecret.length - 10));
   
   if (trimmedClientId === '' || trimmedClientSecret === '') {
     throw new Error('PayPal credentials cannot be empty after trimming');
+  }
+  
+  if (trimmedClientId.length < 40) {
+    console.warn('[PayPalService] ⚠️ WARNING: Client ID seems too short. PayPal Client IDs are typically 60-80 characters long.');
+  }
+  
+  if (trimmedClientSecret.length < 40) {
+    console.warn('[PayPalService] ⚠️ WARNING: Client Secret seems too short. PayPal Client Secrets are typically 60-80 characters long.');
   }
   
   const authString = `${trimmedClientId}:${trimmedClientSecret}`;
@@ -77,6 +87,8 @@ async function getPayPalAccessToken(
   console.log('[PayPalService] Base64 auth length:', auth.length);
   const baseUrl = PAYPAL_API_BASE[mode];
   console.log('[PayPalService] Requesting token from:', `${baseUrl}/v1/oauth2/token`);
+  console.log('[PayPalService] Using mode:', mode, '| Base URL:', baseUrl);
+  
   const response = await fetch(`${baseUrl}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
@@ -88,10 +100,11 @@ async function getPayPalAccessToken(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[PayPalService] Failed to get access token');
+    console.error('[PayPalService] ❌ Failed to get access token');
     console.error('[PayPalService] Response status:', response.status);
     console.error('[PayPalService] Response error:', errorText);
     console.error('[PayPalService] Base URL used:', baseUrl);
+    console.error('[PayPalService] Mode used:', mode);
     
     let errorDetails = '';
     try {
@@ -101,7 +114,22 @@ async function getPayPalAccessToken(
       errorDetails = errorText;
     }
     
-    throw new Error(`Failed to get PayPal access token: ${errorDetails}`);
+    console.error('[PayPalService] 🔍 TROUBLESHOOTING TIPS:');
+    console.error('[PayPalService] 1. Verify credentials match the selected mode (Sandbox vs Live)');
+    console.error('[PayPalService] 2. Go to https://developer.paypal.com/dashboard');
+    console.error('[PayPalService] 3. Select the correct environment tab:', mode === 'sandbox' ? 'Sandbox' : 'Live');
+    console.error('[PayPalService] 4. Go to "My Apps & Credentials"');
+    console.error('[PayPalService] 5. Create a new app or select existing app');
+    console.error('[PayPalService] 6. Copy Client ID and Secret (show/reveal the secret)');
+    console.error('[PayPalService] 7. Make sure there are NO extra spaces when pasting');
+    console.error('[PayPalService] 8. Save the credentials in Admin Settings');
+    console.error('[PayPalService] 9. Try again');
+    
+    if (mode === 'live') {
+      console.error('[PayPalService] ⚠️ You are using LIVE mode. Make sure your PayPal account is approved for live transactions.');
+    }
+    
+    throw new Error(`Failed to get PayPal access token: ${errorDetails}. Check console logs for troubleshooting tips.`);
   }
 
   const data = await response.json();
