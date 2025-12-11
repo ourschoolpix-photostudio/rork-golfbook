@@ -53,7 +53,8 @@ export default function LeaderboardScreen() {
     refetchOnMount: 'always',
   });
 
-  useRealtimeScores(eventId || '', !!eventId);
+  const shouldEnableRealtime = !!eventId && !eventLoading && !membersLoading && !registrationsLoading && !scoresLoading;
+  useRealtimeScores(eventId || '', shouldEnableRealtime);
 
   const leaderboard = useMemo(() => {
     console.log('[Leaderboard] Computing leaderboard:', {
