@@ -145,13 +145,14 @@ export default function ScoringModal({ visible, slots, label, onClose, onSaveSco
         if (shouldUseOfflineMode) {
           console.log(`[ScoringModal] 🟠 Offline mode active - queuing score submissions`);
           for (const [playerId, scoreData] of Object.entries(updatedScores)) {
+            const holesArray = Array(18).fill(null);
             await addPendingOperation({
               type: 'score_submit',
               data: {
                 eventId,
                 memberId: playerId,
                 day: selectedDay,
-                holes: [],
+                holes: holesArray,
                 totalScore: scoreData.scoreTotal,
                 submittedBy: currentUser.id,
               },
@@ -164,11 +165,12 @@ export default function ScoringModal({ visible, slots, label, onClose, onSaveSco
           setIsSubmitting(true);
           try {
             for (const [playerId, scoreData] of Object.entries(updatedScores)) {
+              const holesArray = Array(18).fill(null);
               await supabaseService.scores.submit(
                 eventId,
                 playerId,
                 selectedDay,
-                [],
+                holesArray,
                 scoreData.scoreTotal,
                 currentUser.id
               );
