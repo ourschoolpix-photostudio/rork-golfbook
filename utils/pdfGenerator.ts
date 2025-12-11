@@ -1143,7 +1143,7 @@ export async function generateInvoicePDF(
         <li style="margin-bottom: 6px;">Date: ${dateRange}</li>
         ${event.location ? `<li style="margin-bottom: 6px;">Location: ${event.location}</li>` : ''}
         ${event.numberOfDays ? `<li style="margin-bottom: 6px;">Number of Days: ${event.numberOfDays}</li>` : ''}
-        ${!isSponsor ? `<li style="margin-bottom: 6px;">Entry Fee: \${entryFee.toFixed(2)}</li>` : ''}
+        ${!isSponsor ? `<li style="margin-bottom: 6px;">Entry Fee: ${entryFee.toFixed(2)}</li>` : ''}
       </ul>
     </div>`;
 
@@ -1288,12 +1288,12 @@ export async function generateInvoicePDF(
     <div class="total-section">
       <div class="total-row">
         <span>Total Amount:</span>
-        <span>\${total.toFixed(2)}</span>
+        <span>${total.toFixed(2)}</span>
       </div>
     </div>
 
     <div class="payment-status ${isPaid ? 'paid' : 'unpaid'}">
-      ${isPaid ? '✓ PAID IN FULL' : `AMOUNT DUE: \${total.toFixed(2)}`}
+      ${isPaid ? '✓ PAID IN FULL' : `AMOUNT DUE: ${total.toFixed(2)}`}
     </div>`;
 
       if (!isPaid && (orgInfo?.zellePhone || orgInfo?.paypalClientId)) {
@@ -1626,7 +1626,7 @@ export function buildInvoiceHTMLContent(
   </div>
 
   <div class="payment-status ${isPaid ? 'paid' : 'unpaid'}">
-    ${isPaid ? '✓ PAID IN FULL' : `AMOUNT DUE: \${amountDue.toFixed(2)}`}
+    ${isPaid ? '✓ PAID IN FULL' : `AMOUNT DUE: ${amountDue.toFixed(2)}`}
   </div>
 
   ${registration?.guestNames ? `
