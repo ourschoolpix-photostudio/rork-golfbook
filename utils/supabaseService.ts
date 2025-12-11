@@ -621,6 +621,13 @@ export const supabaseService = {
         throw new Error(`Score validation failed: ${validation.errors.join(', ')}`);
       }
       
+      console.log('[supabaseService.scores.submit] Submitting score:', {
+        event_id: eventId,
+        member_id: memberId,
+        day,
+        total_score: totalScore,
+      });
+      
       const { error } = await supabase.from('scores').upsert({
         event_id: eventId,
         member_id: memberId,
@@ -628,11 +635,18 @@ export const supabaseService = {
         holes,
         total_score: totalScore,
         submitted_by: submittedBy,
+        updated_at: new Date().toISOString(),
       }, {
-        onConflict: 'event_id,member_id,day'
+        onConflict: 'event_id,member_id,day',
+        ignoreDuplicates: false,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('[supabaseService.scores.submit] Error submitting score:', error);
+        throw error;
+      }
+      
+      console.log('[supabaseService.scores.submit] ✅ Score submitted successfully');
     },
     
     deleteAll: async (eventId: string) => {
