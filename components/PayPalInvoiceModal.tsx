@@ -16,8 +16,7 @@ import { Member, Event } from '@/types';
 import { TournamentTermsModal } from './TournamentTermsModal';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { formatDateAsFullDay } from '@/utils/dateUtils';
-import { useSettings } from '@/contexts/SettingsContext';
-import { createPayPalOrder } from '@/utils/paypalService';
+import { trpc } from '@/lib/trpc';
 
 interface PayPalInvoiceModalProps {
   visible: boolean;
@@ -34,7 +33,6 @@ export function PayPalInvoiceModal({
   onClose,
   onRegister,
 }: PayPalInvoiceModalProps) {
-  const { orgInfo } = useSettings();
   const [ghin, setGhin] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -43,6 +41,8 @@ export function PayPalInvoiceModal({
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [numberOfGuests, setNumberOfGuests] = useState('');
   const [guestNames, setGuestNames] = useState('');
+
+  const createPaymentMutation = trpc.registrations.paypal.createPayment.useMutation();
 
   useEffect(() => {
     if (visible && currentUser) {
@@ -95,51 +95,20 @@ export function PayPalInvoiceModal({
   const handlePayPalPayment = async () => {
     if (!canRegister() || !event) return;
 
-    console.log('[PayPalInvoiceModal] 🔍 Checking PayPal credentials...');
-    console.log('[PayPalInvoiceModal] orgInfo:', {
-      hasClientId: !!orgInfo.paypalClientId,
-      clientIdLength: orgInfo.paypalClientId?.length || 0,
-      hasClientSecret: !!orgInfo.paypalClientSecret,
-      clientSecretLength: orgInfo.paypalClientSecret?.length || 0,
-      mode: orgInfo.paypalMode,
-    });
-
-    const trimmedClientId = (orgInfo.paypalClientId || '').trim();
-    const trimmedClientSecret = (orgInfo.paypalClientSecret || '').trim();
-    const hasPayPalCredentials = trimmedClientId !== '' && trimmedClientSecret !== '';
-    
-    console.log('[PayPalInvoiceModal] After trimming:', {
-      hasCredentials: hasPayPalCredentials,
-      clientIdLength: trimmedClientId.length,
-      clientSecretLength: trimmedClientSecret.length,
-    });
-    
-    if (!hasPayPalCredentials) {
-      console.error('[PayPalInvoiceModal] ❌ PayPal credentials missing or empty');
-      Alert.alert(
-        'PayPal Not Configured',
-        'PayPal payment has not been configured by the administrator. Please contact them or use an alternative payment method.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
+    console.log('[PayPalInvoiceModal] 🔍 Starting PayPal payment via backend...');
+    console.log('[PayPalInvoiceModal] Event:', event.name);
+    console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
 
     setIsSubmitting(true);
 
     try {
-      console.log('[PayPalInvoiceModal] 🚀 Starting PayPal payment flow...');
-      console.log('[PayPalInvoiceModal] Event:', event.name);
-      console.log('[PayPalInvoiceModal] Total amount:', totalAmount.toFixed(2));
+      console.log('[PayPalInvoiceModal] 🚀 Calling backend tRPC endpoint...');
       
-      console.log('[PayPalInvoiceModal] Creating PayPal order directly...');
-      const paymentResponse = await createPayPalOrder({
+      const paymentResponse = await createPaymentMutation.mutateAsync({
         amount: totalAmount,
         eventName: event.name,
         eventId: event.id,
         playerEmail: email.trim(),
-        paypalClientId: orgInfo.paypalClientId,
-        paypalClientSecret: orgInfo.paypalClientSecret,
-        paypalMode: orgInfo.paypalMode,
       });
 
       console.log('[PayPalInvoiceModal] ✅ Payment order created:', paymentResponse);
