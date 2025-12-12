@@ -2404,11 +2404,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   statBox: {
-    minWidth: '30%',
     flex: 1,
     backgroundColor: '#2563EB',
-    paddingVertical: 2,
-    paddingHorizontal: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
