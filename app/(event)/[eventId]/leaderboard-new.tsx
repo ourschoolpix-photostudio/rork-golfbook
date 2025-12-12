@@ -399,7 +399,8 @@ export default function LeaderboardNewScreen() {
                       <View style={styles.pointsContainer}>
                         <Text style={styles.pointsValue}>{entry.netScore}</Text>
                         <Text style={styles.pointsLabel}>net</Text>
-                        <Text style={styles.totalScoreLabel}>Net: {entry.netScore} / Gross: {entry.grossScore}</Text>
+                        <Text style={styles.pointsValue}>{entry.grossScore}</Text>
+                        <Text style={styles.pointsLabel}>gross</Text>
                       </View>
                     </View>
                   ))}
@@ -459,7 +460,8 @@ export default function LeaderboardNewScreen() {
                       <View style={styles.pointsContainer}>
                         <Text style={styles.pointsValue}>{entry.netScore}</Text>
                         <Text style={styles.pointsLabel}>net</Text>
-                        <Text style={styles.totalScoreLabel}>Net: {entry.netScore} / Gross: {entry.grossScore}</Text>
+                        <Text style={styles.pointsValue}>{entry.grossScore}</Text>
+                        <Text style={styles.pointsLabel}>gross</Text>
                       </View>
                     </View>
                   ))}
