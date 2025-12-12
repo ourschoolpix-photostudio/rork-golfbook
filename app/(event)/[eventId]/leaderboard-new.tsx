@@ -315,7 +315,7 @@ export default function LeaderboardNewScreen() {
                 >
                   <View style={styles.positionBadge}>
                     {entry.position === 1 ? (
-                      <Trophy size={28} color="#FF8C00" fill="#FF8C00" />
+                      <Trophy size={28} color="#FFD700" />
                     ) : (
                       <Text style={styles.positionText}>#{entry.position}</Text>
                     )}
@@ -365,16 +365,14 @@ export default function LeaderboardNewScreen() {
                     >
                       <View style={[
                         styles.positionBadge,
-                        entry.position === 1 && { backgroundColor: '#fff' },
-                        entry.position === 2 && { backgroundColor: '#fff' },
-                        entry.position === 3 && { backgroundColor: '#fff' },
+                        (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
                       ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={28} color="#FF8C00" fill="#FF8C00" />
+                          <Trophy size={28} color="#FFD700" strokeWidth={2.5} />
                         ) : entry.position === 2 ? (
-                          <Trophy size={24} color="#87CEEB" fill="#87CEEB" />
+                          <Trophy size={24} color="#C0C0C0" strokeWidth={2.5} />
                         ) : entry.position === 3 ? (
-                          <Trophy size={24} color="#FF8C00" fill="#FF8C00" />
+                          <Trophy size={24} color="#CD7F32" strokeWidth={2.5} />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
@@ -420,16 +418,14 @@ export default function LeaderboardNewScreen() {
                     >
                       <View style={[
                         styles.positionBadge,
-                        entry.position === 1 && { backgroundColor: '#fff' },
-                        entry.position === 2 && { backgroundColor: '#fff' },
-                        entry.position === 3 && { backgroundColor: '#fff' },
+                        (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
                       ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={28} color="#FF8C00" fill="#FF8C00" />
+                          <Trophy size={28} color="#FFD700" strokeWidth={2.5} />
                         ) : entry.position === 2 ? (
-                          <Trophy size={24} color="#87CEEB" fill="#87CEEB" />
+                          <Trophy size={24} color="#C0C0C0" strokeWidth={2.5} />
                         ) : entry.position === 3 ? (
-                          <Trophy size={24} color="#FF8C00" fill="#FF8C00" />
+                          <Trophy size={24} color="#CD7F32" strokeWidth={2.5} />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
