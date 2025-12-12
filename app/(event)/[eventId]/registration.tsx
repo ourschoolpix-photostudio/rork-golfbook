@@ -68,6 +68,7 @@ export default function EventRegistrationScreen() {
   const [activeSort, setActiveSort] = useState<'all' | 'abc' | 'A' | 'B' | 'C' | 'L'>('all');
   const [registrations, setRegistrations] = useState<Record<string, any>>({});
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
+  const [membershipFilter, setMembershipFilter] = useState<'all' | 'active' | 'in-active'>('all');
   const [eventDetailsModalVisible, setEventDetailsModalVisible] = useState(false);
   const [selectedForBulkAdd, setSelectedForBulkAdd] = useState<Set<string>>(new Set());
   const [addCustomGuestName, setAddCustomGuestName] = useState('');
@@ -1110,8 +1111,14 @@ export default function EventRegistrationScreen() {
       players = players.filter((p) => registrations[p.name]?.paymentStatus === 'unpaid');
     }
 
+    if (membershipFilter === 'active') {
+      players = players.filter((p) => p.membershipType === 'active');
+    } else if (membershipFilter === 'in-active') {
+      players = players.filter((p) => p.membershipType === 'in-active');
+    }
+
     return players;
-  }, [activeSort, selectedPlayers, getPlayersFlights, paymentFilter, registrations]);
+  }, [activeSort, selectedPlayers, getPlayersFlights, paymentFilter, registrations, membershipFilter]);
 
   const getAvailableFlights = useMemo((): string[] => {
     const available: string[] = [];
@@ -1275,7 +1282,7 @@ export default function EventRegistrationScreen() {
         </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>Event Not Found</Text>
-          <Text style={styles.errorText}>The event you're looking for could not be found.</Text>
+          <Text style={styles.errorText}>The event you&apos;re looking for could not be found.</Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => router.back()}
@@ -1453,6 +1460,36 @@ export default function EventRegistrationScreen() {
               </TouchableOpacity>
             </>
           )}
+          <TouchableOpacity
+            style={[
+              styles.statBox,
+              membershipFilter === 'active' && styles.statBoxActive,
+              { backgroundColor: '#2E7D32' },
+            ]}
+            onPress={() =>
+              setMembershipFilter(membershipFilter === 'active' ? 'all' : 'active')
+            }
+          >
+            <Text style={styles.statLabel}>Active</Text>
+            <Text style={styles.statCount}>
+              {selectedPlayers.filter((p) => p.membershipType === 'active').length}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.statBox,
+              membershipFilter === 'in-active' && styles.statBoxActive,
+              { backgroundColor: '#C62828' },
+            ]}
+            onPress={() =>
+              setMembershipFilter(membershipFilter === 'in-active' ? 'all' : 'in-active')
+            }
+          >
+            <Text style={styles.statLabel}>In-active</Text>
+            <Text style={styles.statCount}>
+              {selectedPlayers.filter((p) => p.membershipType === 'in-active').length}
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -2361,15 +2398,17 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 12,
     paddingVertical: 6,
     gap: 6,
   },
   statBox: {
+    minWidth: '30%',
     flex: 1,
     backgroundColor: '#2563EB',
     paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2385,14 +2424,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
   },
   statLabel: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '600',
     color: '#fff',
     marginBottom: 2,
     opacity: 0.9,
+    textAlign: 'center',
   },
   statCount: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#fff',
   },
