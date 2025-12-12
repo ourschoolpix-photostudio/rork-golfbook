@@ -399,6 +399,7 @@ export default function LeaderboardNewScreen() {
                       <View style={styles.pointsContainer}>
                         <Text style={styles.pointsValue}>{entry.netScore}</Text>
                         <Text style={styles.pointsLabel}>net</Text>
+                        <Text style={styles.totalScoreLabel}>Net: {entry.netScore} / Gross: {entry.grossScore}</Text>
                       </View>
                     </View>
                   ))}
@@ -458,6 +459,7 @@ export default function LeaderboardNewScreen() {
                       <View style={styles.pointsContainer}>
                         <Text style={styles.pointsValue}>{entry.netScore}</Text>
                         <Text style={styles.pointsLabel}>net</Text>
+                        <Text style={styles.totalScoreLabel}>Net: {entry.netScore} / Gross: {entry.grossScore}</Text>
                       </View>
                     </View>
                   ))}
@@ -707,6 +709,13 @@ const styles = StyleSheet.create({
   pointsLabel: {
     fontSize: 12,
     color: '#999',
+  },
+  totalScoreLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center' as const,
   },
   playerHandicap: {
     fontSize: 12,
