@@ -2406,7 +2406,7 @@ const styles = StyleSheet.create({
   statBox: {
     flex: 1,
     backgroundColor: '#2563EB',
-    paddingVertical: 9,
+    paddingVertical: 7,
     paddingHorizontal: 6,
     borderRadius: 6,
     alignItems: 'center',
