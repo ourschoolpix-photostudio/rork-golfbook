@@ -307,32 +307,41 @@ export default function LeaderboardNewScreen() {
                 <View 
                   key={entry.member.id} 
                   style={[
-                    styles.podiumCard,
-                    entry.position === 1 && { borderLeftColor: '#FFD700', borderLeftWidth: 6 },
-                    entry.position === 2 && { borderLeftColor: '#C0C0C0', borderLeftWidth: 6 },
-                    entry.position === 3 && { borderLeftColor: '#CD7F32', borderLeftWidth: 6 },
+                    styles.regularCard,
+                    entry.position <= 3 && styles.leaderCard,
+                    entry.position === 1 && { backgroundColor: '#FFFACD', borderLeftColor: '#FFD700', borderLeftWidth: 6 },
+                    entry.position === 2 && { backgroundColor: '#F0F8FF', borderLeftColor: '#C0C0C0', borderLeftWidth: 6 },
+                    entry.position === 3 && { backgroundColor: '#FFF8DC', borderLeftColor: '#CD7F32', borderLeftWidth: 6 },
                   ]}
                 >
-                  <View style={styles.positionBadge}>
+                  <View style={[
+                    styles.positionBadge,
+                    (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
+                  ]}>
                     {entry.position === 1 ? (
-                      <Trophy size={28} color="#FFD700" />
+                      <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
+                    ) : entry.position === 2 ? (
+                      <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
+                    ) : entry.position === 3 ? (
+                      <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
                     ) : (
                       <Text style={styles.positionText}>#{entry.position}</Text>
                     )}
                   </View>
                   <View style={styles.playerInfo}>
                     <Text style={styles.playerName}>{entry.member.name}</Text>
-                    <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
+                    <Text style={styles.playerDetails}>
+                      HDC: {entry.handicap}
+                    </Text>
+                    <Text style={styles.playerDetails}>
+                      Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
+                    </Text>
                   </View>
-                  <View style={styles.scoresContainer}>
-                    <View style={styles.scoreItem}>
-                      <Text style={styles.scoreLabel}>Net</Text>
-                      <Text style={[styles.scoreValue, styles.netScoreValue]}>{entry.netScore}</Text>
-                    </View>
-                    <View style={styles.scoreItem}>
-                      <Text style={styles.scoreLabel}>Gross</Text>
-                      <Text style={styles.scoreValue}>{entry.grossScore}</Text>
-                    </View>
+                  <View style={styles.pointsContainer}>
+                    <Text style={styles.pointsValue}>{entry.netScore}</Text>
+                    <Text style={styles.pointsLabel}>net</Text>
+                    <Text style={styles.pointsValue}>0</Text>
+                    <Text style={styles.pointsLabel}>rolex pts</Text>
                   </View>
                 </View>
               ))
