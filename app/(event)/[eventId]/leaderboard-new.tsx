@@ -368,11 +368,11 @@ export default function LeaderboardNewScreen() {
                         (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
                       ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={28} color="#FFD700" strokeWidth={2.5} />
+                          <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
                         ) : entry.position === 2 ? (
-                          <Trophy size={24} color="#C0C0C0" strokeWidth={2.5} />
+                          <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
                         ) : entry.position === 3 ? (
-                          <Trophy size={24} color="#CD7F32" strokeWidth={2.5} />
+                          <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
@@ -421,11 +421,11 @@ export default function LeaderboardNewScreen() {
                         (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
                       ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={28} color="#FFD700" strokeWidth={2.5} />
+                          <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
                         ) : entry.position === 2 ? (
-                          <Trophy size={24} color="#C0C0C0" strokeWidth={2.5} />
+                          <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
                         ) : entry.position === 3 ? (
-                          <Trophy size={24} color="#CD7F32" strokeWidth={2.5} />
+                          <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
