@@ -80,8 +80,15 @@ export const generateGroupLabel = (
   // If override is 'teeTime', always show tee time
   if (override === 'teeTime' && startTime) {
     const startMinutes = timeToMinutes(startTime);
-    const groupMinutes = startMinutes + groupIndex * 10;
-    return minutesToTime(groupMinutes, startPeriod);
+    if (doubleMode) {
+      const actualGroupIdx = Math.floor(groupIndex / 2);
+      const isB = groupIndex % 2 === 1;
+      const groupMinutes = startMinutes + actualGroupIdx * 10;
+      return `${minutesToTime(groupMinutes, startPeriod)}${isB ? 'B' : 'A'}`;
+    } else {
+      const groupMinutes = startMinutes + groupIndex * 10;
+      return minutesToTime(groupMinutes, startPeriod);
+    }
   }
 
   // If override is 'shotgun', always show shotgun (hole or group numbers)
@@ -99,7 +106,13 @@ export const generateGroupLabel = (
       }
     } else {
       // No leading hole specified, use group numbers
-      return `Group ${groupIndex + 1}`;
+      if (doubleMode) {
+        const actualGroupIdx = Math.floor(groupIndex / 2);
+        const isB = groupIndex % 2 === 1;
+        return `Group ${actualGroupIdx + 1}${isB ? 'B' : 'A'}`;
+      } else {
+        return `Group ${groupIndex + 1}`;
+      }
     }
   }
 
@@ -118,17 +131,35 @@ export const generateGroupLabel = (
       }
     } else {
       // No leading hole specified, use group numbers
-      return `Group ${groupIndex + 1}`;
+      if (doubleMode) {
+        const actualGroupIdx = Math.floor(groupIndex / 2);
+        const isB = groupIndex % 2 === 1;
+        return `Group ${actualGroupIdx + 1}${isB ? 'B' : 'A'}`;
+      } else {
+        return `Group ${groupIndex + 1}`;
+      }
     }
   }
 
   // Default: tee time
   if (startTime) {
     const startMinutes = timeToMinutes(startTime);
-    const groupMinutes = startMinutes + groupIndex * 10;
-    return minutesToTime(groupMinutes, startPeriod);
+    if (doubleMode) {
+      const actualGroupIdx = Math.floor(groupIndex / 2);
+      const isB = groupIndex % 2 === 1;
+      const groupMinutes = startMinutes + actualGroupIdx * 10;
+      return `${minutesToTime(groupMinutes, startPeriod)}${isB ? 'B' : 'A'}`;
+    } else {
+      const groupMinutes = startMinutes + groupIndex * 10;
+      return minutesToTime(groupMinutes, startPeriod);
+    }
   }
 
   // Fallback
+  if (doubleMode) {
+    const actualGroupIdx = Math.floor(groupIndex / 2);
+    const isB = groupIndex % 2 === 1;
+    return `Group ${actualGroupIdx + 1}${isB ? 'B' : 'A'}`;
+  }
   return `Group ${groupIndex + 1}`;
 };
