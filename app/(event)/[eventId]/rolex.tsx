@@ -429,22 +429,24 @@ export default function EventRolexScreen() {
                       return `${getHandicapLabel(player, playerReg, useCourseHandicap, event || undefined, 1)} ${player.handicap}`;
                     })()}
                   </Text>
-                  {player.flight && (
-                    <Text style={[styles.playerFlight, (isLeader || showTrophy) && styles.playerFlightLeader]}>
-                      Flight: {player.flight}
-                    </Text>
-                  )}
-                  {player.rolexFlight && (
-                    <Text style={[styles.playerFlight, (isLeader || showTrophy) && styles.playerFlightLeader]}>
-                      Rolex Flight: {player.rolexFlight}
-                    </Text>
-                  )}
                   {viewMode === 'rolex' ? (
-                    <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
-                      Rolex Points: {player.rolexPoints || 0}
-                    </Text>
+                    <>
+                      {player.rolexFlight && (
+                        <Text style={[styles.playerFlight, (isLeader || showTrophy) && styles.playerFlightLeader]}>
+                          Rolex Flight: {player.rolexFlight}
+                        </Text>
+                      )}
+                      <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
+                        Rolex Points: {player.rolexPoints || 0}
+                      </Text>
+                    </>
                   ) : (
                     <>
+                      {player.flight && (
+                        <Text style={[styles.playerFlight, (isLeader || showTrophy) && styles.playerFlightLeader]}>
+                          Flight: {player.flight}
+                        </Text>
+                      )}
                       <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
                         Total: {player.scoreTotal || '—'}
                       </Text>
@@ -514,10 +516,12 @@ const styles = StyleSheet.create({
   rankCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   rankCardLeader: {
     backgroundColor: '#FFFBF0',
