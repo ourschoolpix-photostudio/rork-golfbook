@@ -228,10 +228,7 @@ export default function GroupingsScreen() {
     return slots.map(player => {
       if (!player) return null;
       
-      const playerScores = eventScores.filter((s: any) => {
-        if (s.memberId !== player.id) return false;
-        return s.day === activeDay;
-      });
+      const playerScores = eventScores.filter((s: any) => s.memberId === player.id);
       const totalScore = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
       
       if (totalScore > 0) {
@@ -359,10 +356,7 @@ export default function GroupingsScreen() {
           const enriched = unassignedMembers.map(player => {
             const playerReg = registrations[player.name];
             const effectiveHandicap = getDisplayHandicap(player, playerReg, event || undefined, useCourseHandicap, activeDay);
-            const playerScores = eventScores.filter((s: any) => {
-              if (s.memberId !== player.id) return false;
-              return s.day === activeDay;
-            });
+            const playerScores = eventScores.filter((s: any) => s.memberId === player.id);
             const grandTotal = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
             
             if (grandTotal > 0) {
