@@ -13,7 +13,22 @@ export const localStorageService = {
     async getAll(): Promise<Member[]> {
       try {
         const data = await AsyncStorage.getItem(STORAGE_KEYS.MEMBERS);
-        return data ? JSON.parse(data) : [];
+        if (!data) return [];
+        
+        try {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          console.error('❌ [LocalStorage] Members data is not an array, resetting');
+          await AsyncStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify([]));
+          return [];
+        } catch (parseError) {
+          console.error('❌ [LocalStorage] Failed to parse members JSON:', parseError);
+          console.error('❌ [LocalStorage] Corrupted data:', data?.substring(0, 100));
+          await AsyncStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify([]));
+          return [];
+        }
       } catch (error) {
         console.error('❌ [LocalStorage] Failed to get members:', error);
         return [];
@@ -69,7 +84,22 @@ export const localStorageService = {
     async getAll(): Promise<Event[]> {
       try {
         const data = await AsyncStorage.getItem(STORAGE_KEYS.EVENTS);
-        return data ? JSON.parse(data) : [];
+        if (!data) return [];
+        
+        try {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          console.error('❌ [LocalStorage] Events data is not an array, resetting');
+          await AsyncStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify([]));
+          return [];
+        } catch (parseError) {
+          console.error('❌ [LocalStorage] Failed to parse events JSON:', parseError);
+          console.error('❌ [LocalStorage] Corrupted data:', data?.substring(0, 100));
+          await AsyncStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify([]));
+          return [];
+        }
       } catch (error) {
         console.error('❌ [LocalStorage] Failed to get events:', error);
         return [];
@@ -125,8 +155,22 @@ export const localStorageService = {
     async getAll(memberId?: string): Promise<PersonalGame[]> {
       try {
         const data = await AsyncStorage.getItem(STORAGE_KEYS.GAMES);
-        const allGames: PersonalGame[] = data ? JSON.parse(data) : [];
-        return allGames;
+        if (!data) return [];
+        
+        try {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          console.error('❌ [LocalStorage] Games data is not an array, resetting');
+          await AsyncStorage.setItem(STORAGE_KEYS.GAMES, JSON.stringify([]));
+          return [];
+        } catch (parseError) {
+          console.error('❌ [LocalStorage] Failed to parse games JSON:', parseError);
+          console.error('❌ [LocalStorage] Corrupted data:', data?.substring(0, 100));
+          await AsyncStorage.setItem(STORAGE_KEYS.GAMES, JSON.stringify([]));
+          return [];
+        }
       } catch (error) {
         console.error('❌ [LocalStorage] Failed to get games:', error);
         return [];
@@ -179,11 +223,26 @@ export const localStorageService = {
     async getAll(memberId?: string): Promise<RegistrationNotification[]> {
       try {
         const data = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-        const allNotifications: RegistrationNotification[] = data ? JSON.parse(data) : [];
-        if (memberId) {
-          return allNotifications.filter(n => n.memberId === memberId);
+        if (!data) return [];
+        
+        try {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            const allNotifications = parsed;
+            if (memberId) {
+              return allNotifications.filter(n => n.memberId === memberId);
+            }
+            return allNotifications;
+          }
+          console.error('❌ [LocalStorage] Notifications data is not an array, resetting');
+          await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify([]));
+          return [];
+        } catch (parseError) {
+          console.error('❌ [LocalStorage] Failed to parse notifications JSON:', parseError);
+          console.error('❌ [LocalStorage] Corrupted data:', data?.substring(0, 100));
+          await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify([]));
+          return [];
         }
-        return allNotifications;
       } catch (error) {
         console.error('❌ [LocalStorage] Failed to get notifications:', error);
         return [];
