@@ -439,12 +439,20 @@ export default function EventRolexScreen() {
                       Rolex Flight: {player.rolexFlight}
                     </Text>
                   )}
-                  <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
-                    Total: {player.scoreTotal || '—'}
-                  </Text>
-                  <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
-                    Net Score: {player.scoreNet ? truncateToTwoDecimals(player.scoreNet) : '—'}
-                  </Text>
+                  {viewMode === 'rolex' ? (
+                    <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
+                      Rolex Points: {player.rolexPoints || 0}
+                    </Text>
+                  ) : (
+                    <>
+                      <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
+                        Total: {player.scoreTotal || '—'}
+                      </Text>
+                      <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
+                        Net Score: {player.scoreNet ? truncateToTwoDecimals(player.scoreNet) : '—'}
+                      </Text>
+                    </>
+                  )}
                 </View>
                 <View style={styles.pointsContainer}>
                   <Text style={[styles.points, (isLeader || showTrophy) && styles.pointsLeader]}>
