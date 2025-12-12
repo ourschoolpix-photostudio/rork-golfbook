@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { Trophy, RefreshCw, Medal } from 'lucide-react-native';
+import { Trophy, RefreshCw } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { EventFooter } from '@/components/EventFooter';
 import { useQuery } from '@tanstack/react-query';
@@ -315,7 +315,7 @@ export default function LeaderboardNewScreen() {
                 >
                   <View style={styles.positionBadge}>
                     {entry.position === 1 ? (
-                      <Medal size={20} color="#FFD700" fill="#FFD700" />
+                      <Trophy size={28} color="#FF8C00" fill="#FF8C00" />
                     ) : (
                       <Text style={styles.positionText}>#{entry.position}</Text>
                     )}
@@ -370,11 +370,11 @@ export default function LeaderboardNewScreen() {
                         entry.position === 3 && { backgroundColor: '#fff' },
                       ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={20} color="#FFD700" fill="#FFD700" />
+                          <Trophy size={28} color="#FF8C00" fill="#FF8C00" />
                         ) : entry.position === 2 ? (
-                          <Medal size={20} color="#C0C0C0" fill="#C0C0C0" />
+                          <Trophy size={24} color="#87CEEB" fill="#87CEEB" />
                         ) : entry.position === 3 ? (
-                          <Medal size={20} color="#CD7F32" fill="#CD7F32" />
+                          <Trophy size={24} color="#FF8C00" fill="#FF8C00" />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
@@ -425,11 +425,11 @@ export default function LeaderboardNewScreen() {
                         entry.position === 3 && { backgroundColor: '#fff' },
                       ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={20} color="#FFD700" fill="#FFD700" />
+                          <Trophy size={28} color="#FF8C00" fill="#FF8C00" />
                         ) : entry.position === 2 ? (
-                          <Medal size={20} color="#C0C0C0" fill="#C0C0C0" />
+                          <Trophy size={24} color="#87CEEB" fill="#87CEEB" />
                         ) : entry.position === 3 ? (
-                          <Medal size={20} color="#CD7F32" fill="#CD7F32" />
+                          <Trophy size={24} color="#FF8C00" fill="#FF8C00" />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
