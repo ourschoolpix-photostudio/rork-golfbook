@@ -308,8 +308,9 @@ export default function LeaderboardNewScreen() {
                   key={entry.member.id} 
                   style={[
                     styles.podiumCard,
-                    entry.position === 1 && styles.leaderCard,
-                    entry.position === 1 && { borderLeftColor: '#FFD700' }
+                    entry.position === 1 && { borderLeftColor: '#FFD700', borderLeftWidth: 6 },
+                    entry.position === 2 && { borderLeftColor: '#C0C0C0', borderLeftWidth: 6 },
+                    entry.position === 3 && { borderLeftColor: '#CD7F32', borderLeftWidth: 6 },
                   ]}
                 >
                   <View style={styles.positionBadge}>
