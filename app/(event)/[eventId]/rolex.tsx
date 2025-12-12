@@ -399,69 +399,113 @@ export default function EventRolexScreen() {
               }
             }
 
+            const playerReg = eventRegistrations.find((r: any) => r.memberId === player.id);
+            const rolexFlight = player.rolexFlight || player.flight;
+            
             return (
               <TouchableOpacity
                 onPress={() => handleMemberPress(player)}
                 activeOpacity={currentUser?.isAdmin ? 0.7 : 1}
                 disabled={!currentUser?.isAdmin}
               >
-              <View style={[styles.rankCard, (isLeader || showTrophy) && styles.rankCardLeader]}>
-                {showTrophy ? (
-                  <View style={styles.trophyContainer}>
-                    <Trophy size={44} color={trophyColor} />
-                  </View>
-                ) : isLeader ? (
-                  <View style={styles.trophyContainer}>
-                    <Trophy size={44} color="#FF3B30" />
+              <View style={[
+                styles.rankCard,
+                viewMode === 'rolex' && rank === 1 && { backgroundColor: '#FFFACD', borderLeftColor: '#FFD700', borderLeftWidth: 6 },
+                viewMode === 'rolex' && rank === 2 && { backgroundColor: '#F0F8FF', borderLeftColor: '#C0C0C0', borderLeftWidth: 6 },
+                viewMode === 'rolex' && rank === 3 && { backgroundColor: '#FFF8DC', borderLeftColor: '#CD7F32', borderLeftWidth: 6 },
+                viewMode === 'tournament' && (isLeader || showTrophy) && styles.rankCardLeader,
+              ]}>
+                {viewMode === 'rolex' ? (
+                  <View style={[
+                    styles.positionBadge,
+                    (rank === 1 || rank === 2 || rank === 3) && { backgroundColor: 'transparent' },
+                  ]}>
+                    {rank === 1 ? (
+                      <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
+                    ) : rank === 2 ? (
+                      <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
+                    ) : rank === 3 ? (
+                      <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
+                    ) : (
+                      <Text style={styles.positionText}>#{rank}</Text>
+                    )}
                   </View>
                 ) : (
-                  <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>#{rank}</Text>
-                  </View>
+                  showTrophy ? (
+                    <View style={styles.trophyContainer}>
+                      <Trophy size={44} color={trophyColor} />
+                    </View>
+                  ) : isLeader ? (
+                    <View style={styles.trophyContainer}>
+                      <Trophy size={44} color="#FF3B30" />
+                    </View>
+                  ) : (
+                    <View style={styles.rankBadge}>
+                      <Text style={styles.rankText}>#{rank}</Text>
+                    </View>
+                  )
                 )}
                 <View style={styles.playerInfo}>
-                  <Text style={[styles.playerName, (isLeader || showTrophy) && styles.playerNameLeader]}>
+                  <Text style={[
+                    styles.playerName,
+                    viewMode === 'tournament' && (isLeader || showTrophy) && styles.playerNameLeader
+                  ]}>
                     {player.name}
                   </Text>
-                  <Text style={[styles.playerHandicap, (isLeader || showTrophy) && styles.playerHandicapLeader]}>
-                    {(() => {
-                      const playerReg = eventRegistrations.find((r: any) => r.memberId === player.id);
-                      return `${getHandicapLabel(player, playerReg, useCourseHandicap, event || undefined, 1)} ${player.handicap}`;
-                    })()}
+                  <Text style={[
+                    styles.playerHandicap,
+                    viewMode === 'tournament' && (isLeader || showTrophy) && styles.playerHandicapLeader
+                  ]}>
+                    {`${getHandicapLabel(player, playerReg, useCourseHandicap, event || undefined, 1)} ${player.handicap}`}
                   </Text>
                   {viewMode === 'rolex' ? (
                     <>
-                      {player.rolexFlight && (
-                        <Text style={[styles.playerFlight, (isLeader || showTrophy) && styles.playerFlightLeader]}>
-                          Rolex Flight: {player.rolexFlight}
+                      {rolexFlight && (
+                        <Text style={styles.playerDetails}>
+                          Rolex Flight: {rolexFlight}
                         </Text>
                       )}
-                      <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
-                        Rolex Points: {player.rolexPoints || 0}
-                      </Text>
                     </>
                   ) : (
                     <>
                       {player.flight && (
-                        <Text style={[styles.playerFlight, (isLeader || showTrophy) && styles.playerFlightLeader]}>
+                        <Text style={[
+                          styles.playerFlight,
+                          (isLeader || showTrophy) && styles.playerFlightLeader
+                        ]}>
                           Flight: {player.flight}
                         </Text>
                       )}
-                      <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
+                      <Text style={[
+                        styles.playerScore,
+                        (isLeader || showTrophy) && styles.playerScoreLeader
+                      ]}>
                         Total: {player.scoreTotal || '—'}
                       </Text>
-                      <Text style={[styles.playerScore, (isLeader || showTrophy) && styles.playerScoreLeader]}>
+                      <Text style={[
+                        styles.playerScore,
+                        (isLeader || showTrophy) && styles.playerScoreLeader
+                      ]}>
                         Net Score: {player.scoreNet ? truncateToTwoDecimals(player.scoreNet) : '—'}
                       </Text>
                     </>
                   )}
                 </View>
-                <View style={styles.pointsContainer}>
-                  <Text style={[styles.points, (isLeader || showTrophy) && styles.pointsLeader]}>
-                    {player.rolexPoints || 0}
-                  </Text>
-                  <Text style={styles.pointsLabel}>pts</Text>
-                </View>
+                {viewMode === 'rolex' ? (
+                  <View style={styles.rolexPointsContainer}>
+                    <Text style={styles.rolexNetValue}>{player.scoreNet ? truncateToTwoDecimals(player.scoreNet) : '—'}</Text>
+                    <Text style={styles.rolexLabel}>net</Text>
+                    <Text style={styles.rolexPointsValue}>{player.rolexPoints || 0}</Text>
+                    <Text style={styles.rolexLabel}>rolex pts</Text>
+                  </View>
+                ) : (
+                  <View style={styles.pointsContainer}>
+                    <Text style={[styles.points, (isLeader || showTrophy) && styles.pointsLeader]}>
+                      {player.rolexPoints || 0}
+                    </Text>
+                    <Text style={styles.pointsLabel}>pts</Text>
+                  </View>
+                )}
               </View>
               </TouchableOpacity>
             );
@@ -516,10 +560,10 @@ const styles = StyleSheet.create({
   rankCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 14,
+    padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
@@ -527,6 +571,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFBF0',
     borderWidth: 2,
     borderColor: '#FFB800',
+  },
+  positionBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#2196F3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  positionText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
   },
   rankBadge: {
     width: 44,
@@ -553,10 +611,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   playerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#D32F2F',
+    marginBottom: 8,
   },
   playerNameLeader: {
     color: '#FF3B30',
@@ -565,10 +623,16 @@ const styles = StyleSheet.create({
   playerHandicap: {
     fontSize: 13,
     color: '#666',
+    marginBottom: 2,
   },
   playerHandicapLeader: {
     color: '#996600',
     fontWeight: '600',
+  },
+  playerDetails: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 2,
   },
   playerFlight: {
     fontSize: 13,
@@ -586,6 +650,24 @@ const styles = StyleSheet.create({
   playerScoreLeader: {
     color: '#FF3B30',
     fontWeight: '600',
+  },
+  rolexPointsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rolexNetValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFB300',
+  },
+  rolexPointsValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFB300',
+  },
+  rolexLabel: {
+    fontSize: 12,
+    color: '#999',
   },
   pointsContainer: {
     alignItems: 'center',
