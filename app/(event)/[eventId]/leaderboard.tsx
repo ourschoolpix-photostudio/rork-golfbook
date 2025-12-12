@@ -1,13 +1,13 @@
 import { useLocalSearchParams } from 'expo-router';
-import { Trophy, Medal } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Image, TouchableOpacity } from 'react-native';
+import { Trophy, RefreshCw } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { EventFooter } from '@/components/EventFooter';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
-import { getDisplayHandicap } from '@/utils/handicapHelper';
-import { useState, useMemo } from 'react';
+import { getDisplayHandicap, calculateTournamentFlight } from '@/utils/handicapHelper';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Member, Event } from '@/types';
-import { useRealtimeScores } from '@/utils/useRealtimeSubscription';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LeaderboardEntry {
   member: Member;
@@ -15,153 +15,294 @@ interface LeaderboardEntry {
   netScore: number;
   handicap: number;
   position: number;
+  flight: string;
   registration?: any;
 }
 
 export default function LeaderboardScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
-  const [selectedDay, setSelectedDay] = useState<number | 'all'>('all');
+  const [selectedDay, setSelectedDay] = useState<number | 'all' | 'rolex'>('all');
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  const { data: event, isLoading: eventLoading } = useQuery({
-    queryKey: ['events', eventId],
+  const eventQuery = useQuery({
+    queryKey: ['event', eventId],
     queryFn: () => supabaseService.events.get(eventId || ''),
     enabled: !!eventId,
-    staleTime: 30000,
-    refetchInterval: 30000,
-  });
-
-  const { data: allMembers = [], isLoading: membersLoading } = useQuery({
-    queryKey: ['members'],
-    queryFn: () => supabaseService.members.getAll(),
     staleTime: 60000,
   });
 
-  const { data: registrations = [], isLoading: registrationsLoading } = useQuery({
-    queryKey: ['registrations', eventId],
+  const membersQuery = useQuery({
+    queryKey: ['members', lastUpdate.getTime()],
+    queryFn: () => supabaseService.members.getAll(),
+    staleTime: 0,
+  });
+
+  const registrationsQuery = useQuery({
+    queryKey: ['event-registrations', eventId],
     queryFn: () => supabaseService.registrations.getAll(eventId || ''),
     enabled: !!eventId,
-    staleTime: 30000,
-    refetchInterval: 60000,
+    staleTime: 60000,
   });
 
-  const { data: scores = [], isLoading: scoresLoading } = useQuery({
-    queryKey: ['scores', eventId],
+  const scoresQuery = useQuery({
+    queryKey: ['event-scores', eventId, lastUpdate.getTime()],
     queryFn: () => supabaseService.scores.getAll(eventId || ''),
     enabled: !!eventId,
-    staleTime: 10000,
-    refetchInterval: 20000,
+    staleTime: 15000,
   });
 
-  useRealtimeScores(eventId || '', !!eventId);
+  useEffect(() => {
+    if (!eventId) return;
 
-  const leaderboard = useMemo(() => {
+    console.log('[Leaderboard] Setting up realtime subscription');
+
+    const channel = supabase
+      .channel(`leaderboard-${eventId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'scores',
+          filter: `event_id=eq.${eventId}`,
+        },
+        (payload) => {
+          console.log('[Leaderboard] Score update received:', payload.eventType);
+          setLastUpdate(new Date());
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'members',
+        },
+        (payload) => {
+          console.log('[Leaderboard] Member update received:', payload.eventType);
+          setLastUpdate(new Date());
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'event_registrations',
+          filter: `event_id=eq.${eventId}`,
+        },
+        (payload) => {
+          console.log('[Leaderboard] Registration update received:', payload.eventType);
+          setLastUpdate(new Date());
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Leaderboard] Subscription status:', status);
+      });
+
+    return () => {
+      console.log('[Leaderboard] Cleaning up subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [eventId]);
+
+  const handleRefresh = useCallback(() => {
+    console.log('[Leaderboard] Manual refresh triggered');
+    setLastUpdate(new Date());
+  }, []);
+
+  const leaderboard = useMemo<{ flightA: LeaderboardEntry[]; flightB: LeaderboardEntry[]; rolex: LeaderboardEntry[] }>(() => {
+    const event = eventQuery.data;
+    const members = membersQuery.data || [];
+    const registrations = registrationsQuery.data || [];
+    const scores = scoresQuery.data || [];
+
     console.log('[Leaderboard] Computing leaderboard:', {
-      hasEvent: !!event,
-      membersCount: allMembers.length,
+      eventId,
+      membersCount: members.length,
       registrationsCount: registrations.length,
       scoresCount: scores.length,
+      selectedDay,
     });
 
-    if (!event || !allMembers.length || !registrations.length) {
-      console.log('[Leaderboard] Missing required data for leaderboard');
-      return [];
+    if (!event || members.length === 0 || registrations.length === 0) {
+      console.log('[Leaderboard] Missing data:', { event: !!event, members: members.length, registrations: registrations.length });
+      return { flightA: [], flightB: [], rolex: [] };
     }
 
-    const entries: LeaderboardEntry[] = [];
+    const allEntries: LeaderboardEntry[] = [];
 
     registrations.forEach((registration: any) => {
       if (!registration.memberId) return;
       
-      const member = allMembers.find((m: any) => m.id === registration.memberId);
+      const member = members.find((m: Member) => m.id === registration.memberId);
       if (!member) return;
       
       const playerScores = scores.filter((s: any) => {
         if (s.memberId !== registration.memberId) return false;
-        if (selectedDay === 'all') return true;
+        if (selectedDay === 'all' || selectedDay === 'rolex') return true;
         return s.day === selectedDay;
       });
 
       const grossScore = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
       
-      if (grossScore === 0) return;
-
+      if (grossScore === 0 && selectedDay !== 'rolex') return;
+      
       const handicap = getDisplayHandicap(member, registration, event as Event, false, 1);
       const netScore = grossScore - handicap;
+      
+      const flight = calculateTournamentFlight(
+        member,
+        Number(event.flightACutoff) || undefined,
+        Number(event.flightBCutoff) || undefined,
+        registration,
+        event as Event,
+        false,
+        1
+      );
 
-      entries.push({
+      console.log('[Leaderboard] Player:', member.name, 'Flight:', flight, 'Scores count:', playerScores.length, 'Gross:', grossScore, 'Net:', netScore);
+
+      allEntries.push({
         member,
         grossScore,
         netScore,
         handicap,
+        flight,
         position: 0,
         registration,
       });
     });
 
-    entries.sort((a, b) => a.netScore - b.netScore);
-    
-    let currentPosition = 1;
-    let previousNetScore: number | null = null;
+    console.log('[Leaderboard] All entries before filtering:', allEntries.length);
+    console.log('[Leaderboard] Sample calculated flights:', allEntries.slice(0, 3).map(e => ({
+      name: e.member.name,
+      flight: e.flight,
+      handicap: e.handicap
+    })));
 
-    entries.forEach((entry, index) => {
-      if (previousNetScore === null || entry.netScore !== previousNetScore) {
-        currentPosition = index + 1;
-      }
-      entry.position = currentPosition;
-      previousNetScore = entry.netScore;
+    let flightAEntries = allEntries.filter(e => e.flight === 'A');
+    let flightBEntries = allEntries.filter(e => e.flight === 'B');
+    const noFlightEntries = allEntries.filter(e => !e.flight || e.flight === '—');
+
+    console.log('[Leaderboard] Flight A entries:', flightAEntries.length, 'Flight B entries:', flightBEntries.length, 'No flight:', noFlightEntries.length);
+
+    if (noFlightEntries.length > 0) {
+      console.log('[Leaderboard] Players without flight assignment found, putting them in Flight A');
+      flightAEntries = [...flightAEntries, ...noFlightEntries];
+    }
+
+    flightAEntries.sort((a, b) => {
+      if (a.netScore === b.netScore) return 0;
+      return a.netScore - b.netScore;
+    });
+    flightBEntries.sort((a, b) => {
+      if (a.netScore === b.netScore) return 0;
+      return a.netScore - b.netScore;
     });
 
-    return entries;
-  }, [event, selectedDay, scores, registrations, allMembers]);
+    const flightAWithPositions = flightAEntries.map((entry, index, arr) => {
+      let position = index + 1;
+      if (index > 0 && entry.netScore === arr[index - 1].netScore) {
+        position = (arr[index - 1] as any)._tournamentPosition;
+      }
+      return { ...entry, position, _tournamentPosition: position };
+    });
 
-  const isLoading = eventLoading || membersLoading || registrationsLoading || scoresLoading;
+    const flightBWithPositions = flightBEntries.map((entry, index, arr) => {
+      let position = index + 1;
+      if (index > 0 && entry.netScore === arr[index - 1].netScore) {
+        position = (arr[index - 1] as any)._tournamentPosition;
+      }
+      return { ...entry, position, _tournamentPosition: position };
+    });
 
-  const getPodiumColor = (position: number): string => {
-    switch (position) {
-      case 1: return '#FFD700';
-      case 2: return '#C0C0C0';
-      case 3: return '#CD7F32';
-      default: return '#1B5E20';
-    }
-  };
+    const rolexEntries = [...allEntries]
+      .sort((a, b) => a.netScore - b.netScore)
+      .map((entry, index, arr) => {
+        let position = index + 1;
+        if (index > 0 && entry.netScore === arr[index - 1].netScore) {
+          position = (arr[index - 1] as any)._rolexPosition;
+        }
+        return { ...entry, position, _rolexPosition: position };
+      });
+
+    return { flightA: flightAWithPositions, flightB: flightBWithPositions, rolex: rolexEntries };
+  }, [eventQuery.data, membersQuery.data, registrationsQuery.data, scoresQuery.data, selectedDay, eventId]);
+
+  const isLoading = eventQuery.isLoading || membersQuery.isLoading || registrationsQuery.isLoading || scoresQuery.isLoading;
+  const isRefetching = scoresQuery.isFetching && !scoresQuery.isLoading;
+
+  const handleDaySelect = useCallback((day: number | 'all' | 'rolex') => {
+    setSelectedDay(day);
+  }, []);
 
   return (
     <>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Trophy size={20} color="#fff" />
-          <Text style={styles.headerTitle}>LEADERBOARD</Text>
+          <Text style={styles.headerTitle}>TOURNAMENT LEADERBOARD</Text>
+          <TouchableOpacity 
+            onPress={handleRefresh} 
+            style={styles.refreshButton}
+            disabled={isRefetching}
+          >
+            <RefreshCw 
+              size={18} 
+              color="#fff" 
+              style={isRefetching ? styles.refreshing : undefined}
+            />
+          </TouchableOpacity>
         </View>
 
-        {event && event.photoUrl && (
+        {eventQuery.data?.photoUrl && (
           <View style={styles.eventPhotoContainer}>
-            <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
-            <Text style={styles.eventNameOverlay}>{event.name}</Text>
+            <Image source={{ uri: eventQuery.data.photoUrl }} style={styles.eventPhoto} />
+            <Text style={styles.eventNameOverlay}>{eventQuery.data.name}</Text>
             <View style={styles.bottomInfoOverlay}>
-              <Text style={styles.eventLocationOverlay}>{event.location}</Text>
+              <Text style={styles.eventLocationOverlay}>{eventQuery.data.location}</Text>
               <Text style={styles.eventDateOverlay}>
-                {event.date}
-                {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
+                {eventQuery.data.date}
+                {eventQuery.data.endDate && eventQuery.data.endDate !== eventQuery.data.date ? ` - ${eventQuery.data.endDate}` : ''}
               </Text>
             </View>
           </View>
         )}
 
-        {event && event.numberOfDays && event.numberOfDays > 1 && (
+        <View style={styles.tabSelector}>
+          <TouchableOpacity
+            style={[styles.tabButton, selectedDay !== 'rolex' && styles.tabButtonActive]}
+            onPress={() => handleDaySelect('all')}
+          >
+            <Text style={[styles.tabButtonText, selectedDay !== 'rolex' && styles.tabButtonTextActive]}>
+              Tournament
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabButton, selectedDay === 'rolex' && styles.tabButtonActive]}
+            onPress={() => handleDaySelect('rolex')}
+          >
+            <Text style={[styles.tabButtonText, selectedDay === 'rolex' && styles.tabButtonTextActive]}>
+              Rolex Points
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {selectedDay !== 'rolex' && eventQuery.data?.numberOfDays && eventQuery.data.numberOfDays > 1 && (
           <View style={styles.daySelector}>
             <TouchableOpacity
               style={[styles.dayButton, selectedDay === 'all' && styles.dayButtonActive]}
-              onPress={() => setSelectedDay('all')}
+              onPress={() => handleDaySelect('all')}
             >
               <Text style={[styles.dayButtonText, selectedDay === 'all' && styles.dayButtonTextActive]}>
                 All Days
               </Text>
             </TouchableOpacity>
-            {Array.from({ length: event.numberOfDays }, (_, i) => i + 1).map((day) => (
+            {Array.from({ length: eventQuery.data.numberOfDays }, (_, i) => i + 1).map((day) => (
               <TouchableOpacity
                 key={day}
                 style={[styles.dayButton, selectedDay === day && styles.dayButtonActive]}
-                onPress={() => setSelectedDay(day)}
+                onPress={() => handleDaySelect(day)}
               >
                 <Text style={[styles.dayButtonText, selectedDay === day && styles.dayButtonTextActive]}>
                   Day {day}
@@ -174,9 +315,63 @@ export default function LeaderboardScreen() {
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#1B5E20" />
               <Text style={styles.loadingText}>Loading leaderboard...</Text>
             </View>
-          ) : leaderboard.length === 0 ? (
+          ) : selectedDay === 'rolex' ? (
+            leaderboard.rolex.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Trophy size={64} color="#999" />
+                <Text style={styles.emptyTitle}>No Scores Yet</Text>
+                <Text style={styles.emptyText}>
+                  Scores will appear here in real-time as they are submitted during the tournament.
+                </Text>
+              </View>
+            ) : (
+              leaderboard.rolex.map((entry) => (
+                <View 
+                  key={entry.member.id} 
+                  style={[
+                    styles.regularCard,
+                    entry.position <= 3 && styles.leaderCard,
+                    entry.position === 1 && { backgroundColor: '#FFFACD', borderLeftColor: '#FFD700', borderLeftWidth: 6 },
+                    entry.position === 2 && { backgroundColor: '#F0F8FF', borderLeftColor: '#C0C0C0', borderLeftWidth: 6 },
+                    entry.position === 3 && { backgroundColor: '#FFF8DC', borderLeftColor: '#CD7F32', borderLeftWidth: 6 },
+                  ]}
+                >
+                  <View style={[
+                    styles.positionBadge,
+                    (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
+                  ]}>
+                    {entry.position === 1 ? (
+                      <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
+                    ) : entry.position === 2 ? (
+                      <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
+                    ) : entry.position === 3 ? (
+                      <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
+                    ) : (
+                      <Text style={styles.positionText}>#{entry.position}</Text>
+                    )}
+                  </View>
+                  <View style={styles.playerInfo}>
+                    <Text style={styles.playerName}>{entry.member.name}</Text>
+                    <Text style={styles.playerDetails}>
+                      HDC: {entry.handicap}
+                    </Text>
+                    <Text style={styles.playerDetails}>
+                      Rolex Flight: {entry.registration?.rolexFlight || entry.member.rolexFlight || entry.flight}
+                    </Text>
+                  </View>
+                  <View style={styles.pointsContainer}>
+                    <Text style={styles.pointsValue}>{entry.netScore}</Text>
+                    <Text style={styles.pointsLabel}>net</Text>
+                    <Text style={styles.pointsValue}>{entry.member.rolexPoints || 0}</Text>
+                    <Text style={styles.pointsLabel}>rolex pts</Text>
+                  </View>
+                </View>
+              ))
+            )
+          ) : leaderboard.flightA.length === 0 && leaderboard.flightB.length === 0 ? (
             <View style={styles.emptyState}>
               <Trophy size={64} color="#999" />
               <Text style={styles.emptyTitle}>No Scores Yet</Text>
@@ -186,51 +381,110 @@ export default function LeaderboardScreen() {
             </View>
           ) : (
             <>
-              {leaderboard.slice(0, 3).map((entry) => (
-                <View key={entry.member.id} style={[styles.podiumCard, { borderLeftColor: getPodiumColor(entry.position) }]}>
-                  <View style={styles.positionBadge}>
-                    {entry.position <= 3 ? (
-                      <Medal size={20} color={getPodiumColor(entry.position)} fill={getPodiumColor(entry.position)} />
-                    ) : (
-                      <Text style={styles.positionText}>#{entry.position}</Text>
-                    )}
+              {leaderboard.flightA.length > 0 && (
+                <>
+                  <View style={styles.flightSeparator}>
+                    <Text style={styles.flightLabel}>FLIGHT A</Text>
                   </View>
-                  <View style={styles.playerInfo}>
-                    <Text style={styles.playerName}>{entry.member.name}</Text>
-                    <Text style={styles.playerHandicap}>Handicap: {entry.handicap}</Text>
-                  </View>
-                  <View style={styles.scoresContainer}>
-                    <View style={styles.scoreItem}>
-                      <Text style={styles.scoreLabel}>Net</Text>
-                      <Text style={[styles.scoreValue, styles.netScoreValue]}>{entry.netScore}</Text>
-                    </View>
-                    <View style={styles.scoreItem}>
-                      <Text style={styles.scoreLabel}>Gross</Text>
-                      <Text style={styles.scoreValue}>{entry.grossScore}</Text>
-                    </View>
-                  </View>
-                </View>
-              ))}
-
-              {leaderboard.length > 3 && (
-                <View style={styles.restOfFieldContainer}>
-                  <Text style={styles.restOfFieldTitle}>Rest of Field</Text>
-                  {leaderboard.slice(3).map((entry) => (
-                    <View key={entry.member.id} style={styles.leaderboardRow}>
-                      <View style={styles.positionBox}>
-                        <Text style={styles.positionNumber}>{entry.position}</Text>
+                  {leaderboard.flightA.map((entry) => (
+                    <View 
+                      key={entry.member.id} 
+                      style={[
+                        styles.regularCard,
+                        entry.position <= 3 && styles.leaderCard,
+                        entry.position === 1 && { backgroundColor: '#FFFACD', borderLeftColor: '#FFD700', borderLeftWidth: 6 },
+                        entry.position === 2 && { backgroundColor: '#F0F8FF', borderLeftColor: '#C0C0C0', borderLeftWidth: 6 },
+                        entry.position === 3 && { backgroundColor: '#FFF8DC', borderLeftColor: '#CD7F32', borderLeftWidth: 6 },
+                      ]}
+                    >
+                      <View style={[
+                        styles.positionBadge,
+                        (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
+                      ]}>
+                        {entry.position === 1 ? (
+                          <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
+                        ) : entry.position === 2 ? (
+                          <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
+                        ) : entry.position === 3 ? (
+                          <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
+                        ) : (
+                          <Text style={styles.positionText}>#{entry.position}</Text>
+                        )}
                       </View>
-                      <View style={styles.rowPlayerInfo}>
-                        <Text style={styles.rowPlayerName}>{entry.member.name}</Text>
-                        <Text style={styles.rowPlayerHandicap}>Handicap: {entry.handicap}</Text>
+                      <View style={styles.playerInfo}>
+                        <Text style={styles.playerName}>{entry.member.name}</Text>
+                        <Text style={styles.playerDetails}>
+                          HDC: {entry.handicap}
+                        </Text>
+                        <Text style={styles.playerDetails}>
+                          Flight: {entry.flight}
+                        </Text>
+                        <Text style={styles.playerDetails}>
+                          Rolex Flight: {entry.registration?.rolexFlight || entry.member.rolexFlight || entry.flight}
+                        </Text>
                       </View>
-                      <View style={styles.rowScores}>
-                        <Text style={styles.rowNetScore}>{entry.netScore}</Text>
-                        <Text style={styles.rowGrossScore}>({entry.grossScore})</Text>
+                      <View style={styles.pointsContainer}>
+                        <Text style={styles.pointsValue}>{entry.netScore}</Text>
+                        <Text style={styles.pointsLabel}>net</Text>
+                        <Text style={styles.pointsValue}>{entry.grossScore}</Text>
+                        <Text style={styles.pointsLabel}>gross</Text>
                       </View>
                     </View>
                   ))}
-                </View>
+                </>
+              )}
+
+              {leaderboard.flightB.length > 0 && (
+                <>
+                  <View style={styles.flightSeparator}>
+                    <Text style={styles.flightLabel}>FLIGHT B</Text>
+                  </View>
+                  {leaderboard.flightB.map((entry) => (
+                    <View 
+                      key={entry.member.id} 
+                      style={[
+                        styles.regularCard,
+                        entry.position <= 3 && styles.leaderCard,
+                        entry.position === 1 && { backgroundColor: '#FFFACD', borderLeftColor: '#FFD700', borderLeftWidth: 6 },
+                        entry.position === 2 && { backgroundColor: '#F0F8FF', borderLeftColor: '#C0C0C0', borderLeftWidth: 6 },
+                        entry.position === 3 && { backgroundColor: '#FFF8DC', borderLeftColor: '#CD7F32', borderLeftWidth: 6 },
+                      ]}
+                    >
+                      <View style={[
+                        styles.positionBadge,
+                        (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
+                      ]}>
+                        {entry.position === 1 ? (
+                          <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
+                        ) : entry.position === 2 ? (
+                          <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
+                        ) : entry.position === 3 ? (
+                          <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
+                        ) : (
+                          <Text style={styles.positionText}>#{entry.position}</Text>
+                        )}
+                      </View>
+                      <View style={styles.playerInfo}>
+                        <Text style={styles.playerName}>{entry.member.name}</Text>
+                        <Text style={styles.playerDetails}>
+                          HDC: {entry.handicap}
+                        </Text>
+                        <Text style={styles.playerDetails}>
+                          Flight: {entry.flight}
+                        </Text>
+                        <Text style={styles.playerDetails}>
+                          Rolex Flight: {entry.registration?.rolexFlight || entry.member.rolexFlight || entry.flight}
+                        </Text>
+                      </View>
+                      <View style={styles.pointsContainer}>
+                        <Text style={styles.pointsValue}>{entry.netScore}</Text>
+                        <Text style={styles.pointsLabel}>net</Text>
+                        <Text style={styles.pointsValue}>{entry.grossScore}</Text>
+                        <Text style={styles.pointsLabel}>gross</Text>
+                      </View>
+                    </View>
+                  ))}
+                </>
               )}
             </>
           )}
@@ -247,18 +501,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700' as const,
     color: '#fff',
+    letterSpacing: 0.5,
+  },
+  refreshButton: {
+    padding: 4,
+    position: 'absolute' as const,
+    right: 16,
+  },
+  refreshing: {
+    opacity: 0.5,
   },
   eventPhotoContainer: {
     position: 'relative' as const,
@@ -305,6 +568,32 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#fff',
   },
+  tabSelector: {
+    flexDirection: 'row' as const,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  tabButton: {
+    flex: 1,
+    height: 48,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  tabButtonActive: {
+    borderBottomColor: '#1B5E20',
+  },
+  tabButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#999',
+  },
+  tabButtonTextActive: {
+    color: '#1B5E20',
+    fontWeight: '700' as const,
+  },
   daySelector: {
     flexDirection: 'row' as const,
     paddingHorizontal: 16,
@@ -349,6 +638,7 @@ const styles = StyleSheet.create({
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     paddingVertical: 80,
+    gap: 12,
   },
   loadingText: {
     fontSize: 16,
@@ -372,47 +662,78 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     marginBottom: 16,
   },
-  comingSoon: {
-    fontSize: 14,
-    color: '#9ca3af',
-    fontStyle: 'italic' as const,
-  },
-  podiumCard: {
+  regularCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    borderLeftWidth: 6,
     flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    alignItems: 'flex-start' as const,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  leaderCard: {
+    backgroundColor: '#FFFACD',
+    borderColor: '#FFB347',
+    borderWidth: 2,
+    borderRadius: 12,
   },
   positionBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#2196F3',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     marginRight: 12,
   },
+  leaderBadge: {
+    backgroundColor: '#fff',
+  },
   positionText: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700' as const,
-    color: '#1B5E20',
+    color: '#fff',
   },
   playerInfo: {
     flex: 1,
   },
   playerName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700' as const,
-    color: '#333',
-    marginBottom: 4,
+    color: '#D32F2F',
+    marginBottom: 8,
+  },
+  playerDetails: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 2,
+  },
+  scoreText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#D32F2F',
+    marginBottom: 2,
+  },
+  pointsContainer: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  pointsValue: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    color: '#FFB300',
+  },
+  pointsLabel: {
+    fontSize: 12,
+    color: '#999',
+  },
+  totalScoreLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center' as const,
   },
   playerHandicap: {
     fontSize: 12,
@@ -439,62 +760,34 @@ const styles = StyleSheet.create({
   netScoreValue: {
     color: '#1B5E20',
   },
-  restOfFieldContainer: {
-    marginTop: 24,
-  },
-  restOfFieldTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: '#999',
-    marginBottom: 12,
-    paddingLeft: 4,
-  },
-  leaderboardRow: {
+  podiumCard: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 6,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  positionBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f5f5f5',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginRight: 12,
+  flightSeparator: {
+    backgroundColor: '#1B5E20',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  positionNumber: {
-    fontSize: 12,
+  flightLabel: {
+    fontSize: 18,
     fontWeight: '700' as const,
-    color: '#666',
-  },
-  rowPlayerInfo: {
-    flex: 1,
-  },
-  rowPlayerName: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#333',
-    marginBottom: 2,
-  },
-  rowPlayerHandicap: {
-    fontSize: 10,
-    color: '#999',
-  },
-  rowScores: {
-    alignItems: 'flex-end' as const,
-  },
-  rowNetScore: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: '#1B5E20',
-  },
-  rowGrossScore: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
+    color: '#fff',
+    textAlign: 'center' as const,
+    letterSpacing: 1,
   },
 });
