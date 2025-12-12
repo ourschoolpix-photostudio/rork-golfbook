@@ -32,9 +32,9 @@ export default function LeaderboardNewScreen() {
   });
 
   const membersQuery = useQuery({
-    queryKey: ['members'],
+    queryKey: ['members', lastUpdate.getTime()],
     queryFn: () => supabaseService.members.getAll(),
-    staleTime: 300000,
+    staleTime: 0,
   });
 
   const registrationsQuery = useQuery({
@@ -68,6 +68,31 @@ export default function LeaderboardNewScreen() {
         },
         (payload) => {
           console.log('[LeaderboardNew] Score update received:', payload.eventType);
+          setLastUpdate(new Date());
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'members',
+        },
+        (payload) => {
+          console.log('[LeaderboardNew] Member update received:', payload.eventType);
+          setLastUpdate(new Date());
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'event_registrations',
+          filter: `event_id=eq.${eventId}`,
+        },
+        (payload) => {
+          console.log('[LeaderboardNew] Registration update received:', payload.eventType);
           setLastUpdate(new Date());
         }
       )
@@ -334,7 +359,7 @@ export default function LeaderboardNewScreen() {
                       HDC: {entry.handicap}
                     </Text>
                     <Text style={styles.playerDetails}>
-                      Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
+                      Rolex Flight: {entry.registration?.rolexFlight || entry.member.rolexFlight || entry.flight}
                     </Text>
                   </View>
                   <View style={styles.pointsContainer}>
@@ -395,7 +420,7 @@ export default function LeaderboardNewScreen() {
                           Flight: {entry.flight}
                         </Text>
                         <Text style={styles.playerDetails}>
-                          Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
+                          Rolex Flight: {entry.registration?.rolexFlight || entry.member.rolexFlight || entry.flight}
                         </Text>
                       </View>
                       <View style={styles.pointsContainer}>
@@ -448,7 +473,7 @@ export default function LeaderboardNewScreen() {
                           Flight: {entry.flight}
                         </Text>
                         <Text style={styles.playerDetails}>
-                          Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
+                          Rolex Flight: {entry.registration?.rolexFlight || entry.member.rolexFlight || entry.flight}
                         </Text>
                       </View>
                       <View style={styles.pointsContainer}>
