@@ -79,9 +79,13 @@ export default function GlobalRolexScreen() {
 
   const handleSaveQuickEdit = async (updatedMember: Member) => {
     try {
+      console.log('[GlobalRolex] Saving member:', updatedMember.id, 'rolexPoints:', updatedMember.rolexPoints);
       await updateMember(updatedMember.id, updatedMember);
+      console.log('[GlobalRolex] Save successful, reloading members...');
+      await loadMembers();
+      console.log('[GlobalRolex] Members reloaded');
     } catch (error) {
-      console.error('Error saving member:', error);
+      console.error('[GlobalRolex] Error saving member:', error);
       throw error;
     }
   };
