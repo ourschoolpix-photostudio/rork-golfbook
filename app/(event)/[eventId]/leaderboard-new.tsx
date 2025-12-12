@@ -365,7 +365,7 @@ export default function LeaderboardNewScreen() {
                   <View style={styles.pointsContainer}>
                     <Text style={styles.pointsValue}>{entry.netScore}</Text>
                     <Text style={styles.pointsLabel}>net</Text>
-                    <Text style={styles.pointsValue}>0</Text>
+                    <Text style={styles.pointsValue}>{entry.member.rolexPoints || 0}</Text>
                     <Text style={styles.pointsLabel}>rolex pts</Text>
                   </View>
                 </View>

@@ -493,8 +493,6 @@ export default function EventRolexScreen() {
                 </View>
                 {viewMode === 'rolex' ? (
                   <View style={styles.rolexPointsContainer}>
-                    <Text style={styles.rolexNetValue}>{player.scoreNet ? truncateToTwoDecimals(player.scoreNet) : '—'}</Text>
-                    <Text style={styles.rolexLabel}>net</Text>
                     <Text style={styles.rolexPointsValue}>{player.rolexPoints || 0}</Text>
                     <Text style={styles.rolexLabel}>rolex pts</Text>
                   </View>
