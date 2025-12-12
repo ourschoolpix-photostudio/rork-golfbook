@@ -397,8 +397,8 @@ export default function LeaderboardNewScreen() {
                         </Text>
                       </View>
                       <View style={styles.pointsContainer}>
-                        <Text style={styles.pointsValue}>0</Text>
-                        <Text style={styles.pointsLabel}>pts</Text>
+                        <Text style={styles.pointsValue}>{entry.netScore}</Text>
+                        <Text style={styles.pointsLabel}>net</Text>
                       </View>
                     </View>
                   ))}
@@ -456,8 +456,8 @@ export default function LeaderboardNewScreen() {
                         </Text>
                       </View>
                       <View style={styles.pointsContainer}>
-                        <Text style={styles.pointsValue}>0</Text>
-                        <Text style={styles.pointsLabel}>pts</Text>
+                        <Text style={styles.pointsValue}>{entry.netScore}</Text>
+                        <Text style={styles.pointsLabel}>net</Text>
                       </View>
                     </View>
                   ))}
