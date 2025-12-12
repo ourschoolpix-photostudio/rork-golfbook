@@ -54,11 +54,19 @@ export default function GroupingsScreen() {
   const [initialGroups, setInitialGroups] = useState<Group[]>([]);
 
   const handleDoubleModeToggle = async (enabled: boolean) => {
+    console.log('[groupings] 🔄 handleDoubleModeToggle called with:', enabled);
     setDoubleMode(enabled);
     if (event) {
       const doubleModeKey = `doubleMode_${event.id}_day${activeDay}`;
-      await AsyncStorage.setItem(doubleModeKey, enabled.toString());
-      console.log('[groupings] Double mode', enabled ? 'enabled' : 'disabled', 'for day', activeDay);
+      try {
+        await AsyncStorage.setItem(doubleModeKey, enabled.toString());
+        console.log('[groupings] ✅ Double mode', enabled ? 'enabled' : 'disabled', 'for day', activeDay);
+        console.log('[groupings] ✅ Saved to key:', doubleModeKey);
+      } catch (error) {
+        console.error('[groupings] ❌ Error saving double mode:', error);
+      }
+    } else {
+      console.error('[groupings] ❌ No event found when toggling double mode');
     }
   };
 
