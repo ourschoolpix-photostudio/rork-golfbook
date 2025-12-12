@@ -389,12 +389,6 @@ export default function LeaderboardNewScreen() {
                         <Text style={styles.playerDetails}>
                           Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
                         </Text>
-                        <Text style={styles.scoreText}>
-                          Total: {entry.grossScore === 0 ? '—' : entry.grossScore}
-                        </Text>
-                        <Text style={styles.scoreText}>
-                          Net Score: {entry.netScore === 0 ? '—' : entry.netScore}
-                        </Text>
                       </View>
                       <View style={styles.pointsContainer}>
                         <Text style={styles.pointsValue}>{entry.netScore}</Text>
@@ -449,12 +443,6 @@ export default function LeaderboardNewScreen() {
                         </Text>
                         <Text style={styles.playerDetails}>
                           Rolex Flight: {entry.registration?.rolexFlight || entry.flight}
-                        </Text>
-                        <Text style={styles.scoreText}>
-                          Total: {entry.grossScore === 0 ? '—' : entry.grossScore}
-                        </Text>
-                        <Text style={styles.scoreText}>
-                          Net Score: {entry.netScore === 0 ? '—' : entry.netScore}
                         </Text>
                       </View>
                       <View style={styles.pointsContainer}>
