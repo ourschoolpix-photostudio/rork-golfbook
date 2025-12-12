@@ -2208,7 +2208,7 @@ const styles = StyleSheet.create({
     left: 16,
   },
   statusButtonSection: {
-    paddingVertical: 12,
+    paddingVertical: 6,
     paddingHorizontal: 16,
     backgroundColor: '#f5f5f5',
     flexDirection: 'row',
@@ -2400,7 +2400,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 2,
     gap: 6,
   },
   statBox: {
