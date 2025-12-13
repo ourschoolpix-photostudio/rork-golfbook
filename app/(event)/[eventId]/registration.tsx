@@ -1295,6 +1295,15 @@ export default function EventRegistrationScreen() {
     );
   }
 
+  console.log('[registration] 👤 Current user check:', {
+    hasUser: !!currentUser,
+    userId: currentUser?.id,
+    userName: currentUser?.name,
+    isAdmin: currentUser?.isAdmin,
+    boardMemberRoles: currentUser?.boardMemberRoles,
+    canAddPlayers: canAddPlayers(currentUser),
+  });
+
   return (
     <>
       <SafeAreaView style={styles.container}>
