@@ -159,7 +159,9 @@ export function PlayerHistoricalRecordsModal({
       
       console.log('[Historical Records] Loaded', eventRecords.length, 'records');
     } catch (error) {
-      console.error('[Historical Records] Error loading records:', error);
+      console.error('[Historical Records] Error loading records:', 
+        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error.stack : '');
     } finally {
       setLoading(false);
     }
