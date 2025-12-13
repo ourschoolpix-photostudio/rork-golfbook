@@ -2178,7 +2178,7 @@ export default function EventRegistrationScreen() {
             if (newStatus === 'complete') {
               console.log('[Registration] Event completed, calculating tournament handicaps...');
               
-              const eventPar = Number(event.day1Par) || 72;
+              const numberOfDays = event.numberOfDays || 1;
               const allRegs = registrationsQuery.data || [];
               const allScores = scoresQuery.data || [];
               
@@ -2189,16 +2189,33 @@ export default function EventRegistrationScreen() {
                 if (!member) continue;
                 
                 const playerScores = allScores.filter((s: any) => s.memberId === reg.memberId);
-                const totalGrossScore = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
                 
-                if (totalGrossScore > 0) {
-                  const tournamentHandicap = calculateTournamentHandicap(totalGrossScore, eventPar);
+                let totalGrossScore = 0;
+                let totalPar = 0;
+                let completedDays = 0;
+                
+                for (let day = 1; day <= numberOfDays; day++) {
+                  const dayScore = playerScores.find((s: any) => s.day === day);
+                  if (dayScore) {
+                    totalGrossScore += dayScore.totalScore || 0;
+                    completedDays++;
+                    
+                    const parKey = `day${day}Par` as keyof typeof event;
+                    const dayPar = event[parKey];
+                    if (dayPar) {
+                      totalPar += parseInt(dayPar as string, 10);
+                    }
+                  }
+                }
+                
+                if (totalGrossScore > 0 && completedDays === numberOfDays && totalPar > 0) {
+                  const tournamentHandicap = calculateTournamentHandicap(totalGrossScore, totalPar);
                   
                   const newRecord = {
                     eventId: event.id,
                     eventName: event.name,
                     score: totalGrossScore,
-                    par: eventPar,
+                    par: totalPar,
                     handicap: tournamentHandicap,
                     date: event.date,
                   };
