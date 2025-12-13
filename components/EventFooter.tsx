@@ -68,7 +68,9 @@ export function EventFooter({
         }
 
         if (completedDays === numberOfDays && totalPar > 0) {
+          console.log('[EventFooter] Calculating handicap - totalScore:', totalScore, 'totalPar:', totalPar, 'numberOfDays:', numberOfDays, 'completedDays:', completedDays);
           const handicap = calculateTournamentHandicap(totalScore, totalPar, numberOfDays);
+          console.log('[EventFooter] Calculated handicap:', handicap);
           
           const member = await supabaseService.members.get(memberId);
           if (member) {
