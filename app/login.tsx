@@ -220,7 +220,12 @@ export default function LoginScreen() {
       setShowPinChangeModal(false);
       setUserToUpdate(null);
       
-      router.replace('/(tabs)/dashboard');
+      Alert.alert('Success', 'Your PIN has been changed and saved successfully!', [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/(tabs)/dashboard'),
+        },
+      ]);
     } catch (error) {
       console.error('Error updating PIN:', error);
       Alert.alert('Error', 'Failed to update PIN. Please try again.');
@@ -303,7 +308,6 @@ export default function LoginScreen() {
       onClose={() => {
         setShowPinChangeModal(false);
         setUserToUpdate(null);
-        Alert.alert('PIN Change Required', 'You must change your PIN from the default value to continue.');
       }}
       onSave={handlePinChange}
       isLimitedMode={true}
