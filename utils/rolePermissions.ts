@@ -138,3 +138,14 @@ export function canTogglePaymentStatus(user: Member | null): boolean {
     'Operations',
   ]);
 }
+
+export function canAddPlayers(user: Member | null): boolean {
+  return hasAnyRole(user, [
+    'Admin',
+    'President',
+    'VP',
+    'Tournament Director',
+    'Handicap Director',
+    'Member Relations',
+  ]);
+}

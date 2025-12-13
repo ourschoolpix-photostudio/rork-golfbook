@@ -49,6 +49,7 @@ import {
   canStartEvent,
   canRemoveAllPlayers,
   canTogglePaymentStatus,
+  canAddPlayers,
 } from '@/utils/rolePermissions';
 
 export default function EventRegistrationScreen() {
@@ -1493,7 +1494,7 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      {event && canViewRegistration(currentUser) && (
+      {event && canAddPlayers(currentUser) && (
         <View style={styles.statusButtonSection}>
           <TouchableOpacity
             style={styles.addButtonInRow}
