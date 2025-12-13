@@ -802,15 +802,17 @@ export default function GroupingsScreen() {
               <Text style={styles.unassignAllBtnText}>UNASSIGN</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.resetScoresBtn}
-              onPress={() => {
-                setShowPinModal(true);
-              }}
-            >
-              <Ionicons name="refresh-circle" size={16} color="#fff" />
-              <Text style={styles.resetScoresBtnText}>RESET</Text>
-            </TouchableOpacity>
+            {(currentMember?.isAdmin || user?.isAdmin) && (
+              <TouchableOpacity
+                style={styles.resetScoresBtn}
+                onPress={() => {
+                  setShowPinModal(true);
+                }}
+              >
+                <Ionicons name="refresh-circle" size={16} color="#fff" />
+                <Text style={styles.resetScoresBtnText}>RESET</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {checkedGroups.size === 2 && (
