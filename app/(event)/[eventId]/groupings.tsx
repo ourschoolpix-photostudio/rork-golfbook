@@ -12,6 +12,7 @@ import {
   TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearScoresForEvent } from '@/utils/scorePeristence';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@/utils/auth';
@@ -667,15 +668,11 @@ export default function GroupingsScreen() {
       await deleteScoresMutation.mutateAsync({ eventId: event.id });
       console.log('[groupings] ✅ Backend scores deleted');
       
-      const numberOfDays = event.numberOfDays || 1;
-      for (let day = 1; day <= numberOfDays; day++) {
-        const adminScoreKey = `adminScores_${event.id}_day${day}`;
-        const playerScoreKey = `scores_${event.id}_day${day}`;
-        
-        await AsyncStorage.removeItem(adminScoreKey);
-        await AsyncStorage.removeItem(playerScoreKey);
-        console.log(`[groupings] 🧹 Cleared AsyncStorage for day ${day}`);
-      }
+      await clearScoresForEvent(event.id);
+      console.log('[groupings] 🧹 Cleared all AsyncStorage score caches');
+      
+      await queryClient.invalidateQueries({ queryKey: ['scores', event.id] });
+      console.log('[groupings] 🔄 Invalidated scores cache in React Query');
       
       await refetchScores();
       await refetchRegistrations();
