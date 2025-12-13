@@ -13,13 +13,22 @@ export type BoardMemberRole =
 export function hasRole(user: Member | null, role: BoardMemberRole): boolean {
   if (!user) return false;
   if (user.isAdmin) return true;
-  return user.boardMemberRoles?.includes(role) || false;
+  
+  const normalizedRole = role === 'VP' ? 'vice-president' : role.toLowerCase();
+  const userRoles = user.boardMemberRoles?.map(r => r.toLowerCase()) || [];
+  
+  return user.boardMemberRoles?.includes(role) || userRoles.includes(normalizedRole);
 }
 
 export function hasAnyRole(user: Member | null, roles: BoardMemberRole[]): boolean {
   if (!user) return false;
   if (user.isAdmin) return true;
-  return roles.some(role => user.boardMemberRoles?.includes(role));
+  
+  const userRoles = user.boardMemberRoles?.map(r => r.toLowerCase()) || [];
+  return roles.some(role => {
+    const normalizedRole = role === 'VP' ? 'vice-president' : role.toLowerCase();
+    return user.boardMemberRoles?.includes(role) || userRoles.includes(normalizedRole);
+  });
 }
 
 export function canViewRegistration(user: Member | null): boolean {
