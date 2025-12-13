@@ -65,12 +65,16 @@ export function PlayerHistoricalRecordsModal({
             status
           )
         `)
-        .eq('member_id', member.id)
-        .eq('events.status', 'complete');
+        .eq('member_id', member.id);
 
       if (regError) {
-        console.error('[Historical Records] Registration error:', regError);
-        throw regError;
+        console.error('[Historical Records] Registration error:', {
+          message: regError.message,
+          details: regError.details,
+          hint: regError.hint,
+          code: regError.code
+        });
+        throw new Error(`Failed to load registrations: ${regError.message}`);
       }
 
       console.log('[Historical Records] Raw registrations:', JSON.stringify(registrations, null, 2));
@@ -91,6 +95,11 @@ export function PlayerHistoricalRecordsModal({
           continue;
         }
         
+        if (event.status !== 'complete') {
+          console.log('[Historical Records] Skipping non-complete event:', event.name, event.status);
+          continue;
+        }
+        
         const { data: scores, error: scoresError } = await supabase
           .from('scores')
           .select('day, score')
@@ -99,7 +108,12 @@ export function PlayerHistoricalRecordsModal({
           .order('day', { ascending: true });
 
         if (scoresError) {
-          console.error('[Historical Records] Error loading scores:', scoresError);
+          console.error('[Historical Records] Error loading scores:', {
+            message: scoresError.message,
+            details: scoresError.details,
+            hint: scoresError.hint,
+            code: scoresError.code
+          });
           continue;
         }
 
@@ -120,7 +134,12 @@ export function PlayerHistoricalRecordsModal({
           .eq('event_id', event.id);
 
         if (allScoresError) {
-          console.error('[Historical Records] Error loading all scores:', allScoresError);
+          console.error('[Historical Records] Error loading all scores:', {
+            message: allScoresError.message,
+            details: allScoresError.details,
+            hint: allScoresError.hint,
+            code: allScoresError.code
+          });
         }
 
         let placement: number | null = null;
@@ -179,10 +198,16 @@ export function PlayerHistoricalRecordsModal({
       
       console.log('[Historical Records] Loaded', eventRecords.length, 'records');
     } catch (error) {
-      console.error('[Historical Records] Error loading records:', error);
+      console.error('[Historical Records] Error loading records:', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       if (error instanceof Error) {
-        console.error('[Historical Records] Error message:', error.message);
-        console.error('[Historical Records] Error stack:', error.stack);
+        console.error('[Historical Records] Error details:', error.message);
+      } else {
+        console.error('[Historical Records] Unknown error:', JSON.stringify(error, null, 2));
       }
     } finally {
       setLoading(false);
