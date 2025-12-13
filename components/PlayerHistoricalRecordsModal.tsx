@@ -1,0 +1,522 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
+import { X, Trophy, Calendar } from 'lucide-react-native';
+import { Member } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+
+interface EventRecord {
+  eventId: string;
+  eventName: string;
+  startDate: string;
+  endDate: string | null;
+  numberOfDays: number;
+  scores: { day: number; score: number | null }[];
+  placement: number | null;
+  totalScore: number;
+  flight: string | null;
+}
+
+interface SeasonData {
+  year: number;
+  events: EventRecord[];
+}
+
+interface PlayerHistoricalRecordsModalProps {
+  visible: boolean;
+  member: Member | null;
+  onClose: () => void;
+}
+
+export function PlayerHistoricalRecordsModal({
+  visible,
+  member,
+  onClose,
+}: PlayerHistoricalRecordsModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [seasons, setSeasons] = useState<SeasonData[]>([]);
+  const [expandedSeasons, setExpandedSeasons] = useState<Set<number>>(new Set());
+
+  const loadHistoricalRecords = useCallback(async () => {
+    if (!member) return;
+
+    try {
+      setLoading(true);
+      console.log('[Historical Records] Loading records for:', member.name);
+
+      const { data: registrations, error: regError } = await supabase
+        .from('event_registrations')
+        .select(`
+          event_id,
+          flight,
+          events!inner(
+            id,
+            name,
+            start_date,
+            end_date,
+            number_of_days,
+            status
+          )
+        `)
+        .eq('member_id', member.id)
+        .eq('events.status', 'complete')
+        .order('events.start_date', { ascending: false });
+
+      if (regError) throw regError;
+
+      const eventRecords: EventRecord[] = [];
+
+      for (const reg of registrations || []) {
+        const event = (reg as any).events;
+        
+        const { data: scores, error: scoresError } = await supabase
+          .from('scores')
+          .select('day, score')
+          .eq('event_id', event.id)
+          .eq('member_id', member.id)
+          .order('day', { ascending: true });
+
+        if (scoresError) {
+          console.error('[Historical Records] Error loading scores:', scoresError);
+          continue;
+        }
+
+        const dayScores = [];
+        let totalScore = 0;
+        const numberOfDays = event.number_of_days || 1;
+
+        for (let day = 1; day <= numberOfDays; day++) {
+          const dayScore = scores?.find(s => s.day === day);
+          const score = dayScore?.score || null;
+          dayScores.push({ day, score });
+          if (score) totalScore += score;
+        }
+
+        const { data: allScores, error: allScoresError } = await supabase
+          .from('scores')
+          .select('member_id, score')
+          .eq('event_id', event.id);
+
+        if (allScoresError) {
+          console.error('[Historical Records] Error loading all scores:', allScoresError);
+        }
+
+        let placement: number | null = null;
+        if (allScores && allScores.length > 0) {
+          const playerTotals = new Map<string, number>();
+          
+          allScores.forEach(s => {
+            const current = playerTotals.get(s.member_id) || 0;
+            playerTotals.set(s.member_id, current + (s.score || 0));
+          });
+
+          const sortedTotals = Array.from(playerTotals.entries())
+            .map(([memberId, total]) => ({ memberId, total }))
+            .sort((a, b) => a.total - b.total);
+
+          const playerIndex = sortedTotals.findIndex(p => p.memberId === member.id);
+          if (playerIndex !== -1) {
+            placement = playerIndex + 1;
+          }
+        }
+
+        eventRecords.push({
+          eventId: event.id,
+          eventName: event.name,
+          startDate: event.start_date,
+          endDate: event.end_date,
+          numberOfDays,
+          scores: dayScores,
+          placement,
+          totalScore,
+          flight: (reg as any).flight || null,
+        });
+      }
+
+      const seasonMap = new Map<number, EventRecord[]>();
+      eventRecords.forEach(record => {
+        const year = new Date(record.startDate).getFullYear();
+        if (!seasonMap.has(year)) {
+          seasonMap.set(year, []);
+        }
+        seasonMap.get(year)!.push(record);
+      });
+
+      const seasonsData: SeasonData[] = Array.from(seasonMap.entries())
+        .map(([year, events]) => ({ year, events }))
+        .sort((a, b) => b.year - a.year);
+
+      const currentYear = new Date().getFullYear();
+      setExpandedSeasons(new Set([currentYear]));
+      setSeasons(seasonsData);
+      
+      console.log('[Historical Records] Loaded', eventRecords.length, 'records');
+    } catch (error) {
+      console.error('[Historical Records] Error loading records:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [member]);
+
+  useEffect(() => {
+    if (visible && member) {
+      loadHistoricalRecords();
+    }
+  }, [visible, member, loadHistoricalRecords]);
+
+  const toggleSeason = (year: number) => {
+    setExpandedSeasons(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(year)) {
+        newSet.delete(year);
+      } else {
+        newSet.add(year);
+      }
+      return newSet;
+    });
+  };
+
+  const formatDate = (startDate: string, endDate: string | null) => {
+    const start = new Date(startDate);
+    const startFormatted = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    if (endDate) {
+      const end = new Date(endDate);
+      const endFormatted = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return `${startFormatted} - ${endFormatted}`;
+    }
+    
+    return startFormatted;
+  };
+
+  const getPlacementSuffix = (placement: number) => {
+    const j = placement % 10;
+    const k = placement % 100;
+    if (j === 1 && k !== 11) return 'st';
+    if (j === 2 && k !== 12) return 'nd';
+    if (j === 3 && k !== 13) return 'rd';
+    return 'th';
+  };
+
+  if (!member) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={onClose}
+    >
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Trophy size={24} color="#007AFF" />
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>Historical Records</Text>
+              <Text style={styles.headerSubtitle}>{member.name}</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <X size={24} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingText}>Loading records...</Text>
+          </View>
+        ) : seasons.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Trophy size={48} color="#ccc" />
+            <Text style={styles.emptyText}>No Historical Records</Text>
+            <Text style={styles.emptySubtext}>
+              Complete events will appear here
+            </Text>
+          </View>
+        ) : (
+          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+            {seasons.map(season => (
+              <View key={season.year} style={styles.seasonContainer}>
+                <TouchableOpacity
+                  style={styles.seasonHeader}
+                  onPress={() => toggleSeason(season.year)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.seasonHeaderLeft}>
+                    <Calendar size={20} color="#fff" />
+                    <Text style={styles.seasonTitle}>Season {season.year}</Text>
+                  </View>
+                  <View style={styles.seasonStats}>
+                    <Text style={styles.seasonStatsText}>{season.events.length} Events</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {expandedSeasons.has(season.year) && (
+                  <View style={styles.eventsContainer}>
+                    {season.events.map((event, index) => (
+                      <View key={event.eventId} style={styles.eventCard}>
+                        <View style={styles.eventHeader}>
+                          <Text style={styles.eventName} numberOfLines={2}>
+                            {event.eventName}
+                          </Text>
+                          {event.placement && (
+                            <View style={styles.placementBadge}>
+                              <Text style={styles.placementText}>
+                                {event.placement}{getPlacementSuffix(event.placement)}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <View style={styles.eventDetails}>
+                          <Text style={styles.eventDate}>
+                            {formatDate(event.startDate, event.endDate)}
+                          </Text>
+                          {event.flight && (
+                            <Text style={styles.eventFlight}>Flight {event.flight}</Text>
+                          )}
+                        </View>
+
+                        <View style={styles.scoresContainer}>
+                          {event.scores.map(dayScore => (
+                            <View key={dayScore.day} style={styles.scoreItem}>
+                              <Text style={styles.scoreLabel}>Day {dayScore.day}</Text>
+                              <Text style={styles.scoreValue}>
+                                {dayScore.score !== null ? dayScore.score : '-'}
+                              </Text>
+                            </View>
+                          ))}
+                          {event.numberOfDays > 1 && (
+                            <View style={[styles.scoreItem, styles.totalScoreItem]}>
+                              <Text style={styles.totalScoreLabel}>Total</Text>
+                              <Text style={styles.totalScoreValue}>{event.totalScore}</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingTop: 60,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  closeButton: {
+    padding: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#ccc',
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  seasonContainer: {
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  seasonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#007AFF',
+  },
+  seasonHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  seasonTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  seasonStats: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  seasonStatsText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  eventsContainer: {
+    padding: 12,
+  },
+  eventCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  eventName: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+    flex: 1,
+    marginRight: 8,
+  },
+  placementBadge: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  placementText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#000',
+  },
+  eventDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  eventDate: {
+    fontSize: 13,
+    color: '#666',
+  },
+  eventFlight: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '600' as const,
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  scoresContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  scoreItem: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    minWidth: 70,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  scoreLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 4,
+  },
+  scoreValue: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+  },
+  totalScoreItem: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  totalScoreLabel: {
+    fontSize: 11,
+    color: '#fff',
+    marginBottom: 4,
+    fontWeight: '600' as const,
+  },
+  totalScoreValue: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+});

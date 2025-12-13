@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Trash2, Pencil, User } from 'lucide-react-native';
+import { Trash2, Pencil, User, History } from 'lucide-react-native';
 import { Member } from '@/types';
-import { getTournamentHandicapDisplay, calculateAverageTournamentHandicap } from '@/utils/tournamentHandicapHelper';
+import { getTournamentHandicapDisplay } from '@/utils/tournamentHandicapHelper';
 
 interface PlayerCardProps {
   member: Member;
@@ -15,6 +15,7 @@ interface PlayerCardProps {
   showCheckbox?: boolean;
   isSelected?: boolean;
   onCheckboxPress?: () => void;
+  onHistoryPress?: () => void;
 }
 
 export const PlayerCard = memo(function PlayerCard({
@@ -28,6 +29,7 @@ export const PlayerCard = memo(function PlayerCard({
   showCheckbox,
   isSelected,
   onCheckboxPress,
+  onHistoryPress,
 }: PlayerCardProps) {
   const getMemberStatusText = (type: string) => {
     if (type === 'active' || type === 'active') return 'Active';
@@ -157,6 +159,12 @@ export const PlayerCard = memo(function PlayerCard({
           )}
         </TouchableOpacity>
 
+        {onHistoryPress && (
+          <TouchableOpacity onPress={onHistoryPress} style={styles.historyButton}>
+            <History size={18} color="#34C759" />
+          </TouchableOpacity>
+        )}
+
         {isAdmin && onEditPress && (
           <TouchableOpacity onPress={onEditPress} style={styles.editButton}>
             <Pencil size={18} color="#007AFF" />
@@ -273,6 +281,10 @@ const styles = StyleSheet.create({
     color: '#2196F3',
     fontWeight: '600' as const,
     lineHeight: 16,
+  },
+  historyButton: {
+    padding: 8,
+    marginLeft: 4,
   },
   editButton: {
     padding: 8,

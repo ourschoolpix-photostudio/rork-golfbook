@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Member } from '@/types';
 import { PlayerCard } from '@/components/PlayerCard';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
+import { PlayerHistoricalRecordsModal } from '@/components/PlayerHistoricalRecordsModal';
 
 
 export default function MembersScreen() {
@@ -27,6 +28,8 @@ export default function MembersScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [showFullEditModal, setShowFullEditModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyMember, setHistoryMember] = useState<Member | null>(null);
 
 
   const loadMembers = useCallback(async () => {
@@ -144,6 +147,12 @@ export default function MembersScreen() {
     }
   };
 
+  const handleHistoryPress = (member: Member) => {
+    console.log('[Members] Opening history for:', member.name);
+    setHistoryMember(member);
+    setShowHistoryModal(true);
+  };
+
 
 
   const getFilterTitle = () => {
@@ -249,6 +258,7 @@ export default function MembersScreen() {
                   isAdmin={authUser?.isAdmin || false}
                   isCurrentUser={true}
                   onEdit={() => setShowEditModal(true)}
+                  onHistoryPress={() => handleHistoryPress(currentUser)}
                 />
               </TouchableOpacity>
             </View>
@@ -284,6 +294,7 @@ export default function MembersScreen() {
                 member={item}
                 isAdmin={authUser?.isAdmin || false}
                 onPress={authUser?.isAdmin ? () => handleCardPress(item) : undefined}
+                onHistoryPress={() => handleHistoryPress(item)}
               />
             )}
             ListEmptyComponent={<Text style={styles.emptyText}>No members found.</Text>}
@@ -313,6 +324,15 @@ export default function MembersScreen() {
       }}
       onSave={handleSaveMember}
       isLimitedMode={false}
+    />
+
+    <PlayerHistoricalRecordsModal
+      visible={showHistoryModal}
+      member={historyMember}
+      onClose={() => {
+        setShowHistoryModal(false);
+        setHistoryMember(null);
+      }}
     />
     </>
   );
