@@ -36,6 +36,7 @@ import { ZelleInvoiceModal } from '@/components/ZelleInvoiceModal';
 import { PayPalInvoiceModal } from '@/components/PayPalInvoiceModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
+import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import { EventFooter } from '@/components/EventFooter';
 import {
   getDisplayHandicap,
@@ -91,6 +92,12 @@ export default function EventRegistrationScreen() {
   const [generatingInvoiceForPlayer, setGeneratingInvoiceForPlayer] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
+
+  const scoresQuery = useQuery({
+    queryKey: ['event-scores', eventId],
+    queryFn: () => supabaseService.scores.getAll(eventId!),
+    enabled: !!eventId,
+  });
 
   const eventsQuery = useQuery({
     queryKey: ['events'],
@@ -2167,6 +2174,52 @@ export default function EventRegistrationScreen() {
               updates: { status: newStatus },
             });
             setEvent({ ...event, status: newStatus });
+            
+            if (newStatus === 'complete') {
+              console.log('[Registration] Event completed, calculating tournament handicaps...');
+              
+              const eventPar = Number(event.day1Par) || 72;
+              const allRegs = registrationsQuery.data || [];
+              const allScores = scoresQuery.data || [];
+              
+              for (const reg of allRegs) {
+                if (!reg.memberId) continue;
+                
+                const member = allMembers.find((m: Member) => m.id === reg.memberId);
+                if (!member) continue;
+                
+                const playerScores = allScores.filter((s: any) => s.memberId === reg.memberId);
+                const totalGrossScore = playerScores.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0);
+                
+                if (totalGrossScore > 0) {
+                  const tournamentHandicap = calculateTournamentHandicap(totalGrossScore, eventPar);
+                  
+                  const newRecord = {
+                    eventId: event.id,
+                    eventName: event.name,
+                    score: totalGrossScore,
+                    par: eventPar,
+                    handicap: tournamentHandicap,
+                    date: event.date,
+                  };
+                  
+                  const existingRecords = member.tournamentHandicaps || [];
+                  const updatedRecords = addTournamentHandicapRecord(existingRecords, newRecord);
+                  
+                  try {
+                    await updateMemberMutation.mutateAsync({
+                      memberId: member.id,
+                      updates: { tournamentHandicaps: updatedRecords },
+                    });
+                    console.log(`[Registration] Updated tournament handicap for ${member.name}:`, tournamentHandicap);
+                  } catch (error) {
+                    console.error(`[Registration] Failed to update tournament handicap for ${member.name}:`, error);
+                  }
+                }
+              }
+              
+              console.log('[Registration] Tournament handicaps calculation complete');
+            }
           }
         }}
         isAdmin={currentUser?.isAdmin || false}

@@ -79,6 +79,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         adjustedHandicap: m.adjusted_handicap,
         ghin: m.ghin,
         boardMemberRoles: m.board_member_roles || [],
+        tournamentHandicaps: m.tournament_handicaps || [],
       }));
       
       console.log('✅ [AuthContext] Successfully fetched members:', fetchedMembers.length);
@@ -303,6 +304,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (updates.adjustedHandicap !== undefined) supabaseUpdates.adjusted_handicap = updates.adjustedHandicap;
         if (updates.ghin !== undefined) supabaseUpdates.ghin = updates.ghin;
         if (updates.boardMemberRoles !== undefined) supabaseUpdates.board_member_roles = updates.boardMemberRoles || [];
+        if (updates.tournamentHandicaps !== undefined) supabaseUpdates.tournament_handicaps = updates.tournamentHandicaps || [];
         
         console.log('📤 [AuthContext] Sending Supabase update with fields:', Object.keys(supabaseUpdates));
         
