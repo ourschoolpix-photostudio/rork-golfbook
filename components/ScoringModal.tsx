@@ -6,6 +6,7 @@ import { getDisplayHandicap } from '@/utils/handicapHelper';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOfflineMode } from '@/contexts/OfflineModeContext';
 import { supabaseService } from '@/utils/supabaseService';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ScoringModalProps {
   visible: boolean;
@@ -28,6 +29,7 @@ export default function ScoringModal({ visible, slots, label, onClose, onSaveSco
   const { currentUser } = useAuth();
   const { shouldUseOfflineMode, addPendingOperation, isOfflineMode } = useOfflineMode();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (visible && eventId) {
@@ -182,7 +184,14 @@ export default function ScoringModal({ visible, slots, label, onClose, onSaveSco
         }
       }
 
-      console.log(`[ScoringModal] 🟢 STEP 3: Calling parent callback...`);
+      console.log(`[ScoringModal] 🟢 STEP 3: Refetching scores from backend...`);
+      if (eventId) {
+        await queryClient.invalidateQueries({ queryKey: ['scores', eventId] });
+        await queryClient.refetchQueries({ queryKey: ['scores', eventId] });
+        console.log(`[ScoringModal] ✅ Scores refetched from backend`);
+      }
+
+      console.log(`[ScoringModal] 🟢 STEP 4: Calling parent callback...`);
       await onSaveScores(updatedScores);
       console.log(`[ScoringModal] ✅ Parent callback completed`);
 
@@ -230,8 +239,6 @@ export default function ScoringModal({ visible, slots, label, onClose, onSaveSco
 
               const playerReg = registrations[player.id] || player.registration;
               const handicap = getDisplayHandicap(player, playerReg);
-              
-              console.log(`[ScoringModal] 🎯 Player ${player.name}: base handicap=${player.handicap}, adjusted=${playerReg?.adjustedHandicap}, effective=${handicap}`);
 
               return (
                 <View key={index} style={styles.playerRow}>

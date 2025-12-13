@@ -12,15 +12,12 @@ import {
   TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
-import { registrationService } from '@/utils/registrationService';
 import { calculateTournamentFlight, getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
 import GroupCard from '@/components/GroupCard';
-import { TeeHoleIndicator } from '@/components/TeeHoleIndicator';
 import { DaySelector } from '@/components/DaySelector';
 import { type LabelOverride } from '@/utils/groupingsHelper';
 import { generateGroupLabel } from '@/utils/groupLabelHelper';
@@ -39,8 +36,6 @@ interface Group {
 }
 
 export default function GroupingsScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const id = eventId || '';
 
@@ -230,7 +225,7 @@ export default function GroupingsScreen() {
     }, [event])
   );
 
-  const enrichSlotsWithScores = (slots: (Member | null)[]) => {
+  const enrichSlotsWithScores = useCallback((slots: (Member | null)[]) => {
     if (!eventScores || eventScores.length === 0) return slots;
     
     return slots.map(player => {
@@ -244,7 +239,7 @@ export default function GroupingsScreen() {
       }
       return player;
     });
-  };
+  }, [eventScores]);
 
   const loadGroupsFromStorage = useCallback(async () => {
     if (!event || members.length === 0 || groupingsLoading) {
@@ -324,7 +319,7 @@ export default function GroupingsScreen() {
     setInitialGroups(JSON.parse(JSON.stringify(enrichedGroups)));
     setCheckedPlayers([]);
     setIsInitialized(true);
-  }, [event, members, activeDay, eventGroupings, eventScores, groupingsLoading]);
+  }, [event, members, activeDay, eventGroupings, groupingsLoading, enrichSlotsWithScores]);
 
   useEffect(() => {
     console.log('[groupings] 📍 Initial load effect triggered');
@@ -384,7 +379,7 @@ export default function GroupingsScreen() {
     }, 50);
 
     return () => clearTimeout(timer);
-  }, [event, members, groups, eventScores]);
+  }, [event, members, groups, eventScores, registrations, useCourseHandicap, activeDay]);
 
   const ungroupedPlayers = enrichedUngroupedPlayers;
 
