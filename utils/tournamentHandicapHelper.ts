@@ -7,8 +7,9 @@ export interface TournamentHandicapRecord {
   date: string;
 }
 
-export function calculateTournamentHandicap(score: number, par: number): number {
-  return score - par;
+export function calculateTournamentHandicap(score: number, par: number, numberOfDays: number = 1): number {
+  const totalDifference = score - par;
+  return totalDifference / numberOfDays;
 }
 
 export function calculateAverageTournamentHandicap(

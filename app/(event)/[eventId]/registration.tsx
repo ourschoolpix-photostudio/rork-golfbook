@@ -2209,7 +2209,7 @@ export default function EventRegistrationScreen() {
                 }
                 
                 if (totalGrossScore > 0 && completedDays === numberOfDays && totalPar > 0) {
-                  const tournamentHandicap = calculateTournamentHandicap(totalGrossScore, totalPar);
+                  const tournamentHandicap = calculateTournamentHandicap(totalGrossScore, totalPar, numberOfDays);
                   
                   const newRecord = {
                     eventId: event.id,
