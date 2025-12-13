@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Trash2, Pencil, User } from 'lucide-react-native';
 import { Member } from '@/types';
+import { getTournamentHandicapDisplay, calculateAverageTournamentHandicap } from '@/utils/tournamentHandicapHelper';
 
 interface PlayerCardProps {
   member: Member;
@@ -139,6 +140,11 @@ export const PlayerCard = memo(function PlayerCard({
                 Adjusted: {member.adjustedHandicap}
               </Text>
             )}
+            {isAdmin && member.tournamentHandicaps && member.tournamentHandicaps.length > 0 && (
+              <Text style={styles.memberDetailTournament}>
+                Tournament Handicap: {getTournamentHandicapDisplay(member.tournamentHandicaps)}
+              </Text>
+            )}
             {member.flight && <Text style={styles.memberDetail}>Tournament Flight: {member.flight}</Text>}
             {member.rolexFlight && <Text style={styles.memberDetail}>Rolex Flight: {member.rolexFlight}</Text>}
             {member.email && <Text style={styles.memberDetail}>{member.email}</Text>}
@@ -259,6 +265,12 @@ const styles = StyleSheet.create({
   memberDetailAdjusted: {
     fontSize: 12,
     color: '#FF9500',
+    fontWeight: '600' as const,
+    lineHeight: 16,
+  },
+  memberDetailTournament: {
+    fontSize: 12,
+    color: '#2196F3',
     fontWeight: '600' as const,
     lineHeight: 16,
   },

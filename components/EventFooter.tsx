@@ -9,6 +9,8 @@ import { OfflineModeToggle } from '@/components/OfflineModeToggle';
 import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
 import { supabaseService } from '@/utils/supabaseService';
 import { canViewFinance } from '@/utils/rolePermissions';
+import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
+import type { TournamentHandicapRecord } from '@/types';
 
 type EventFooterProps = {
   showStartButton?: boolean;
@@ -23,6 +25,79 @@ export function EventFooter({
   onStatusChange,
   isAdmin = false,
 }: EventFooterProps = {}) {
+  const calculateAndStoreTournamentHandicaps = async (eventId: string) => {
+    try {
+      console.log('[EventFooter] Calculating tournament handicaps for event:', eventId);
+      
+      const event = await supabaseService.events.get(eventId);
+      const scores = await supabaseService.scores.getAll(eventId);
+      const registrations = await supabaseService.registrations.getAll(eventId);
+      
+      if (!event || !scores || scores.length === 0) {
+        console.log('[EventFooter] No event or scores found, skipping handicap calculation');
+        return;
+      }
+
+      const numberOfDays = event.numberOfDays || 1;
+      const memberScoresByDay: { [memberId: string]: { [day: number]: number } } = {};
+      
+      scores.forEach((score: any) => {
+        if (!memberScoresByDay[score.memberId]) {
+          memberScoresByDay[score.memberId] = {};
+        }
+        memberScoresByDay[score.memberId][score.day] = score.totalScore;
+      });
+
+      for (const memberId of Object.keys(memberScoresByDay)) {
+        let totalScore = 0;
+        let totalPar = 0;
+        let completedDays = 0;
+
+        for (let day = 1; day <= numberOfDays; day++) {
+          const dayScore = memberScoresByDay[memberId][day];
+          if (dayScore !== undefined) {
+            totalScore += dayScore;
+            completedDays++;
+
+            const parKey = `day${day}Par` as keyof typeof event;
+            const dayPar = event[parKey];
+            if (dayPar) {
+              totalPar += parseInt(dayPar as string, 10);
+            }
+          }
+        }
+
+        if (completedDays === numberOfDays && totalPar > 0) {
+          const handicap = calculateTournamentHandicap(totalScore, totalPar);
+          
+          const member = await supabaseService.members.get(memberId);
+          if (member) {
+            const existingRecords = (member.tournamentHandicaps || []) as TournamentHandicapRecord[];
+            const newRecord: TournamentHandicapRecord = {
+              eventId: event.id,
+              eventName: event.name,
+              score: totalScore,
+              par: totalPar,
+              handicap: handicap,
+              date: event.date,
+            };
+            
+            const updatedRecords = addTournamentHandicapRecord(existingRecords, newRecord);
+            
+            await supabaseService.members.update(memberId, {
+              tournamentHandicaps: updatedRecords,
+            });
+            
+            console.log('[EventFooter] Updated tournament handicap for member:', memberId, 'handicap:', handicap);
+          }
+        }
+      }
+      
+      console.log('[EventFooter] ✅ Tournament handicaps calculated and stored');
+    } catch (error) {
+      console.error('[EventFooter] Error calculating tournament handicaps:', error);
+    }
+  };
   const router = useRouter();
   const pathname = usePathname();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -122,7 +197,12 @@ export function EventFooter({
             <View style={styles.startButtonWrapper}>
               <EventStatusButton
                 status={eventStatus!}
-                onStatusChange={onStatusChange}
+                onStatusChange={async (newStatus) => {
+                  await onStatusChange(newStatus);
+                  if (newStatus === 'complete' && eventId) {
+                    await calculateAndStoreTournamentHandicaps(eventId);
+                  }
+                }}
                 isAdmin={isAdmin}
               />
             </View>

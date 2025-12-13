@@ -338,7 +338,50 @@ export const supabaseService = {
         profilePhotoUrl: m.profile_photo_url,
         adjustedHandicap: m.adjusted_handicap,
         ghin: m.ghin,
+        tournamentHandicaps: m.tournament_handicaps || [],
+        boardMemberRoles: m.board_member_roles || [],
       }));
+    },
+
+    get: async (memberId: string) => {
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .eq('id', memberId)
+        .single();
+      
+      if (error) throw error;
+      if (!data) return null;
+      
+      return {
+        id: data.id,
+        name: data.name || data.full_name || '',
+        username: data.username || data.name || '',
+        pin: data.pin || '',
+        isAdmin: data.is_admin || false,
+        rolexPoints: data.rolex_points || 0,
+        email: data.email || '',
+        phone: data.phone || '',
+        handicap: data.handicap || 0,
+        membershipType: data.membership_type || 'active',
+        joinDate: data.join_date || new Date().toISOString().split('T')[0],
+        createdAt: data.created_at || new Date().toISOString(),
+        gender: data.gender,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        flight: data.flight,
+        rolexFlight: data.rolex_flight,
+        currentHandicap: data.current_handicap,
+        dateOfBirth: data.date_of_birth,
+        emergencyContactName: data.emergency_contact_name,
+        emergencyContactPhone: data.emergency_contact_phone,
+        profilePhotoUrl: data.profile_photo_url,
+        adjustedHandicap: data.adjusted_handicap,
+        ghin: data.ghin,
+        tournamentHandicaps: data.tournament_handicaps || [],
+        boardMemberRoles: data.board_member_roles || [],
+      };
     },
 
     create: async (member: any) => {
@@ -371,6 +414,8 @@ export const supabaseService = {
       if (updates.handicap !== undefined) supabaseUpdates.handicap = updates.handicap;
       if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
       if (updates.email !== undefined) supabaseUpdates.email = updates.email;
+      if (updates.tournamentHandicaps !== undefined) supabaseUpdates.tournament_handicaps = updates.tournamentHandicaps;
+      if (updates.boardMemberRoles !== undefined) supabaseUpdates.board_member_roles = updates.boardMemberRoles;
 
       const { error } = await supabase
         .from('members')

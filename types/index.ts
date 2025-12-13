@@ -1,3 +1,12 @@
+export interface TournamentHandicapRecord {
+  eventId: string;
+  eventName: string;
+  score: number;
+  par: number;
+  handicap: number;
+  date: string;
+}
+
 export interface Member {
   id: string;
   name: string;
@@ -31,6 +40,7 @@ export interface Member {
   effectiveHandicap?: number;
   registration?: any;
   boardMemberRoles?: string[];
+  tournamentHandicaps?: TournamentHandicapRecord[];
 }
 
 export interface User {
