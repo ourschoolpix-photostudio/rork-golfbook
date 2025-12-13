@@ -39,6 +39,7 @@ export function EventFooter({
       }
 
       const numberOfDays = event.numberOfDays || 1;
+      console.log('[EventFooter] ⚠️ Event details - numberOfDays:', numberOfDays, 'event.numberOfDays:', event.numberOfDays, 'eventName:', event.name);
       const memberScoresByDay: { [memberId: string]: { [day: number]: number } } = {};
       
       scores.forEach((score: any) => {
@@ -68,9 +69,16 @@ export function EventFooter({
         }
 
         if (completedDays === numberOfDays && totalPar > 0) {
-          console.log('[EventFooter] Calculating handicap - totalScore:', totalScore, 'totalPar:', totalPar, 'numberOfDays:', numberOfDays, 'completedDays:', completedDays);
+          console.log('[EventFooter] ========================================');
+          console.log('[EventFooter] Member:', memberId);
+          console.log('[EventFooter] totalScore:', totalScore);
+          console.log('[EventFooter] totalPar:', totalPar);
+          console.log('[EventFooter] numberOfDays:', numberOfDays);
+          console.log('[EventFooter] completedDays:', completedDays);
+          console.log('[EventFooter] Raw calculation: (', totalScore, '-', totalPar, ') /', numberOfDays, '=', (totalScore - totalPar) / numberOfDays);
           const handicap = calculateTournamentHandicap(totalScore, totalPar, numberOfDays);
-          console.log('[EventFooter] Calculated handicap:', handicap);
+          console.log('[EventFooter] ✅ Final calculated handicap:', handicap);
+          console.log('[EventFooter] ========================================');
           
           const member = await supabaseService.members.get(memberId);
           if (member) {
