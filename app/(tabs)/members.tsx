@@ -246,7 +246,7 @@ export default function MembersScreen() {
               >
                 <PlayerCard
                   member={currentUser}
-                  isAdmin={false}
+                  isAdmin={authUser?.isAdmin || false}
                   isCurrentUser={true}
                   onEdit={() => setShowEditModal(true)}
                 />
@@ -282,7 +282,7 @@ export default function MembersScreen() {
             renderItem={({ item }) => (
               <PlayerCard
                 member={item}
-                isAdmin={false}
+                isAdmin={authUser?.isAdmin || false}
                 onPress={authUser?.isAdmin ? () => handleCardPress(item) : undefined}
               />
             )}
