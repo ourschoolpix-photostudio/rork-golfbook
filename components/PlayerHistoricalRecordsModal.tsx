@@ -56,7 +56,7 @@ export function PlayerHistoricalRecordsModal({
         .select(`
           event_id,
           flight,
-          events!inner(
+          events!event_registrations_event_id_fkey(
             id,
             name,
             start_date,
@@ -66,15 +66,30 @@ export function PlayerHistoricalRecordsModal({
           )
         `)
         .eq('member_id', member.id)
-        .eq('events.status', 'complete')
-        .order('events.start_date', { ascending: false });
+        .eq('events.status', 'complete');
 
-      if (regError) throw regError;
+      if (regError) {
+        console.error('[Historical Records] Registration error:', regError);
+        throw regError;
+      }
+
+      console.log('[Historical Records] Raw registrations:', JSON.stringify(registrations, null, 2));
+
+      if (!registrations || registrations.length === 0) {
+        console.log('[Historical Records] No registrations found');
+        setSeasons([]);
+        return;
+      }
 
       const eventRecords: EventRecord[] = [];
 
-      for (const reg of registrations || []) {
+      for (const reg of registrations) {
         const event = (reg as any).events;
+        
+        if (!event) {
+          console.warn('[Historical Records] Event data missing for registration:', reg);
+          continue;
+        }
         
         const { data: scores, error: scoresError } = await supabase
           .from('scores')
@@ -150,7 +165,12 @@ export function PlayerHistoricalRecordsModal({
       });
 
       const seasonsData: SeasonData[] = Array.from(seasonMap.entries())
-        .map(([year, events]) => ({ year, events }))
+        .map(([year, events]) => ({
+          year,
+          events: events.sort((a, b) => 
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+          )
+        }))
         .sort((a, b) => b.year - a.year);
 
       const currentYear = new Date().getFullYear();
@@ -159,9 +179,11 @@ export function PlayerHistoricalRecordsModal({
       
       console.log('[Historical Records] Loaded', eventRecords.length, 'records');
     } catch (error) {
-      console.error('[Historical Records] Error loading records:', 
-        error instanceof Error ? error.message : String(error),
-        error instanceof Error ? error.stack : '');
+      console.error('[Historical Records] Error loading records:', error);
+      if (error instanceof Error) {
+        console.error('[Historical Records] Error message:', error.message);
+        console.error('[Historical Records] Error stack:', error.stack);
+      }
     } finally {
       setLoading(false);
     }
