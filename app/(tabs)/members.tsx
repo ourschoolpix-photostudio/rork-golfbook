@@ -257,6 +257,7 @@ export default function MembersScreen() {
                   member={currentUser}
                   isAdmin={authUser?.isAdmin || false}
                   isCurrentUser={true}
+                  currentUser={authUser}
                   onEdit={() => setShowEditModal(true)}
                   onHistoryPress={() => handleHistoryPress(currentUser)}
                 />
@@ -293,6 +294,7 @@ export default function MembersScreen() {
               <PlayerCard
                 member={item}
                 isAdmin={authUser?.isAdmin || false}
+                currentUser={authUser}
                 onPress={authUser?.isAdmin ? () => handleCardPress(item) : undefined}
                 onHistoryPress={() => handleHistoryPress(item)}
               />

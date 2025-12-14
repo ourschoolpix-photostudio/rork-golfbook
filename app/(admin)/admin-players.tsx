@@ -18,7 +18,7 @@ import { AdminFooter } from '@/components/AdminFooter';
 
 export default function AdminPlayersScreen() {
   const router = useRouter();
-  const { members: allMembersFromContext, addMember, updateMember: updateMemberFromContext, deleteMember: deleteMemberFromContext } = useAuth();
+  const { currentUser, members: allMembersFromContext, addMember, updateMember: updateMemberFromContext, deleteMember: deleteMemberFromContext } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -150,7 +150,7 @@ export default function AdminPlayersScreen() {
     const selectedMembers = members.filter((m) => selectedForActivation.has(m.id));
     const allActive = selectedMembers.every((m) => m.membershipType === 'active');
     const allInactive = selectedMembers.every((m) => m.membershipType === 'in-active');
-    const hasGuests = selectedMembers.some((m) => m.membershipType === 'guest');
+
     
     if (allActive) return 'all-active';
     if (allInactive) return 'all-inactive';
@@ -366,6 +366,7 @@ export default function AdminPlayersScreen() {
           <PlayerCard
             member={item}
             isAdmin={true}
+            currentUser={currentUser}
             onPress={() => handleEditMember(item)}
             onDelete={() => handleDeleteMember(item.id)}
             showCheckbox={true}

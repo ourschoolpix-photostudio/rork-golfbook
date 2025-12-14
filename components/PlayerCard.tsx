@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Trash2, Pencil, User, Star } from 'lucide-react-native';
 import { Member } from '@/types';
 import { getTournamentHandicapDisplay } from '@/utils/tournamentHandicapHelper';
+import { canViewTournamentHandicap } from '@/utils/rolePermissions';
 
 interface PlayerCardProps {
   member: Member;
   isAdmin?: boolean;
   isCurrentUser?: boolean;
+  currentUser?: Member | null;
   onPress?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
@@ -22,6 +24,7 @@ export const PlayerCard = memo(function PlayerCard({
   member,
   isAdmin,
   isCurrentUser,
+  currentUser,
   onPress,
   onDelete,
   onEdit,
@@ -31,6 +34,7 @@ export const PlayerCard = memo(function PlayerCard({
   onCheckboxPress,
   onHistoryPress,
 }: PlayerCardProps) {
+  const canSeeTournamentHandicap = canViewTournamentHandicap(currentUser || null);
   const getMemberStatusText = (type: string) => {
     if (type === 'active' || type === 'active') return 'Active';
     if (type === 'in-active' || type === 'in-active') return 'In-Active';
@@ -149,7 +153,7 @@ export const PlayerCard = memo(function PlayerCard({
                 Adjusted: {member.adjustedHandicap}
               </Text>
             )}
-            {isAdmin && member.tournamentHandicaps && member.tournamentHandicaps.length > 0 && (
+            {canSeeTournamentHandicap && member.tournamentHandicaps && member.tournamentHandicaps.length > 0 && (
               <Text style={styles.memberDetailTournament}>
                 Tournament Handicap: {getTournamentHandicapDisplay(member.tournamentHandicaps)}
               </Text>

@@ -158,3 +158,16 @@ export function canAddPlayers(user: Member | null): boolean {
     'Member Relations',
   ]);
 }
+
+export function canViewTournamentHandicap(user: Member | null): boolean {
+  return hasAnyRole(user, [
+    'Admin',
+    'President',
+    'VP',
+    'Tournament Director',
+    'Handicap Director',
+    'Member Relations',
+    'Financer',
+    'Operations',
+  ]);
+}
