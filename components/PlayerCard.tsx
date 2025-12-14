@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Trash2, Pencil, User, History } from 'lucide-react-native';
+import { Trash2, Pencil, User, Star } from 'lucide-react-native';
 import { Member } from '@/types';
 import { getTournamentHandicapDisplay } from '@/utils/tournamentHandicapHelper';
 
@@ -60,46 +60,53 @@ export const PlayerCard = memo(function PlayerCard({
   return (
     <View style={styles.memberCard}>
       <View style={styles.cardContainer}>
-        <TouchableOpacity 
-          style={styles.photoSection}
-          onPress={showCheckbox && onCheckboxPress ? onCheckboxPress : undefined}
-          activeOpacity={0.8}
-          disabled={!showCheckbox}
-        >
-          {(() => {
-            const photoUri = (member.profilePhotoUri && member.profilePhotoUri.trim() !== '') 
-              ? member.profilePhotoUri 
-              : (member.profilePhotoUrl && member.profilePhotoUrl.trim() !== '') 
-              ? member.profilePhotoUrl 
-              : null;
-            
-            const isValidUri = photoUri && 
-              typeof photoUri === 'string' && 
-              photoUri.trim() !== '' && 
-              photoUri !== 'undefined' && 
-              photoUri !== 'null' &&
-              (photoUri.startsWith('http://') || 
-               photoUri.startsWith('https://') || 
-               photoUri.startsWith('file://') ||
-               photoUri.startsWith('data:'));
-            
-            if (isValidUri) {
+        <View style={styles.photoSection}>
+          <TouchableOpacity 
+            onPress={showCheckbox && onCheckboxPress ? onCheckboxPress : undefined}
+            activeOpacity={0.8}
+            disabled={!showCheckbox}
+          >
+            {(() => {
+              const photoUri = (member.profilePhotoUri && member.profilePhotoUri.trim() !== '') 
+                ? member.profilePhotoUri 
+                : (member.profilePhotoUrl && member.profilePhotoUrl.trim() !== '') 
+                ? member.profilePhotoUrl 
+                : null;
+              
+              const isValidUri = photoUri && 
+                typeof photoUri === 'string' && 
+                photoUri.trim() !== '' && 
+                photoUri !== 'undefined' && 
+                photoUri !== 'null' &&
+                (photoUri.startsWith('http://') || 
+                 photoUri.startsWith('https://') || 
+                 photoUri.startsWith('file://') ||
+                 photoUri.startsWith('data:'));
+              
+              if (isValidUri) {
+                return (
+                  <Image
+                    source={{ uri: photoUri }}
+                    style={[styles.profilePhoto, isSelected && styles.profilePhotoSelected]}
+                    defaultSource={undefined}
+                  />
+                );
+              }
+              
               return (
-                <Image
-                  source={{ uri: photoUri }}
-                  style={[styles.profilePhoto, isSelected && styles.profilePhotoSelected]}
-                  defaultSource={undefined}
-                />
+                <View style={[styles.profilePhoto, styles.photoPlaceholder, isSelected && styles.profilePhotoSelected]}>
+                  <User size={40} color="#ccc" />
+                </View>
               );
-            }
-            
-            return (
-              <View style={[styles.profilePhoto, styles.photoPlaceholder, isSelected && styles.profilePhotoSelected]}>
-                <User size={40} color="#ccc" />
-              </View>
-            );
-          })()}
-        </TouchableOpacity>
+            })()}
+          </TouchableOpacity>
+
+          {onHistoryPress && (
+            <TouchableOpacity onPress={onHistoryPress} style={styles.historyButtonUnderPhoto}>
+              <Star size={16} color="#FFD700" fill="#FFD700" />
+            </TouchableOpacity>
+          )}
+        </View>
 
         <TouchableOpacity
           style={styles.contentSection}
@@ -159,11 +166,7 @@ export const PlayerCard = memo(function PlayerCard({
           )}
         </TouchableOpacity>
 
-        {onHistoryPress && (
-          <TouchableOpacity onPress={onHistoryPress} style={styles.historyButton}>
-            <History size={18} color="#34C759" />
-          </TouchableOpacity>
-        )}
+
 
         {isAdmin && onEditPress && (
           <TouchableOpacity onPress={onEditPress} style={styles.editButton}>
@@ -204,6 +207,7 @@ const styles = StyleSheet.create({
   photoSection: {
     marginRight: 12,
     position: 'relative' as const,
+    alignItems: 'center',
   },
   profilePhoto: {
     width: 80,
@@ -282,9 +286,14 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     lineHeight: 16,
   },
-  historyButton: {
-    padding: 8,
-    marginLeft: 4,
+  historyButtonUnderPhoto: {
+    marginTop: 6,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   editButton: {
     padding: 8,
