@@ -288,8 +288,6 @@ const styles = StyleSheet.create({
   },
   historyButtonUnderPhoto: {
     marginTop: 6,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
     width: 32,
     height: 32,
     justifyContent: 'center',
