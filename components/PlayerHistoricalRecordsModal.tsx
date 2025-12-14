@@ -55,7 +55,6 @@ export function PlayerHistoricalRecordsModal({
         .from('event_registrations')
         .select(`
           event_id,
-          flight,
           events!event_registrations_event_id_fkey(
             id,
             name,
@@ -170,7 +169,7 @@ export function PlayerHistoricalRecordsModal({
           scores: dayScores,
           placement,
           totalScore,
-          flight: (reg as any).flight || null,
+          flight: member.flight || null,
         });
       }
 
