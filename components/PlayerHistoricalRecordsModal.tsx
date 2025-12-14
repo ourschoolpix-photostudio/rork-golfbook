@@ -368,7 +368,7 @@ export function PlayerHistoricalRecordsModal({
                           <Text style={styles.eventDate}>
                             {formatDate(event.startDate, event.endDate)}
                           </Text>
-                          {event.flight && (
+                          {event.flight && event.eventType !== 'social' && (
                             <Text style={styles.eventFlight}>Flight {event.flight}</Text>
                           )}
                           {event.entryFee !== null && event.entryFee > 0 && (
