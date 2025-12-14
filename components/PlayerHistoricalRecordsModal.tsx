@@ -23,9 +23,10 @@ interface EventRecord {
   startDate: string;
   endDate: string | null;
   numberOfDays: number;
-  scores: { day: number; score: number | null }[];
+  scores: { day: number; score: number | null; netScore: number | null }[];
   placement: number | null;
   totalScore: number;
+  totalNetScore: number;
   flight: string | null;
 }
 
@@ -106,7 +107,7 @@ export function PlayerHistoricalRecordsModal({
         
         const { data: scores, error: scoresError } = await supabase
           .from('scores')
-          .select('day, total_score')
+          .select('day, total_score, net_score')
           .eq('event_id', event.id)
           .eq('member_id', member.id)
           .order('day', { ascending: true });
@@ -123,13 +124,16 @@ export function PlayerHistoricalRecordsModal({
 
         const dayScores = [];
         let totalScore = 0;
+        let totalNetScore = 0;
         const numberOfDays = event.number_of_days || 1;
 
         for (let day = 1; day <= numberOfDays; day++) {
           const dayScore = scores?.find(s => s.day === day);
           const score = dayScore?.total_score || null;
-          dayScores.push({ day, score });
+          const netScore = dayScore?.net_score || null;
+          dayScores.push({ day, score, netScore });
           if (score) totalScore += score;
+          if (netScore) totalNetScore += netScore;
         }
 
         const { data: allScores, error: allScoresError } = await supabase
@@ -174,6 +178,7 @@ export function PlayerHistoricalRecordsModal({
           scores: dayScores,
           placement,
           totalScore,
+          totalNetScore,
           flight: member.flight || null,
         });
       }
@@ -342,15 +347,25 @@ export function PlayerHistoricalRecordsModal({
                           {event.scores.map(dayScore => (
                             <View key={dayScore.day} style={styles.scoreItem}>
                               <Text style={styles.scoreLabel}>Day {dayScore.day}</Text>
-                              <Text style={styles.scoreValue}>
-                                {dayScore.score !== null ? dayScore.score : '-'}
-                              </Text>
+                              <View style={styles.scoreValuesRow}>
+                                <Text style={styles.scoreValue}>
+                                  {dayScore.score !== null ? dayScore.score : '-'}
+                                </Text>
+                                {dayScore.netScore !== null && (
+                                  <Text style={styles.netScoreValue}>({dayScore.netScore})</Text>
+                                )}
+                              </View>
                             </View>
                           ))}
                           {event.numberOfDays > 1 && (
                             <View style={[styles.scoreItem, styles.totalScoreItem]}>
                               <Text style={styles.totalScoreLabel}>Total</Text>
-                              <Text style={styles.totalScoreValue}>{event.totalScore}</Text>
+                              <View style={styles.scoreValuesRow}>
+                                <Text style={styles.totalScoreValue}>{event.totalScore}</Text>
+                                {event.totalNetScore > 0 && (
+                                  <Text style={styles.totalNetScoreValue}>({event.totalNetScore})</Text>
+                                )}
+                              </View>
                             </View>
                           )}
                         </View>
@@ -552,10 +567,20 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 4,
   },
+  scoreValuesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   scoreValue: {
     fontSize: 16,
     fontWeight: '700' as const,
     color: '#1a1a1a',
+  },
+  netScoreValue: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#007AFF',
   },
   totalScoreItem: {
     backgroundColor: '#007AFF',
@@ -571,5 +596,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700' as const,
     color: '#fff',
+  },
+  totalNetScoreValue: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#fff',
+    opacity: 0.9,
   },
 });
