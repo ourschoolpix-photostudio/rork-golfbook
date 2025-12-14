@@ -101,7 +101,7 @@ export function PlayerHistoricalRecordsModal({
         
         const { data: scores, error: scoresError } = await supabase
           .from('scores')
-          .select('day, score')
+          .select('day, total_score')
           .eq('event_id', event.id)
           .eq('member_id', member.id)
           .order('day', { ascending: true });
@@ -122,14 +122,14 @@ export function PlayerHistoricalRecordsModal({
 
         for (let day = 1; day <= numberOfDays; day++) {
           const dayScore = scores?.find(s => s.day === day);
-          const score = dayScore?.score || null;
+          const score = dayScore?.total_score || null;
           dayScores.push({ day, score });
           if (score) totalScore += score;
         }
 
         const { data: allScores, error: allScoresError } = await supabase
           .from('scores')
-          .select('member_id, score')
+          .select('member_id, total_score')
           .eq('event_id', event.id);
 
         if (allScoresError) {
@@ -147,7 +147,7 @@ export function PlayerHistoricalRecordsModal({
           
           allScores.forEach(s => {
             const current = playerTotals.get(s.member_id) || 0;
-            playerTotals.set(s.member_id, current + (s.score || 0));
+            playerTotals.set(s.member_id, current + (s.total_score || 0));
           });
 
           const sortedTotals = Array.from(playerTotals.entries())
