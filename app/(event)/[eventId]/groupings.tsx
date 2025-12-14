@@ -295,6 +295,20 @@ export default function GroupingsScreen() {
         }
       }
       console.log(`[groupings] ✅ Loaded ${newGroups.length} groups from backend (filtered by registered players)`);
+      
+      // Check if we need more groups for all registered players
+      const requiredGroups = Math.ceil(registeredPlayerIds.size / 4);
+      if (newGroups.length < requiredGroups) {
+        const additionalGroupsNeeded = requiredGroups - newGroups.length;
+        console.log(`[groupings] 📝 Need ${additionalGroupsNeeded} more groups for ${registeredPlayerIds.size} players`);
+        for (let i = 0; i < additionalGroupsNeeded; i++) {
+          newGroups.push({
+            hole: newGroups.length + 1,
+            slots: [null, null, null, null],
+          });
+        }
+        console.log(`[groupings] ✅ Added ${additionalGroupsNeeded} additional groups. Total: ${newGroups.length}`);
+      }
     } else {
       console.log('[groupings] 📝 No saved groupings found, creating initial groups based on registrations');
       const numGroups = Math.ceil((event.registeredPlayers || []).length / 4);
