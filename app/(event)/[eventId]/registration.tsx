@@ -76,6 +76,7 @@ export default function EventRegistrationScreen() {
   const [addCustomGuestName, setAddCustomGuestName] = useState('');
   const [addCustomGuestCount, setAddCustomGuestCount] = useState('');
   const [addCustomGuestNames, setAddCustomGuestNames] = useState('');
+  const [addCustomGuestHandicap, setAddCustomGuestHandicap] = useState('');
   const [addCustomGuestIsSponsor, setAddCustomGuestIsSponsor] = useState(false);
   const [playerGuestCounts, setPlayerGuestCounts] = useState<Record<string, string>>({});
   const [playerGuestNames, setPlayerGuestNames] = useState<Record<string, string>>({});
@@ -631,12 +632,18 @@ export default function EventRegistrationScreen() {
       return;
     }
 
+    if (event.type === 'tournament' && !addCustomGuestHandicap.trim()) {
+      Alert.alert('Error', 'Please enter handicap for tournament');
+      return;
+    }
+
     const guestCount = addCustomGuestCount.trim() === '' ? 0 : parseInt(addCustomGuestCount, 10);
     const guestNamesValue = normalizeGuestNames(addCustomGuestNames, guestCount);
+    const handicapValue = addCustomGuestHandicap.trim() !== '' ? addCustomGuestHandicap.trim() : null;
 
     try {
       console.log('[registration] 🎯 Adding custom guest (no member record):', addCustomGuestName.trim());
-      console.log('[registration] Guest count:', guestCount, 'Sponsor:', addCustomGuestIsSponsor);
+      console.log('[registration] Guest count:', guestCount, 'Sponsor:', addCustomGuestIsSponsor, 'Handicap:', handicapValue);
       
       console.log('[registration] Creating registration directly without member record...');
       const { error } = await supabase
@@ -648,8 +655,9 @@ export default function EventRegistrationScreen() {
           custom_guest_name: addCustomGuestName.trim(),
           status: 'registered',
           payment_status: 'pending',
-          number_of_guests: guestCount || 0,
-          guest_names: guestNamesValue || null,
+          number_of_guests: event.type === 'social' ? (guestCount || 0) : 0,
+          guest_names: event.type === 'social' ? (guestNamesValue || null) : null,
+          adjusted_handicap: handicapValue,
           is_sponsor: addCustomGuestIsSponsor,
           registered_at: new Date().toISOString(),
         });
@@ -668,6 +676,7 @@ export default function EventRegistrationScreen() {
       setAddCustomGuestName('');
       setAddCustomGuestCount('');
       setAddCustomGuestNames('');
+      setAddCustomGuestHandicap('');
       setAddCustomGuestIsSponsor(false);
       setAddCustomGuestModalVisible(false);
       
@@ -1792,6 +1801,7 @@ export default function EventRegistrationScreen() {
             setAddCustomGuestName('');
             setAddCustomGuestCount('');
             setAddCustomGuestNames('');
+            setAddCustomGuestHandicap('');
             setAddCustomGuestIsSponsor(false);
           }}>
             <View style={styles.centeredModalWrapper}>
@@ -1805,6 +1815,7 @@ export default function EventRegistrationScreen() {
                       setAddCustomGuestName('');
                       setAddCustomGuestCount('');
                       setAddCustomGuestNames('');
+                      setAddCustomGuestHandicap('');
                       setAddCustomGuestIsSponsor(false);
                     }}>
                       <Ionicons name="close" size={24} color="#1a1a1a" />
@@ -1827,31 +1838,46 @@ export default function EventRegistrationScreen() {
                       />
                     </View>
 
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Number of Additional Guests</Text>
-                      <TextInput
-                        style={styles.textInput}
-                        value={addCustomGuestCount}
-                        onChangeText={setAddCustomGuestCount}
-                        placeholder="0"
-                        keyboardType="number-pad"
-                      />
-                    </View>
-
-                    {parseInt(addCustomGuestCount, 10) > 0 && (
+                    {event?.type === 'tournament' ? (
                       <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>
-                          Guest Name{parseInt(addCustomGuestCount, 10) > 1 ? 's' : ''}
-                        </Text>
+                        <Text style={styles.inputLabel}>Handicap</Text>
                         <TextInput
-                          style={[styles.textInput, styles.textInputMultiline]}
-                          value={addCustomGuestNames}
-                          onChangeText={setAddCustomGuestNames}
-                          placeholder={parseInt(addCustomGuestCount, 10) > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
-                          multiline
-                          numberOfLines={Math.min(parseInt(addCustomGuestCount, 10) || 1, 4)}
+                          style={styles.textInput}
+                          value={addCustomGuestHandicap}
+                          onChangeText={setAddCustomGuestHandicap}
+                          placeholder="Enter handicap"
+                          keyboardType="decimal-pad"
                         />
                       </View>
+                    ) : (
+                      <>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.inputLabel}>Number of Additional Guests</Text>
+                          <TextInput
+                            style={styles.textInput}
+                            value={addCustomGuestCount}
+                            onChangeText={setAddCustomGuestCount}
+                            placeholder="0"
+                            keyboardType="number-pad"
+                          />
+                        </View>
+
+                        {parseInt(addCustomGuestCount, 10) > 0 && (
+                          <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>
+                              Guest Name{parseInt(addCustomGuestCount, 10) > 1 ? 's' : ''}
+                            </Text>
+                            <TextInput
+                              style={[styles.textInput, styles.textInputMultiline]}
+                              value={addCustomGuestNames}
+                              onChangeText={setAddCustomGuestNames}
+                              placeholder={parseInt(addCustomGuestCount, 10) > 1 ? "Enter guest names (one per line)" : "Enter guest name"}
+                              multiline
+                              numberOfLines={Math.min(parseInt(addCustomGuestCount, 10) || 1, 4)}
+                            />
+                          </View>
+                        )}
+                      </>
                     )}
 
                     <TouchableOpacity
