@@ -134,7 +134,7 @@ export function PlayerHistoricalRecordsModal({
           let netScore: number | null = null;
           
           if (score !== null && playerHandicap) {
-            netScore = score - Math.round(playerHandicap);
+            netScore = score - playerHandicap;
           }
           
           dayScores.push({ day, score, netScore });
