@@ -12,6 +12,11 @@ import { X, Trophy, Calendar } from 'lucide-react-native';
 import { Member } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
+function parseDateSafe(dateStr: string): Date {
+  const date = new Date(dateStr + 'T12:00:00');
+  return date;
+}
+
 interface EventRecord {
   eventId: string;
   eventName: string;
@@ -175,7 +180,7 @@ export function PlayerHistoricalRecordsModal({
 
       const seasonMap = new Map<number, EventRecord[]>();
       eventRecords.forEach(record => {
-        const year = new Date(record.startDate).getFullYear();
+        const year = parseDateSafe(record.startDate).getFullYear();
         if (!seasonMap.has(year)) {
           seasonMap.set(year, []);
         }
@@ -186,7 +191,7 @@ export function PlayerHistoricalRecordsModal({
         .map(([year, events]) => ({
           year,
           events: events.sort((a, b) => 
-            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+            parseDateSafe(b.startDate).getTime() - parseDateSafe(a.startDate).getTime()
           )
         }))
         .sort((a, b) => b.year - a.year);
@@ -232,11 +237,11 @@ export function PlayerHistoricalRecordsModal({
   };
 
   const formatDate = (startDate: string, endDate: string | null) => {
-    const start = new Date(startDate);
+    const start = parseDateSafe(startDate);
     const startFormatted = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     
     if (endDate) {
-      const end = new Date(endDate);
+      const end = parseDateSafe(endDate);
       const endFormatted = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       return `${startFormatted} - ${endFormatted}`;
     }
