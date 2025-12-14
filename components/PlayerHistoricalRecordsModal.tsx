@@ -107,7 +107,7 @@ export function PlayerHistoricalRecordsModal({
         
         const { data: scores, error: scoresError } = await supabase
           .from('scores')
-          .select('day, total_score, net_score')
+          .select('day, total_score, holes')
           .eq('event_id', event.id)
           .eq('member_id', member.id)
           .order('day', { ascending: true });
@@ -126,11 +126,17 @@ export function PlayerHistoricalRecordsModal({
         let totalScore = 0;
         let totalNetScore = 0;
         const numberOfDays = event.number_of_days || 1;
+        const playerHandicap = member.handicap || 0;
 
         for (let day = 1; day <= numberOfDays; day++) {
           const dayScore = scores?.find(s => s.day === day);
           const score = dayScore?.total_score || null;
-          const netScore = dayScore?.net_score || null;
+          let netScore: number | null = null;
+          
+          if (score !== null && playerHandicap) {
+            netScore = score - Math.round(playerHandicap);
+          }
+          
           dayScores.push({ day, score, netScore });
           if (score) totalScore += score;
           if (netScore) totalNetScore += netScore;
