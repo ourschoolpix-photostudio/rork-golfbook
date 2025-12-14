@@ -28,11 +28,14 @@ interface EventRecord {
   totalScore: number;
   totalNetScore: number;
   flight: string | null;
+  entryFee: number | null;
+  eventType: 'tournament' | 'social' | null;
 }
 
 interface SeasonData {
   year: number;
   events: EventRecord[];
+  totalEntryFees: number;
 }
 
 interface PlayerHistoricalRecordsModalProps {
@@ -67,7 +70,9 @@ export function PlayerHistoricalRecordsModal({
             start_date,
             end_date,
             number_of_days,
-            status
+            status,
+            entry_fee,
+            type
           )
         `)
         .eq('member_id', member.id);
@@ -175,6 +180,9 @@ export function PlayerHistoricalRecordsModal({
           }
         }
 
+        const entryFee = event.entry_fee ? parseFloat(event.entry_fee) : null;
+        const eventType = event.type || null;
+
         eventRecords.push({
           eventId: event.id,
           eventName: event.name,
@@ -186,6 +194,8 @@ export function PlayerHistoricalRecordsModal({
           totalScore,
           totalNetScore,
           flight: member.flight || null,
+          entryFee,
+          eventType,
         });
       }
 
@@ -199,12 +209,19 @@ export function PlayerHistoricalRecordsModal({
       });
 
       const seasonsData: SeasonData[] = Array.from(seasonMap.entries())
-        .map(([year, events]) => ({
-          year,
-          events: events.sort((a, b) => 
+        .map(([year, events]) => {
+          const sortedEvents = events.sort((a, b) => 
             parseDateSafe(b.startDate).getTime() - parseDateSafe(a.startDate).getTime()
-          )
-        }))
+          );
+          const totalEntryFees = sortedEvents.reduce((sum, event) => 
+            sum + (event.entryFee || 0), 0
+          );
+          return {
+            year,
+            events: sortedEvents,
+            totalEntryFees,
+          };
+        })
         .sort((a, b) => b.year - a.year);
 
       const currentYear = new Date().getFullYear();
@@ -318,8 +335,15 @@ export function PlayerHistoricalRecordsModal({
                     <Calendar size={20} color="#fff" />
                     <Text style={styles.seasonTitle}>Season {season.year}</Text>
                   </View>
-                  <View style={styles.seasonStats}>
-                    <Text style={styles.seasonStatsText}>{season.events.length} Events</Text>
+                  <View style={styles.seasonStatsContainer}>
+                    <View style={styles.seasonStats}>
+                      <Text style={styles.seasonStatsText}>{season.events.length} Events</Text>
+                    </View>
+                    {season.totalEntryFees > 0 && (
+                      <View style={styles.seasonStats}>
+                        <Text style={styles.seasonStatsText}>${season.totalEntryFees.toFixed(2)}</Text>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
 
@@ -347,9 +371,13 @@ export function PlayerHistoricalRecordsModal({
                           {event.flight && (
                             <Text style={styles.eventFlight}>Flight {event.flight}</Text>
                           )}
+                          {event.entryFee !== null && event.entryFee > 0 && (
+                            <Text style={styles.eventEntryFee}>${event.entryFee.toFixed(2)}</Text>
+                          )}
                         </View>
 
-                        <View style={styles.scoresContainer}>
+                        {event.eventType !== 'social' && (
+                          <View style={styles.scoresContainer}>
                           {event.scores.map(dayScore => (
                             <View key={dayScore.day} style={styles.scoreItem}>
                               <Text style={styles.scoreLabel}>Day {dayScore.day}</Text>
@@ -374,7 +402,8 @@ export function PlayerHistoricalRecordsModal({
                               </View>
                             </View>
                           )}
-                        </View>
+                          </View>
+                        )}
                       </View>
                     ))}
                   </View>
@@ -488,6 +517,10 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#fff',
   },
+  seasonStatsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   seasonStats: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 10,
@@ -549,6 +582,15 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600' as const,
     backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  eventEntryFee: {
+    fontSize: 12,
+    color: '#34C759',
+    fontWeight: '700' as const,
+    backgroundColor: '#E8F5E9',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
