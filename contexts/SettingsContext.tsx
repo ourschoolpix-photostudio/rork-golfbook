@@ -20,6 +20,8 @@ export interface OrganizationInfo {
   rolexPlacementPoints: string[];
   rolexAttendancePoints: string;
   rolexBonusPoints: string;
+  fullMembershipPrice: string;
+  basicMembershipPrice: string;
   useLocalStorage?: boolean;
 }
 
@@ -38,6 +40,8 @@ const DEFAULT_ORG_INFO: OrganizationInfo = {
   rolexPlacementPoints: Array(30).fill(''),
   rolexAttendancePoints: '',
   rolexBonusPoints: '',
+  fullMembershipPrice: '',
+  basicMembershipPrice: '',
   useLocalStorage: false,
 };
 
@@ -85,6 +89,8 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         rolexPlacementPoints: data.rolex_placement_points,
         rolexAttendancePoints: data.rolex_attendance_points,
         rolexBonusPoints: data.rolex_bonus_points,
+        fullMembershipPrice: data.full_membership_price || '',
+        basicMembershipPrice: data.basic_membership_price || '',
       } : {};
       
       console.log('✅ [SettingsContext] Successfully fetched settings');
@@ -158,6 +164,8 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         if (updates.rolexPlacementPoints !== undefined) supabaseUpdates.rolex_placement_points = updates.rolexPlacementPoints;
         if (updates.rolexAttendancePoints !== undefined) supabaseUpdates.rolex_attendance_points = updates.rolexAttendancePoints;
         if (updates.rolexBonusPoints !== undefined) supabaseUpdates.rolex_bonus_points = updates.rolexBonusPoints;
+        if (updates.fullMembershipPrice !== undefined) supabaseUpdates.full_membership_price = updates.fullMembershipPrice;
+        if (updates.basicMembershipPrice !== undefined) supabaseUpdates.basic_membership_price = updates.basicMembershipPrice;
         
         const { data: existingData } = await supabase.from('organization_settings').select('*').limit(1).single();
         

@@ -37,6 +37,8 @@ interface OrganizationInfo {
   rolexPlacementPoints: string[];
   rolexAttendancePoints: string;
   rolexBonusPoints: string;
+  fullMembershipPrice: string;
+  basicMembershipPrice: string;
   useLocalStorage?: boolean;
 }
 
@@ -54,12 +56,14 @@ export default function SettingsScreen() {
     organization: boolean;
     paypal: boolean;
     rolexPoints: boolean;
+    membership: boolean;
     courses: boolean;
     storage: boolean;
   }>({
     organization: false,
     paypal: false,
     rolexPoints: false,
+    membership: false,
     courses: false,
     storage: false,
   });
@@ -79,6 +83,8 @@ export default function SettingsScreen() {
     rolexPlacementPoints: Array(30).fill(''),
     rolexAttendancePoints: '',
     rolexBonusPoints: '',
+    fullMembershipPrice: '',
+    basicMembershipPrice: '',
     useLocalStorage: false,
   });
 
@@ -716,6 +722,75 @@ export default function SettingsScreen() {
                   />
                 </View>
               </View>
+
+              <TouchableOpacity
+                style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+                onPress={saveOrganizationInfo}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                    <Text style={styles.saveButtonText}>Save All Settings</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('membership')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons name="card" size={22} color="#007AFF" />
+              <Text style={styles.sectionTitle}>Membership Pricing</Text>
+            </View>
+            <Ionicons
+              name={expandedSections.membership ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color="#007AFF"
+            />
+          </TouchableOpacity>
+          
+          {expandedSections.membership && (
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionDescription}>
+                Configure membership pricing for Full and Basic membership tiers.
+              </Text>
+
+              <Text style={styles.fieldLabel}>Full Membership Price ($)</Text>
+              <TextInput
+                style={styles.input}
+                value={orgInfo.fullMembershipPrice}
+                onChangeText={(text) => {
+                  const filtered = text.replace(/[^0-9.]/g, '');
+                  const parts = filtered.split('.');
+                  const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filtered;
+                  setOrgInfo({ ...orgInfo, fullMembershipPrice: formatted });
+                }}
+                placeholder="Enter full membership price"
+                keyboardType="decimal-pad"
+              />
+
+              <Text style={styles.fieldLabel}>Basic Membership Price ($)</Text>
+              <TextInput
+                style={styles.input}
+                value={orgInfo.basicMembershipPrice}
+                onChangeText={(text) => {
+                  const filtered = text.replace(/[^0-9.]/g, '');
+                  const parts = filtered.split('.');
+                  const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filtered;
+                  setOrgInfo({ ...orgInfo, basicMembershipPrice: formatted });
+                }}
+                placeholder="Enter basic membership price"
+                keyboardType="decimal-pad"
+              />
 
               <TouchableOpacity
                 style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
