@@ -22,6 +22,8 @@ export interface OrganizationInfo {
   rolexBonusPoints: string;
   fullMembershipPrice: string;
   basicMembershipPrice: string;
+  fullMembershipMemo: string;
+  basicMembershipMemo: string;
   useLocalStorage?: boolean;
 }
 
@@ -42,6 +44,8 @@ const DEFAULT_ORG_INFO: OrganizationInfo = {
   rolexBonusPoints: '',
   fullMembershipPrice: '',
   basicMembershipPrice: '',
+  fullMembershipMemo: '',
+  basicMembershipMemo: '',
   useLocalStorage: false,
 };
 
@@ -91,6 +95,8 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         rolexBonusPoints: data.rolex_bonus_points,
         fullMembershipPrice: data.full_membership_price || '',
         basicMembershipPrice: data.basic_membership_price || '',
+        fullMembershipMemo: data.full_membership_memo || '',
+        basicMembershipMemo: data.basic_membership_memo || '',
       } : {};
       
       console.log('✅ [SettingsContext] Successfully fetched settings');
@@ -166,6 +172,8 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         if (updates.rolexBonusPoints !== undefined) supabaseUpdates.rolex_bonus_points = updates.rolexBonusPoints;
         if (updates.fullMembershipPrice !== undefined) supabaseUpdates.full_membership_price = updates.fullMembershipPrice;
         if (updates.basicMembershipPrice !== undefined) supabaseUpdates.basic_membership_price = updates.basicMembershipPrice;
+        if (updates.fullMembershipMemo !== undefined) supabaseUpdates.full_membership_memo = updates.fullMembershipMemo;
+        if (updates.basicMembershipMemo !== undefined) supabaseUpdates.basic_membership_memo = updates.basicMembershipMemo;
         
         const { data: existingData } = await supabase.from('organization_settings').select('*').limit(1).single();
         

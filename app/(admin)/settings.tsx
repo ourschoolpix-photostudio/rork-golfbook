@@ -39,6 +39,8 @@ interface OrganizationInfo {
   rolexBonusPoints: string;
   fullMembershipPrice: string;
   basicMembershipPrice: string;
+  fullMembershipMemo: string;
+  basicMembershipMemo: string;
   useLocalStorage?: boolean;
 }
 
@@ -85,6 +87,8 @@ export default function SettingsScreen() {
     rolexBonusPoints: '',
     fullMembershipPrice: '',
     basicMembershipPrice: '',
+    fullMembershipMemo: '',
+    basicMembershipMemo: '',
     useLocalStorage: false,
   });
 
@@ -764,33 +768,71 @@ export default function SettingsScreen() {
                 Configure membership pricing for Full and Basic membership tiers.
               </Text>
 
-              <Text style={styles.fieldLabel}>Full Membership Price ($)</Text>
-              <TextInput
-                style={styles.input}
-                value={orgInfo.fullMembershipPrice}
-                onChangeText={(text) => {
-                  const filtered = text.replace(/[^0-9.]/g, '');
-                  const parts = filtered.split('.');
-                  const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filtered;
-                  setOrgInfo({ ...orgInfo, fullMembershipPrice: formatted });
-                }}
-                placeholder="Enter full membership price"
-                keyboardType="decimal-pad"
-              />
+              <View style={styles.membershipTypeContainer}>
+                <View style={styles.membershipTypeHeader}>
+                  <Ionicons name="star" size={18} color="#007AFF" />
+                  <Text style={styles.membershipTypeTitle}>Full Membership</Text>
+                </View>
+                
+                <Text style={styles.fieldLabel}>Price ($)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={orgInfo.fullMembershipPrice}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^0-9.]/g, '');
+                    const parts = filtered.split('.');
+                    const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filtered;
+                    setOrgInfo({ ...orgInfo, fullMembershipPrice: formatted });
+                  }}
+                  placeholder="Enter full membership price"
+                  keyboardType="decimal-pad"
+                />
 
-              <Text style={styles.fieldLabel}>Basic Membership Price ($)</Text>
-              <TextInput
-                style={styles.input}
-                value={orgInfo.basicMembershipPrice}
-                onChangeText={(text) => {
-                  const filtered = text.replace(/[^0-9.]/g, '');
-                  const parts = filtered.split('.');
-                  const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filtered;
-                  setOrgInfo({ ...orgInfo, basicMembershipPrice: formatted });
-                }}
-                placeholder="Enter basic membership price"
-                keyboardType="decimal-pad"
-              />
+                <Text style={styles.fieldLabel}>Description (Bullet Points)</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={orgInfo.fullMembershipMemo}
+                  onChangeText={(text) => setOrgInfo({ ...orgInfo, fullMembershipMemo: text })}
+                  placeholder="Enter description (e.g., • Benefit 1\n• Benefit 2\n• Benefit 3)"
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.membershipDivider} />
+
+              <View style={styles.membershipTypeContainer}>
+                <View style={styles.membershipTypeHeader}>
+                  <Ionicons name="star-outline" size={18} color="#007AFF" />
+                  <Text style={styles.membershipTypeTitle}>Basic Membership</Text>
+                </View>
+                
+                <Text style={styles.fieldLabel}>Price ($)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={orgInfo.basicMembershipPrice}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^0-9.]/g, '');
+                    const parts = filtered.split('.');
+                    const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filtered;
+                    setOrgInfo({ ...orgInfo, basicMembershipPrice: formatted });
+                  }}
+                  placeholder="Enter basic membership price"
+                  keyboardType="decimal-pad"
+                />
+
+                <Text style={styles.fieldLabel}>Description (Bullet Points)</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={orgInfo.basicMembershipMemo}
+                  onChangeText={(text) => setOrgInfo({ ...orgInfo, basicMembershipMemo: text })}
+                  placeholder="Enter description (e.g., • Benefit 1\n• Benefit 2\n• Benefit 3)"
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
 
               <TouchableOpacity
                 style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
@@ -1366,5 +1408,31 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#D32F2F',
+  },
+  membershipTypeContainer: {
+    marginBottom: 16,
+  },
+  membershipTypeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  membershipTypeTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+  },
+  membershipDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 20,
+  },
+  textArea: {
+    minHeight: 100,
+    paddingTop: 10,
   },
 });
