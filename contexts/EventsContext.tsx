@@ -142,7 +142,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       console.log('✅ [EventsContext] Successfully fetched events:', fetchedEvents.length);
       setEvents(fetchedEvents);
     } catch (error) {
-      console.error('❌ [EventsContext] Failed to fetch events:', error);
+      console.error('❌ [EventsContext] Failed to fetch events:', error instanceof Error ? error.message : JSON.stringify(error));
       console.log('📥 [EventsContext] Falling back to local storage');
       
       try {
@@ -150,7 +150,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         console.log('✅ [EventsContext] Successfully fetched events from local storage fallback:', fallbackEvents.length);
         setEvents(fallbackEvents);
       } catch (fallbackError) {
-        console.error('❌ [EventsContext] Fallback also failed:', fallbackError);
+        console.error('❌ [EventsContext] Fallback also failed:', fallbackError instanceof Error ? fallbackError.message : JSON.stringify(fallbackError));
         setEvents([]);
       }
     } finally {
@@ -272,7 +272,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       console.log('✅ [EventsContext] Event added successfully');
       await fetchEvents();
     } catch (error) {
-      console.error('❌ [EventsContext] Exception adding event:', error);
+      console.error('❌ [EventsContext] Exception adding event:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [fetchEvents, useLocalStorage]);
@@ -402,7 +402,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       console.log('✅ [EventsContext] Event deleted successfully');
       await fetchEvents();
     } catch (error) {
-      console.error('❌ [EventsContext] Exception deleting event:', error);
+      console.error('❌ [EventsContext] Exception deleting event:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [fetchEvents, useLocalStorage]);

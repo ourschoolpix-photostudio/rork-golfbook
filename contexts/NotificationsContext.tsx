@@ -56,7 +56,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
         setNotifications(fetchedNotifications);
       }
     } catch (error) {
-      console.error('❌ [NotificationsContext] Failed to fetch notifications:', error);
+      console.error('❌ [NotificationsContext] Failed to fetch notifications:', error instanceof Error ? error.message : JSON.stringify(error));
       console.log('📥 [NotificationsContext] Falling back to local storage');
       
       try {
@@ -64,7 +64,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
         console.log('✅ [NotificationsContext] Successfully fetched notifications from local storage fallback:', fallbackNotifications.length);
         setNotifications(fallbackNotifications);
       } catch (fallbackError) {
-        console.error('❌ [NotificationsContext] Fallback also failed:', fallbackError);
+        console.error('❌ [NotificationsContext] Fallback also failed:', fallbackError instanceof Error ? fallbackError.message : JSON.stringify(fallbackError));
         setNotifications([]);
       }
     } finally {
@@ -106,7 +106,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
         console.log('✅ [NotificationsContext] Notification created successfully');
         await fetchNotifications();
       } catch (error) {
-        console.error('❌ [NotificationsContext] Failed to create notification:', error);
+        console.error('❌ [NotificationsContext] Failed to create notification:', error instanceof Error ? error.message : JSON.stringify(error));
         throw error;
       }
     },
@@ -132,7 +132,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
         console.log('✅ [NotificationsContext] Notification marked as read');
         await fetchNotifications();
       } catch (error) {
-        console.error('❌ [NotificationsContext] Failed to mark as read:', error);
+        console.error('❌ [NotificationsContext] Failed to mark as read:', error instanceof Error ? error.message : JSON.stringify(error));
         throw error;
       }
     },
@@ -158,7 +158,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
         console.log('✅ [NotificationsContext] Notification deleted');
         await fetchNotifications();
       } catch (error) {
-        console.error('❌ [NotificationsContext] Failed to delete notification:', error);
+        console.error('❌ [NotificationsContext] Failed to delete notification:', error instanceof Error ? error.message : JSON.stringify(error));
         throw error;
       }
     },
@@ -183,7 +183,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
       console.log('✅ [NotificationsContext] All notifications marked as read');
       await fetchNotifications();
     } catch (error) {
-      console.error('❌ [NotificationsContext] Failed to mark all as read:', error);
+      console.error('❌ [NotificationsContext] Failed to mark all as read:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [memberId, fetchNotifications, useLocalStorage]);
@@ -206,7 +206,7 @@ export const [NotificationsProvider, useNotifications] = createContextHook(() =>
       console.log('✅ [NotificationsContext] All notifications cleared');
       await fetchNotifications();
     } catch (error) {
-      console.error('❌ [NotificationsContext] Failed to clear all notifications:', error);
+      console.error('❌ [NotificationsContext] Failed to clear all notifications:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [memberId, fetchNotifications, useLocalStorage]);

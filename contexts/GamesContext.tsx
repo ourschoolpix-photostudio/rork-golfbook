@@ -67,7 +67,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
         setGames(fetchedGames);
       }
     } catch (error) {
-      console.error('❌ [GamesContext] Failed to fetch games:', error);
+      console.error('❌ [GamesContext] Failed to fetch games:', error instanceof Error ? error.message : JSON.stringify(error));
       console.log('📥 [GamesContext] Falling back to local storage');
       
       try {
@@ -75,7 +75,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
         console.log('✅ [GamesContext] Successfully fetched games from local storage fallback:', fallbackGames.length);
         setGames(fallbackGames);
       } catch (fallbackError) {
-        console.error('❌ [GamesContext] Fallback also failed:', fallbackError);
+        console.error('❌ [GamesContext] Fallback also failed:', fallbackError instanceof Error ? fallbackError.message : JSON.stringify(fallbackError));
         setGames([]);
       }
     } finally {
@@ -181,7 +181,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       await fetchGames();
       return result.id;
     } catch (error) {
-      console.error('❌ [GamesContext] Failed to create game:', error);
+      console.error('❌ [GamesContext] Failed to create game:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [memberId, fetchGames, useLocalStorage]);
@@ -220,7 +220,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       console.log('✅ [GamesContext] Scores updated successfully');
       await fetchGames();
     } catch (error) {
-      console.error('❌ [GamesContext] Failed to update scores:', error);
+      console.error('❌ [GamesContext] Failed to update scores:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [games, fetchGames, useLocalStorage]);
@@ -274,7 +274,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       console.log('✅ [GamesContext] Game updated successfully');
       await fetchGames();
     } catch (error) {
-      console.error('❌ [GamesContext] Failed to update game:', error);
+      console.error('❌ [GamesContext] Failed to update game:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [fetchGames, useLocalStorage]);
@@ -303,7 +303,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       console.log('✅ [GamesContext] Game completed successfully');
       await fetchGames();
     } catch (error) {
-      console.error('❌ [GamesContext] Failed to complete game:', error);
+      console.error('❌ [GamesContext] Failed to complete game:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [fetchGames, useLocalStorage]);
@@ -326,7 +326,7 @@ export const [GamesProvider, useGames] = createContextHook(() => {
       console.log('✅ [GamesContext] Game deleted successfully');
       await fetchGames();
     } catch (error) {
-      console.error('❌ [GamesContext] Failed to delete game:', error);
+      console.error('❌ [GamesContext] Failed to delete game:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [fetchGames, useLocalStorage]);

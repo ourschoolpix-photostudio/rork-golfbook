@@ -86,7 +86,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setMembers(fetchedMembers);
       return fetchedMembers;
     } catch (error) {
-      console.error('❌ [AuthContext] Failed to fetch members:', error);
+      console.error('❌ [AuthContext] Failed to fetch members:', error instanceof Error ? error.message : JSON.stringify(error));
       console.log('📥 [AuthContext] Falling back to local storage');
       
       try {
@@ -95,7 +95,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         setMembers(fallbackMembers);
         return fallbackMembers;
       } catch (fallbackError) {
-        console.error('❌ [AuthContext] Fallback also failed:', fallbackError);
+        console.error('❌ [AuthContext] Fallback also failed:', fallbackError instanceof Error ? fallbackError.message : JSON.stringify(fallbackError));
         setMembers([]);
         return [];
       }
@@ -147,7 +147,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         console.log('✅ [AuthContext] Member already exists, skipping creation');
         return;
       }
-      console.error('❌ [AuthContext] Exception creating member:', error);
+      console.error('❌ [AuthContext] Exception creating member:', error instanceof Error ? error.message : JSON.stringify(error));
     }
   }, [members, fetchMembers, useLocalStorage]);
 
@@ -266,7 +266,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('✅ [AuthContext] Member added successfully');
       await fetchMembers();
     } catch (error) {
-      console.error('❌ [AuthContext] Exception adding member:', error);
+      console.error('❌ [AuthContext] Exception adding member:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [fetchMembers, useLocalStorage]);
@@ -329,7 +329,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       console.log('✅ [AuthContext] Member update complete');
     } catch (error) {
-      console.error('❌ [AuthContext] Exception updating member:', error);
+      console.error('❌ [AuthContext] Exception updating member:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [currentUser, fetchMembers, useLocalStorage]);
@@ -356,7 +356,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         await logout();
       }
     } catch (error) {
-      console.error('❌ [AuthContext] Exception deleting member:', error);
+      console.error('❌ [AuthContext] Exception deleting member:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [currentUser, logout, fetchMembers, useLocalStorage]);

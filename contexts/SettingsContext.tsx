@@ -104,7 +104,7 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settingsWithDefaults));
       setOrgInfo(settingsWithDefaults);
     } catch (error) {
-      console.error('❌ [SettingsContext] Failed to fetch settings:', error);
+      console.error('❌ [SettingsContext] Failed to fetch settings:', error instanceof Error ? error.message : JSON.stringify(error));
       console.log('📥 [SettingsContext] Falling back to local storage or defaults');
       
       try {
@@ -119,7 +119,7 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
           setOrgInfo(DEFAULT_ORG_INFO);
         }
       } catch (storageError) {
-        console.error('❌ [SettingsContext] Failed to read from local storage:', storageError);
+        console.error('❌ [SettingsContext] Failed to read from local storage:', storageError instanceof Error ? storageError.message : JSON.stringify(storageError));
         setOrgInfo(DEFAULT_ORG_INFO);
       }
     } finally {
@@ -176,7 +176,7 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       
       await fetchSettings();
     } catch (error) {
-      console.error('❌ [SettingsContext] Exception updating settings:', error);
+      console.error('❌ [SettingsContext] Exception updating settings:', error instanceof Error ? error.message : JSON.stringify(error));
       throw error;
     }
   }, [fetchSettings, orgInfo]);
