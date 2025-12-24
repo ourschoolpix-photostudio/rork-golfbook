@@ -69,7 +69,12 @@ export function MembershipRenewalModal({
   };
 
   const renderMembershipSelection = () => (
-    <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.scrollContent} 
+      contentContainerStyle={styles.scrollContentContainer}
+      showsVerticalScrollIndicator={false}
+      bounces={false}
+    >
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Renew Your Membership</Text>
         <Text style={styles.subtitle}>
@@ -158,7 +163,12 @@ export function MembershipRenewalModal({
     const membershipName = selectedMembership === 'full' ? 'Full Membership' : 'Basic Membership';
 
     return (
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollContent} 
+        contentContainerStyle={styles.scrollContentContainer}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         <View style={styles.contentContainer}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>Membership Summary</Text>
@@ -238,9 +248,11 @@ export function MembershipRenewalModal({
               </TouchableOpacity>
             </View>
 
-            {!selectedMembership || selectedPayment === null
-              ? (!selectedMembership ? renderMembershipSelection() : renderPaymentSelection())
-              : null}
+            <View style={styles.content}>
+              {!selectedMembership || selectedPayment === null
+                ? (!selectedMembership ? renderMembershipSelection() : renderPaymentSelection())
+                : null}
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -278,12 +290,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
+    height: '90%',
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: -4 },
     elevation: 8,
+  },
+  content: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -305,9 +320,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
   },
+  scrollContentContainer: {
+    flexGrow: 1,
+  },
   contentContainer: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 60,
   },
   title: {
     fontSize: 24,
