@@ -23,6 +23,7 @@ interface MembershipRenewalModalProps {
 
 type MembershipType = 'full' | 'basic' | null;
 type PaymentMethod = 'zelle' | 'paypal' | null;
+type Step = 'membership' | 'payment';
 
 export function MembershipRenewalModal({
   visible,
@@ -30,6 +31,7 @@ export function MembershipRenewalModal({
   onClose,
 }: MembershipRenewalModalProps) {
   const { orgInfo } = useSettings();
+  const [step, setStep] = useState<Step>('membership');
   const [selectedMembership, setSelectedMembership] = useState<MembershipType>(null);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
   const [showZelleModal, setShowZelleModal] = useState(false);
@@ -39,6 +41,7 @@ export function MembershipRenewalModal({
   const basicPrice = parseFloat(orgInfo.basicMembershipPrice || '0');
 
   const handleClose = () => {
+    setStep('membership');
     setSelectedMembership(null);
     setSelectedPayment(null);
     onClose();
@@ -59,10 +62,9 @@ export function MembershipRenewalModal({
   };
 
   const handleBack = () => {
-    if (selectedPayment) {
+    if (step === 'payment') {
+      setStep('membership');
       setSelectedPayment(null);
-    } else if (selectedMembership) {
-      setSelectedMembership(null);
     } else {
       handleClose();
     }
@@ -148,7 +150,7 @@ export function MembershipRenewalModal({
         {selectedMembership && (
           <TouchableOpacity
             style={styles.continueButton}
-            onPress={() => {}}
+            onPress={() => setStep('payment')}
           >
             <Text style={styles.continueButtonText}>Continue to Payment</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
@@ -241,7 +243,7 @@ export function MembershipRenewalModal({
                 <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>
-                {!selectedMembership ? 'Membership Options' : 'Payment Method'}
+                {step === 'membership' ? 'Membership Options' : 'Payment Method'}
               </Text>
               <TouchableOpacity onPress={handleClose}>
                 <Ionicons name="close" size={24} color="#1a1a1a" />
@@ -249,7 +251,7 @@ export function MembershipRenewalModal({
             </View>
 
             <View style={styles.content}>
-              {!selectedMembership 
+              {step === 'membership'
                 ? renderMembershipSelection() 
                 : renderPaymentSelection()}
             </View>
