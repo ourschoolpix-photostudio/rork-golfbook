@@ -176,32 +176,15 @@ export function MembershipPayPalModal({
         throw new Error('Cannot open PayPal URL');
       }
 
+      await Linking.openURL(paymentResponse.approvalUrl);
+      console.log('[MembershipPayPalModal] PayPal URL opened successfully');
+      
+      onClose();
+      
       Alert.alert(
-        'Redirecting to PayPal',
-        'You will be redirected to PayPal to complete your payment. After completing the payment, click the "Return to Merchant" link to come back to the app.',
-        [
-          {
-            text: 'Continue',
-            onPress: async () => {
-              try {
-                onClose();
-                const opened = await Linking.openURL(paymentResponse.approvalUrl);
-                console.log('[MembershipPayPalModal] PayPal URL opened:', opened);
-              } catch (error) {
-                console.error('[MembershipPayPalModal] Error opening PayPal URL:', error);
-                Alert.alert(
-                  'Error',
-                  'Could not open PayPal. Please try again.',
-                  [{ text: 'OK' }]
-                );
-              }
-            },
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
+        'PayPal Payment',
+        'You will be redirected to PayPal to complete your payment. After payment, your membership will be activated.',
+        [{ text: 'OK' }]
       );
     } catch (error) {
       console.error('[MembershipPayPalModal] PayPal payment error:', error);
