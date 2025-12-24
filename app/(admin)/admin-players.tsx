@@ -250,6 +250,13 @@ export default function AdminPlayersScreen() {
     }
   };
 
+  const getGenderCounts = () => {
+    const filteredMembers = getFilteredMembers();
+    const maleCount = filteredMembers.filter(m => m.gender === 'male').length;
+    const femaleCount = filteredMembers.filter(m => m.gender === 'female').length;
+    return { maleCount, femaleCount };
+  };
+
   const localStates = ['', 'MD', 'VA', 'PA', 'NJ', 'DE'];
   const totalPlayers = members.length;
   const activeMembers = members.filter(m => m.membershipType === 'active').length;
@@ -356,6 +363,16 @@ export default function AdminPlayersScreen() {
 
       <View style={styles.filterTitleDisplayCard}>
         <Text style={styles.filterTitleDisplayText}>{getFilterTitle()}</Text>
+        <View style={styles.genderCountsContainer}>
+          <View style={styles.genderCount}>
+            <Text style={styles.genderCountLabel}>Male:</Text>
+            <Text style={styles.genderCountNumber}>{getGenderCounts().maleCount}</Text>
+          </View>
+          <View style={styles.genderCount}>
+            <Text style={styles.genderCountLabel}>Female:</Text>
+            <Text style={styles.genderCountNumber}>{getGenderCounts().femaleCount}</Text>
+          </View>
+        </View>
       </View>
 
       <FlatList
@@ -526,10 +543,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#a0a0a0',
     borderBottomWidth: 1,
     borderBottomColor: '#888',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   filterTitleDisplayText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#fff',
+  },
+  genderCountsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  genderCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  genderCountLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  genderCountNumber: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#fff',
   },
   buttonGroup: {
