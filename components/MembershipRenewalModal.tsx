@@ -54,11 +54,14 @@ export function MembershipRenewalModal({
 
   const handlePaymentSelect = (method: PaymentMethod) => {
     setSelectedPayment(method);
-    if (method === 'zelle') {
-      setShowZelleModal(true);
-    } else if (method === 'paypal') {
-      setShowPayPalModal(true);
-    }
+    
+    setTimeout(() => {
+      if (method === 'zelle') {
+        setShowZelleModal(true);
+      } else if (method === 'paypal') {
+        setShowPayPalModal(true);
+      }
+    }, 100);
   };
 
   const handleBack = () => {
@@ -232,7 +235,7 @@ export function MembershipRenewalModal({
 
   return (
     <>
-      <Modal visible={visible} transparent animationType="slide">
+      <Modal visible={visible && !showZelleModal && !showPayPalModal} transparent animationType="slide">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.overlay}
