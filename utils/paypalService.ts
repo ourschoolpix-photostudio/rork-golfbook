@@ -190,8 +190,8 @@ export async function createPayPalOrder(
       returnUrl = `${appBaseUrl}/paypal/success`;
       cancelUrl = `${appBaseUrl}/paypal/cancel`;
     } else {
-      returnUrl = 'rork-app://paypal-callback';
-      cancelUrl = 'rork-app://paypal-callback';
+      returnUrl = 'rork-app://paypal/success';
+      cancelUrl = 'rork-app://paypal/cancel';
     }
 
     console.log('[PayPalService] Using return URLs:', {

@@ -100,9 +100,33 @@ function RootLayoutNav() {
             : 'https://api-m.sandbox.paypal.com';
 
           const authString = `${paypalConfig.paypal_client_id}:${paypalConfig.paypal_client_secret}`;
-          const auth = Platform.OS === 'web' && typeof btoa !== 'undefined'
-            ? btoa(authString)
-            : Buffer.from(authString).toString('base64');
+          
+          function base64Encode(str: string): string {
+            if (Platform.OS === 'web' && typeof btoa !== 'undefined') {
+              return btoa(str);
+            }
+            
+            const base64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+            let result = '';
+            let i = 0;
+            
+            while (i < str.length) {
+              const a = str.charCodeAt(i++);
+              const b = i < str.length ? str.charCodeAt(i++) : 0;
+              const c = i < str.length ? str.charCodeAt(i++) : 0;
+              
+              const bitmap = (a << 16) | (b << 8) | c;
+              
+              result += base64chars.charAt((bitmap >> 18) & 63);
+              result += base64chars.charAt((bitmap >> 12) & 63);
+              result += (i - 1 < str.length ? base64chars.charAt((bitmap >> 6) & 63) : '=');
+              result += (i < str.length ? base64chars.charAt(bitmap & 63) : '=');
+            }
+            
+            return result;
+          }
+          
+          const auth = base64Encode(authString);
 
           const tokenResponse = await fetch(`${baseUrl}/v1/oauth2/token`, {
             method: 'POST',
@@ -251,6 +275,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(event)/[eventId]" options={{ headerShown: false }} />
       <Stack.Screen name="(admin)" options={{ headerShown: false }} />
       <Stack.Screen name="(game)/[gameId]" options={{ headerShown: false }} />
+      <Stack.Screen name="paypal" options={{ headerShown: false }} />
     </Stack>
   );
 }
