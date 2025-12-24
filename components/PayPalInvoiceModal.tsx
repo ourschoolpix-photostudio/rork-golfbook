@@ -9,8 +9,9 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Linking,
+  Platform,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { Member, Event } from '@/types';
 import { TournamentTermsModal } from './TournamentTermsModal';
@@ -89,7 +90,7 @@ export function PayPalInvoiceModal({
       setNumberOfGuests('');
       setGuestNames('');
     }
-  }, [visible, currentUser?.id]);
+  }, [visible, currentUser]);
 
   if (!event || !currentUser) return null;
 
@@ -185,31 +186,123 @@ export function PayPalInvoiceModal({
       }
 
       console.log('[PayPalInvoiceModal] 🌐 Opening PayPal approval URL...');
-      const supported = await Linking.canOpenURL(paymentResponse.approvalUrl);
-      console.log('[PayPalInvoiceModal] URL supported:', supported);
       
-      if (supported) {
-        await Linking.openURL(paymentResponse.approvalUrl);
-        console.log('[PayPalInvoiceModal] ✅ PayPal page opened successfully');
+      console.log('[PayPalInvoiceModal] Registering user with payment status pending...');
+      await onRegister(
+        ghin.trim(),
+        email.trim(),
+        phone.trim(),
+        isSocialEvent ? guestCount : undefined,
+        isSocialEvent && guestCount > 0 ? guestNames : undefined,
+        'pending'
+      );
+      
+      const result = await WebBrowser.openAuthSessionAsync(
+        paymentResponse.approvalUrl,
+        Platform.OS === 'web' ? `${typeof window !== 'undefined' ? window.location.origin : ''}/paypal/success` : 'rork-app://paypal/success'
+      );
+      
+      console.log('[PayPalInvoiceModal] WebBrowser result:', result);
+      
+      if (result.type === 'success' && result.url) {
+        console.log('[PayPalInvoiceModal] Payment completed, URL:', result.url);
         
-        console.log('[PayPalInvoiceModal] Registering user with payment status pending...');
-        await onRegister(
-          ghin.trim(),
-          email.trim(),
-          phone.trim(),
-          isSocialEvent ? guestCount : undefined,
-          isSocialEvent && guestCount > 0 ? guestNames : undefined,
-          'pending'
-        );
+        const url = new URL(result.url);
+        const token = url.searchParams.get('token') || url.searchParams.get('PayerID');
         
+        if (token) {
+          console.log('[PayPalInvoiceModal] Processing payment completion...');
+          setIsSubmitting(true);
+          
+          try {
+            const { data: paypalConfig } = await supabase
+              .from('organization_settings')
+              .select('paypal_client_id, paypal_client_secret, paypal_mode')
+              .eq('id', '00000000-0000-0000-0000-000000000001')
+              .single();
+
+            if (!paypalConfig) {
+              throw new Error('Failed to load PayPal configuration');
+            }
+
+            const mode = (paypalConfig.paypal_mode || 'sandbox') as 'sandbox' | 'live';
+            const baseUrl = mode === 'live' 
+              ? 'https://api-m.paypal.com' 
+              : 'https://api-m.sandbox.paypal.com';
+
+            const authString = `${paypalConfig.paypal_client_id}:${paypalConfig.paypal_client_secret}`;
+            const auth = btoa(authString);
+
+            const tokenResponse = await fetch(`${baseUrl}/v1/oauth2/token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Authorization: `Basic ${auth}`,
+              },
+              body: 'grant_type=client_credentials',
+            });
+
+            if (!tokenResponse.ok) {
+              throw new Error('Failed to get PayPal access token');
+            }
+
+            const tokenData = await tokenResponse.json();
+            const accessToken = tokenData.access_token;
+
+            const captureResponse = await fetch(`${baseUrl}/v2/checkout/orders/${token}/capture`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`,
+              },
+            });
+
+            if (!captureResponse.ok) {
+              throw new Error('Failed to capture payment');
+            }
+
+            const captureData = await captureResponse.json();
+            console.log('[PayPalInvoiceModal] Payment captured:', captureData);
+
+            await supabase
+              .from('event_registrations')
+              .update({ 
+                paymentStatus: 'paid',
+                paypalCaptureId: captureData.id,
+              })
+              .eq('paypalOrderId', paymentResponse.orderId);
+
+            onClose();
+            Alert.alert(
+              'Payment Successful',
+              'Your registration payment has been completed successfully!',
+              [{ text: 'OK' }]
+            );
+          } catch (captureError) {
+            console.error('[PayPalInvoiceModal] Error capturing payment:', captureError);
+            Alert.alert(
+              'Payment Error',
+              'There was an issue processing your payment. Please contact support.',
+              [{ text: 'OK' }]
+            );
+          } finally {
+            setIsSubmitting(false);
+          }
+        } else {
+          console.log('[PayPalInvoiceModal] No token found in return URL');
+          onClose();
+        }
+      } else if (result.type === 'cancel') {
+        console.log('[PayPalInvoiceModal] Payment cancelled by user');
         onClose();
         Alert.alert(
-          'PayPal Payment',
-          'You will be redirected to PayPal to complete your payment. After payment, your registration will be marked as paid.',
+          'Payment Cancelled',
+          'You cancelled the payment process.',
           [{ text: 'OK' }]
         );
       } else {
-        throw new Error('Cannot open PayPal URL');
+        console.log('[PayPalInvoiceModal] Payment flow did not complete:', result.type);
+        onClose();
       }
     } catch (error) {
       console.error('[PayPalInvoiceModal] ❌ PayPal payment error:', error);

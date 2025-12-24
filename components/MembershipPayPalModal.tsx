@@ -11,8 +11,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Linking,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { Member } from '@/types';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -170,21 +170,118 @@ export function MembershipPayPalModal({
       });
       
       console.log('[MembershipPayPalModal] Opening PayPal URL...');
-      const supported = await Linking.canOpenURL(paymentResponse.approvalUrl);
-      console.log('[MembershipPayPalModal] URL supported:', supported);
       
-      if (supported) {
-        await Linking.openURL(paymentResponse.approvalUrl);
-        console.log('[MembershipPayPalModal] ✅ PayPal page opened successfully');
+      const result = await WebBrowser.openAuthSessionAsync(
+        paymentResponse.approvalUrl,
+        Platform.OS === 'web' ? `${typeof window !== 'undefined' ? window.location.origin : ''}/paypal/success` : 'rork-app://paypal/success'
+      );
+      
+      console.log('[MembershipPayPalModal] WebBrowser result:', result);
+      
+      if (result.type === 'success' && result.url) {
+        console.log('[MembershipPayPalModal] Payment completed, URL:', result.url);
         
+        const url = new URL(result.url);
+        const token = url.searchParams.get('token') || url.searchParams.get('PayerID');
+        
+        if (token) {
+          console.log('[MembershipPayPalModal] Processing payment completion...');
+          setIsSubmitting(true);
+          
+          try {
+            const { data: paypalConfig } = await supabase
+              .from('organization_settings')
+              .select('paypal_client_id, paypal_client_secret, paypal_mode')
+              .eq('id', '00000000-0000-0000-0000-000000000001')
+              .single();
+
+            if (!paypalConfig) {
+              throw new Error('Failed to load PayPal configuration');
+            }
+
+            const mode = (paypalConfig.paypal_mode || 'sandbox') as 'sandbox' | 'live';
+            const baseUrl = mode === 'live' 
+              ? 'https://api-m.paypal.com' 
+              : 'https://api-m.sandbox.paypal.com';
+
+            const authString = `${paypalConfig.paypal_client_id}:${paypalConfig.paypal_client_secret}`;
+            const auth = btoa(authString);
+
+            const tokenResponse = await fetch(`${baseUrl}/v1/oauth2/token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Authorization: `Basic ${auth}`,
+              },
+              body: 'grant_type=client_credentials',
+            });
+
+            if (!tokenResponse.ok) {
+              throw new Error('Failed to get PayPal access token');
+            }
+
+            const tokenData = await tokenResponse.json();
+            const accessToken = tokenData.access_token;
+
+            const captureResponse = await fetch(`${baseUrl}/v2/checkout/orders/${token}/capture`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`,
+              },
+            });
+
+            if (!captureResponse.ok) {
+              throw new Error('Failed to capture payment');
+            }
+
+            const captureData = await captureResponse.json();
+            console.log('[MembershipPayPalModal] Payment captured:', captureData);
+
+            await supabase
+              .from('membership_payments')
+              .update({ 
+                payment_status: 'completed',
+                paypal_capture_id: captureData.id,
+              })
+              .eq('paypal_order_id', token);
+
+            await supabase
+              .from('members')
+              .update({ membershipType: 'active' })
+              .eq('id', member.id);
+
+            onClose();
+            Alert.alert(
+              'Payment Successful',
+              'Your membership payment has been completed successfully!',
+              [{ text: 'OK' }]
+            );
+          } catch (captureError) {
+            console.error('[MembershipPayPalModal] Error capturing payment:', captureError);
+            Alert.alert(
+              'Payment Error',
+              'There was an issue processing your payment. Please contact support.',
+              [{ text: 'OK' }]
+            );
+          } finally {
+            setIsSubmitting(false);
+          }
+        } else {
+          console.log('[MembershipPayPalModal] No token found in return URL');
+          onClose();
+        }
+      } else if (result.type === 'cancel') {
+        console.log('[MembershipPayPalModal] Payment cancelled by user');
         onClose();
         Alert.alert(
-          'PayPal Payment',
-          'You will be redirected to PayPal to complete your payment. After payment, your membership will be activated.',
+          'Payment Cancelled',
+          'You cancelled the payment process.',
           [{ text: 'OK' }]
         );
       } else {
-        throw new Error('Cannot open PayPal URL');
+        console.log('[MembershipPayPalModal] Payment flow did not complete:', result.type);
+        onClose();
       }
     } catch (error) {
       console.error('[MembershipPayPalModal] PayPal payment error:', error);
