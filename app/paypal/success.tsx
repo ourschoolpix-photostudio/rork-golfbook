@@ -77,16 +77,37 @@ export default function PayPalSuccessScreen() {
         const captureData = await captureResponse.json();
         console.log('[PayPal Success] Payment captured:', captureData);
 
-        const { error: updateError } = await supabase
+        const { data: membershipPayment, error: membershipQueryError } = await supabase
           .from('membership_payments')
-          .update({ 
-            payment_status: 'completed',
-            paypal_capture_id: captureData.id,
-          })
-          .eq('paypal_order_id', token);
+          .select('member_id')
+          .eq('paypal_order_id', token)
+          .single();
 
-        if (updateError) {
-          console.error('[PayPal Success] Failed to update membership payment:', updateError);
+        if (!membershipQueryError && membershipPayment) {
+          console.log('[PayPal Success] Updating membership payment and member status...');
+          
+          const { error: updateError } = await supabase
+            .from('membership_payments')
+            .update({ 
+              payment_status: 'completed',
+              paypal_capture_id: captureData.id,
+            })
+            .eq('paypal_order_id', token);
+
+          if (updateError) {
+            console.error('[PayPal Success] Failed to update membership payment:', updateError);
+          } else {
+            const { error: memberUpdateError } = await supabase
+              .from('members')
+              .update({ membershipType: 'active' })
+              .eq('id', membershipPayment.member_id);
+
+            if (memberUpdateError) {
+              console.error('[PayPal Success] Failed to update member status:', memberUpdateError);
+            } else {
+              console.log('[PayPal Success] Member status updated to active');
+            }
+          }
         }
 
         const { error: registrationError } = await supabase

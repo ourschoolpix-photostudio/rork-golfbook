@@ -154,14 +154,6 @@ export function MembershipPayPalModal({
       const supported = await Linking.canOpenURL(paymentResponse.approvalUrl);
       
       if (supported) {
-        await Linking.openURL(paymentResponse.approvalUrl);
-        
-        await updateMember(member.id, {
-          email: email.trim(),
-          phone: phone.trim(),
-          membershipType: 'active',
-        });
-
         await supabase.from('membership_payments').insert({
           member_id: member.id,
           member_name: member.name,
@@ -173,11 +165,21 @@ export function MembershipPayPalModal({
           phone: phone.trim(),
           paypal_order_id: paymentResponse.orderId,
         });
+
+        await updateMember(member.id, {
+          email: email.trim(),
+          phone: phone.trim(),
+        });
         
         onClose();
+        
+        setTimeout(async () => {
+          await Linking.openURL(paymentResponse.approvalUrl);
+        }, 500);
+        
         Alert.alert(
-          'PayPal Payment',
-          'You will be redirected to PayPal to complete your payment. After payment, your membership will be activated.',
+          'Redirecting to PayPal',
+          'Complete your payment in PayPal. Your membership will be activated after successful payment.',
           [{ text: 'OK' }]
         );
       } else {
