@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function PayPalSuccessScreen() {
-  const { token } = useLocalSearchParams<{ token?: string }>();
+  const params = useLocalSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState('Processing your payment...');
@@ -14,7 +14,10 @@ export default function PayPalSuccessScreen() {
     const capturePayment = async () => {
       try {
         console.log('[PayPal Success] Payment callback received');
-        console.log('[PayPal Success] Token:', token);
+        console.log('[PayPal Success] All params:', params);
+        
+        const token = (params.token as string) || (params.PayerID as string);
+        console.log('[PayPal Success] Extracted token:', token);
 
         if (!token) {
           console.error('[PayPal Success] No token found in URL params');
@@ -157,8 +160,10 @@ export default function PayPalSuccessScreen() {
       }
     };
 
-    capturePayment();
-  }, [token, router]);
+    if (params && Object.keys(params).length > 0) {
+      capturePayment();
+    }
+  }, [params, router]);
 
   return (
     <View style={styles.container}>

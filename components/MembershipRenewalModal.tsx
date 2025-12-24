@@ -55,13 +55,13 @@ export function MembershipRenewalModal({
   const handlePaymentSelect = (method: PaymentMethod) => {
     setSelectedPayment(method);
     
-    setTimeout(() => {
-      if (method === 'zelle') {
-        setShowZelleModal(true);
-      } else if (method === 'paypal') {
-        setShowPayPalModal(true);
-      }
-    }, 100);
+    if (method === 'zelle') {
+      setShowZelleModal(true);
+      onClose();
+    } else if (method === 'paypal') {
+      setShowPayPalModal(true);
+      onClose();
+    }
   };
 
   const handleBack = () => {
