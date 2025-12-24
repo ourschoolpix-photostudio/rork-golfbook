@@ -163,8 +163,8 @@ export const PlayerCard = memo(function PlayerCard({
             {member.email && <Text style={styles.memberDetail}>{member.email}</Text>}
           </View>
 
-          {isCurrentUser && member.membershipType === 'in-active' && (
-            <TouchableOpacity style={styles.renewButton}>
+          {isCurrentUser && member.membershipType === 'in-active' && onEdit && (
+            <TouchableOpacity style={styles.renewButton} onPress={onEdit}>
               <Text style={styles.renewButtonText}>Renew Membership</Text>
             </TouchableOpacity>
           )}

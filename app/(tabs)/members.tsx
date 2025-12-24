@@ -15,6 +15,7 @@ import { Member } from '@/types';
 import { PlayerCard } from '@/components/PlayerCard';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { PlayerHistoricalRecordsModal } from '@/components/PlayerHistoricalRecordsModal';
+import { MembershipRenewalModal } from '@/components/MembershipRenewalModal';
 
 
 export default function MembersScreen() {
@@ -30,6 +31,7 @@ export default function MembersScreen() {
   const [showFullEditModal, setShowFullEditModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyMember, setHistoryMember] = useState<Member | null>(null);
+  const [showRenewalModal, setShowRenewalModal] = useState(false);
 
 
   const loadMembers = useCallback(async () => {
@@ -124,6 +126,11 @@ export default function MembersScreen() {
       throw error;
     }
   }, [updateMemberFromContext]);
+
+  const handleRenewMembership = useCallback(() => {
+    console.log('[Members] Opening membership renewal modal');
+    setShowRenewalModal(true);
+  }, []);
 
   const handleSaveMember = useCallback(async (updatedMember: Member) => {
     try {
@@ -258,7 +265,7 @@ export default function MembersScreen() {
                   isAdmin={authUser?.isAdmin || false}
                   isCurrentUser={true}
                   currentUser={authUser}
-                  onEdit={() => setShowEditModal(true)}
+                  onEdit={currentUser.membershipType === 'in-active' ? handleRenewMembership : () => setShowEditModal(true)}
                   onHistoryPress={() => handleHistoryPress(currentUser)}
                 />
               </TouchableOpacity>
@@ -336,6 +343,14 @@ export default function MembersScreen() {
         setHistoryMember(null);
       }}
     />
+
+    {currentUser && (
+      <MembershipRenewalModal
+        visible={showRenewalModal}
+        member={currentUser}
+        onClose={() => setShowRenewalModal(false)}
+      />
+    )}
     </>
   );
 }
