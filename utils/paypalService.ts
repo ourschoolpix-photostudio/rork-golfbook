@@ -191,8 +191,8 @@ export async function createPayPalOrder(
         },
       ],
       application_context: {
-        return_url: Platform.OS === 'web' ? `${window.location.origin}/payment/success` : 'golfapp://payment/success',
-        cancel_url: Platform.OS === 'web' ? `${window.location.origin}/payment/cancel` : 'golfapp://payment/cancel',
+        return_url: Platform.OS === 'web' ? `${window.location.origin}/paypal/success` : 'rork-app://paypal/success',
+        cancel_url: Platform.OS === 'web' ? `${window.location.origin}/paypal/cancel` : 'rork-app://paypal/cancel',
         brand_name: 'Golf Tournament Registration',
         user_action: 'PAY_NOW',
       },
