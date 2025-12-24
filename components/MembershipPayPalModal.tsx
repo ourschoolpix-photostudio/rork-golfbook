@@ -156,14 +156,11 @@ export function MembershipPayPalModal({
       if (supported) {
         await Linking.openURL(paymentResponse.approvalUrl);
         
-        const updatedMember: Member = {
-          ...member,
+        await updateMember(member.id, {
           email: email.trim(),
           phone: phone.trim(),
           membershipType: 'active',
-        };
-
-        await updateMember(member.id, updatedMember);
+        });
 
         await supabase.from('membership_payments').insert({
           member_id: member.id,

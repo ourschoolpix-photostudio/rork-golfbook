@@ -69,14 +69,11 @@ export function MembershipZelleModal({
 
     setIsSubmitting(true);
     try {
-      const updatedMember: Member = {
-        ...member,
+      await updateMember(member.id, {
         email: email.trim(),
         phone: phone.trim(),
         membershipType: 'active',
-      };
-
-      await updateMember(member.id, updatedMember);
+      });
 
       await supabase.from('membership_payments').insert({
         member_id: member.id,
