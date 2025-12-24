@@ -30,8 +30,14 @@ export function getTournamentHandicapDisplay(
     return 'N/A';
   }
 
-  const average = calculateAverageTournamentHandicap(records);
-  return `${average.toFixed(1)} (${records.length} events)`;
+  const validRecords = records.filter(r => r && r.eventId && r.handicap !== undefined);
+  
+  if (validRecords.length === 0) {
+    return 'N/A';
+  }
+
+  const average = calculateAverageTournamentHandicap(validRecords);
+  return `${average.toFixed(1)} (${validRecords.length} events)`;
 }
 
 export function addTournamentHandicapRecord(

@@ -52,35 +52,62 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       if (error) throw error;
       
-      const fetchedMembers = (data || []).map((m: any) => ({
-        id: m.id,
-        name: m.name || m.full_name || '',
-        username: m.username || m.name || '',
-        pin: m.pin || '',
-        isAdmin: m.is_admin || false,
-        rolexPoints: m.rolex_points || 0,
-        email: m.email || '',
-        phone: m.phone || '',
-        handicap: m.handicap || 0,
-        membershipType: m.membership_type || 'active',
-        joinDate: m.join_date || new Date().toISOString().split('T')[0],
-        createdAt: m.created_at || new Date().toISOString(),
-        gender: m.gender,
-        address: m.address,
-        city: m.city,
-        state: m.state,
-        flight: m.flight,
-        rolexFlight: m.rolex_flight,
-        currentHandicap: m.current_handicap,
-        dateOfBirth: m.date_of_birth,
-        emergencyContactName: m.emergency_contact_name,
-        emergencyContactPhone: m.emergency_contact_phone,
-        profilePhotoUrl: m.profile_photo_url,
-        adjustedHandicap: m.adjusted_handicap,
-        ghin: m.ghin,
-        boardMemberRoles: m.board_member_roles || [],
-        tournamentHandicaps: m.tournament_handicaps || [],
-      }));
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('archived', false);
+      
+      if (eventsError) {
+        console.error('❌ [AuthContext] Failed to fetch events for filtering:', eventsError.message);
+      }
+      
+      const validEventIds = new Set((eventsData || []).map(e => e.id));
+      console.log('📋 [AuthContext] Valid non-archived event IDs:', validEventIds.size);
+      
+      const fetchedMembers = (data || []).map((m: any) => {
+        const tournamentHandicaps = m.tournament_handicaps || [];
+        const filteredHandicaps = tournamentHandicaps.filter((th: any) => {
+          if (!th || !th.eventId) {
+            console.log(`🗑️ [AuthContext] Filtering out invalid tournament handicap record`);
+            return false;
+          }
+          const isValid = validEventIds.has(th.eventId);
+          if (!isValid) {
+            console.log(`🗑️ [AuthContext] Filtering out tournament handicap for deleted/archived event: ${th.eventName || 'Unknown'} (${th.eventId})`);
+          }
+          return isValid;
+        });
+        
+        return {
+          id: m.id,
+          name: m.name || m.full_name || '',
+          username: m.username || m.name || '',
+          pin: m.pin || '',
+          isAdmin: m.is_admin || false,
+          rolexPoints: m.rolex_points || 0,
+          email: m.email || '',
+          phone: m.phone || '',
+          handicap: m.handicap || 0,
+          membershipType: m.membership_type || 'active',
+          joinDate: m.join_date || new Date().toISOString().split('T')[0],
+          createdAt: m.created_at || new Date().toISOString(),
+          gender: m.gender,
+          address: m.address,
+          city: m.city,
+          state: m.state,
+          flight: m.flight,
+          rolexFlight: m.rolex_flight,
+          currentHandicap: m.current_handicap,
+          dateOfBirth: m.date_of_birth,
+          emergencyContactName: m.emergency_contact_name,
+          emergencyContactPhone: m.emergency_contact_phone,
+          profilePhotoUrl: m.profile_photo_url,
+          adjustedHandicap: m.adjusted_handicap,
+          ghin: m.ghin,
+          boardMemberRoles: m.board_member_roles || [],
+          tournamentHandicaps: filteredHandicaps,
+        };
+      });
       
       console.log('✅ [AuthContext] Successfully fetched members:', fetchedMembers.length);
       setMembers(fetchedMembers);

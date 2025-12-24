@@ -153,7 +153,7 @@ export const PlayerCard = memo(function PlayerCard({
                 Adjusted: {member.adjustedHandicap}
               </Text>
             )}
-            {canSeeTournamentHandicap && member.tournamentHandicaps && member.tournamentHandicaps.length > 0 && (
+            {canSeeTournamentHandicap && member.tournamentHandicaps && member.tournamentHandicaps.length > 0 && getTournamentHandicapDisplay(member.tournamentHandicaps) !== 'N/A' && (
               <Text style={styles.memberDetailTournament}>
                 Tournament Handicap: {getTournamentHandicapDisplay(member.tournamentHandicaps)}
               </Text>
