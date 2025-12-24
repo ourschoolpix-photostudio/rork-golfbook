@@ -178,13 +178,23 @@ export function MembershipPayPalModal({
 
       Alert.alert(
         'Redirecting to PayPal',
-        'You will be redirected to PayPal to complete your payment. After completing the payment, you will be brought back to the app automatically.',
+        'You will be redirected to PayPal to complete your payment. After completing the payment, click the "Return to Merchant" link to come back to the app.',
         [
           {
             text: 'Continue',
             onPress: async () => {
-              onClose();
-              await Linking.openURL(paymentResponse.approvalUrl);
+              try {
+                onClose();
+                const opened = await Linking.openURL(paymentResponse.approvalUrl);
+                console.log('[MembershipPayPalModal] PayPal URL opened:', opened);
+              } catch (error) {
+                console.error('[MembershipPayPalModal] Error opening PayPal URL:', error);
+                Alert.alert(
+                  'Error',
+                  'Could not open PayPal. Please try again.',
+                  [{ text: 'OK' }]
+                );
+              }
             },
           },
           {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,8 +17,12 @@ export default function PayPalSuccessScreen() {
         console.log('[PayPal Success] Token:', token);
 
         if (!token) {
+          console.error('[PayPal Success] No token found in URL params');
           setStatus('error');
           setMessage('Payment token not found');
+          setTimeout(() => {
+            router.replace('/(tabs)/dashboard');
+          }, 3000);
           return;
         }
 
@@ -125,9 +129,22 @@ export default function PayPalSuccessScreen() {
         setStatus('success');
         setMessage('Payment completed successfully!');
 
+        Alert.alert(
+          'Payment Successful',
+          'Your membership payment has been completed successfully!',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                router.replace('/(tabs)/dashboard');
+              },
+            },
+          ]
+        );
+
         setTimeout(() => {
           router.replace('/(tabs)/dashboard');
-        }, 2000);
+        }, 5000);
 
       } catch (error) {
         console.error('[PayPal Success] Error:', error);
