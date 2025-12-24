@@ -418,18 +418,53 @@ export const deleteEventProcedure = publicProcedure
   .mutation(async ({ input }) => {
     console.log('🗑️ Deleting event:', input.eventId);
     
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', input.eventId);
+    try {
+      const { data: registrations } = await supabase
+        .from('event_registrations')
+        .select('member_id')
+        .eq('event_id', input.eventId);
 
-    if (error) {
-      console.error('❌ Error deleting event:', error);
-      throw new Error(`Failed to delete event: ${error.message}`);
+      const memberIds = (registrations || []).map(r => r.member_id);
+      
+      if (memberIds.length > 0) {
+        console.log(`🧹 Cleaning tournament handicaps for ${memberIds.length} members`);
+        
+        for (const memberId of memberIds) {
+          const { data: member } = await supabase
+            .from('members')
+            .select('tournament_handicaps')
+            .eq('id', memberId)
+            .single();
+
+          if (member?.tournament_handicaps) {
+            const updatedHandicaps = (member.tournament_handicaps as any[]).filter(
+              (record: any) => record.eventId !== input.eventId
+            );
+
+            await supabase
+              .from('members')
+              .update({ tournament_handicaps: updatedHandicaps })
+              .eq('id', memberId);
+          }
+        }
+      }
+
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', input.eventId);
+
+      if (error) {
+        console.error('❌ Error deleting event:', error);
+        throw new Error(`Failed to delete event: ${error.message}`);
+      }
+
+      console.log('✅ Event deleted successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error in delete event procedure:', error);
+      throw new Error(`Failed to delete event: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    console.log('✅ Event deleted successfully');
-    return { success: true };
   });
 
 export const registerForEventProcedure = publicProcedure

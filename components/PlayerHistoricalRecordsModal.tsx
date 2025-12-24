@@ -72,7 +72,8 @@ export function PlayerHistoricalRecordsModal({
             number_of_days,
             status,
             entry_fee,
-            type
+            type,
+            archived
           )
         `)
         .eq('member_id', member.id);
@@ -102,6 +103,11 @@ export function PlayerHistoricalRecordsModal({
         
         if (!event) {
           console.warn('[Historical Records] Event data missing for registration:', reg);
+          continue;
+        }
+        
+        if (event.archived) {
+          console.log('[Historical Records] Skipping archived event:', event.name);
           continue;
         }
         
