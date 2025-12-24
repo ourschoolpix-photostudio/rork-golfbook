@@ -148,7 +148,7 @@ export function MembershipRenewalModal({
         {selectedMembership && (
           <TouchableOpacity
             style={styles.continueButton}
-            onPress={() => setSelectedPayment(null)}
+            onPress={() => {}}
           >
             <Text style={styles.continueButtonText}>Continue to Payment</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
@@ -249,9 +249,9 @@ export function MembershipRenewalModal({
             </View>
 
             <View style={styles.content}>
-              {!selectedMembership || selectedPayment === null
-                ? (!selectedMembership ? renderMembershipSelection() : renderPaymentSelection())
-                : null}
+              {!selectedMembership 
+                ? renderMembershipSelection() 
+                : renderPaymentSelection()}
             </View>
           </View>
         </KeyboardAvoidingView>
