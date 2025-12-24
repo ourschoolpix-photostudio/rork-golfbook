@@ -70,7 +70,8 @@ export default function AdminPlayersScreen() {
       }
       await loadMembers();
     } catch (error) {
-      console.error('[AdminPlayers] Error saving player:', error);
+      console.error('[AdminPlayers] Error saving player:', error instanceof Error ? error.message : JSON.stringify(error));
+      Alert.alert('Error', `Failed to save player: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     setModalVisible(false);
     setEditingMember(null);

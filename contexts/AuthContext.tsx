@@ -132,7 +132,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           phone: member.phone || '',
           handicap: member.handicap || 0,
           membership_type: member.membershipType || 'active',
-          join_date: member.joinDate || new Date().toISOString().split('T')[0],
+          join_date: member.joinDate && member.joinDate.trim() !== '' ? member.joinDate : new Date().toISOString().split('T')[0],
           full_name: member.name,
           board_member_roles: member.boardMemberRoles || [],
         });
@@ -242,21 +242,21 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           phone: member.phone || '',
           handicap: member.handicap || 0,
           membership_type: member.membershipType || 'active',
-          join_date: member.joinDate || new Date().toISOString().split('T')[0],
+          join_date: member.joinDate && member.joinDate.trim() !== '' ? member.joinDate : new Date().toISOString().split('T')[0],
           full_name: member.name,
-          gender: member.gender,
-          address: member.address,
-          city: member.city,
-          state: member.state,
-          flight: member.flight,
-          rolex_flight: member.rolexFlight,
-          current_handicap: member.currentHandicap,
-          date_of_birth: member.dateOfBirth,
-          emergency_contact_name: member.emergencyContactName,
-          emergency_contact_phone: member.emergencyContactPhone,
-          profile_photo_url: member.profilePhotoUrl,
-          adjusted_handicap: member.adjustedHandicap,
-          ghin: member.ghin,
+          gender: member.gender || null,
+          address: member.address || null,
+          city: member.city || null,
+          state: member.state || null,
+          flight: member.flight || null,
+          rolex_flight: member.rolexFlight || null,
+          current_handicap: member.currentHandicap || null,
+          date_of_birth: member.dateOfBirth && member.dateOfBirth.trim() !== '' ? member.dateOfBirth : null,
+          emergency_contact_name: member.emergencyContactName || null,
+          emergency_contact_phone: member.emergencyContactPhone || null,
+          profile_photo_url: member.profilePhotoUrl || null,
+          adjusted_handicap: member.adjustedHandicap || null,
+          ghin: member.ghin || null,
           board_member_roles: member.boardMemberRoles || [],
         });
         
@@ -289,20 +289,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
         if (updates.handicap !== undefined) supabaseUpdates.handicap = updates.handicap;
         if (updates.membershipType !== undefined) supabaseUpdates.membership_type = updates.membershipType;
-        if (updates.joinDate !== undefined) supabaseUpdates.join_date = updates.joinDate;
-        if (updates.gender !== undefined) supabaseUpdates.gender = updates.gender;
-        if (updates.address !== undefined) supabaseUpdates.address = updates.address;
-        if (updates.city !== undefined) supabaseUpdates.city = updates.city;
-        if (updates.state !== undefined) supabaseUpdates.state = updates.state;
-        if (updates.flight !== undefined) supabaseUpdates.flight = updates.flight;
-        if (updates.rolexFlight !== undefined) supabaseUpdates.rolex_flight = updates.rolexFlight;
-        if (updates.currentHandicap !== undefined) supabaseUpdates.current_handicap = updates.currentHandicap;
-        if (updates.dateOfBirth !== undefined) supabaseUpdates.date_of_birth = updates.dateOfBirth;
-        if (updates.emergencyContactName !== undefined) supabaseUpdates.emergency_contact_name = updates.emergencyContactName;
-        if (updates.emergencyContactPhone !== undefined) supabaseUpdates.emergency_contact_phone = updates.emergencyContactPhone;
-        if (updates.profilePhotoUrl !== undefined) supabaseUpdates.profile_photo_url = updates.profilePhotoUrl;
-        if (updates.adjustedHandicap !== undefined) supabaseUpdates.adjusted_handicap = updates.adjustedHandicap;
-        if (updates.ghin !== undefined) supabaseUpdates.ghin = updates.ghin;
+        if (updates.joinDate !== undefined) supabaseUpdates.join_date = updates.joinDate && updates.joinDate.trim() !== '' ? updates.joinDate : null;
+        if (updates.gender !== undefined) supabaseUpdates.gender = updates.gender || null;
+        if (updates.address !== undefined) supabaseUpdates.address = updates.address || null;
+        if (updates.city !== undefined) supabaseUpdates.city = updates.city || null;
+        if (updates.state !== undefined) supabaseUpdates.state = updates.state || null;
+        if (updates.flight !== undefined) supabaseUpdates.flight = updates.flight || null;
+        if (updates.rolexFlight !== undefined) supabaseUpdates.rolex_flight = updates.rolexFlight || null;
+        if (updates.currentHandicap !== undefined) supabaseUpdates.current_handicap = updates.currentHandicap || null;
+        if (updates.dateOfBirth !== undefined) supabaseUpdates.date_of_birth = updates.dateOfBirth && updates.dateOfBirth.trim() !== '' ? updates.dateOfBirth : null;
+        if (updates.emergencyContactName !== undefined) supabaseUpdates.emergency_contact_name = updates.emergencyContactName || null;
+        if (updates.emergencyContactPhone !== undefined) supabaseUpdates.emergency_contact_phone = updates.emergencyContactPhone || null;
+        if (updates.profilePhotoUrl !== undefined) supabaseUpdates.profile_photo_url = updates.profilePhotoUrl || null;
+        if (updates.adjustedHandicap !== undefined) supabaseUpdates.adjusted_handicap = updates.adjustedHandicap || null;
+        if (updates.ghin !== undefined) supabaseUpdates.ghin = updates.ghin || null;
         if (updates.boardMemberRoles !== undefined) supabaseUpdates.board_member_roles = updates.boardMemberRoles || [];
         if (updates.tournamentHandicaps !== undefined) supabaseUpdates.tournament_handicaps = updates.tournamentHandicaps || [];
         
