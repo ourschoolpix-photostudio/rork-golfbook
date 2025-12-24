@@ -182,20 +182,21 @@ export async function createPayPalOrder(
 
     const baseUrl = PAYPAL_API_BASE[request.paypalMode];
 
-    let appBaseUrl = '';
+    let returnUrl: string;
+    let cancelUrl: string;
+    
     if (Platform.OS === 'web') {
-      appBaseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rork.app';
+      const appBaseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rork.app';
+      returnUrl = `${appBaseUrl}/paypal/success`;
+      cancelUrl = `${appBaseUrl}/paypal/cancel`;
     } else {
-      appBaseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL || 'https://rork.app';
+      returnUrl = 'rork-app://paypal-callback';
+      cancelUrl = 'rork-app://paypal-callback';
     }
-
-    const returnUrl = `${appBaseUrl}/paypal/success`;
-    const cancelUrl = `${appBaseUrl}/paypal/cancel`;
 
     console.log('[PayPalService] Using return URLs:', {
       returnUrl,
       cancelUrl,
-      appBaseUrl,
       platform: Platform.OS,
     });
 

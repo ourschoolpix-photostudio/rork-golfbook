@@ -4,6 +4,31 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/integrations/supabase/client';
 
+function base64Encode(str: string): string {
+  if (Platform.OS === 'web' && typeof btoa !== 'undefined') {
+    return btoa(str);
+  }
+  
+  const base64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '';
+  let i = 0;
+  
+  while (i < str.length) {
+    const a = str.charCodeAt(i++);
+    const b = i < str.length ? str.charCodeAt(i++) : 0;
+    const c = i < str.length ? str.charCodeAt(i++) : 0;
+    
+    const bitmap = (a << 16) | (b << 8) | c;
+    
+    result += base64chars.charAt((bitmap >> 18) & 63);
+    result += base64chars.charAt((bitmap >> 12) & 63);
+    result += (i - 1 < str.length ? base64chars.charAt((bitmap >> 6) & 63) : '=');
+    result += (i < str.length ? base64chars.charAt(bitmap & 63) : '=');
+  }
+  
+  return result;
+}
+
 export default function PayPalSuccessScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
@@ -47,9 +72,7 @@ export default function PayPalSuccessScreen() {
           : 'https://api-m.sandbox.paypal.com';
 
         const authString = `${paypalConfig.paypal_client_id}:${paypalConfig.paypal_client_secret}`;
-        const auth = Platform.OS === 'web' && typeof btoa !== 'undefined'
-          ? btoa(authString)
-          : Buffer.from(authString).toString('base64');
+        const auth = base64Encode(authString);
 
         const tokenResponse = await fetch(`${baseUrl}/v1/oauth2/token`, {
           method: 'POST',
@@ -61,10 +84,19 @@ export default function PayPalSuccessScreen() {
         });
 
         if (!tokenResponse.ok) {
+          const errorText = await tokenResponse.text();
+          console.error('[PayPal Success] Token request failed:', errorText);
           throw new Error('Failed to get PayPal access token');
         }
 
-        const tokenData = await tokenResponse.json();
+        const tokenText = await tokenResponse.text();
+        let tokenData;
+        try {
+          tokenData = JSON.parse(tokenText);
+        } catch {
+          console.error('[PayPal Success] Failed to parse token response:', tokenText);
+          throw new Error('Invalid response from PayPal token endpoint');
+        }
         const accessToken = tokenData.access_token;
 
         const captureResponse = await fetch(`${baseUrl}/v2/checkout/orders/${token}/capture`, {
@@ -81,7 +113,14 @@ export default function PayPalSuccessScreen() {
           throw new Error('Failed to capture payment');
         }
 
-        const captureData = await captureResponse.json();
+        const captureText = await captureResponse.text();
+        let captureData;
+        try {
+          captureData = JSON.parse(captureText);
+        } catch {
+          console.error('[PayPal Success] Failed to parse capture response:', captureText);
+          throw new Error('Invalid response from PayPal capture endpoint');
+        }
         console.log('[PayPal Success] Payment captured:', captureData);
 
         const { data: membershipPayment, error: membershipQueryError } = await supabase
