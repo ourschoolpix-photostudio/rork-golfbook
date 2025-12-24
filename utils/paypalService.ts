@@ -182,6 +182,23 @@ export async function createPayPalOrder(
 
     const baseUrl = PAYPAL_API_BASE[request.paypalMode];
 
+    let appBaseUrl = '';
+    if (Platform.OS === 'web') {
+      appBaseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rork.app';
+    } else {
+      appBaseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL || 'https://rork.app';
+    }
+
+    const returnUrl = `${appBaseUrl}/paypal/success`;
+    const cancelUrl = `${appBaseUrl}/paypal/cancel`;
+
+    console.log('[PayPalService] Using return URLs:', {
+      returnUrl,
+      cancelUrl,
+      appBaseUrl,
+      platform: Platform.OS,
+    });
+
     const orderData = {
       intent: 'CAPTURE',
       purchase_units: [
@@ -194,8 +211,8 @@ export async function createPayPalOrder(
         },
       ],
       application_context: {
-        return_url: `https://rork.app/paypal/success`,
-        cancel_url: `https://rork.app/paypal/cancel`,
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
         brand_name: 'Golf Tournament Registration',
         user_action: 'PAY_NOW',
         shipping_preference: 'NO_SHIPPING',
