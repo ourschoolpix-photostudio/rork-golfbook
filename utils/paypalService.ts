@@ -1,4 +1,7 @@
+import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface CreatePayPalOrderRequest {
   amount: number;
@@ -191,8 +194,8 @@ export async function createPayPalOrder(
         },
       ],
       application_context: {
-        return_url: Platform.OS === 'web' ? `${window.location.origin}/paypal/success` : 'rork-app://paypal/success',
-        cancel_url: Platform.OS === 'web' ? `${window.location.origin}/paypal/cancel` : 'rork-app://paypal/cancel',
+        return_url: 'https://rork.com/paypal/success',
+        cancel_url: 'https://rork.com/paypal/cancel',
         brand_name: 'Golf Tournament Registration',
         user_action: 'PAY_NOW',
       },
