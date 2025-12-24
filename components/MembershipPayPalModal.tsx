@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { Member } from '@/types';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -169,23 +169,43 @@ export function MembershipPayPalModal({
         phone: phone.trim(),
       });
       
-      console.log('[MembershipPayPalModal] Opening PayPal in system browser...');
-      
-      const canOpen = await Linking.canOpenURL(paymentResponse.approvalUrl);
-      if (!canOpen) {
-        throw new Error('Cannot open PayPal URL');
-      }
-
-      await Linking.openURL(paymentResponse.approvalUrl);
-      console.log('[MembershipPayPalModal] PayPal URL opened successfully');
+      console.log('[MembershipPayPalModal] Opening PayPal in auth session...');
       
       onClose();
       
-      Alert.alert(
-        'PayPal Payment',
-        'You will be redirected to PayPal to complete your payment. After payment, your membership will be activated.',
-        [{ text: 'OK' }]
-      );
+      if (Platform.OS === 'web') {
+        const canOpen = await WebBrowser.openAuthSessionAsync(
+          paymentResponse.approvalUrl,
+          `${window.location.origin}/paypal/success`
+        );
+        
+        if (canOpen.type === 'success') {
+          console.log('[MembershipPayPalModal] Payment completed on web');
+        }
+      } else {
+        const result = await WebBrowser.openAuthSessionAsync(
+          paymentResponse.approvalUrl,
+          'rork-app://paypal/success'
+        );
+        
+        console.log('[MembershipPayPalModal] Auth session result:', result);
+        
+        if (result.type === 'success' && result.url) {
+          console.log('[MembershipPayPalModal] Redirected back with URL:', result.url);
+          
+          Alert.alert(
+            'Processing Payment',
+            'Please wait while we confirm your payment...',
+            [{ text: 'OK' }]
+          );
+        } else if (result.type === 'cancel') {
+          Alert.alert(
+            'Payment Cancelled',
+            'You cancelled the PayPal payment.',
+            [{ text: 'OK' }]
+          );
+        }
+      }
     } catch (error) {
       console.error('[MembershipPayPalModal] PayPal payment error:', error);
       
