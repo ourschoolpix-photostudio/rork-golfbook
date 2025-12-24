@@ -246,10 +246,9 @@ export function MembershipPayPalModal({
               })
               .eq('paypal_order_id', token);
 
-            await supabase
-              .from('members')
-              .update({ membershipType: 'active' })
-              .eq('id', member.id);
+            await updateMember(member.id, {
+              membershipType: 'active',
+            });
 
             onClose();
             Alert.alert(
