@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   SafeAreaView,
@@ -154,10 +154,6 @@ export function AddEventModal({
     }
   }, [visible]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  
-  const day1HoleRefs = useRef<(TextInput | null)[]>(Array(18).fill(null));
-  const day2HoleRefs = useRef<(TextInput | null)[]>(Array(18).fill(null));
-  const day3HoleRefs = useRef<(TextInput | null)[]>(Array(18).fill(null));
 
   const handleEntryFeeChange = (text: string) => {
     const numericValue = text.replace(/[^0-9.]/g, '');
@@ -584,148 +580,61 @@ export function AddEventModal({
                   )}
                   {form.type !== 'social' && (
                     <>
-                  {form.day1StartType === 'shotgun' ? (
-                    <View style={styles.threeColumnRow}>
-                      <View style={[styles.fieldColumn, { flex: 2 }]}>
-                        <Text style={styles.fieldLabel}>Course</Text>
-                        <TextInput
-                          style={[styles.input, styles.threeColumnInput]}
-                          placeholder="Course"
-                          placeholderTextColor="#666"
-                          autoCapitalize="words"
-                          value={form.day1Course}
-                          onChangeText={(text) => onFormChange('day1Course', text)}
-                        />
+                  <View style={styles.fieldColumn}>
+                    <Text style={styles.fieldLabel}>Select Course</Text>
+                    <TouchableOpacity
+                      style={styles.courseDropdownButton}
+                      onPress={() => setShowCourseDropdown1(!showCourseDropdown1)}
+                    >
+                      <Text style={styles.courseDropdownButtonText}>
+                        {form.day1Course || 'Select a course...'}
+                      </Text>
+                      <Ionicons name={showCourseDropdown1 ? 'chevron-up' : 'chevron-down'} size={20} color="#666" />
+                    </TouchableOpacity>
+                    {showCourseDropdown1 && (
+                      <View style={styles.courseDropdownList}>
+                        <ScrollView style={styles.courseDropdownScroll} nestedScrollEnabled>
+                          {isLoadingCourses ? (
+                            <Text style={styles.courseDropdownItem}>Loading courses...</Text>
+                          ) : adminCourses.length === 0 ? (
+                            <Text style={styles.courseDropdownItem}>No courses available</Text>
+                          ) : (
+                            adminCourses.map((course) => (
+                              <TouchableOpacity
+                                key={course.id}
+                                style={styles.courseDropdownItem}
+                                onPress={() => handleCourseSelect(1, course.id)}
+                              >
+                                <Text style={styles.courseDropdownItemText}>{course.name}</Text>
+                                <Text style={styles.courseDropdownItemSubtext}>Par {course.par}</Text>
+                              </TouchableOpacity>
+                            ))
+                          )}
+                        </ScrollView>
                       </View>
-                      <View style={[styles.fieldColumn, { flex: 1 }]}>
-                        <Text style={styles.fieldLabel}>Par#</Text>
-                        <TextInput
-                          style={[styles.input, styles.threeColumnInput]}
-                          placeholder="Par"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          maxLength={2}
-                          value={form.day1Par}
-                          onChangeText={(text) => onFormChange('day1Par', text)}
-                        />
-                      </View>
-                      <View style={[styles.fieldColumn, { flex: 1 }]}>
-                        <Text style={styles.fieldLabel}>Leading Hole</Text>
-                        <TextInput
-                          style={[styles.input, styles.threeColumnInput]}
-                          placeholder="Hole #"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          maxLength={2}
-                          value={form.day1LeadingHole}
-                          onChangeText={(text) => onFormChange('day1LeadingHole', text)}
-                        />
-                      </View>
-                    </View>
-                  ) : (
-                    <View style={styles.twoColumnRow}>
-                      <View style={[styles.fieldColumn, { flex: 2 }]}>
-                        <Text style={styles.fieldLabel}>Course</Text>
-                        <TextInput
-                          style={[styles.input, styles.twoColumnInput]}
-                          placeholder="Course"
-                          placeholderTextColor="#666"
-                          autoCapitalize="words"
-                          value={form.day1Course}
-                          onChangeText={(text) => onFormChange('day1Course', text)}
-                        />
-                      </View>
-                      <View style={[styles.fieldColumn, { flex: 1 }]}>
-                        <Text style={styles.fieldLabel}>Par#</Text>
-                        <TextInput
-                          style={[styles.input, styles.twoColumnInput]}
-                          placeholder="Par"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          maxLength={2}
-                          value={form.day1Par}
-                          onChangeText={(text) => onFormChange('day1Par', text)}
-                        />
-                      </View>
+                    )}
+                  </View>
+                  {form.day1StartType === 'shotgun' && (
+                    <View style={styles.fieldColumn}>
+                      <Text style={styles.fieldLabel}>Leading Hole</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Hole #"
+                        placeholderTextColor="#999"
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        value={form.day1LeadingHole}
+                        onChangeText={(text) => onFormChange('day1LeadingHole', text)}
+                      />
                     </View>
                   )}
-                  
-                  <View style={styles.twoColumnRow}>
-                    <View style={[styles.fieldColumn, { flex: 1 }]}>
-                      <Text style={styles.fieldLabel}>Slope Rating</Text>
-                      <TextInput
-                        style={[styles.input, styles.twoColumnInput]}
-                        placeholder="Slope Rating"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                        value={form.day1SlopeRating}
-                        onChangeText={(text) => onFormChange('day1SlopeRating', text)}
-                      />
+                  {form.day1Course && (
+                    <View style={styles.courseInfoBox}>
+                      <Text style={styles.courseInfoText}>📍 {form.day1Course}</Text>
+                      <Text style={styles.courseInfoText}>⛳ Par: {form.day1Par || 'N/A'}</Text>
+                      <Text style={styles.courseInfoText}>📊 Slope: {form.day1SlopeRating || 'N/A'} | Rating: {form.day1CourseRating || 'N/A'}</Text>
                     </View>
-                    <View style={[styles.fieldColumn, { flex: 1 }]}>
-                      <Text style={styles.fieldLabel}>Course Rating</Text>
-                      <TextInput
-                        style={[styles.input, styles.twoColumnInput]}
-                        placeholder="Course Rating"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                        value={form.day1CourseRating}
-                        onChangeText={(text) => onFormChange('day1CourseRating', text)}
-                      />
-                    </View>
-                  </View>
-                  
-                  <View style={styles.holeParContainer}>
-                    <Text style={styles.holeParLabel}>Par for Each Hole</Text>
-                    <View style={styles.holeParRow}>
-                      {Array.from({ length: 9 }, (_, i) => i + 1).map((hole) => (
-                        <View key={`day1-hole-${hole}`} style={styles.holeParBox}>
-                          <Text style={styles.holeParBoxLabel}>{hole}</Text>
-                          <TextInput
-                            ref={(ref) => { day1HoleRefs.current[hole - 1] = ref; }}
-                            style={styles.holeParInput}
-                            placeholder="-"
-                            placeholderTextColor="#999"
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            value={form.day1HolePars?.[hole - 1] || ''}
-                            onChangeText={(text) => {
-                              const newPars = [...(form.day1HolePars || Array(18).fill(''))];
-                              newPars[hole - 1] = text;
-                              onFormChange('day1HolePars', newPars);
-                              if (text && hole < 18) {
-                                day1HoleRefs.current[hole]?.focus();
-                              }
-                            }}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                    <View style={styles.holeParRow}>
-                      {Array.from({ length: 9 }, (_, i) => i + 10).map((hole) => (
-                        <View key={`day1-hole-${hole}`} style={styles.holeParBox}>
-                          <Text style={styles.holeParBoxLabel}>{hole}</Text>
-                          <TextInput
-                            ref={(ref) => { day1HoleRefs.current[hole - 1] = ref; }}
-                            style={styles.holeParInput}
-                            placeholder="-"
-                            placeholderTextColor="#999"
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            value={form.day1HolePars?.[hole - 1] || ''}
-                            onChangeText={(text) => {
-                              const newPars = [...(form.day1HolePars || Array(18).fill(''))];
-                              newPars[hole - 1] = text;
-                              onFormChange('day1HolePars', newPars);
-                              if (text && hole < 18) {
-                                day1HoleRefs.current[hole]?.focus();
-                              }
-                            }}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                  </View>
+                  )}
                     </>
                   )}
                 </View>
@@ -844,166 +753,75 @@ export function AddEventModal({
                   )}
                   {form.type !== 'social' && (
                     <>
-                  {form.day2StartType === 'shotgun' ? (
-                    <View style={styles.threeColumnRow}>
-                      <View style={[styles.fieldColumn, { flex: 2 }]}>
-                        <Text style={styles.fieldLabel}>Course</Text>
-                        <TextInput
-                          style={[styles.input, styles.threeColumnInput]}
-                          placeholder="Course"
-                          placeholderTextColor="#666"
-                          autoCapitalize="words"
-                          value={form.day2Course}
-                          onChangeText={(text) => onFormChange('day2Course', text)}
-                        />
+                  <View style={styles.fieldColumn}>
+                    <Text style={styles.fieldLabel}>Select Course</Text>
+                    <TouchableOpacity
+                      style={styles.courseDropdownButton}
+                      onPress={() => setShowCourseDropdown2(!showCourseDropdown2)}
+                    >
+                      <Text style={styles.courseDropdownButtonText}>
+                        {form.day2Course || 'Select a course...'}
+                      </Text>
+                      <Ionicons name={showCourseDropdown2 ? 'chevron-up' : 'chevron-down'} size={20} color="#666" />
+                    </TouchableOpacity>
+                    {showCourseDropdown2 && (
+                      <View style={styles.courseDropdownList}>
+                        <ScrollView style={styles.courseDropdownScroll} nestedScrollEnabled>
+                          {isLoadingCourses ? (
+                            <Text style={styles.courseDropdownItem}>Loading courses...</Text>
+                          ) : adminCourses.length === 0 ? (
+                            <Text style={styles.courseDropdownItem}>No courses available</Text>
+                          ) : (
+                            adminCourses.map((course) => (
+                              <TouchableOpacity
+                                key={course.id}
+                                style={styles.courseDropdownItem}
+                                onPress={() => handleCourseSelect(2, course.id)}
+                              >
+                                <Text style={styles.courseDropdownItemText}>{course.name}</Text>
+                                <Text style={styles.courseDropdownItemSubtext}>Par {course.par}</Text>
+                              </TouchableOpacity>
+                            ))
+                          )}
+                        </ScrollView>
                       </View>
-                      <View style={[styles.fieldColumn, { flex: 1 }]}>
-                        <Text style={styles.fieldLabel}>Par#</Text>
-                        <TextInput
-                          style={[styles.input, styles.threeColumnInput]}
-                          placeholder="Par"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          maxLength={2}
-                          value={form.day2Par}
-                          onChangeText={(text) => onFormChange('day2Par', text)}
-                        />
-                      </View>
-                      <View style={[styles.fieldColumn, { flex: 1 }]}>
-                        <Text style={styles.fieldLabel}>Leading Hole</Text>
-                        <TextInput
-                          style={[styles.input, styles.threeColumnInput]}
-                          placeholder="Hole #"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          maxLength={2}
-                          value={form.day2LeadingHole}
-                          onChangeText={(text) => onFormChange('day2LeadingHole', text)}
-                        />
-                      </View>
-                    </View>
-                  ) : (
-                    <View style={styles.twoColumnRow}>
-                      <View style={[styles.fieldColumn, { flex: 2 }]}>
-                        <Text style={styles.fieldLabel}>Course</Text>
-                        <TextInput
-                          style={[styles.input, styles.twoColumnInput]}
-                          placeholder="Course"
-                          placeholderTextColor="#666"
-                          autoCapitalize="words"
-                          value={form.day2Course}
-                          onChangeText={(text) => onFormChange('day2Course', text)}
-                        />
-                      </View>
-                      <View style={[styles.fieldColumn, { flex: 1 }]}>
-                        <Text style={styles.fieldLabel}>Par#</Text>
-                        <TextInput
-                          style={[styles.input, styles.twoColumnInput]}
-                          placeholder="Par"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          maxLength={2}
-                          value={form.day2Par}
-                          onChangeText={(text) => onFormChange('day2Par', text)}
-                        />
-                      </View>
+                    )}
+                  </View>
+                  {form.day2StartType === 'shotgun' && (
+                    <View style={styles.fieldColumn}>
+                      <Text style={styles.fieldLabel}>Leading Hole</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Hole #"
+                        placeholderTextColor="#999"
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        value={form.day2LeadingHole}
+                        onChangeText={(text) => onFormChange('day2LeadingHole', text)}
+                      />
                     </View>
                   )}
-                  
-                  <View style={styles.twoColumnRow}>
-                    <View style={[styles.fieldColumn, { flex: 1 }]}>
-                      <Text style={styles.fieldLabel}>Slope Rating</Text>
-                      <TextInput
-                        style={[styles.input, styles.twoColumnInput]}
-                        placeholder="Slope Rating"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                        value={form.day2SlopeRating}
-                        onChangeText={(text) => onFormChange('day2SlopeRating', text)}
-                      />
+                  {form.day2Course && (
+                    <View style={styles.courseInfoBox}>
+                      <Text style={styles.courseInfoText}>📍 {form.day2Course}</Text>
+                      <Text style={styles.courseInfoText}>⛳ Par: {form.day2Par || 'N/A'}</Text>
+                      <Text style={styles.courseInfoText}>📊 Slope: {form.day2SlopeRating || 'N/A'} | Rating: {form.day2CourseRating || 'N/A'}</Text>
                     </View>
-                    <View style={[styles.fieldColumn, { flex: 1 }]}>
-                      <Text style={styles.fieldLabel}>Course Rating</Text>
-                      <TextInput
-                        style={[styles.input, styles.twoColumnInput]}
-                        placeholder="Course Rating"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                        value={form.day2CourseRating}
-                        onChangeText={(text) => onFormChange('day2CourseRating', text)}
-                      />
-                    </View>
-                  </View>
-                  
-                  <View style={styles.holeParContainer}>
-                    <Text style={styles.holeParLabel}>Par for Each Hole</Text>
-                    <View style={styles.holeParRow}>
-                      {Array.from({ length: 9 }, (_, i) => i + 1).map((hole) => (
-                        <View key={`day2-hole-${hole}`} style={styles.holeParBox}>
-                          <Text style={styles.holeParBoxLabel}>{hole}</Text>
-                          <TextInput
-                            ref={(ref) => { day2HoleRefs.current[hole - 1] = ref; }}
-                            style={styles.holeParInput}
-                            placeholder="-"
-                            placeholderTextColor="#999"
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            editable={!useSameCourseDay2}
-                            value={useSameCourseDay2 ? (form.day1HolePars?.[hole - 1] || '') : (form.day2HolePars?.[hole - 1] || '')}
-                            onChangeText={(text) => {
-                              const newPars = [...(form.day2HolePars || Array(18).fill(''))];
-                              newPars[hole - 1] = text;
-                              onFormChange('day2HolePars', newPars);
-                              if (text && hole < 18) {
-                                day2HoleRefs.current[hole]?.focus();
-                              }
-                            }}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                    <View style={styles.holeParRow}>
-                      {Array.from({ length: 9 }, (_, i) => i + 10).map((hole) => (
-                        <View key={`day2-hole-${hole}`} style={styles.holeParBox}>
-                          <Text style={styles.holeParBoxLabel}>{hole}</Text>
-                          <TextInput
-                            ref={(ref) => { day2HoleRefs.current[hole - 1] = ref; }}
-                            style={styles.holeParInput}
-                            placeholder="-"
-                            placeholderTextColor="#999"
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            editable={!useSameCourseDay2}
-                            value={useSameCourseDay2 ? (form.day1HolePars?.[hole - 1] || '') : (form.day2HolePars?.[hole - 1] || '')}
-                            onChangeText={(text) => {
-                              const newPars = [...(form.day2HolePars || Array(18).fill(''))];
-                              newPars[hole - 1] = text;
-                              onFormChange('day2HolePars', newPars);
-                              if (text && hole < 18) {
-                                day2HoleRefs.current[hole]?.focus();
-                              }
-                            }}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                    <TouchableOpacity
-                      style={[styles.fullWidthToggle, useSameCourseDay2 && styles.fullWidthToggleActive]}
-                      onPress={() => {
-                        const newValue = !useSameCourseDay2;
-                        setUseSameCourseDay2(newValue);
-                        if (newValue && form.day1HolePars) {
-                          onFormChange('day2HolePars', [...form.day1HolePars]);
-                        } else if (!newValue) {
-                          onFormChange('day2HolePars', Array(18).fill(''));
-                        }
-                      }}
-                    >
-                      <Text style={[styles.fullWidthToggleText, useSameCourseDay2 && styles.fullWidthToggleTextActive]}>
-                        Same as Day 1
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.fullWidthToggle, useSameCourseDay2 && styles.fullWidthToggleActive]}
+                    onPress={() => {
+                      const newValue = !useSameCourseDay2;
+                      setUseSameCourseDay2(newValue);
+                      if (newValue && form.day1CourseId) {
+                        handleCourseSelect(2, form.day1CourseId);
+                      }
+                    }}
+                  >
+                    <Text style={[styles.fullWidthToggleText, useSameCourseDay2 && styles.fullWidthToggleTextActive]}>
+                      Same as Day 1
+                    </Text>
+                  </TouchableOpacity>
                     </>
                   )}
                 </View>
@@ -1122,169 +940,75 @@ export function AddEventModal({
                   )}
                   {form.type !== 'social' && (
                     <>
-                  {form.day3StartType === 'shotgun' ? (
-                    <View style={styles.threeColumnRow}>
-                      <View style={[styles.fieldColumn, { flex: 2 }]}>
-                        <Text style={styles.fieldLabel}>Course</Text>
-                        <TextInput
-                          style={[styles.input, styles.threeColumnInput]}
-                          placeholder="Course"
-                          placeholderTextColor="#666"
-                          autoCapitalize="words"
-                          value={form.day3Course}
-                          onChangeText={(text) => onFormChange('day3Course', text)}
-                        />
+                  <View style={styles.fieldColumn}>
+                    <Text style={styles.fieldLabel}>Select Course</Text>
+                    <TouchableOpacity
+                      style={styles.courseDropdownButton}
+                      onPress={() => setShowCourseDropdown3(!showCourseDropdown3)}
+                    >
+                      <Text style={styles.courseDropdownButtonText}>
+                        {form.day3Course || 'Select a course...'}
+                      </Text>
+                      <Ionicons name={showCourseDropdown3 ? 'chevron-up' : 'chevron-down'} size={20} color="#666" />
+                    </TouchableOpacity>
+                    {showCourseDropdown3 && (
+                      <View style={styles.courseDropdownList}>
+                        <ScrollView style={styles.courseDropdownScroll} nestedScrollEnabled>
+                          {isLoadingCourses ? (
+                            <Text style={styles.courseDropdownItem}>Loading courses...</Text>
+                          ) : adminCourses.length === 0 ? (
+                            <Text style={styles.courseDropdownItem}>No courses available</Text>
+                          ) : (
+                            adminCourses.map((course) => (
+                              <TouchableOpacity
+                                key={course.id}
+                                style={styles.courseDropdownItem}
+                                onPress={() => handleCourseSelect(3, course.id)}
+                              >
+                                <Text style={styles.courseDropdownItemText}>{course.name}</Text>
+                                <Text style={styles.courseDropdownItemSubtext}>Par {course.par}</Text>
+                              </TouchableOpacity>
+                            ))
+                          )}
+                        </ScrollView>
                       </View>
-                      <View style={[styles.fieldColumn, { flex: 1 }]}>
-                        <Text style={styles.fieldLabel}>Par#</Text>
-                        <TextInput
-                          style={[styles.input, styles.threeColumnInput]}
-                          placeholder="Par"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          maxLength={2}
-                          value={form.day3Par}
-                          onChangeText={(text) => onFormChange('day3Par', text)}
-                        />
-                      </View>
-                      <View style={[styles.fieldColumn, { flex: 1 }]}>
-                        <Text style={styles.fieldLabel}>Leading Hole</Text>
-                        <TextInput
-                          style={[styles.input, styles.threeColumnInput]}
-                          placeholder="Hole #"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          maxLength={2}
-                          value={form.day3LeadingHole}
-                          onChangeText={(text) => onFormChange('day3LeadingHole', text)}
-                        />
-                      </View>
-                    </View>
-                  ) : (
-                    <View style={styles.twoColumnRow}>
-                      <View style={[styles.fieldColumn, { flex: 2 }]}>
-                        <Text style={styles.fieldLabel}>Course</Text>
-                        <TextInput
-                          style={[styles.input, styles.twoColumnInput]}
-                          placeholder="Course"
-                          placeholderTextColor="#666"
-                          autoCapitalize="words"
-                          value={form.day3Course}
-                          onChangeText={(text) => onFormChange('day3Course', text)}
-                        />
-                      </View>
-                      <View style={[styles.fieldColumn, { flex: 1 }]}>
-                        <Text style={styles.fieldLabel}>Par#</Text>
-                        <TextInput
-                          style={[styles.input, styles.twoColumnInput]}
-                          placeholder="Par"
-                          placeholderTextColor="#999"
-                          keyboardType="number-pad"
-                          maxLength={2}
-                          value={form.day3Par}
-                          onChangeText={(text) => onFormChange('day3Par', text)}
-                        />
-                      </View>
+                    )}
+                  </View>
+                  {form.day3StartType === 'shotgun' && (
+                    <View style={styles.fieldColumn}>
+                      <Text style={styles.fieldLabel}>Leading Hole</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Hole #"
+                        placeholderTextColor="#999"
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        value={form.day3LeadingHole}
+                        onChangeText={(text) => onFormChange('day3LeadingHole', text)}
+                      />
                     </View>
                   )}
-                  
-                  <View style={styles.twoColumnRow}>
-                    <View style={[styles.fieldColumn, { flex: 1 }]}>
-                      <Text style={styles.fieldLabel}>Slope Rating</Text>
-                      <TextInput
-                        style={[styles.input, styles.twoColumnInput]}
-                        placeholder="Slope Rating"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                        value={form.day3SlopeRating}
-                        onChangeText={(text) => onFormChange('day3SlopeRating', text)}
-                      />
+                  {form.day3Course && (
+                    <View style={styles.courseInfoBox}>
+                      <Text style={styles.courseInfoText}>📍 {form.day3Course}</Text>
+                      <Text style={styles.courseInfoText}>⛳ Par: {form.day3Par || 'N/A'}</Text>
+                      <Text style={styles.courseInfoText}>📊 Slope: {form.day3SlopeRating || 'N/A'} | Rating: {form.day3CourseRating || 'N/A'}</Text>
                     </View>
-                    <View style={[styles.fieldColumn, { flex: 1 }]}>
-                      <Text style={styles.fieldLabel}>Course Rating</Text>
-                      <TextInput
-                        style={[styles.input, styles.twoColumnInput]}
-                        placeholder="Course Rating"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                        value={form.day3CourseRating}
-                        onChangeText={(text) => onFormChange('day3CourseRating', text)}
-                      />
-                    </View>
-                  </View>
-                  
-                  <View style={styles.holeParContainer}>
-                    <View style={styles.holeParHeaderRow}>
-                      <Text style={styles.holeParLabel}>Par for Each Hole</Text>
-                      <TouchableOpacity
-                        style={styles.sameCourseCheckbox}
-                        onPress={() => {
-                          const newValue = !useSameCourseDay3;
-                          setUseSameCourseDay3(newValue);
-                          if (newValue && form.day1HolePars) {
-                            onFormChange('day3HolePars', [...form.day1HolePars]);
-                          } else if (!newValue) {
-                            onFormChange('day3HolePars', Array(18).fill(''));
-                          }
-                        }}
-                      >
-                        <View style={[styles.checkbox, useSameCourseDay3 && styles.checkboxChecked]}>
-                          {useSameCourseDay3 && <Ionicons name="checkmark" size={14} color="#fff" />}
-                        </View>
-                        <Text style={styles.checkboxLabel}>Same as Day 1</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.holeParRow}>
-                      {Array.from({ length: 9 }, (_, i) => i + 1).map((hole) => (
-                        <View key={`day3-hole-${hole}`} style={styles.holeParBox}>
-                          <Text style={styles.holeParBoxLabel}>{hole}</Text>
-                          <TextInput
-                            ref={(ref) => { day3HoleRefs.current[hole - 1] = ref; }}
-                            style={styles.holeParInput}
-                            placeholder="-"
-                            placeholderTextColor="#999"
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            editable={!useSameCourseDay3}
-                            value={useSameCourseDay3 ? (form.day1HolePars?.[hole - 1] || '') : (form.day3HolePars?.[hole - 1] || '')}
-                            onChangeText={(text) => {
-                              const newPars = [...(form.day3HolePars || Array(18).fill(''))];
-                              newPars[hole - 1] = text;
-                              onFormChange('day3HolePars', newPars);
-                              if (text && hole < 18) {
-                                day3HoleRefs.current[hole]?.focus();
-                              }
-                            }}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                    <View style={styles.holeParRow}>
-                      {Array.from({ length: 9 }, (_, i) => i + 10).map((hole) => (
-                        <View key={`day3-hole-${hole}`} style={styles.holeParBox}>
-                          <Text style={styles.holeParBoxLabel}>{hole}</Text>
-                          <TextInput
-                            ref={(ref) => { day3HoleRefs.current[hole - 1] = ref; }}
-                            style={styles.holeParInput}
-                            placeholder="-"
-                            placeholderTextColor="#999"
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            editable={!useSameCourseDay3}
-                            value={useSameCourseDay3 ? (form.day1HolePars?.[hole - 1] || '') : (form.day3HolePars?.[hole - 1] || '')}
-                            onChangeText={(text) => {
-                              const newPars = [...(form.day3HolePars || Array(18).fill(''))];
-                              newPars[hole - 1] = text;
-                              onFormChange('day3HolePars', newPars);
-                              if (text && hole < 18) {
-                                day3HoleRefs.current[hole]?.focus();
-                              }
-                            }}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                  </View>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.fullWidthToggle, useSameCourseDay3 && styles.fullWidthToggleActive]}
+                    onPress={() => {
+                      const newValue = !useSameCourseDay3;
+                      setUseSameCourseDay3(newValue);
+                      if (newValue && form.day1CourseId) {
+                        handleCourseSelect(3, form.day1CourseId);
+                      }
+                    }}
+                  >
+                    <Text style={[styles.fullWidthToggleText, useSameCourseDay3 && styles.fullWidthToggleTextActive]}>
+                      Same as Day 1
+                    </Text>
+                  </TouchableOpacity>
                     </>
                   )}
                 </View>
@@ -2071,5 +1795,61 @@ const styles = StyleSheet.create({
   },
   fullWidthToggleTextActive: {
     color: '#fff',
+  },
+  courseDropdownButton: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  courseDropdownButtonText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+  },
+  courseDropdownList: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    maxHeight: 200,
+    marginBottom: 12,
+  },
+  courseDropdownScroll: {
+    maxHeight: 200,
+  },
+  courseDropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  courseDropdownItemText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  courseDropdownItemSubtext: {
+    fontSize: 13,
+    color: '#666',
+  },
+  courseInfoBox: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  courseInfoText: {
+    fontSize: 13,
+    color: '#1a1a1a',
+    marginBottom: 4,
   },
 });
