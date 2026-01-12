@@ -388,6 +388,7 @@ export const supabaseService = {
         phone: m.phone || '',
         handicap: m.handicap || 0,
         membershipType: m.membership_type || 'active',
+        membershipLevel: m.membership_level || 'full',
         joinDate: m.join_date || new Date().toISOString().split('T')[0],
         createdAt: m.created_at || new Date().toISOString(),
         gender: m.gender,
@@ -429,6 +430,7 @@ export const supabaseService = {
         phone: data.phone || '',
         handicap: data.handicap || 0,
         membershipType: data.membership_type || 'active',
+        membershipLevel: data.membership_level || 'full',
         joinDate: data.join_date || new Date().toISOString().split('T')[0],
         createdAt: data.created_at || new Date().toISOString(),
         gender: data.gender,
@@ -467,6 +469,7 @@ export const supabaseService = {
         phone: member.phone || '',
         handicap: member.handicap || 0,
         membership_type: member.membershipType || 'active',
+        membership_level: member.membershipLevel || 'full',
         join_date: member.joinDate || new Date().toISOString().split('T')[0],
         full_name: member.name,
       });
@@ -481,6 +484,21 @@ export const supabaseService = {
       if (updates.email !== undefined) supabaseUpdates.email = updates.email;
       if (updates.tournamentHandicaps !== undefined) supabaseUpdates.tournament_handicaps = updates.tournamentHandicaps;
       if (updates.boardMemberRoles !== undefined) supabaseUpdates.board_member_roles = updates.boardMemberRoles;
+      if (updates.membershipType !== undefined) supabaseUpdates.membership_type = updates.membershipType;
+      if (updates.membershipLevel !== undefined) supabaseUpdates.membership_level = updates.membershipLevel;
+      if (updates.gender !== undefined) supabaseUpdates.gender = updates.gender;
+      if (updates.address !== undefined) supabaseUpdates.address = updates.address;
+      if (updates.city !== undefined) supabaseUpdates.city = updates.city;
+      if (updates.state !== undefined) supabaseUpdates.state = updates.state;
+      if (updates.flight !== undefined) supabaseUpdates.flight = updates.flight;
+      if (updates.rolexFlight !== undefined) supabaseUpdates.rolex_flight = updates.rolexFlight;
+      if (updates.currentHandicap !== undefined) supabaseUpdates.current_handicap = updates.currentHandicap;
+      if (updates.ghin !== undefined) supabaseUpdates.ghin = updates.ghin;
+      if (updates.rolexPoints !== undefined) supabaseUpdates.rolex_points = updates.rolexPoints;
+      if (updates.profilePhotoUrl !== undefined) supabaseUpdates.profile_photo_url = updates.profilePhotoUrl;
+      if (updates.username !== undefined) supabaseUpdates.username = updates.username;
+      if (updates.pin !== undefined) supabaseUpdates.pin = updates.pin;
+      if (updates.fullName !== undefined) supabaseUpdates.full_name = updates.fullName;
 
       const { error } = await supabase
         .from('members')

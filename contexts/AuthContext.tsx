@@ -95,6 +95,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           phone: m.phone || '',
           handicap: m.handicap || 0,
           membershipType: m.membership_type || 'active',
+          membershipLevel: m.membership_level || 'full',
           joinDate: m.join_date || new Date().toISOString().split('T')[0],
           createdAt: m.created_at || new Date().toISOString(),
           gender: m.gender,
@@ -375,6 +376,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
         if (updates.handicap !== undefined) supabaseUpdates.handicap = updates.handicap;
         if (updates.membershipType !== undefined) supabaseUpdates.membership_type = updates.membershipType;
+        if (updates.membershipLevel !== undefined) supabaseUpdates.membership_level = updates.membershipLevel;
         if (updates.joinDate !== undefined) supabaseUpdates.join_date = updates.joinDate && updates.joinDate.trim() !== '' ? updates.joinDate : null;
         if (updates.gender !== undefined) supabaseUpdates.gender = updates.gender || null;
         if (updates.address !== undefined) supabaseUpdates.address = updates.address || null;
