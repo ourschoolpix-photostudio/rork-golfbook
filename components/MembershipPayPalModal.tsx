@@ -88,11 +88,12 @@ export function MembershipPayPalModal({
 
   if (!membershipType) return null;
 
-  const serviceFeePercentage = 0.05;
+  const serviceFeePercentage = 0.04;
+  const serviceFeeFixed = 0.49;
   const baseAmount = membershipType === 'full' 
     ? parseFloat(orgInfo.fullMembershipPrice || '0')
     : parseFloat(orgInfo.basicMembershipPrice || '0');
-  const serviceFeeAmount = baseAmount * serviceFeePercentage;
+  const serviceFeeAmount = (baseAmount * serviceFeePercentage) + serviceFeeFixed;
   const totalAmount = baseAmount + serviceFeeAmount;
   const membershipName = membershipType === 'full' ? 'Full Membership' : 'Basic Membership';
 
@@ -386,7 +387,7 @@ export function MembershipPayPalModal({
                     <Text style={styles.feeValue}>${baseAmount.toFixed(2)}</Text>
                   </View>
                   <View style={styles.feeRow}>
-                    <Text style={styles.feeLabel}>Service Fee (5%):</Text>
+                    <Text style={styles.feeLabel}>Service Fee (4% + $0.49):</Text>
                     <Text style={styles.feeValue}>${serviceFeeAmount.toFixed(2)}</Text>
                   </View>
                   <View style={styles.dividerThin} />

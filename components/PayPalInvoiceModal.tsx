@@ -98,10 +98,11 @@ export function PayPalInvoiceModal({
   const guestCount = parseInt(numberOfGuests, 10) || 0;
   const totalPeople = 1 + guestCount;
   
-  const serviceFeePercentage = 0.05;
+  const serviceFeePercentage = 0.04;
+  const serviceFeeFixed = 0.49;
   const entryFeeAmount = Number(event.entryFee);
   const subtotal = entryFeeAmount * totalPeople;
-  const serviceFeeAmount = subtotal * serviceFeePercentage;
+  const serviceFeeAmount = (subtotal * serviceFeePercentage) + serviceFeeFixed;
   const totalAmount = subtotal + serviceFeeAmount;
 
   const getPaymentDeadline = () => {
@@ -474,7 +475,7 @@ export function PayPalInvoiceModal({
                     </Text>
                   )}
                   <View style={styles.feeRow}>
-                    <Text style={styles.feeLabel}>Service Fee (5%):</Text>
+                    <Text style={styles.feeLabel}>Service Fee (4% + $0.49):</Text>
                     <Text style={styles.feeValue}>${serviceFeeAmount.toFixed(2)}</Text>
                   </View>
                   <View style={styles.dividerThin} />
