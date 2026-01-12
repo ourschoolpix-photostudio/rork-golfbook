@@ -257,14 +257,17 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           ? (orgInfo.fullMembershipPrice || '0')
           : (orgInfo.basicMembershipPrice || '0');
         
-        console.log('[PlayerEditModal] Adding membership renewal to history...', {
-          memberId: pendingSave.id,
-          memberName: pendingSave.name,
-          membershipType: selectedMembershipType,
-          amount,
-        });
+        console.log('[PlayerEditModal] ========================================');
+        console.log('[PlayerEditModal] Adding membership renewal to history...');
+        console.log('[PlayerEditModal] Member ID:', pendingSave.id);
+        console.log('[PlayerEditModal] Member Name:', pendingSave.name);
+        console.log('[PlayerEditModal] Membership Type:', selectedMembershipType);
+        console.log('[PlayerEditModal] Amount:', amount);
+        console.log('[PlayerEditModal] Email:', pendingSave.email);
+        console.log('[PlayerEditModal] Phone:', pendingSave.phone);
+        console.log('[PlayerEditModal] ========================================');
         
-        const { data, error } = await supabase.from('membership_payments').insert({
+        const insertData = {
           member_id: pendingSave.id,
           member_name: pendingSave.name,
           membership_type: selectedMembershipType,
@@ -273,14 +276,31 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           payment_status: 'completed',
           email: pendingSave.email || '',
           phone: pendingSave.phone || '',
-        }).select();
+        };
+        
+        console.log('[PlayerEditModal] Insert data:', JSON.stringify(insertData, null, 2));
+        
+        const { data, error } = await supabase.from('membership_payments')
+          .insert(insertData)
+          .select();
         
         if (error) {
-          console.error('[PlayerEditModal] Error inserting membership payment:', error);
+          console.error('[PlayerEditModal] ❌ Error inserting membership payment:');
+          console.error('[PlayerEditModal] Error message:', error.message);
+          console.error('[PlayerEditModal] Error details:', error.details);
+          console.error('[PlayerEditModal] Error hint:', error.hint);
+          console.error('[PlayerEditModal] Error code:', error.code);
+          Alert.alert('Database Error', `Failed to add to history: ${error.message}\n\nPlease check the console for details.`);
           throw new Error(`Failed to add to history: ${error.message}`);
         }
         
-        console.log('[PlayerEditModal] ✅ Membership renewal added to history:', data);
+        console.log('[PlayerEditModal] ✅ SUCCESS! Membership renewal added to history');
+        console.log('[PlayerEditModal] Inserted data:', JSON.stringify(data, null, 2));
+        console.log('[PlayerEditModal] Number of records inserted:', data?.length || 0);
+        
+        Alert.alert('Success', 'Membership renewal has been added to history!');
+      } else {
+        console.log('[PlayerEditModal] User chose NOT to add to history');
       }
       
       await onSave(pendingSave);
