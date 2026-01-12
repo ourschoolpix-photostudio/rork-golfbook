@@ -285,6 +285,9 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         
         const memberId = String(pendingSave.id).trim();
         
+        // Update pendingSave to include the membershipLevel
+        pendingSave.membershipLevel = selectedMembershipType;
+        
         console.log('[PlayerEditModal] ========================================');
         console.log('[PlayerEditModal] Adding membership renewal to history...');
         console.log('[PlayerEditModal] Member ID (raw):', pendingSave.id);
