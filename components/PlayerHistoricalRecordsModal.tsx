@@ -103,9 +103,7 @@ export function PlayerHistoricalRecordsModal({
       console.log('[Historical Records] Raw registrations:', JSON.stringify(registrations, null, 2));
 
       if (!registrations || registrations.length === 0) {
-        console.log('[Historical Records] No registrations found');
-        setSeasons([]);
-        return;
+        console.log('[Historical Records] No event registrations found, but will still check for membership payments');
       }
 
       const eventRecords: EventRecord[] = [];
@@ -217,6 +215,22 @@ export function PlayerHistoricalRecordsModal({
         });
       }
 
+      console.log('[Historical Records] ========================================');
+      console.log('[Historical Records] Querying membership_payments for member_id:', member.id);
+      
+      // First, get ALL records for this member to debug
+      const { data: allMemberPayments, error: allPaymentsError } = await supabase
+        .from('membership_payments')
+        .select('*')
+        .eq('member_id', member.id);
+      
+      console.log('[Historical Records] ALL membership payments for this member:', JSON.stringify(allMemberPayments, null, 2));
+      console.log('[Historical Records] Total records found (all statuses):', allMemberPayments?.length || 0);
+      if (allPaymentsError) {
+        console.error('[Historical Records] Error fetching all payments:', allPaymentsError);
+      }
+      
+      // Now query with the filter
       const { data: membershipPayments, error: membershipError } = await supabase
         .from('membership_payments')
         .select('*')
@@ -224,9 +238,14 @@ export function PlayerHistoricalRecordsModal({
         .eq('payment_status', 'completed')
         .order('created_at', { ascending: false });
 
+      console.log('[Historical Records] Completed membership payments:', JSON.stringify(membershipPayments, null, 2));
+      console.log('[Historical Records] Completed records count:', membershipPayments?.length || 0);
+      
       if (membershipError) {
         console.error('[Historical Records] Membership payments error:', membershipError);
       }
+      
+      console.log('[Historical Records] ========================================');
 
       const membershipRecords: MembershipRecord[] = (membershipPayments || []).map((payment: any) => ({
         id: payment.id,

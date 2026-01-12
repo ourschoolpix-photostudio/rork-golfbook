@@ -280,9 +280,15 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         
         console.log('[PlayerEditModal] Insert data:', JSON.stringify(insertData, null, 2));
         
-        const { data, error } = await supabase.from('membership_payments')
+        console.log('[PlayerEditModal] Attempting Supabase insert...');
+        
+        const { data, error, status, statusText } = await supabase.from('membership_payments')
           .insert(insertData)
           .select();
+        
+        console.log('[PlayerEditModal] Supabase response status:', status, statusText);
+        console.log('[PlayerEditModal] Supabase response data:', JSON.stringify(data, null, 2));
+        console.log('[PlayerEditModal] Supabase response error:', error ? JSON.stringify(error, null, 2) : 'none');
         
         if (error) {
           console.error('[PlayerEditModal] ❌ Error inserting membership payment:');
@@ -294,11 +300,32 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           throw new Error(`Failed to add to history: ${error.message}`);
         }
         
-        console.log('[PlayerEditModal] ✅ SUCCESS! Membership renewal added to history');
-        console.log('[PlayerEditModal] Inserted data:', JSON.stringify(data, null, 2));
-        console.log('[PlayerEditModal] Number of records inserted:', data?.length || 0);
-        
-        Alert.alert('Success', 'Membership renewal has been added to history!');
+        if (!data || data.length === 0) {
+          console.error('[PlayerEditModal] ❌ Insert returned no data - record may not have been saved');
+          Alert.alert('Warning', 'The record may not have been saved. Please check the history and try again if needed.');
+        } else {
+          console.log('[PlayerEditModal] ✅ SUCCESS! Membership renewal added to history');
+          console.log('[PlayerEditModal] Inserted record ID:', data[0]?.id);
+          console.log('[PlayerEditModal] Inserted member_id:', data[0]?.member_id);
+          console.log('[PlayerEditModal] Inserted payment_status:', data[0]?.payment_status);
+          console.log('[PlayerEditModal] Number of records inserted:', data.length);
+          
+          // Verify the record was actually saved by querying it back
+          const { data: verifyData, error: verifyError } = await supabase
+            .from('membership_payments')
+            .select('*')
+            .eq('id', data[0].id)
+            .single();
+          
+          if (verifyError || !verifyData) {
+            console.error('[PlayerEditModal] ❌ Verification failed - record not found after insert');
+            console.error('[PlayerEditModal] Verify error:', verifyError);
+            Alert.alert('Warning', 'Record was created but verification failed. Please check history.');
+          } else {
+            console.log('[PlayerEditModal] ✅ VERIFIED! Record exists in database:', verifyData.id);
+            Alert.alert('Success', 'Membership renewal has been added to history!');
+          }
+        }
       } else {
         console.log('[PlayerEditModal] User chose NOT to add to history');
       }
