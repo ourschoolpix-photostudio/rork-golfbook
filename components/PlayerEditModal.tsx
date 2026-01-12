@@ -257,12 +257,14 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           ? (orgInfo.fullMembershipPrice || '0')
           : (orgInfo.basicMembershipPrice || '0');
         
-        console.log('[PlayerEditModal] Adding membership activation to history...', {
+        console.log('[PlayerEditModal] Adding membership renewal to history...', {
+          memberId: pendingSave.id,
+          memberName: pendingSave.name,
           membershipType: selectedMembershipType,
           amount,
         });
         
-        await supabase.from('membership_payments').insert({
+        const { data, error } = await supabase.from('membership_payments').insert({
           member_id: pendingSave.id,
           member_name: pendingSave.name,
           membership_type: selectedMembershipType,
@@ -271,8 +273,14 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           payment_status: 'completed',
           email: pendingSave.email || '',
           phone: pendingSave.phone || '',
-        });
-        console.log('[PlayerEditModal] Membership activation added to history');
+        }).select();
+        
+        if (error) {
+          console.error('[PlayerEditModal] Error inserting membership payment:', error);
+          throw new Error(`Failed to add to history: ${error.message}`);
+        }
+        
+        console.log('[PlayerEditModal] ✅ Membership renewal added to history:', data);
       }
       
       await onSave(pendingSave);
@@ -280,7 +288,8 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       onClose();
     } catch (error) {
       console.error('Error saving member with history:', error);
-      Alert.alert('Error', 'Failed to save member. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save member. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
       setPendingSave(null);
