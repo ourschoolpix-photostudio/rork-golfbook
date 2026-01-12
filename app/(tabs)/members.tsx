@@ -6,7 +6,11 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
+import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,6 +22,173 @@ import { PlayerHistoricalRecordsModal } from '@/components/PlayerHistoricalRecor
 import { MembershipRenewalModal } from '@/components/MembershipRenewalModal';
 import { MemberListingModal } from '@/components/MemberListingModal';
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+interface CollapsiblePlayerCardProps {
+  member: Member;
+  isAdmin: boolean;
+  currentUser: Member | null;
+  onPress?: () => void;
+  onHistoryPress: () => void;
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+const CollapsiblePlayerCard = React.memo(function CollapsiblePlayerCard({
+  member,
+  isAdmin,
+  currentUser,
+  onPress,
+  onHistoryPress,
+  isExpanded,
+  onToggle,
+}: CollapsiblePlayerCardProps) {
+  const getLocationBadgeColor = () => {
+    const localStates = ['', 'MD', 'VA', 'PA', 'NJ', 'DE'];
+    const isLocal = localStates.includes(member.state || '');
+    return isLocal ? '#007AFF' : '#FF9500';
+  };
+
+  const getLocationBadge = () => {
+    const localStates = ['', 'MD', 'VA', 'PA', 'NJ', 'DE'];
+    const isLocal = localStates.includes(member.state || '');
+    return isLocal ? 'Local' : 'Visitor';
+  };
+
+  const getMemberStatusColor = (type: string) => {
+    if (type === 'active') return '#4CAF50';
+    if (type === 'in-active') return '#FF3B30';
+    if (type === 'guest') return '#1a1a1a';
+    return '#007AFF';
+  };
+
+  if (isExpanded) {
+    return (
+      <View style={collapsibleStyles.expandedContainer}>
+        <TouchableOpacity style={collapsibleStyles.collapseHeader} onPress={onToggle} activeOpacity={0.7}>
+          <ChevronDown size={20} color="#666" />
+          <Text style={collapsibleStyles.collapseHeaderText}>Tap to collapse</Text>
+        </TouchableOpacity>
+        <PlayerCard
+          member={member}
+          isAdmin={isAdmin}
+          currentUser={currentUser}
+          onPress={onPress}
+          onHistoryPress={onHistoryPress}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={collapsibleStyles.collapsedCard}
+      onPress={onToggle}
+      activeOpacity={0.7}
+    >
+      <View style={collapsibleStyles.collapsedContent}>
+        <ChevronRight size={18} color="#999" />
+        <View style={collapsibleStyles.collapsedInfo}>
+          <Text style={collapsibleStyles.collapsedName}>{member.name}</Text>
+          <View style={collapsibleStyles.collapsedBadges}>
+            <View style={[collapsibleStyles.statusDot, { backgroundColor: getMemberStatusColor(member.membershipType || '') }]} />
+            <Text style={collapsibleStyles.collapsedHandicap}>HCP: {member.handicap || 'N/A'}</Text>
+            {member.adjustedHandicap && (
+              <Text style={collapsibleStyles.collapsedAdjusted}>({member.adjustedHandicap})</Text>
+            )}
+          </View>
+        </View>
+      </View>
+      <View style={[collapsibleStyles.locationBadge, { backgroundColor: getLocationBadgeColor() }]}>
+        <Text style={collapsibleStyles.locationBadgeText}>{getLocationBadge()}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+const collapsibleStyles = StyleSheet.create({
+  expandedContainer: {
+    marginBottom: 12,
+  },
+  collapseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#e8e8e8',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    gap: 6,
+  },
+  collapseHeaderText: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '500' as const,
+  },
+  collapsedCard: {
+    backgroundColor: '#fff',
+    marginBottom: 8,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  collapsedContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+  },
+  collapsedInfo: {
+    flex: 1,
+  },
+  collapsedName: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  collapsedBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  collapsedHandicap: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500' as const,
+  },
+  collapsedAdjusted: {
+    fontSize: 12,
+    color: '#FF9500',
+    fontWeight: '600' as const,
+  },
+  locationBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  locationBadgeText: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+});
 
 export default function MembersScreen() {
   const { currentUser: authUser, members: allMembersFromContext, updateMember: updateMemberFromContext } = useAuth();
@@ -34,6 +205,7 @@ export default function MembersScreen() {
   const [historyMember, setHistoryMember] = useState<Member | null>(null);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [showListingModal, setShowListingModal] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
 
   const loadMembers = useCallback(async () => {
@@ -161,6 +333,19 @@ export default function MembersScreen() {
     setHistoryMember(member);
     setShowHistoryModal(true);
   };
+
+  const toggleCardExpansion = useCallback((memberId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(memberId)) {
+        newSet.delete(memberId);
+      } else {
+        newSet.add(memberId);
+      }
+      return newSet;
+    });
+  }, []);
 
 
 
@@ -309,17 +494,19 @@ export default function MembersScreen() {
             style={styles.flatList}
             contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
-              <PlayerCard
+              <CollapsiblePlayerCard
                 member={item}
                 isAdmin={authUser?.isAdmin || false}
-                currentUser={authUser}
+                currentUser={authUser || null}
                 onPress={authUser?.isAdmin ? () => handleCardPress(item) : undefined}
                 onHistoryPress={() => handleHistoryPress(item)}
+                isExpanded={expandedCards.has(item.id)}
+                onToggle={() => toggleCardExpansion(item.id)}
               />
             )}
             ListEmptyComponent={<Text style={styles.emptyText}>No members found.</Text>}
-            removeClippedSubviews={true}
-            initialNumToRender={10}
+            removeClippedSubviews={false}
+            initialNumToRender={15}
             maxToRenderPerBatch={10}
             windowSize={5}
           />
