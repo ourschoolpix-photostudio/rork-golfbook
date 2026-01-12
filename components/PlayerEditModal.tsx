@@ -68,8 +68,8 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'check' | 'zelle' | 'venmo' | 'paypal'>('cash');
   const { orgInfo } = useSettings();
 
-  const PAYPAL_FEE_PERCENT = 0.029;
-  const PAYPAL_FEE_FIXED = 0.30;
+  const PAYPAL_FEE_PERCENT = 0.04;
+  const PAYPAL_FEE_FIXED = 0.49;
 
   const calculatePayPalAdjustedAmount = (baseAmount: string) => {
     const amount = parseFloat(baseAmount) || 0;
@@ -1041,7 +1041,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
             {selectedPaymentMethod === 'paypal' && (
               <View style={styles.paypalFeeNote}>
                 <Text style={styles.paypalFeeNoteText}>
-                  PayPal fee (2.9% + $0.30) deducted. Net amount: ${getDisplayAmount()}
+                  PayPal fee (4% + $0.49) deducted. Net amount: ${getDisplayAmount()}
                 </Text>
               </View>
             )}
