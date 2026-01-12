@@ -117,59 +117,36 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
       guests: 'Guest Players',
     };
     
-    let html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 20px; background-color: #f9f9f9;">
-  <div style="max-width: 700px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-    <div style="background-color: #2c3e50; color: #ffffff; padding: 20px 24px;">
-      <h1 style="margin: 0; font-size: 22px; font-weight: 600;">${categoryLabels[activeTab]}</h1>
-      <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}</p>
-    </div>
-    <div style="padding: 0;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
-        <thead>
-          <tr style="background-color: #34495e;">
-            <th style="padding: 12px 16px; text-align: center; color: #ffffff; font-size: 13px; font-weight: 600; border-bottom: 2px solid #2c3e50;">#</th>
-`;
+    const lines: string[] = [];
     
-    selectedFields.forEach(f => {
-      html += `            <th style="padding: 12px 16px; text-align: left; color: #ffffff; font-size: 13px; font-weight: 600; border-bottom: 2px solid #2c3e50;">${f.label}</th>\n`;
-    });
-    
-    html += `          </tr>
-        </thead>
-        <tbody>
-`;
+    lines.push(categoryLabels[activeTab]);
+    lines.push(`${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}`);
+    lines.push('');
+    lines.push('---');
+    lines.push('');
     
     filteredMembers.forEach((member, index) => {
-      const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
-      const borderColor = '#e9ecef';
-      html += `          <tr style="background-color: ${bgColor};">\n`;
-      html += `            <td style="padding: 10px 16px; text-align: center; color: #6c757d; font-size: 13px; border-bottom: 1px solid ${borderColor};">${index + 1}</td>\n`;
-      selectedFields.forEach((f, fIndex) => {
-        const fontWeight = f.key === 'name' ? 'font-weight: 600;' : '';
-        const textColor = f.key === 'name' ? '#2c3e50' : '#495057';
-        html += `            <td style="padding: 10px 16px; text-align: left; color: ${textColor}; font-size: 13px; border-bottom: 1px solid ${borderColor}; ${fontWeight}">${getFieldValue(member, f.key)}</td>\n`;
+      const memberLine: string[] = [];
+      memberLine.push(`${index + 1}.`);
+      
+      selectedFields.forEach(f => {
+        const value = getFieldValue(member, f.key);
+        if (f.key === 'name') {
+          memberLine.push(value);
+        } else {
+          memberLine.push(`${f.label}: ${value}`);
+        }
       });
-      html += `          </tr>\n`;
+      
+      lines.push(memberLine.join(' | '));
     });
     
-    html += `        </tbody>
-      </table>
-    </div>
-    <div style="background-color: #f8f9fa; padding: 16px 24px; border-top: 1px solid #e9ecef;">
-      <p style="margin: 0; font-size: 14px; color: #6c757d;">Total: <strong style="color: #2c3e50;">${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}</strong></p>
-    </div>
-  </div>
-</body>
-</html>`;
+    lines.push('');
+    lines.push('---');
+    lines.push(`Total: ${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}`);
     
-    return html;
-  }, [filteredMembers, selectedFields, activeTab, getFieldValue]);
+    return lines.join('\n');
+  }, [filteredMembers, selectedFields, activeTab, getFieldValue])
 
   const handleCopy = useCallback(async () => {
     const content = outputTab === 'text' ? textOutput : emailOutput;
@@ -296,7 +273,7 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
               color="#fff"
             />
             <Text style={styles.copyButtonText}>
-              {copied ? 'Copied!' : `Copy ${outputTab === 'text' ? 'Text' : 'Email HTML'}`}
+              {copied ? 'Copied!' : `Copy ${outputTab === 'text' ? 'Text' : 'Email Body'}`}
             </Text>
           </TouchableOpacity>
         </View>
