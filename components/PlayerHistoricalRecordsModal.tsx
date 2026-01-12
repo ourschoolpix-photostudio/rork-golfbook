@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { X, Trophy, Calendar } from 'lucide-react-native';
+import { X, Trophy, Calendar, Trash2 } from 'lucide-react-native';
 import { Member } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 function parseDateSafe(dateStr: string): Date {
   const date = new Date(dateStr + 'T12:00:00');
@@ -60,10 +62,13 @@ export function PlayerHistoricalRecordsModal({
   member,
   onClose,
 }: PlayerHistoricalRecordsModalProps) {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.isAdmin || false;
   const [loading, setLoading] = useState(false);
   const [seasons, setSeasons] = useState<SeasonData[]>([]);
   const [expandedSeasons, setExpandedSeasons] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState<'events' | 'membership'>('events');
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const loadHistoricalRecords = useCallback(async () => {
     if (!member) return;
@@ -338,6 +343,45 @@ export function PlayerHistoricalRecordsModal({
     });
   };
 
+  const handleDeleteRecord = useCallback(async (recordId: string, recordType: string) => {
+    Alert.alert(
+      'Delete Record',
+      `Are you sure you want to delete this ${recordType} record? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeleting(recordId);
+              console.log('[Historical Records] Deleting record:', recordId);
+              
+              const { error } = await supabase
+                .from('membership_payments')
+                .delete()
+                .eq('id', recordId);
+              
+              if (error) {
+                console.error('[Historical Records] Error deleting record:', error);
+                Alert.alert('Error', 'Failed to delete record. Please try again.');
+                return;
+              }
+              
+              console.log('[Historical Records] Record deleted successfully');
+              await loadHistoricalRecords();
+            } catch (error) {
+              console.error('[Historical Records] Exception deleting record:', error);
+              Alert.alert('Error', 'Failed to delete record. Please try again.');
+            } finally {
+              setDeleting(null);
+            }
+          },
+        },
+      ]
+    );
+  }, [loadHistoricalRecords]);
+
   const formatDate = (startDate: string, endDate: string | null) => {
     const start = parseDateSafe(startDate);
     const startFormatted = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -545,8 +589,23 @@ export function PlayerHistoricalRecordsModal({
                               <Text style={styles.membershipType}>
                                 {record.membershipType === 'full' ? 'Full Membership' : 'Basic Membership'}
                               </Text>
-                              <View style={styles.membershipStatusBadge}>
-                                <Text style={styles.membershipStatusText}>Renewed</Text>
+                              <View style={styles.membershipHeaderRight}>
+                                <View style={styles.membershipStatusBadge}>
+                                  <Text style={styles.membershipStatusText}>Renewed</Text>
+                                </View>
+                                {isAdmin && (
+                                  <TouchableOpacity
+                                    style={styles.deleteButton}
+                                    onPress={() => handleDeleteRecord(record.id, 'membership')}
+                                    disabled={deleting === record.id}
+                                  >
+                                    {deleting === record.id ? (
+                                      <ActivityIndicator size="small" color="#FF3B30" />
+                                    ) : (
+                                      <Trash2 size={18} color="#FF3B30" />
+                                    )}
+                                  </TouchableOpacity>
+                                )}
                               </View>
                             </View>
                             <View style={styles.membershipDetails}>
@@ -869,6 +928,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  membershipHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteButton: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: '#FFF0F0',
   },
   membershipType: {
     fontSize: 16,
