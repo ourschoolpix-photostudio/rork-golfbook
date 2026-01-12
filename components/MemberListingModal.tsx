@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { Member } from '@/types';
 
 interface MemberListingModalProps {
@@ -30,8 +33,9 @@ const LOCAL_STATES = ['', 'MD', 'VA', 'PA', 'NJ', 'DE'];
 
 export function MemberListingModal({ visible, onClose, members }: MemberListingModalProps) {
   const [activeTab, setActiveTab] = useState<MemberCategory>('all');
-  const [outputTab, setOutputTab] = useState<'text' | 'email'>('text');
+  const [outputTab, setOutputTab] = useState<'text' | 'email' | 'pdf'>('text');
   const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [fields, setFields] = useState<FieldOption[]>([
     { key: 'name', label: 'Member Name', checked: true },
     { key: 'handicap', label: 'GHIN Handicap', checked: false },
@@ -108,16 +112,16 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
     return lines.join('\n');
   }, [filteredMembers, selectedFields, getFieldValue]);
 
+  const categoryLabels = useMemo<Record<MemberCategory, string>>(() => ({
+    all: 'All Members',
+    active: 'Active Members',
+    inactive: 'Inactive Members',
+    local: 'Local Members',
+    guests: 'Guest Players',
+  }), []);
+
   const emailOutput = useMemo(() => {
     if (selectedFields.length === 0) return 'Please select at least one field';
-    
-    const categoryLabels: Record<MemberCategory, string> = {
-      all: 'All Members',
-      active: 'Active Members',
-      inactive: 'Inactive Members',
-      local: 'Local Members',
-      guests: 'Guest Players',
-    };
     
     const lines: string[] = [];
     
@@ -133,7 +137,6 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
       const paddedNum = String(index + 1).padStart(maxDigits, ' ');
       const parts: string[] = [];
       
-      // Combine number with name (no separator)
       const nameField = selectedFields.find(f => f.key === 'name');
       if (nameField) {
         parts.push(`${paddedNum}. ${getFieldValue(member, 'name')}`);
@@ -141,7 +144,6 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
         parts.push(`${paddedNum}.`);
       }
       
-      // Add other fields with separator
       selectedFields.forEach(f => {
         if (f.key !== 'name') {
           const value = getFieldValue(member, f.key);
@@ -157,7 +159,151 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
     lines.push(`Total: ${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}`);
     
     return lines.join('\n');
-  }, [filteredMembers, selectedFields, activeTab, getFieldValue])
+  }, [filteredMembers, selectedFields, activeTab, getFieldValue, categoryLabels])
+
+  const generatePDF = useCallback(async () => {
+    if (selectedFields.length === 0) return;
+    
+    setGenerating(true);
+    console.log('[MemberListingModal] Generating PDF...');
+    
+    try {
+      const maxDigits = String(filteredMembers.length).length;
+      let rowsHTML = '';
+      
+      filteredMembers.forEach((member, index) => {
+        const paddedNum = String(index + 1).padStart(maxDigits, '\u00A0');
+        const parts: string[] = [];
+        
+        const nameField = selectedFields.find(f => f.key === 'name');
+        if (nameField) {
+          parts.push(getFieldValue(member, 'name'));
+        }
+        
+        selectedFields.forEach(f => {
+          if (f.key !== 'name') {
+            parts.push(getFieldValue(member, f.key));
+          }
+        });
+        
+        rowsHTML += `
+          <div class="member-row">
+            <span class="member-num">${paddedNum}.</span>
+            <span class="member-info">${parts.join(' | ')}</span>
+          </div>
+        `;
+      });
+      
+      const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${categoryLabels[activeTab]}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @page { size: 2.5in 11in; margin: 0.15in; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      width: 2.5in;
+      background: white;
+      padding: 0.15in;
+      font-size: 9px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 8px;
+      border-bottom: 1.5px solid #1B5E20;
+      padding-bottom: 6px;
+    }
+    .header-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: #1B5E20;
+      margin-bottom: 2px;
+    }
+    .header-count {
+      font-size: 8px;
+      color: #666;
+    }
+    .member-row {
+      display: flex;
+      padding: 2px 0;
+      line-height: 1.3;
+      gap: 4px;
+      border-bottom: 0.5px solid #eee;
+    }
+    .member-num {
+      font-size: 8px;
+      font-weight: 600;
+      color: #666;
+      min-width: 18px;
+      font-family: monospace;
+      white-space: pre;
+    }
+    .member-info {
+      font-size: 8px;
+      font-weight: 500;
+      color: #1a1a1a;
+      flex: 1;
+    }
+    .footer {
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1.5px solid #1B5E20;
+      text-align: center;
+    }
+    .footer-text {
+      font-size: 9px;
+      font-weight: 700;
+      color: #1B5E20;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">${categoryLabels[activeTab]}</div>
+    <div class="header-count">${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}</div>
+  </div>
+  ${rowsHTML}
+  <div class="footer">
+    <div class="footer-text">Total: ${filteredMembers.length}</div>
+  </div>
+</body>
+</html>`;
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${categoryLabels[activeTab].replace(/\s+/g, '_')}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        console.log('[MemberListingModal] Web PDF download initiated');
+      } else {
+        const { uri } = await Print.printToFileAsync({
+          html: htmlContent,
+          base64: false,
+        });
+        
+        console.log('[MemberListingModal] PDF created at:', uri);
+        
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'Share Member Listing PDF',
+            UTI: 'com.adobe.pdf',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('[MemberListingModal] PDF generation error:', error);
+    } finally {
+      setGenerating(false);
+    }
+  }, [filteredMembers, selectedFields, activeTab, getFieldValue, categoryLabels]);
 
   const handleCopy = useCallback(async () => {
     const content = outputTab === 'text' ? textOutput : emailOutput;
@@ -263,6 +409,15 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
               Email
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.outputTab, outputTab === 'pdf' && styles.outputTabActive]}
+            onPress={() => setOutputTab('pdf')}
+          >
+            <Ionicons name="document-outline" size={18} color={outputTab === 'pdf' ? '#fff' : '#666'} />
+            <Text style={[styles.outputTabText, outputTab === 'pdf' && styles.outputTabTextActive]}>
+              PDF
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.outputContainer}>
@@ -274,19 +429,36 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.copyButton, copied && styles.copyButtonSuccess]}
-            onPress={handleCopy}
-          >
-            <Ionicons
-              name={copied ? 'checkmark-circle' : 'copy-outline'}
-              size={20}
-              color="#fff"
-            />
-            <Text style={styles.copyButtonText}>
-              {copied ? 'Copied!' : `Copy ${outputTab === 'text' ? 'Text' : 'Email Body'}`}
-            </Text>
-          </TouchableOpacity>
+          {outputTab === 'pdf' ? (
+            <TouchableOpacity
+              style={[styles.copyButton, generating && styles.copyButtonDisabled]}
+              onPress={generatePDF}
+              disabled={generating || selectedFields.length === 0}
+            >
+              {generating ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="download-outline" size={20} color="#fff" />
+              )}
+              <Text style={styles.copyButtonText}>
+                {generating ? 'Generating...' : 'Generate PDF'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.copyButton, copied && styles.copyButtonSuccess]}
+              onPress={handleCopy}
+            >
+              <Ionicons
+                name={copied ? 'checkmark-circle' : 'copy-outline'}
+                size={20}
+                color="#fff"
+              />
+              <Text style={styles.copyButtonText}>
+                {copied ? 'Copied!' : `Copy ${outputTab === 'text' ? 'Text' : 'Email Body'}`}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Modal>
@@ -453,6 +625,9 @@ const styles = StyleSheet.create({
   },
   copyButtonSuccess: {
     backgroundColor: '#34C759',
+  },
+  copyButtonDisabled: {
+    backgroundColor: '#999',
   },
   copyButtonText: {
     fontSize: 16,
