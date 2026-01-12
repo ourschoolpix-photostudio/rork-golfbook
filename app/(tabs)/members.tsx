@@ -16,6 +16,7 @@ import { PlayerCard } from '@/components/PlayerCard';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { PlayerHistoricalRecordsModal } from '@/components/PlayerHistoricalRecordsModal';
 import { MembershipRenewalModal } from '@/components/MembershipRenewalModal';
+import { MemberListingModal } from '@/components/MemberListingModal';
 
 
 export default function MembersScreen() {
@@ -32,6 +33,7 @@ export default function MembersScreen() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyMember, setHistoryMember] = useState<Member | null>(null);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const [showListingModal, setShowListingModal] = useState(false);
 
 
   const loadMembers = useCallback(async () => {
@@ -290,6 +292,13 @@ export default function MembersScreen() {
 
           <View style={styles.filterTitleCard}>
             <Text style={styles.filterTitleText}>{getFilterTitle()}</Text>
+            <TouchableOpacity
+              style={styles.listingButton}
+              onPress={() => setShowListingModal(true)}
+            >
+              <Ionicons name="list-outline" size={16} color="#fff" />
+              <Text style={styles.listingButtonText}>Export</Text>
+            </TouchableOpacity>
           </View>
 
           <FlatList
@@ -351,6 +360,12 @@ export default function MembersScreen() {
         onClose={() => setShowRenewalModal(false)}
       />
     )}
+
+    <MemberListingModal
+      visible={showListingModal}
+      onClose={() => setShowListingModal(false)}
+      members={members}
+    />
     </>
   );
 }
@@ -480,6 +495,9 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   filterTitleCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#a0a0a0',
@@ -488,6 +506,20 @@ const styles = StyleSheet.create({
   },
   filterTitleText: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  listingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  listingButtonText: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#fff',
   },
