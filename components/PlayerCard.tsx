@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Trash2, Pencil, User, Star } from 'lucide-react-native';
+import { Trash2, Pencil, User } from 'lucide-react-native';
 import { Member } from '@/types';
 import { getTournamentHandicapDisplay } from '@/utils/tournamentHandicapHelper';
 import { canViewTournamentHandicap } from '@/utils/rolePermissions';
@@ -107,7 +107,7 @@ export const PlayerCard = memo(function PlayerCard({
 
           {onHistoryPress && (
             <TouchableOpacity onPress={onHistoryPress} style={styles.historyButtonUnderPhoto}>
-              <Star size={16} color="#FFD700" fill="#FFD700" />
+              <Text style={styles.historyButtonText}>History</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -292,10 +292,17 @@ const styles = StyleSheet.create({
   },
   historyButtonUnderPhoto: {
     marginTop: 6,
-    width: 32,
-    height: 32,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#007AFF',
+    borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  historyButtonText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#fff',
   },
   editButton: {
     padding: 8,
