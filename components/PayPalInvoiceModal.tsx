@@ -98,8 +98,8 @@ export function PayPalInvoiceModal({
   const guestCount = parseInt(numberOfGuests, 10) || 0;
   const totalPeople = 1 + guestCount;
   
-  const serviceFeePercentage = 0.04;
-  const serviceFeeFixed = 0.49;
+  const serviceFeePercentage = 0.03;
+  const serviceFeeFixed = 0.30;
   const entryFeeAmount = Number(event.entryFee);
   const subtotal = entryFeeAmount * totalPeople;
   const serviceFeeAmount = (subtotal * serviceFeePercentage) + serviceFeeFixed;
@@ -475,7 +475,7 @@ export function PayPalInvoiceModal({
                     </Text>
                   )}
                   <View style={styles.feeRow}>
-                    <Text style={styles.feeLabel}>Service Fee (4% + $0.49):</Text>
+                    <Text style={styles.feeLabel}>Service Fee (3% + $0.30):</Text>
                     <Text style={styles.feeValue}>${serviceFeeAmount.toFixed(2)}</Text>
                   </View>
                   <View style={styles.dividerThin} />
