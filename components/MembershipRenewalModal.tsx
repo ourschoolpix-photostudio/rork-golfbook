@@ -223,7 +223,7 @@ export function MembershipRenewalModal({
               </View>
               <View style={styles.paymentInfo}>
                 <Text style={styles.paymentName}>PayPal</Text>
-                <Text style={styles.paymentDescription}>Pay via PayPal (+5% fee)</Text>
+                <Text style={styles.paymentDescription}>Pay via PayPal (+4% + $0.49 fee)</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={24} color="#999" />
