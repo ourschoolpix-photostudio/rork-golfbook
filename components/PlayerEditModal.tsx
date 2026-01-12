@@ -18,6 +18,7 @@ import { ProfilePhotoPicker } from './ProfilePhotoPicker';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPhoneNumber, getPhoneDigits } from '@/utils/phoneFormatter';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface PlayerEditModalProps {
   visible: boolean;
@@ -63,6 +64,8 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
   const [originalMembershipType, setOriginalMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
   const [showAddToHistoryPrompt, setShowAddToHistoryPrompt] = useState(false);
   const [pendingSave, setPendingSave] = useState<Member | null>(null);
+  const [selectedMembershipType, setSelectedMembershipType] = useState<'full' | 'basic'>('full');
+  const { orgInfo } = useSettings();
 
   useEffect(() => {
     if (visible) {
@@ -108,6 +111,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       }
       setShowAddToHistoryPrompt(false);
       setPendingSave(null);
+      setSelectedMembershipType('full');
     }
   }, [member, visible]);
 
@@ -249,12 +253,20 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       setShowAddToHistoryPrompt(false);
       
       if (addToHistory) {
-        console.log('[PlayerEditModal] Adding membership activation to history...');
+        const amount = selectedMembershipType === 'full' 
+          ? (orgInfo.fullMembershipPrice || '0')
+          : (orgInfo.basicMembershipPrice || '0');
+        
+        console.log('[PlayerEditModal] Adding membership activation to history...', {
+          membershipType: selectedMembershipType,
+          amount,
+        });
+        
         await supabase.from('membership_payments').insert({
           member_id: pendingSave.id,
           member_name: pendingSave.name,
-          membership_type: 'full',
-          amount: '0',
+          membership_type: selectedMembershipType,
+          amount: amount,
           payment_method: 'zelle',
           payment_status: 'completed',
           email: pendingSave.email || '',
@@ -272,6 +284,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
     } finally {
       setLoading(false);
       setPendingSave(null);
+      setSelectedMembershipType('full');
     }
   };
 
@@ -858,8 +871,53 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
             </View>
             <Text style={styles.promptTitle}>Add to Member History?</Text>
             <Text style={styles.promptMessage}>
-              You are activating this member&apos;s status. Would you like to add this activation to their membership history records?
+              You are activating this member&apos;s status. Would you like to add this renewal to their membership history records?
             </Text>
+            
+            <Text style={styles.membershipTypeLabel}>Select Membership Type:</Text>
+            <View style={styles.membershipTypeGroup}>
+              <TouchableOpacity
+                style={[
+                  styles.membershipTypeButton,
+                  selectedMembershipType === 'full' && styles.membershipTypeButtonActive,
+                ]}
+                onPress={() => setSelectedMembershipType('full')}
+              >
+                <Text style={[
+                  styles.membershipTypeButtonText,
+                  selectedMembershipType === 'full' && styles.membershipTypeButtonTextActive,
+                ]}>
+                  Full Member
+                </Text>
+                <Text style={[
+                  styles.membershipTypePrice,
+                  selectedMembershipType === 'full' && styles.membershipTypePriceActive,
+                ]}>
+                  ${orgInfo.fullMembershipPrice || '0'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.membershipTypeButton,
+                  selectedMembershipType === 'basic' && styles.membershipTypeButtonActive,
+                ]}
+                onPress={() => setSelectedMembershipType('basic')}
+              >
+                <Text style={[
+                  styles.membershipTypeButtonText,
+                  selectedMembershipType === 'basic' && styles.membershipTypeButtonTextActive,
+                ]}>
+                  Basic Member
+                </Text>
+                <Text style={[
+                  styles.membershipTypePrice,
+                  selectedMembershipType === 'basic' && styles.membershipTypePriceActive,
+                ]}>
+                  ${orgInfo.basicMembershipPrice || '0'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
             <View style={styles.promptButtons}>
               <TouchableOpacity
                 style={[styles.promptButton, styles.promptButtonSecondary]}
@@ -1226,5 +1284,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: '#666',
+  },
+  membershipTypeLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#333',
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  membershipTypeGroup: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    marginBottom: 20,
+  },
+  membershipTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    backgroundColor: '#f9f9f9',
+    alignItems: 'center',
+  },
+  membershipTypeButtonActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  membershipTypeButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginBottom: 4,
+  },
+  membershipTypeButtonTextActive: {
+    color: '#2E7D32',
+  },
+  membershipTypePrice: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#999',
+  },
+  membershipTypePriceActive: {
+    color: '#4CAF50',
   },
 });
