@@ -39,6 +39,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
   const { currentUser } = useAuth();
   const isEditMode = !!editingMember;
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
+  const [membershipLevel, setMembershipLevel] = useState<'full' | 'basic'>('full');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const [fullName, setFullName] = useState<string>('');
   const [username, setUsername] = useState<string>('');
@@ -59,6 +60,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
   useEffect(() => {
     if (editingMember && visible) {
       setMembershipType(editingMember.membershipType || 'active');
+      setMembershipLevel(editingMember.membershipLevel || 'full');
       setGender(editingMember.gender || null);
       setFullName(editingMember.fullName || editingMember.name || '');
       setUsername(editingMember.username || '');
@@ -98,6 +100,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
       username,
       pin,
       membershipType,
+      membershipLevel: membershipType === 'active' ? membershipLevel : undefined,
       gender: gender || undefined,
       address,
       city,
@@ -122,6 +125,7 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
 
   const resetForm = () => {
     setMembershipType('active');
+    setMembershipLevel('full');
     setGender(null);
     setFullName('');
     setUsername('');
@@ -212,6 +216,39 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
                     </TouchableOpacity>
                   </View>
                 </View>
+
+                {membershipType === 'active' && (
+                  <View style={styles.section}>
+                    <View style={styles.toggleGroup}>
+                      <TouchableOpacity
+                        style={[styles.toggleButton, membershipLevel === 'full' && styles.toggleButtonActive]}
+                        onPress={() => setMembershipLevel('full')}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleButtonText,
+                            membershipLevel === 'full' && styles.toggleButtonTextActive,
+                          ]}
+                        >
+                          Full Member
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.toggleButton, membershipLevel === 'basic' && styles.toggleButtonActive]}
+                        onPress={() => setMembershipLevel('basic')}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleButtonText,
+                            membershipLevel === 'basic' && styles.toggleButtonTextActive,
+                          ]}
+                        >
+                          Basic Member
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
 
                 <View style={styles.section}>
                   <View style={styles.toggleGroup}>

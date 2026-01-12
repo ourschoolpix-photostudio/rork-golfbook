@@ -44,6 +44,7 @@ const BOARD_MEMBER_ROLES = [
 export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMode = false, quickEditMode = false, pinChangeMode = false }: PlayerEditModalProps) {
   const { currentUser } = useAuth();
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
+  const [membershipLevel, setMembershipLevel] = useState<'full' | 'basic'>('full');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -94,6 +95,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         const currentType = member.membershipType || 'active';
         setMembershipType(currentType);
         setOriginalMembershipType(currentType);
+        setMembershipLevel(member.membershipLevel || 'full');
         setGender(member.gender || null);
         setFullName(member.fullName || member.name || '');
         setUsername(member.username || '');
@@ -112,6 +114,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         setBoardMemberRoles(member.boardMemberRoles || []);
       } else {
         setMembershipType('active');
+        setMembershipLevel('full');
         setGender(null);
         setFullName('');
         setUsername('');
@@ -205,6 +208,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         handicap: currentHandicap ? parseFloat(currentHandicap) : 0,
         currentHandicap: currentHandicap,
         membershipType,
+        membershipLevel: membershipType === 'active' ? membershipLevel : undefined,
         gender: gender || undefined,
         flight: flight || undefined,
         rolexFlight: rolexFlight || undefined,
@@ -227,6 +231,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         handicap: currentHandicap ? parseFloat(currentHandicap) : 0,
         currentHandicap: currentHandicap,
         membershipType,
+        membershipLevel: membershipType === 'active' ? membershipLevel : undefined,
         gender: gender || undefined,
         flight: flight || undefined,
         rolexFlight: rolexFlight || undefined,
@@ -532,6 +537,37 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
                       </Text>
                     </TouchableOpacity>
                   </View>
+
+                  {membershipType === 'active' && (
+                    <View style={styles.toggleGroup}>
+                      <TouchableOpacity
+                        style={[styles.toggleButton, membershipLevel === 'full' && styles.toggleButtonActive]}
+                        onPress={() => setMembershipLevel('full')}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleButtonText,
+                            membershipLevel === 'full' && styles.toggleButtonTextActive,
+                          ]}
+                        >
+                          Full Member
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.toggleButton, membershipLevel === 'basic' && styles.toggleButtonActive]}
+                        onPress={() => setMembershipLevel('basic')}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleButtonText,
+                            membershipLevel === 'basic' && styles.toggleButtonTextActive,
+                          ]}
+                        >
+                          Basic Member
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
                   <View style={[styles.toggleGroup, styles.toggleGroupLast]}>
                     <TouchableOpacity
