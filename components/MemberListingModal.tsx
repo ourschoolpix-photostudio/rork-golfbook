@@ -30,7 +30,7 @@ const LOCAL_STATES = ['', 'MD', 'VA', 'PA', 'NJ', 'DE'];
 
 export function MemberListingModal({ visible, onClose, members }: MemberListingModalProps) {
   const [activeTab, setActiveTab] = useState<MemberCategory>('all');
-  const [outputTab, setOutputTab] = useState<'text' | 'html'>('text');
+  const [outputTab, setOutputTab] = useState<'text' | 'email'>('text');
   const [copied, setCopied] = useState(false);
   const [fields, setFields] = useState<FieldOption[]>([
     { key: 'name', label: 'Member Name', checked: true },
@@ -106,8 +106,8 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
     return lines.join('\n');
   }, [filteredMembers, selectedFields, getFieldValue]);
 
-  const htmlOutput = useMemo(() => {
-    if (selectedFields.length === 0) return '<p>Please select at least one field</p>';
+  const emailOutput = useMemo(() => {
+    if (selectedFields.length === 0) return 'Please select at least one field';
     
     const categoryLabels: Record<MemberCategory, string> = {
       all: 'All Members',
@@ -117,38 +117,67 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
       guests: 'Guest Players',
     };
     
-    let html = `<h2>${categoryLabels[activeTab]}</h2>\n`;
-    html += '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">\n';
-    html += '<thead>\n<tr style="background-color: #4a4a4a; color: white;">\n';
-    html += '<th>#</th>\n';
+    let html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 20px; background-color: #f9f9f9;">
+  <div style="max-width: 700px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <div style="background-color: #2c3e50; color: #ffffff; padding: 20px 24px;">
+      <h1 style="margin: 0; font-size: 22px; font-weight: 600;">${categoryLabels[activeTab]}</h1>
+      <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}</p>
+    </div>
+    <div style="padding: 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+        <thead>
+          <tr style="background-color: #34495e;">
+            <th style="padding: 12px 16px; text-align: center; color: #ffffff; font-size: 13px; font-weight: 600; border-bottom: 2px solid #2c3e50;">#</th>
+`;
+    
     selectedFields.forEach(f => {
-      html += `<th>${f.label}</th>\n`;
+      html += `            <th style="padding: 12px 16px; text-align: left; color: #ffffff; font-size: 13px; font-weight: 600; border-bottom: 2px solid #2c3e50;">${f.label}</th>\n`;
     });
-    html += '</tr>\n</thead>\n<tbody>\n';
+    
+    html += `          </tr>
+        </thead>
+        <tbody>
+`;
     
     filteredMembers.forEach((member, index) => {
-      const bgColor = index % 2 === 0 ? '#ffffff' : '#f5f5f5';
-      html += `<tr style="background-color: ${bgColor};">\n`;
-      html += `<td style="text-align: center;">${index + 1}</td>\n`;
-      selectedFields.forEach(f => {
-        html += `<td>${getFieldValue(member, f.key)}</td>\n`;
+      const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+      const borderColor = '#e9ecef';
+      html += `          <tr style="background-color: ${bgColor};">\n`;
+      html += `            <td style="padding: 10px 16px; text-align: center; color: #6c757d; font-size: 13px; border-bottom: 1px solid ${borderColor};">${index + 1}</td>\n`;
+      selectedFields.forEach((f, fIndex) => {
+        const fontWeight = f.key === 'name' ? 'font-weight: 600;' : '';
+        const textColor = f.key === 'name' ? '#2c3e50' : '#495057';
+        html += `            <td style="padding: 10px 16px; text-align: left; color: ${textColor}; font-size: 13px; border-bottom: 1px solid ${borderColor}; ${fontWeight}">${getFieldValue(member, f.key)}</td>\n`;
       });
-      html += '</tr>\n';
+      html += `          </tr>\n`;
     });
     
-    html += '</tbody>\n</table>\n';
-    html += `<p style="margin-top: 16px; font-weight: bold;">Total: ${filteredMembers.length} members</p>`;
+    html += `        </tbody>
+      </table>
+    </div>
+    <div style="background-color: #f8f9fa; padding: 16px 24px; border-top: 1px solid #e9ecef;">
+      <p style="margin: 0; font-size: 14px; color: #6c757d;">Total: <strong style="color: #2c3e50;">${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}</strong></p>
+    </div>
+  </div>
+</body>
+</html>`;
     
     return html;
   }, [filteredMembers, selectedFields, activeTab, getFieldValue]);
 
   const handleCopy = useCallback(async () => {
-    const content = outputTab === 'text' ? textOutput : htmlOutput;
+    const content = outputTab === 'text' ? textOutput : emailOutput;
     await Clipboard.setStringAsync(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     console.log('[MemberListingModal] Copied to clipboard:', outputTab);
-  }, [outputTab, textOutput, htmlOutput]);
+  }, [outputTab, textOutput, emailOutput]);
 
   const getCategoryCount = useCallback((category: MemberCategory): number => {
     switch (category) {
@@ -238,12 +267,12 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.outputTab, outputTab === 'html' && styles.outputTabActive]}
-            onPress={() => setOutputTab('html')}
+            style={[styles.outputTab, outputTab === 'email' && styles.outputTabActive]}
+            onPress={() => setOutputTab('email')}
           >
-            <Ionicons name="code-outline" size={18} color={outputTab === 'html' ? '#fff' : '#666'} />
-            <Text style={[styles.outputTabText, outputTab === 'html' && styles.outputTabTextActive]}>
-              HTML (Email)
+            <Ionicons name="mail-outline" size={18} color={outputTab === 'email' ? '#fff' : '#666'} />
+            <Text style={[styles.outputTabText, outputTab === 'email' && styles.outputTabTextActive]}>
+              Email
             </Text>
           </TouchableOpacity>
         </View>
@@ -251,7 +280,7 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
         <View style={styles.outputContainer}>
           <ScrollView style={styles.outputScroll} showsVerticalScrollIndicator={true}>
             <Text style={styles.outputText} selectable>
-              {outputTab === 'text' ? textOutput : htmlOutput}
+              {outputTab === 'text' ? textOutput : emailOutput}
             </Text>
           </ScrollView>
         </View>
@@ -267,7 +296,7 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
               color="#fff"
             />
             <Text style={styles.copyButtonText}>
-              {copied ? 'Copied!' : `Copy ${outputTab === 'text' ? 'Text' : 'HTML'}`}
+              {copied ? 'Copied!' : `Copy ${outputTab === 'text' ? 'Text' : 'Email HTML'}`}
             </Text>
           </TouchableOpacity>
         </View>
