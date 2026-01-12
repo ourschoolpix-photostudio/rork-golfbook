@@ -20,6 +20,7 @@ export interface Member {
   fullName?: string;
   username?: string;
   membershipType?: 'active' | 'in-active' | 'guest';
+  membershipLevel?: 'full' | 'basic';
   gender?: 'male' | 'female';
   address?: string;
   city?: string;

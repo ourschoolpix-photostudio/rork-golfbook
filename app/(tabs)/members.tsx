@@ -57,8 +57,11 @@ const CollapsiblePlayerCard = React.memo(function CollapsiblePlayerCard({
     return isLocal ? 'Local' : 'Visitor';
   };
 
-  const getMemberStatusColor = (type: string) => {
-    if (type === 'active') return '#4CAF50';
+  const getMemberStatusColor = (type: string, level?: string) => {
+    if (type === 'active') {
+      if (level === 'basic') return '#FF9500';
+      return '#4CAF50';
+    }
     if (type === 'in-active') return '#FF3B30';
     if (type === 'guest') return '#1a1a1a';
     return '#007AFF';
@@ -93,7 +96,7 @@ const CollapsiblePlayerCard = React.memo(function CollapsiblePlayerCard({
         <View style={collapsibleStyles.collapsedInfo}>
           <Text style={collapsibleStyles.collapsedName}>{member.name}</Text>
           <View style={collapsibleStyles.collapsedBadges}>
-            <View style={[collapsibleStyles.statusDot, { backgroundColor: getMemberStatusColor(member.membershipType || '') }]} />
+            <View style={[collapsibleStyles.statusDot, { backgroundColor: getMemberStatusColor(member.membershipType || '', member.membershipLevel) }]} />
             <Text style={collapsibleStyles.collapsedHandicap}>HCP: {member.handicap || 'N/A'}</Text>
             {member.adjustedHandicap && (
               <Text style={collapsibleStyles.collapsedAdjusted}>({member.adjustedHandicap})</Text>

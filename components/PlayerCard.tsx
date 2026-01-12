@@ -42,8 +42,11 @@ export const PlayerCard = memo(function PlayerCard({
     return type;
   };
 
-  const getMemberStatusColor = (type: string) => {
-    if (type === 'active' || type === 'active') return '#4CAF50';
+  const getMemberStatusColor = (type: string, level?: string) => {
+    if (type === 'active' || type === 'active') {
+      if (level === 'basic') return '#FF9500';
+      return '#4CAF50';
+    }
     if (type === 'in-active' || type === 'in-active') return '#FF3B30';
     if (type === 'guest') return '#1a1a1a';
     return '#007AFF';
@@ -136,7 +139,7 @@ export const PlayerCard = memo(function PlayerCard({
               <View
                 style={[
                   styles.membershipBadge,
-                  { backgroundColor: getMemberStatusColor(member.membershipType) },
+                  { backgroundColor: getMemberStatusColor(member.membershipType, member.membershipLevel) },
                 ]}
               >
                 <Text style={styles.membershipText}>
