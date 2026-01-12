@@ -130,20 +130,26 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
     const maxDigits = String(filteredMembers.length).length;
     
     filteredMembers.forEach((member, index) => {
-      const memberLine: string[] = [];
       const paddedNum = String(index + 1).padStart(maxDigits, ' ');
-      memberLine.push(`${paddedNum}.`);
+      const parts: string[] = [];
       
+      // Combine number with name (no separator)
+      const nameField = selectedFields.find(f => f.key === 'name');
+      if (nameField) {
+        parts.push(`${paddedNum}. ${getFieldValue(member, 'name')}`);
+      } else {
+        parts.push(`${paddedNum}.`);
+      }
+      
+      // Add other fields with separator
       selectedFields.forEach(f => {
-        const value = getFieldValue(member, f.key);
-        if (f.key === 'name') {
-          memberLine.push(value);
-        } else {
-          memberLine.push(`${f.label}: ${value}`);
+        if (f.key !== 'name') {
+          const value = getFieldValue(member, f.key);
+          parts.push(`${f.label}: ${value}`);
         }
       });
       
-      lines.push(memberLine.join(' | '));
+      lines.push(parts.join(' | '));
     });
     
     lines.push('');
