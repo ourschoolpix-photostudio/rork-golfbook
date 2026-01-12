@@ -90,6 +90,7 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
     if (selectedFields.length === 0) return 'Please select at least one field';
     
     const lines: string[] = [];
+    const maxDigits = String(filteredMembers.length).length;
     
     const header = selectedFields.map(f => f.label).join(' | ');
     lines.push(header);
@@ -97,7 +98,8 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
     
     filteredMembers.forEach((member, index) => {
       const values = selectedFields.map(f => getFieldValue(member, f.key));
-      lines.push(`${index + 1}. ${values.join(' | ')}`);
+      const paddedNum = String(index + 1).padStart(maxDigits, ' ');
+      lines.push(`${paddedNum}. ${values.join(' | ')}`);
     });
     
     lines.push('');
@@ -125,9 +127,12 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
     lines.push('---');
     lines.push('');
     
+    const maxDigits = String(filteredMembers.length).length;
+    
     filteredMembers.forEach((member, index) => {
       const memberLine: string[] = [];
-      memberLine.push(`${index + 1}.`);
+      const paddedNum = String(index + 1).padStart(maxDigits, ' ');
+      memberLine.push(`${paddedNum}.`);
       
       selectedFields.forEach(f => {
         const value = getFieldValue(member, f.key);
