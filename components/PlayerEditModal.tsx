@@ -257,18 +257,20 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           ? (orgInfo.fullMembershipPrice || '0')
           : (orgInfo.basicMembershipPrice || '0');
         
+        const memberId = String(pendingSave.id).trim();
+        
         console.log('[PlayerEditModal] ========================================');
         console.log('[PlayerEditModal] Adding membership renewal to history...');
-        console.log('[PlayerEditModal] Member ID:', pendingSave.id);
+        console.log('[PlayerEditModal] Member ID (raw):', pendingSave.id);
+        console.log('[PlayerEditModal] Member ID (trimmed):', memberId);
+        console.log('[PlayerEditModal] Member ID type:', typeof pendingSave.id);
         console.log('[PlayerEditModal] Member Name:', pendingSave.name);
         console.log('[PlayerEditModal] Membership Type:', selectedMembershipType);
         console.log('[PlayerEditModal] Amount:', amount);
-        console.log('[PlayerEditModal] Email:', pendingSave.email);
-        console.log('[PlayerEditModal] Phone:', pendingSave.phone);
         console.log('[PlayerEditModal] ========================================');
         
         const insertData = {
-          member_id: pendingSave.id,
+          member_id: memberId,
           member_name: pendingSave.name,
           membership_type: selectedMembershipType,
           amount: amount,
@@ -276,11 +278,10 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           payment_status: 'completed',
           email: pendingSave.email || '',
           phone: pendingSave.phone || '',
+          created_at: new Date().toISOString(),
         };
         
         console.log('[PlayerEditModal] Insert data:', JSON.stringify(insertData, null, 2));
-        
-        console.log('[PlayerEditModal] Attempting Supabase insert...');
         
         const { data, error, status, statusText } = await supabase.from('membership_payments')
           .insert(insertData)
@@ -304,25 +305,40 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           console.error('[PlayerEditModal] ❌ Insert returned no data - record may not have been saved');
           Alert.alert('Warning', 'The record may not have been saved. Please check the history and try again if needed.');
         } else {
-          console.log('[PlayerEditModal] ✅ SUCCESS! Membership renewal added to history');
+          console.log('[PlayerEditModal] ✅ Insert returned data');
           console.log('[PlayerEditModal] Inserted record ID:', data[0]?.id);
           console.log('[PlayerEditModal] Inserted member_id:', data[0]?.member_id);
           console.log('[PlayerEditModal] Inserted payment_status:', data[0]?.payment_status);
-          console.log('[PlayerEditModal] Number of records inserted:', data.length);
           
-          // Verify the record was actually saved by querying it back
+          // Verify the record can be found by member_id (same query as history modal)
           const { data: verifyData, error: verifyError } = await supabase
             .from('membership_payments')
             .select('*')
-            .eq('id', data[0].id)
-            .single();
+            .eq('member_id', memberId)
+            .eq('payment_status', 'completed')
+            .order('created_at', { ascending: false });
           
-          if (verifyError || !verifyData) {
-            console.error('[PlayerEditModal] ❌ Verification failed - record not found after insert');
-            console.error('[PlayerEditModal] Verify error:', verifyError);
+          console.log('[PlayerEditModal] Verification query by member_id:', memberId);
+          console.log('[PlayerEditModal] Verification result:', JSON.stringify(verifyData, null, 2));
+          console.log('[PlayerEditModal] Verification error:', verifyError ? JSON.stringify(verifyError, null, 2) : 'none');
+          
+          if (verifyError) {
+            console.error('[PlayerEditModal] ❌ Verification query failed:', verifyError);
             Alert.alert('Warning', 'Record was created but verification failed. Please check history.');
+          } else if (!verifyData || verifyData.length === 0) {
+            console.error('[PlayerEditModal] ❌ Verification failed - no records found for member_id:', memberId);
+            
+            // Debug: check what member_ids exist in the table
+            const { data: allRecords } = await supabase
+              .from('membership_payments')
+              .select('id, member_id, member_name, payment_status, created_at')
+              .order('created_at', { ascending: false })
+              .limit(10);
+            console.log('[PlayerEditModal] Recent records in table:', JSON.stringify(allRecords, null, 2));
+            
+            Alert.alert('Warning', `Record was inserted but cannot be found by member_id. Check console logs.`);
           } else {
-            console.log('[PlayerEditModal] ✅ VERIFIED! Record exists in database:', verifyData.id);
+            console.log('[PlayerEditModal] ✅ VERIFIED! Found', verifyData.length, 'record(s) for this member');
             Alert.alert('Success', 'Membership renewal has been added to history!');
           }
         }
