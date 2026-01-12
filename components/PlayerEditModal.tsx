@@ -65,7 +65,28 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
   const [showAddToHistoryPrompt, setShowAddToHistoryPrompt] = useState(false);
   const [pendingSave, setPendingSave] = useState<Member | null>(null);
   const [selectedMembershipType, setSelectedMembershipType] = useState<'full' | 'basic'>('full');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'check' | 'zelle' | 'venmo' | 'paypal'>('cash');
   const { orgInfo } = useSettings();
+
+  const PAYPAL_FEE_PERCENT = 0.029;
+  const PAYPAL_FEE_FIXED = 0.30;
+
+  const calculatePayPalAdjustedAmount = (baseAmount: string) => {
+    const amount = parseFloat(baseAmount) || 0;
+    const fee = (amount * PAYPAL_FEE_PERCENT) + PAYPAL_FEE_FIXED;
+    return (amount - fee).toFixed(2);
+  };
+
+  const getDisplayAmount = () => {
+    const baseAmount = selectedMembershipType === 'full' 
+      ? (orgInfo.fullMembershipPrice || '0')
+      : (orgInfo.basicMembershipPrice || '0');
+    
+    if (selectedPaymentMethod === 'paypal') {
+      return calculatePayPalAdjustedAmount(baseAmount);
+    }
+    return baseAmount;
+  };
 
   useEffect(() => {
     if (visible) {
@@ -112,6 +133,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       setShowAddToHistoryPrompt(false);
       setPendingSave(null);
       setSelectedMembershipType('full');
+      setSelectedPaymentMethod('cash');
     }
   }, [member, visible]);
 
@@ -253,9 +275,13 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       setShowAddToHistoryPrompt(false);
       
       if (addToHistory) {
-        const amount = selectedMembershipType === 'full' 
+        const baseAmount = selectedMembershipType === 'full' 
           ? (orgInfo.fullMembershipPrice || '0')
           : (orgInfo.basicMembershipPrice || '0');
+        
+        const amount = selectedPaymentMethod === 'paypal' 
+          ? calculatePayPalAdjustedAmount(baseAmount)
+          : baseAmount;
         
         const memberId = String(pendingSave.id).trim();
         
@@ -274,7 +300,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           member_name: pendingSave.name,
           membership_type: selectedMembershipType,
           amount: amount,
-          payment_method: 'zelle',
+          payment_method: selectedPaymentMethod,
           payment_status: 'completed',
           email: pendingSave.email || '',
           phone: pendingSave.phone || '',
@@ -357,6 +383,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       setLoading(false);
       setPendingSave(null);
       setSelectedMembershipType('full');
+      setSelectedPaymentMethod('cash');
     }
   };
 
@@ -946,7 +973,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
               You are activating this member&apos;s status. Would you like to add this renewal to their membership history records?
             </Text>
             
-            <Text style={styles.membershipTypeLabel}>Select Membership Type:</Text>
+            <Text style={styles.membershipTypeLabel}>Membership Type:</Text>
             <View style={styles.membershipTypeGroup}>
               <TouchableOpacity
                 style={[
@@ -988,6 +1015,40 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
                   ${orgInfo.basicMembershipPrice || '0'}
                 </Text>
               </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.membershipTypeLabel}>Payment Method:</Text>
+            <View style={styles.paymentMethodGroup}>
+              {(['cash', 'check', 'zelle', 'venmo', 'paypal'] as const).map((method) => (
+                <TouchableOpacity
+                  key={method}
+                  style={[
+                    styles.paymentMethodButton,
+                    selectedPaymentMethod === method && styles.paymentMethodButtonActive,
+                  ]}
+                  onPress={() => setSelectedPaymentMethod(method)}
+                >
+                  <Text style={[
+                    styles.paymentMethodButtonText,
+                    selectedPaymentMethod === method && styles.paymentMethodButtonTextActive,
+                  ]}>
+                    {method.charAt(0).toUpperCase() + method.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {selectedPaymentMethod === 'paypal' && (
+              <View style={styles.paypalFeeNote}>
+                <Text style={styles.paypalFeeNoteText}>
+                  PayPal fee (2.9% + $0.30) deducted. Net amount: ${getDisplayAmount()}
+                </Text>
+              </View>
+            )}
+            
+            <View style={styles.totalAmountContainer}>
+              <Text style={styles.totalAmountLabel}>Amount to Record:</Text>
+              <Text style={styles.totalAmountValue}>${getDisplayAmount()}</Text>
             </View>
             
             <View style={styles.promptButtons}>
@@ -1399,6 +1460,65 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   membershipTypePriceActive: {
+    color: '#4CAF50',
+  },
+  paymentMethodGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    width: '100%',
+    marginBottom: 12,
+  },
+  paymentMethodButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#f9f9f9',
+  },
+  paymentMethodButtonActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  paymentMethodButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  paymentMethodButtonTextActive: {
+    color: '#2E7D32',
+  },
+  paypalFeeNote: {
+    backgroundColor: '#FFF3E0',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+    width: '100%',
+  },
+  paypalFeeNoteText: {
+    fontSize: 12,
+    color: '#E65100',
+    textAlign: 'center',
+  },
+  totalAmountContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    width: '100%',
+  },
+  totalAmountLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#2E7D32',
+  },
+  totalAmountValue: {
+    fontSize: 18,
+    fontWeight: '700' as const,
     color: '#4CAF50',
   },
 });

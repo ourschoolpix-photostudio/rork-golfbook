@@ -38,7 +38,7 @@ interface MembershipRecord {
   id: string;
   membershipType: 'full' | 'basic';
   amount: string;
-  paymentMethod: 'paypal' | 'zelle';
+  paymentMethod: 'cash' | 'check' | 'zelle' | 'venmo' | 'paypal';
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
   createdAt: string;
 }
@@ -617,7 +617,10 @@ export function PlayerHistoricalRecordsModal({
                                 })}
                               </Text>
                               <Text style={styles.membershipPaymentMethod}>
-                                via {record.paymentMethod === 'paypal' ? 'PayPal' : 'Zelle'}
+                                via {record.paymentMethod === 'paypal' ? 'PayPal' : 
+                                    record.paymentMethod === 'zelle' ? 'Zelle' :
+                                    record.paymentMethod === 'venmo' ? 'Venmo' :
+                                    record.paymentMethod === 'check' ? 'Check' : 'Cash'}
                               </Text>
                               <Text style={styles.membershipAmount}>${parseFloat(record.amount).toFixed(2)}</Text>
                             </View>
