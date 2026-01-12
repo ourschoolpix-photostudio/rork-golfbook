@@ -58,7 +58,16 @@ export const trpcClient = trpc.createClient({
         try {
           console.log('🌐 [tRPC] Making request to:', url);
           console.log('🌐 [tRPC] Request method:', options?.method);
-          console.log('🌐 [tRPC] Request body:', options?.body ? JSON.stringify(JSON.parse(options.body as string), null, 2) : 'none');
+          try {
+            const bodyPreview = options?.body 
+              ? (typeof options.body === 'string' 
+                  ? JSON.stringify(JSON.parse(options.body), null, 2) 
+                  : JSON.stringify(options.body, null, 2))
+              : 'none';
+            console.log('🌐 [tRPC] Request body:', bodyPreview);
+          } catch {
+            console.log('🌐 [tRPC] Request body: [unable to parse]');
+          }
           
           const response = await fetch(url, {
             ...options,
