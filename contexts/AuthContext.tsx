@@ -10,6 +10,9 @@ const STORAGE_KEYS = {
   CURRENT_USER: '@golf_current_user',
 } as const;
 
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 2000;
+
 const DEFAULT_MEMBER: Member = {
   id: 'admin-bruce-pham',
   name: 'Bruce Pham',
@@ -34,10 +37,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [hasInitializedAdmin, setHasInitializedAdmin] = useState<boolean>(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [isFetchingMembers, setIsFetchingMembers] = useState<boolean>(false);
+  const [networkError, setNetworkError] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
 
   const fetchMembers = useCallback(async () => {
     try {
       setIsFetchingMembers(true);
+      setNetworkError(false);
       
       if (useLocalStorage) {
         console.log('📥 [AuthContext] Fetching members from local storage...');
@@ -112,8 +118,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('✅ [AuthContext] Successfully fetched members:', fetchedMembers.length);
       setMembers(fetchedMembers);
       return fetchedMembers;
-    } catch (error) {
-      console.error('❌ [AuthContext] Failed to fetch members:', error instanceof Error ? error.message : JSON.stringify(error));
+    } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      const isNetworkError = errorMessage.includes('Network request failed') || 
+                            errorMessage.includes('fetch failed') ||
+                            errorMessage.includes('network');
+      
+      console.error('❌ [AuthContext] Failed to fetch members:', errorMessage);
+      
+      if (isNetworkError) {
+        console.log('🌐 [AuthContext] Network error detected, setting network error flag');
+        setNetworkError(true);
+      }
+      
       console.log('📥 [AuthContext] Falling back to local storage');
       
       try {
@@ -143,6 +160,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         return;
       }
 
+      if (networkError && retryCount >= MAX_RETRY_ATTEMPTS) {
+        console.log('⚠️ [AuthContext] Skipping member creation due to network issues (max retries reached)');
+        return;
+      }
+
       if (useLocalStorage) {
         console.log('➕ [AuthContext] Creating member in local storage:', member.name);
         await localStorageService.members.create(member);
@@ -168,29 +190,66 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
       
       console.log('✅ [AuthContext] Member created successfully');
+      setRetryCount(0);
+      setNetworkError(false);
       await fetchMembers();
     } catch (error: any) {
-      if (error?.message?.includes('duplicate key') || error?.message?.includes('already exists')) {
+      const errorMessage = error?.message || JSON.stringify(error);
+      
+      if (errorMessage.includes('duplicate key') || errorMessage.includes('already exists')) {
         console.log('✅ [AuthContext] Member already exists, skipping creation');
         return;
       }
-      console.error('❌ [AuthContext] Exception creating member:', error instanceof Error ? error.message : JSON.stringify(error));
+      
+      const isNetworkError = errorMessage.includes('Network request failed') || 
+                            errorMessage.includes('fetch failed') ||
+                            errorMessage.includes('network');
+      
+      if (isNetworkError) {
+        console.log(`⚠️ [AuthContext] Network error creating member (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS})`);
+        setNetworkError(true);
+        setRetryCount(prev => prev + 1);
+        
+        if (retryCount < MAX_RETRY_ATTEMPTS - 1) {
+          console.log(`🔄 [AuthContext] Will retry in ${RETRY_DELAY_MS}ms...`);
+        } else {
+          console.log('❌ [AuthContext] Max retry attempts reached, using local storage fallback');
+          try {
+            await localStorageService.members.create(member);
+            console.log('✅ [AuthContext] Member created in local storage fallback');
+          } catch {
+            console.error('❌ [AuthContext] Local storage fallback also failed');
+          }
+        }
+      } else {
+        console.error('❌ [AuthContext] Exception creating member:', JSON.stringify({ message: errorMessage, details: errorMessage, hint: '', code: '' }));
+      }
     }
-  }, [members, fetchMembers, useLocalStorage]);
+  }, [members, fetchMembers, useLocalStorage, networkError, retryCount]);
 
   useEffect(() => {
     const shouldInitializeAdmin = 
       members && 
       members.length === 0 && 
       !hasInitializedAdmin && 
-      !isFetchingMembers;
+      !isFetchingMembers &&
+      (!networkError || retryCount < MAX_RETRY_ATTEMPTS);
 
     if (shouldInitializeAdmin) {
       console.log('AuthContext - No members found, creating default admin');
       setHasInitializedAdmin(true);
-      addMemberDirect(DEFAULT_MEMBER);
+      
+      const delay = networkError ? RETRY_DELAY_MS * retryCount : 0;
+      if (delay > 0) {
+        console.log(`⏳ [AuthContext] Waiting ${delay}ms before retry...`);
+        setTimeout(() => {
+          addMemberDirect(DEFAULT_MEMBER);
+        }, delay);
+      } else {
+        addMemberDirect(DEFAULT_MEMBER);
+      }
     }
-  }, [members, hasInitializedAdmin, isFetchingMembers, addMemberDirect]);
+  }, [members, hasInitializedAdmin, isFetchingMembers, addMemberDirect, networkError, retryCount]);
 
   useEffect(() => {
     loadCurrentUser();
