@@ -32,10 +32,21 @@ interface EventRecord {
   eventType: 'tournament' | 'social' | null;
 }
 
+interface MembershipRecord {
+  id: string;
+  membershipType: 'full' | 'basic';
+  amount: string;
+  paymentMethod: 'paypal' | 'zelle';
+  paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
+  createdAt: string;
+}
+
 interface SeasonData {
   year: number;
   events: EventRecord[];
+  membershipRecords: MembershipRecord[];
   totalEntryFees: number;
+  totalMembershipFees: number;
 }
 
 interface PlayerHistoricalRecordsModalProps {
@@ -52,6 +63,7 @@ export function PlayerHistoricalRecordsModal({
   const [loading, setLoading] = useState(false);
   const [seasons, setSeasons] = useState<SeasonData[]>([]);
   const [expandedSeasons, setExpandedSeasons] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState<'events' | 'membership'>('events');
 
   const loadHistoricalRecords = useCallback(async () => {
     if (!member) return;
@@ -205,27 +217,64 @@ export function PlayerHistoricalRecordsModal({
         });
       }
 
-      const seasonMap = new Map<number, EventRecord[]>();
+      const { data: membershipPayments, error: membershipError } = await supabase
+        .from('membership_payments')
+        .select('*')
+        .eq('member_id', member.id)
+        .eq('payment_status', 'completed')
+        .order('created_at', { ascending: false });
+
+      if (membershipError) {
+        console.error('[Historical Records] Membership payments error:', membershipError);
+      }
+
+      const membershipRecords: MembershipRecord[] = (membershipPayments || []).map((payment: any) => ({
+        id: payment.id,
+        membershipType: payment.membership_type,
+        amount: payment.amount,
+        paymentMethod: payment.payment_method,
+        paymentStatus: payment.payment_status,
+        createdAt: payment.created_at,
+      }));
+
+      const seasonMap = new Map<number, { events: EventRecord[]; memberships: MembershipRecord[] }>();
+      
       eventRecords.forEach(record => {
         const year = parseDateSafe(record.startDate).getFullYear();
         if (!seasonMap.has(year)) {
-          seasonMap.set(year, []);
+          seasonMap.set(year, { events: [], memberships: [] });
         }
-        seasonMap.get(year)!.push(record);
+        seasonMap.get(year)!.events.push(record);
+      });
+
+      membershipRecords.forEach(record => {
+        const year = new Date(record.createdAt).getFullYear();
+        if (!seasonMap.has(year)) {
+          seasonMap.set(year, { events: [], memberships: [] });
+        }
+        seasonMap.get(year)!.memberships.push(record);
       });
 
       const seasonsData: SeasonData[] = Array.from(seasonMap.entries())
-        .map(([year, events]) => {
-          const sortedEvents = events.sort((a, b) => 
+        .map(([year, data]) => {
+          const sortedEvents = data.events.sort((a, b) => 
             parseDateSafe(b.startDate).getTime() - parseDateSafe(a.startDate).getTime()
+          );
+          const sortedMemberships = data.memberships.sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           const totalEntryFees = sortedEvents.reduce((sum, event) => 
             sum + (event.entryFee || 0), 0
           );
+          const totalMembershipFees = sortedMemberships.reduce((sum, m) => 
+            sum + parseFloat(m.amount || '0'), 0
+          );
           return {
             year,
             events: sortedEvents,
+            membershipRecords: sortedMemberships,
             totalEntryFees,
+            totalMembershipFees,
           };
         })
         .sort((a, b) => b.year - a.year);
@@ -325,98 +374,185 @@ export function PlayerHistoricalRecordsModal({
             <Trophy size={48} color="#ccc" />
             <Text style={styles.emptyText}>No Historical Records</Text>
             <Text style={styles.emptySubtext}>
-              Complete events will appear here
+              Complete events and membership renewals will appear here
             </Text>
           </View>
         ) : (
+          <>
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'events' && styles.tabActive]}
+                onPress={() => setActiveTab('events')}
+              >
+                <Text style={[styles.tabText, activeTab === 'events' && styles.tabTextActive]}>Events</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'membership' && styles.tabActive]}
+                onPress={() => setActiveTab('membership')}
+              >
+                <Text style={[styles.tabText, activeTab === 'membership' && styles.tabTextActive]}>Membership</Text>
+              </TouchableOpacity>
+            </View>
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-            {seasons.map(season => (
-              <View key={season.year} style={styles.seasonContainer}>
-                <TouchableOpacity
-                  style={styles.seasonHeader}
-                  onPress={() => toggleSeason(season.year)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.seasonHeaderLeft}>
-                    <Calendar size={20} color="#fff" />
-                    <Text style={styles.seasonTitle}>Season {season.year}</Text>
-                  </View>
-                  <View style={styles.seasonStatsContainer}>
-                    <View style={styles.seasonStats}>
-                      <Text style={styles.seasonStatsText}>{season.events.length} Events</Text>
-                    </View>
-                    {season.totalEntryFees > 0 && (
-                      <View style={styles.seasonStats}>
-                        <Text style={styles.seasonStatsText}>${season.totalEntryFees.toFixed(2)}</Text>
+            {activeTab === 'events' ? (
+              seasons.filter(s => s.events.length > 0).length === 0 ? (
+                <View style={styles.emptyTabContainer}>
+                  <Trophy size={40} color="#ccc" />
+                  <Text style={styles.emptyTabText}>No event records yet</Text>
+                </View>
+              ) : (
+                seasons.filter(s => s.events.length > 0).map(season => (
+                  <View key={season.year} style={styles.seasonContainer}>
+                    <TouchableOpacity
+                      style={styles.seasonHeader}
+                      onPress={() => toggleSeason(season.year)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.seasonHeaderLeft}>
+                        <Calendar size={20} color="#fff" />
+                        <Text style={styles.seasonTitle}>Season {season.year}</Text>
                       </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-
-                {expandedSeasons.has(season.year) && (
-                  <View style={styles.eventsContainer}>
-                    {season.events.map((event, index) => (
-                      <View key={event.eventId} style={styles.eventCard}>
-                        <View style={styles.eventHeader}>
-                          <Text style={styles.eventName} numberOfLines={2}>
-                            {event.eventName}
-                          </Text>
-                          {event.placement && (
-                            <View style={styles.placementBadge}>
-                              <Text style={styles.placementText}>
-                                {event.placement}{getPlacementSuffix(event.placement)}
-                              </Text>
-                            </View>
-                          )}
+                      <View style={styles.seasonStatsContainer}>
+                        <View style={styles.seasonStats}>
+                          <Text style={styles.seasonStatsText}>{season.events.length} Events</Text>
                         </View>
-
-                        <View style={styles.eventDetails}>
-                          <Text style={styles.eventDate}>
-                            {formatDate(event.startDate, event.endDate)}
-                          </Text>
-                          {event.flight && event.eventType !== 'social' && (
-                            <Text style={styles.eventFlight}>Flight {event.flight}</Text>
-                          )}
-                          {event.entryFee !== null && event.entryFee > 0 && (
-                            <Text style={styles.eventEntryFee}>${event.entryFee.toFixed(2)}</Text>
-                          )}
-                        </View>
-
-                        {event.eventType !== 'social' && (
-                          <View style={styles.scoresContainer}>
-                          {event.scores.map(dayScore => (
-                            <View key={dayScore.day} style={styles.scoreItem}>
-                              <Text style={styles.scoreLabel}>Day {dayScore.day}</Text>
-                              <View style={styles.scoreValuesRow}>
-                                <Text style={styles.scoreValue}>
-                                  {dayScore.score !== null ? dayScore.score : '-'}
-                                </Text>
-                                {dayScore.netScore !== null && (
-                                  <Text style={styles.netScoreValue}>({dayScore.netScore})</Text>
-                                )}
-                              </View>
-                            </View>
-                          ))}
-                          {event.numberOfDays > 1 && (
-                            <View style={[styles.scoreItem, styles.totalScoreItem]}>
-                              <Text style={styles.totalScoreLabel}>Total</Text>
-                              <View style={styles.scoreValuesRow}>
-                                <Text style={styles.totalScoreValue}>{event.totalScore}</Text>
-                                {event.totalNetScore > 0 && (
-                                  <Text style={styles.totalNetScoreValue}>({event.totalNetScore})</Text>
-                                )}
-                              </View>
-                            </View>
-                          )}
+                        {season.totalEntryFees > 0 && (
+                          <View style={styles.seasonStats}>
+                            <Text style={styles.seasonStatsText}>${season.totalEntryFees.toFixed(2)}</Text>
                           </View>
                         )}
                       </View>
-                    ))}
+                    </TouchableOpacity>
+
+                    {expandedSeasons.has(season.year) && (
+                      <View style={styles.eventsContainer}>
+                        {season.events.map((event) => (
+                          <View key={event.eventId} style={styles.eventCard}>
+                            <View style={styles.eventHeader}>
+                              <Text style={styles.eventName} numberOfLines={2}>
+                                {event.eventName}
+                              </Text>
+                              {event.placement && (
+                                <View style={styles.placementBadge}>
+                                  <Text style={styles.placementText}>
+                                    {event.placement}{getPlacementSuffix(event.placement)}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+
+                            <View style={styles.eventDetails}>
+                              <Text style={styles.eventDate}>
+                                {formatDate(event.startDate, event.endDate)}
+                              </Text>
+                              {event.flight && event.eventType !== 'social' && (
+                                <Text style={styles.eventFlight}>Flight {event.flight}</Text>
+                              )}
+                              {event.entryFee !== null && event.entryFee > 0 && (
+                                <Text style={styles.eventEntryFee}>${event.entryFee.toFixed(2)}</Text>
+                              )}
+                            </View>
+
+                            {event.eventType !== 'social' && (
+                              <View style={styles.scoresContainer}>
+                              {event.scores.map(dayScore => (
+                                <View key={dayScore.day} style={styles.scoreItem}>
+                                  <Text style={styles.scoreLabel}>Day {dayScore.day}</Text>
+                                  <View style={styles.scoreValuesRow}>
+                                    <Text style={styles.scoreValue}>
+                                      {dayScore.score !== null ? dayScore.score : '-'}
+                                    </Text>
+                                    {dayScore.netScore !== null && (
+                                      <Text style={styles.netScoreValue}>({dayScore.netScore})</Text>
+                                    )}
+                                  </View>
+                                </View>
+                              ))}
+                              {event.numberOfDays > 1 && (
+                                <View style={[styles.scoreItem, styles.totalScoreItem]}>
+                                  <Text style={styles.totalScoreLabel}>Total</Text>
+                                  <View style={styles.scoreValuesRow}>
+                                    <Text style={styles.totalScoreValue}>{event.totalScore}</Text>
+                                    {event.totalNetScore > 0 && (
+                                      <Text style={styles.totalNetScoreValue}>({event.totalNetScore})</Text>
+                                    )}
+                                  </View>
+                                </View>
+                              )}
+                              </View>
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
-                )}
-              </View>
-            ))}
+                ))
+              )
+            ) : (
+              seasons.filter(s => s.membershipRecords.length > 0).length === 0 ? (
+                <View style={styles.emptyTabContainer}>
+                  <Trophy size={40} color="#ccc" />
+                  <Text style={styles.emptyTabText}>No membership records yet</Text>
+                </View>
+              ) : (
+                seasons.filter(s => s.membershipRecords.length > 0).map(season => (
+                  <View key={`membership-${season.year}`} style={styles.seasonContainer}>
+                    <TouchableOpacity
+                      style={[styles.seasonHeader, styles.membershipSeasonHeader]}
+                      onPress={() => toggleSeason(season.year)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.seasonHeaderLeft}>
+                        <Calendar size={20} color="#fff" />
+                        <Text style={styles.seasonTitle}>Year {season.year}</Text>
+                      </View>
+                      <View style={styles.seasonStatsContainer}>
+                        <View style={styles.seasonStats}>
+                          <Text style={styles.seasonStatsText}>{season.membershipRecords.length} Renewals</Text>
+                        </View>
+                        {season.totalMembershipFees > 0 && (
+                          <View style={styles.seasonStats}>
+                            <Text style={styles.seasonStatsText}>${season.totalMembershipFees.toFixed(2)}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+
+                    {expandedSeasons.has(season.year) && (
+                      <View style={styles.eventsContainer}>
+                        {season.membershipRecords.map((record) => (
+                          <View key={record.id} style={styles.membershipCard}>
+                            <View style={styles.membershipHeader}>
+                              <Text style={styles.membershipType}>
+                                {record.membershipType === 'full' ? 'Full Membership' : 'Basic Membership'}
+                              </Text>
+                              <View style={styles.membershipStatusBadge}>
+                                <Text style={styles.membershipStatusText}>Renewed</Text>
+                              </View>
+                            </View>
+                            <View style={styles.membershipDetails}>
+                              <Text style={styles.membershipDate}>
+                                {new Date(record.createdAt).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric', 
+                                  year: 'numeric' 
+                                })}
+                              </Text>
+                              <Text style={styles.membershipPaymentMethod}>
+                                via {record.paymentMethod === 'paypal' ? 'PayPal' : 'Zelle'}
+                              </Text>
+                              <Text style={styles.membershipAmount}>${parseFloat(record.amount).toFixed(2)}</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                ))
+              )
+            )}
           </ScrollView>
+          </>
         )}
       </View>
     </Modal>
@@ -656,5 +792,102 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#fff',
     opacity: 0.9,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    backgroundColor: '#e8e8e8',
+    borderRadius: 10,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  tabActive: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  tabTextActive: {
+    color: '#007AFF',
+  },
+  emptyTabContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTabText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 12,
+  },
+  membershipSeasonHeader: {
+    backgroundColor: '#4CAF50',
+  },
+  membershipCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  membershipHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  membershipType: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+  },
+  membershipStatusBadge: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  membershipStatusText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  membershipDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  membershipDate: {
+    fontSize: 13,
+    color: '#666',
+  },
+  membershipPaymentMethod: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '600' as const,
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  membershipAmount: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '700' as const,
   },
 });

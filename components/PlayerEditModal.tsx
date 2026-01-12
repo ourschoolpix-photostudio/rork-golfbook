@@ -60,11 +60,16 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
   const [loading, setLoading] = useState(false);
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(null);
   const [boardMemberRoles, setBoardMemberRoles] = useState<string[]>([]);
+  const [originalMembershipType, setOriginalMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
+  const [showAddToHistoryPrompt, setShowAddToHistoryPrompt] = useState(false);
+  const [pendingSave, setPendingSave] = useState<Member | null>(null);
 
   useEffect(() => {
     if (visible) {
       if (member) {
-        setMembershipType(member.membershipType || 'active');
+        const currentType = member.membershipType || 'active';
+        setMembershipType(currentType);
+        setOriginalMembershipType(currentType);
         setGender(member.gender || null);
         setFullName(member.fullName || member.name || '');
         setUsername(member.username || '');
@@ -99,7 +104,10 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         setRolexPoints('');
         setProfilePhotoUri(null);
         setBoardMemberRoles([]);
+        setOriginalMembershipType('active');
       }
+      setShowAddToHistoryPrompt(false);
+      setPendingSave(null);
     }
   }, [member, visible]);
 
@@ -208,6 +216,19 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       };
 
       console.log('Saving member:', savedMember.id, savedMember.name);
+      
+      const isStatusChangeToActive = 
+        currentUser?.isAdmin && 
+        originalMembershipType === 'in-active' && 
+        membershipType === 'active';
+      
+      if (isStatusChangeToActive) {
+        setPendingSave(savedMember);
+        setShowAddToHistoryPrompt(true);
+        setLoading(false);
+        return;
+      }
+      
       await onSave(savedMember);
       console.log('Member saved successfully');
       onClose();
@@ -217,6 +238,40 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddToHistoryConfirm = async (addToHistory: boolean) => {
+    if (!pendingSave) return;
+    
+    try {
+      setLoading(true);
+      setShowAddToHistoryPrompt(false);
+      
+      if (addToHistory) {
+        console.log('[PlayerEditModal] Adding membership activation to history...');
+        await supabase.from('membership_payments').insert({
+          member_id: pendingSave.id,
+          member_name: pendingSave.name,
+          membership_type: 'full',
+          amount: '0',
+          payment_method: 'zelle',
+          payment_status: 'completed',
+          email: pendingSave.email || '',
+          phone: pendingSave.phone || '',
+        });
+        console.log('[PlayerEditModal] Membership activation added to history');
+      }
+      
+      await onSave(pendingSave);
+      console.log('Member saved successfully');
+      onClose();
+    } catch (error) {
+      console.error('Error saving member with history:', error);
+      Alert.alert('Error', 'Failed to save member. Please try again.');
+    } finally {
+      setLoading(false);
+      setPendingSave(null);
     }
   };
 
@@ -794,6 +849,36 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <Modal visible={showAddToHistoryPrompt} transparent animationType="fade">
+        <View style={styles.promptOverlay}>
+          <View style={styles.promptContainer}>
+            <View style={styles.promptIconContainer}>
+              <Ionicons name="document-text" size={32} color="#4CAF50" />
+            </View>
+            <Text style={styles.promptTitle}>Add to Member History?</Text>
+            <Text style={styles.promptMessage}>
+              You are activating this member&apos;s status. Would you like to add this activation to their membership history records?
+            </Text>
+            <View style={styles.promptButtons}>
+              <TouchableOpacity
+                style={[styles.promptButton, styles.promptButtonSecondary]}
+                onPress={() => handleAddToHistoryConfirm(false)}
+                disabled={loading}
+              >
+                <Text style={styles.promptButtonSecondaryText}>No, Just Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.promptButton, styles.promptButtonPrimary]}
+                onPress={() => handleAddToHistoryConfirm(true)}
+                disabled={loading}
+              >
+                <Text style={styles.promptButtonPrimaryText}>Yes, Add to History</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -1076,5 +1161,70 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#856404',
     lineHeight: 18,
+  },
+  promptOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  promptContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+  },
+  promptIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#E8F5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  promptTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  promptMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  promptButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  promptButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  promptButtonPrimary: {
+    backgroundColor: '#4CAF50',
+  },
+  promptButtonSecondary: {
+    backgroundColor: '#f0f0f0',
+  },
+  promptButtonPrimaryText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  promptButtonSecondaryText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#666',
   },
 });
