@@ -292,13 +292,15 @@ export default function MembersScreen() {
 
           <View style={styles.filterTitleCard}>
             <Text style={styles.filterTitleText}>{getFilterTitle()}</Text>
-            <TouchableOpacity
-              style={styles.listingButton}
-              onPress={() => setShowListingModal(true)}
-            >
-              <Ionicons name="list-outline" size={16} color="#fff" />
-              <Text style={styles.listingButtonText}>Export</Text>
-            </TouchableOpacity>
+            {authUser?.isAdmin && (
+              <TouchableOpacity
+                style={styles.listingButton}
+                onPress={() => setShowListingModal(true)}
+              >
+                <Ionicons name="list-outline" size={16} color="#fff" />
+                <Text style={styles.listingButtonText}>Export</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <FlatList
