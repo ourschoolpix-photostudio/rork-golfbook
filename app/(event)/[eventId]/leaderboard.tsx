@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { Trophy, RefreshCw } from 'lucide-react-native';
+import { Award, RefreshCw } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { EventFooter } from '@/components/EventFooter';
 import { useQuery } from '@tanstack/react-query';
@@ -321,7 +321,7 @@ export default function LeaderboardScreen() {
           ) : selectedDay === 'rolex' ? (
             leaderboard.rolex.length === 0 ? (
               <View style={styles.emptyState}>
-                <Trophy size={64} color="#999" />
+                <Award size={64} color="#999" />
                 <Text style={styles.emptyTitle}>No Scores Yet</Text>
                 <Text style={styles.emptyText}>
                   Scores will appear here in real-time as they are submitted during the tournament.
@@ -344,11 +344,11 @@ export default function LeaderboardScreen() {
                     (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
                   ]}>
                     {entry.position === 1 ? (
-                      <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
+                      <Award size={56} color="#FFD700" strokeWidth={2.5} />
                     ) : entry.position === 2 ? (
-                      <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
+                      <Award size={48} color="#C0C0C0" strokeWidth={2.5} />
                     ) : entry.position === 3 ? (
-                      <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
+                      <Award size={48} color="#CD7F32" strokeWidth={2.5} />
                     ) : (
                       <Text style={styles.positionText}>#{entry.position}</Text>
                     )}
@@ -373,7 +373,7 @@ export default function LeaderboardScreen() {
             )
           ) : leaderboard.flightA.length === 0 && leaderboard.flightB.length === 0 ? (
             <View style={styles.emptyState}>
-              <Trophy size={64} color="#999" />
+              <Award size={64} color="#999" />
               <Text style={styles.emptyTitle}>No Scores Yet</Text>
               <Text style={styles.emptyText}>
                 Scores will appear here as they are submitted during the tournament.
@@ -402,11 +402,11 @@ export default function LeaderboardScreen() {
                         (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
                       ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
+                          <Award size={56} color="#FFD700" strokeWidth={2.5} />
                         ) : entry.position === 2 ? (
-                          <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
+                          <Award size={48} color="#C0C0C0" strokeWidth={2.5} />
                         ) : entry.position === 3 ? (
-                          <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
+                          <Award size={48} color="#CD7F32" strokeWidth={2.5} />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
@@ -455,11 +455,11 @@ export default function LeaderboardScreen() {
                         (entry.position === 1 || entry.position === 2 || entry.position === 3) && { backgroundColor: 'transparent' },
                       ]}>
                         {entry.position === 1 ? (
-                          <Trophy size={56} color="#FFD700" strokeWidth={2.5} />
+                          <Award size={56} color="#FFD700" strokeWidth={2.5} />
                         ) : entry.position === 2 ? (
-                          <Trophy size={48} color="#C0C0C0" strokeWidth={2.5} />
+                          <Award size={48} color="#C0C0C0" strokeWidth={2.5} />
                         ) : entry.position === 3 ? (
-                          <Trophy size={48} color="#CD7F32" strokeWidth={2.5} />
+                          <Award size={48} color="#CD7F32" strokeWidth={2.5} />
                         ) : (
                           <Text style={styles.positionText}>#{entry.position}</Text>
                         )}
