@@ -373,11 +373,15 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               style={[styles.registerButton, isAlreadyRegistered && styles.registeredButton]}
               onPress={() => {
                 if (!isAlreadyRegistered && event) {
-                  onClose();
-                  router.push({
-                    pathname: '/(event)/[eventId]/registration',
-                    params: { eventId: event.id, openPayment: 'true' }
-                  });
+                  if (onRegister) {
+                    onRegister();
+                  } else {
+                    onClose();
+                    router.push({
+                      pathname: '/(event)/[eventId]/registration',
+                      params: { eventId: event.id, openPayment: 'true' }
+                    });
+                  }
                 }
               }}
               disabled={!!isAlreadyRegistered}
