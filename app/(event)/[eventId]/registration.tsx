@@ -218,9 +218,6 @@ export default function EventRegistrationScreen() {
       
       const eventResult = await eventQuery.refetch();
       const registrationsResult = await registrationsQuery.refetch();
-      
-      const newRegs = registrationsResult.data || [];
-      Alert.alert('Success', `Refreshed! Found ${newRegs.length} registrations.`);
     } catch (error) {
       console.error('[registration] ❌ Error during manual refresh:', error);
       Alert.alert('Error', 'Failed to refresh data. Please try again.');
