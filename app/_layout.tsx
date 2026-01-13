@@ -60,6 +60,7 @@ function RootLayoutNav() {
   const { isLoading: authLoading, refreshMembers } = useAuth();
   const [isHydrated, setIsHydrated] = useState(Platform.OS === 'web');
   const [timeoutReached, setTimeoutReached] = useState(false);
+  const [splashHidden, setSplashHidden] = useState(false);
 
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
@@ -258,12 +259,18 @@ function RootLayoutNav() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && Platform.OS !== 'web' && isHydrated) {
-      SplashScreen.hideAsync().catch((error) => {
-        console.log('[RootLayoutNav] SplashScreen.hideAsync error (safe to ignore):', error.message);
-      });
+    if (!authLoading && Platform.OS !== 'web' && isHydrated && !splashHidden) {
+      SplashScreen.hideAsync()
+        .then(() => {
+          setSplashHidden(true);
+          console.log('[RootLayoutNav] Splash screen hidden successfully');
+        })
+        .catch((error) => {
+          setSplashHidden(true);
+          console.log('[RootLayoutNav] SplashScreen.hideAsync error (safe to ignore):', error.message);
+        });
     }
-  }, [authLoading, isHydrated]);
+  }, [authLoading, isHydrated, splashHidden]);
 
   if (!isHydrated || (authLoading && !timeoutReached)) {
     return <View style={styles.loading} />;
