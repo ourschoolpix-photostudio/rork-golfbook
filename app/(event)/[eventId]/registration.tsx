@@ -773,9 +773,12 @@ export default function EventRegistrationScreen() {
 
   const handlePlayerCardPress = async (player: Member) => {
     if (canViewRegistration(currentUser)) {
+      await registrationsQuery.refetch();
+      
+      const freshFromMembers = allMembers.find(m => m.id === player.id);
       const freshFromSelected = selectedPlayers.find(m => m.id === player.id);
-      const freshFromMembers = members.find(m => m.id === player.id);
-      const freshPlayer = freshFromSelected || freshFromMembers || player;
+      const freshPlayer = freshFromMembers || freshFromSelected || player;
+      
       console.log('[registration] Opening modal for player:', freshPlayer.name, 'membershipType:', freshPlayer.membershipType);
       setSelectedPlayerForEvent(freshPlayer);
       setEventPlayerModalVisible(true);
@@ -794,21 +797,12 @@ export default function EventRegistrationScreen() {
         },
       });
       
-      const updatedMembers = members.map((m) =>
-        m.id === updatedPlayer.id ? { ...updatedPlayer } : m
-      );
-      setMembers(updatedMembers);
-
-      const updatedSelectedPlayers = selectedPlayers.map((p) =>
-        p.id === updatedPlayer.id ? { ...updatedPlayer } : p
-      );
-      setSelectedPlayers(updatedSelectedPlayers);
-
       let playerReg = registrations[updatedPlayer.name];
       
       if (!playerReg) {
-        const backendRegs = await registrationsQuery.refetch();
-        playerReg = backendRegs.data?.find((r: any) => r.memberId === updatedPlayer.id);
+        await registrationsQuery.refetch();
+        const backendRegs = registrationsQuery.data || [];
+        playerReg = backendRegs.find((r: any) => r.memberId === updatedPlayer.id);
       }
       
       if (playerReg) {
@@ -824,12 +818,19 @@ export default function EventRegistrationScreen() {
       } else {
         console.error('[registration] ❌ Registration not found for player:', updatedPlayer.name, 'memberId:', updatedPlayer.id);
         Alert.alert('Error', 'Registration not found. Please try removing and re-adding the player.');
+        throw new Error('Registration not found');
       }
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      await eventQuery.refetch();
+      await registrationsQuery.refetch();
       
       console.log('[registration] ✓ Player changes saved successfully');
     } catch (error) {
       console.error('[registration] ❌ Error updating player:', error);
       Alert.alert('Error', `Failed to update player: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
     }
   };
 
@@ -1700,7 +1701,8 @@ export default function EventRegistrationScreen() {
           selectedPlayerForEvent ? calculateTournamentFlight(selectedPlayerForEvent, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, selectedPlayerForEvent ? registrations[selectedPlayerForEvent.name] : undefined) : '—'
         }
         event={event}
-        onClose={() => {
+        onClose={async () => {
+          await registrationsQuery.refetch();
           setEventPlayerModalVisible(false);
           setSelectedPlayerForEvent(null);
         }}
