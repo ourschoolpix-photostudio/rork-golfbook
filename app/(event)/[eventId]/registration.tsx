@@ -354,9 +354,24 @@ export default function EventRegistrationScreen() {
     loadCourseHandicapSetting();
   }, [eventId]);
 
-  const [hasTriggeredAutoRegister, setHasTriggeredAutoRegister] = useState(false);
+  const autoRegisterProcessedRef = React.useRef(false);
 
   useEffect(() => {
+    // Reset the ref when eventId changes (new navigation)
+    autoRegisterProcessedRef.current = false;
+  }, [eventId]);
+
+  useEffect(() => {
+    console.log('[registration] Auto-register effect check:', {
+      autoRegister,
+      hasEvent: !!event,
+      hasCurrentUser: !!currentUser,
+      eventQueryLoading: eventQuery.isLoading,
+      registrationsQueryLoading: registrationsQuery.isLoading,
+      registrationsDataDefined: registrationsQuery.data !== undefined,
+      alreadyProcessed: autoRegisterProcessedRef.current,
+    });
+
     if (
       autoRegister === 'true' && 
       event && 
@@ -364,8 +379,11 @@ export default function EventRegistrationScreen() {
       !eventQuery.isLoading && 
       !registrationsQuery.isLoading &&
       registrationsQuery.data !== undefined &&
-      !hasTriggeredAutoRegister
+      !autoRegisterProcessedRef.current
     ) {
+      // Mark as processed immediately to prevent re-triggering
+      autoRegisterProcessedRef.current = true;
+      
       // Check directly against registration data, not selectedPlayers (which may not be populated yet)
       const regs = registrationsQuery.data || [];
       const isAlreadyRegistered = regs.some((r: any) => r.memberId === currentUser.id);
@@ -376,24 +394,23 @@ export default function EventRegistrationScreen() {
         currentUserId: currentUser?.id,
         registrationsCount: regs.length,
         isAlreadyRegistered,
-        hasTriggeredAutoRegister,
       });
       
       if (!isAlreadyRegistered) {
         console.log('[registration] Auto-triggering payment modal from autoRegister param');
-        setHasTriggeredAutoRegister(true);
-        // Use a slightly longer timeout to ensure UI is fully rendered
-        const timer = setTimeout(() => {
+        // Clear the autoRegister param to prevent re-triggering on re-render
+        router.setParams({ autoRegister: undefined });
+        // Open modal after a brief delay to ensure UI is ready
+        setTimeout(() => {
           console.log('[registration] Opening payment method modal now');
           setPaymentMethodModalVisible(true);
-        }, 800);
-        return () => clearTimeout(timer);
+        }, 300);
       } else {
         console.log('[registration] User already registered, not auto-triggering');
-        setHasTriggeredAutoRegister(true);
+        router.setParams({ autoRegister: undefined });
       }
     }
-  }, [autoRegister, event, currentUser, eventQuery.isLoading, registrationsQuery.isLoading, registrationsQuery.data, hasTriggeredAutoRegister]);
+  }, [autoRegister, event, currentUser, eventQuery.isLoading, registrationsQuery.isLoading, registrationsQuery.data, router]);
 
   const handleHomePress = () => {
     router.push('/(tabs)');
