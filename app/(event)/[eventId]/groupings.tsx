@@ -219,11 +219,16 @@ export default function GroupingsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      console.log('[groupings] 🔄 Screen focused - triggering score refresh');
-      if (event) {
-        triggerGroupRefresh();
+      console.log('[groupings] 🔄 Screen focused - refreshing all data');
+      if (id) {
+        refetchGroupings();
+        refetchScores();
+        refetchRegistrations();
+        if (event) {
+          triggerGroupRefresh();
+        }
       }
-    }, [event])
+    }, [id, event, refetchGroupings, refetchScores, refetchRegistrations])
   );
 
   const enrichSlotsWithScores = useCallback((slots: (Member | null)[]) => {
