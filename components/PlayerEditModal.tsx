@@ -373,7 +373,6 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
             Alert.alert('Warning', `Record was inserted but cannot be found by member_id. Check console logs.`);
           } else {
             console.log('[PlayerEditModal] ✅ VERIFIED! Found', verifyData.length, 'record(s) for this member');
-            Alert.alert('Success', 'Membership renewal has been added to history!');
           }
         }
       } else {
