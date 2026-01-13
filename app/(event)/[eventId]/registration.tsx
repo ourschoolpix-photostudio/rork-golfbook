@@ -148,6 +148,9 @@ export default function EventRegistrationScreen() {
   const updateMemberMutation = useMutation({
     mutationFn: ({ memberId, updates }: { memberId: string; updates: any }) => 
       supabaseService.members.update(memberId, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+    },
   });
 
   const deleteMemberMutation = useMutation({
@@ -781,6 +784,7 @@ export default function EventRegistrationScreen() {
 
   const handleSavePlayerChanges = async (updatedPlayer: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number, guestNames?: string, isSponsor?: boolean) => {
     try {
+      console.log('[registration] Saving player changes:', updatedPlayer.name, 'membershipType:', updatedPlayer.membershipType);
       
       await updateMemberMutation.mutateAsync({
         memberId: updatedPlayer.id,
@@ -789,13 +793,14 @@ export default function EventRegistrationScreen() {
           membershipType: updatedPlayer.membershipType,
         },
       });
+      
       const updatedMembers = members.map((m) =>
-        m.id === updatedPlayer.id ? updatedPlayer : m
+        m.id === updatedPlayer.id ? { ...updatedPlayer } : m
       );
       setMembers(updatedMembers);
 
       const updatedSelectedPlayers = selectedPlayers.map((p) =>
-        p.id === updatedPlayer.id ? updatedPlayer : p
+        p.id === updatedPlayer.id ? { ...updatedPlayer } : p
       );
       setSelectedPlayers(updatedSelectedPlayers);
 
@@ -816,12 +821,12 @@ export default function EventRegistrationScreen() {
             isSponsor,
           },
         });
-        
-        await registrationsQuery.refetch();
       } else {
         console.error('[registration] ❌ Registration not found for player:', updatedPlayer.name, 'memberId:', updatedPlayer.id);
         Alert.alert('Error', 'Registration not found. Please try removing and re-adding the player.');
       }
+      
+      console.log('[registration] ✓ Player changes saved successfully');
     } catch (error) {
       console.error('[registration] ❌ Error updating player:', error);
       Alert.alert('Error', `Failed to update player: ${error instanceof Error ? error.message : 'Unknown error'}`);
