@@ -91,6 +91,7 @@ export default function EventRegistrationScreen() {
   const [generatedTextContent, setGeneratedTextContent] = useState<string>('');
   const [includeHandicapForPDF, setIncludeHandicapForPDF] = useState<boolean>(false);
   const [generatingInvoiceForPlayer, setGeneratingInvoiceForPlayer] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -207,6 +208,23 @@ export default function EventRegistrationScreen() {
 
   const refreshEventData = async () => {
     await eventQuery.refetch();
+  };
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      console.log('[registration] 🔄 Manual refresh triggered');
+      await Promise.all([
+        eventQuery.refetch(),
+        registrationsQuery.refetch(),
+      ]);
+      console.log('[registration] ✅ Manual refresh completed');
+    } catch (error) {
+      console.error('[registration] ❌ Error during manual refresh:', error);
+      Alert.alert('Error', 'Failed to refresh data. Please try again.');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   useFocusEffect(
@@ -1324,6 +1342,18 @@ export default function EventRegistrationScreen() {
     <>
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={handleManualRefresh}
+          disabled={isRefreshing}
+        >
+          <Ionicons 
+            name={isRefreshing ? "hourglass-outline" : "refresh-outline"} 
+            size={16} 
+            color="#fff" 
+          />
+          <Text style={styles.refreshButtonText}>Refresh Data</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>REGISTRATION</Text>
         {currentUser?.isAdmin && event && selectedPlayers.length > 0 && (
           <TouchableOpacity
@@ -2290,6 +2320,24 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#fff',
     textAlign: 'center',
+  },
+  refreshButton: {
+    position: 'absolute' as const,
+    left: 12,
+    top: '50%' as const,
+    transform: [{ translateY: -12 }],
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  refreshButtonText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#fff',
   },
   pdfButton: {
     position: 'absolute' as const,
