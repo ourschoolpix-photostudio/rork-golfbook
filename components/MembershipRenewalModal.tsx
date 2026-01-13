@@ -56,11 +56,11 @@ export function MembershipRenewalModal({
     setSelectedPayment(method);
     
     if (method === 'zelle') {
+      console.log('[MembershipRenewalModal] Opening Zelle modal');
       setShowZelleModal(true);
-      onClose();
     } else if (method === 'paypal') {
+      console.log('[MembershipRenewalModal] Opening PayPal modal');
       setShowPayPalModal(true);
-      onClose();
     }
   };
 
