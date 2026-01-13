@@ -57,7 +57,7 @@ import {
 export default function EventRegistrationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { eventId, openPayment } = useLocalSearchParams<{ eventId: string; openPayment?: string }>();
+  const { eventId, autoRegister } = useLocalSearchParams<{ eventId: string; autoRegister?: string }>();
   const { currentUser, members: allMembers, refreshMembers } = useAuth();
   const { addNotification } = useNotifications();
   const { orgInfo } = useSettings();
@@ -354,27 +354,28 @@ export default function EventRegistrationScreen() {
     loadCourseHandicapSetting();
   }, [eventId]);
 
-  const [hasOpenedPaymentModal, setHasOpenedPaymentModal] = useState(false);
+  const [hasTriggeredAutoRegister, setHasTriggeredAutoRegister] = useState(false);
 
   useEffect(() => {
     if (
-      openPayment === 'true' && 
+      autoRegister === 'true' && 
       event && 
+      currentUser &&
       !eventQuery.isLoading && 
       !registrationsQuery.isLoading &&
-      !hasOpenedPaymentModal
+      !hasTriggeredAutoRegister
     ) {
       const isRegistered = selectedPlayers.some((p) => p.id === currentUser?.id);
       if (!isRegistered) {
-        console.log('[registration] Opening payment modal from openPayment param');
-        setHasOpenedPaymentModal(true);
+        console.log('[registration] Auto-triggering register button from autoRegister param');
+        setHasTriggeredAutoRegister(true);
         const timer = setTimeout(() => {
           setPaymentMethodModalVisible(true);
-        }, 300);
+        }, 500);
         return () => clearTimeout(timer);
       }
     }
-  }, [openPayment, event, eventQuery.isLoading, registrationsQuery.isLoading, selectedPlayers, currentUser?.id, hasOpenedPaymentModal]);
+  }, [autoRegister, event, currentUser, eventQuery.isLoading, registrationsQuery.isLoading, selectedPlayers, hasTriggeredAutoRegister]);
 
   const handleHomePress = () => {
     router.push('/(tabs)');

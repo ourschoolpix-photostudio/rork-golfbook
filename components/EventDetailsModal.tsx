@@ -379,7 +379,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                     onClose();
                     router.push({
                       pathname: '/(event)/[eventId]/registration',
-                      params: { eventId: event.id, openPayment: 'true' }
+                      params: { eventId: event.id, autoRegister: 'true' }
                     });
                   }
                 }
