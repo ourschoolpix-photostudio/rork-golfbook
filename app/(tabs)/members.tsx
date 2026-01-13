@@ -431,13 +431,18 @@ export default function MembersScreen() {
             <TouchableOpacity
               onPress={handleManualRefresh}
               disabled={isRefreshing}
-              style={{ marginRight: 16, opacity: isRefreshing ? 0.5 : 1 }}
+              style={{
+                marginRight: 16,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                backgroundColor: '#007AFF',
+                borderRadius: 6,
+                opacity: isRefreshing ? 0.5 : 1,
+              }}
             >
-              <Ionicons
-                name={isRefreshing ? 'refresh-circle' : 'refresh'}
-                size={24}
-                color="#007AFF"
-              />
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
+                Refresh Data
+              </Text>
             </TouchableOpacity>
           ),
         }}
