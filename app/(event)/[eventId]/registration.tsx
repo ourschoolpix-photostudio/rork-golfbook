@@ -354,14 +354,27 @@ export default function EventRegistrationScreen() {
     loadCourseHandicapSetting();
   }, [eventId]);
 
+  const [hasOpenedPaymentModal, setHasOpenedPaymentModal] = useState(false);
+
   useEffect(() => {
-    if (openPayment === 'true' && event && !isCurrentUserRegistered() && !currentUser?.isAdmin) {
-      const timer = setTimeout(() => {
-        setPaymentMethodModalVisible(true);
-      }, 500);
-      return () => clearTimeout(timer);
+    if (
+      openPayment === 'true' && 
+      event && 
+      !eventQuery.isLoading && 
+      !registrationsQuery.isLoading &&
+      !hasOpenedPaymentModal
+    ) {
+      const isRegistered = selectedPlayers.some((p) => p.id === currentUser?.id);
+      if (!isRegistered) {
+        console.log('[registration] Opening payment modal from openPayment param');
+        setHasOpenedPaymentModal(true);
+        const timer = setTimeout(() => {
+          setPaymentMethodModalVisible(true);
+        }, 300);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [openPayment, event, currentUser?.isAdmin]);
+  }, [openPayment, event, eventQuery.isLoading, registrationsQuery.isLoading, selectedPlayers, currentUser?.id, hasOpenedPaymentModal]);
 
   const handleHomePress = () => {
     router.push('/(tabs)');
