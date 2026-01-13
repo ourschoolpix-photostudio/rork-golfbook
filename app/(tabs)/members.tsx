@@ -807,6 +807,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 5,
     backgroundColor: '#007AFF',
+    minWidth: 75,
+    alignItems: 'center',
   },
   genderFilterButtonActive: {
     backgroundColor: '#003D99',
