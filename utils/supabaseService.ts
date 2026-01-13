@@ -518,10 +518,15 @@ export const supabaseService = {
 
   registrations: {
     getAll: async (eventId: string) => {
+      console.log('[supabaseService.registrations.getAll] Fetching registrations for eventId:', eventId, 'type:', typeof eventId);
+      
       const { data, error } = await supabase
         .from('event_registrations')
         .select('*, members(*)')
         .eq('event_id', eventId);
+      
+      console.log('[supabaseService.registrations.getAll] Raw response:', JSON.stringify({ data, error }, null, 2));
+      console.log('[supabaseService.registrations.getAll] Query result:', { dataCount: data?.length || 0, error });
       
       if (error) throw error;
       
