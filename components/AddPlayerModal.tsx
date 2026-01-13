@@ -11,11 +11,13 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { X } from 'lucide-react-native';
+import { X, FileText } from 'lucide-react-native';
 import { ProfilePhotoPicker } from './ProfilePhotoPicker';
 import { Member } from '@/types';
 import { formatPhoneNumber, getPhoneDigits } from '@/utils/phoneFormatter';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AddPlayerModalProps {
   visible: boolean;
@@ -37,6 +39,7 @@ const BOARD_MEMBER_ROLES = [
 
 export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPlayerModalProps) {
   const { currentUser } = useAuth();
+  const { orgInfo } = useSettings();
   const isEditMode = !!editingMember;
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
   const [membershipLevel, setMembershipLevel] = useState<'full' | 'basic'>('full');
@@ -56,6 +59,31 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
   const [rolexPoints, setRolexPoints] = useState<string>('');
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(null);
   const [boardMemberRoles, setBoardMemberRoles] = useState<string[]>([]);
+  const [showAddToHistoryPrompt, setShowAddToHistoryPrompt] = useState(false);
+  const [pendingSave, setPendingSave] = useState<Partial<Member> | null>(null);
+  const [selectedMembershipType, setSelectedMembershipType] = useState<'full' | 'basic'>('full');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'check' | 'zelle' | 'venmo' | 'paypal'>('cash');
+  const [loading, setLoading] = useState(false);
+
+  const PAYPAL_FEE_PERCENT = 0.03;
+  const PAYPAL_FEE_FIXED = 0.30;
+
+  const calculatePayPalAdjustedAmount = (baseAmount: string) => {
+    const amount = parseFloat(baseAmount) || 0;
+    const fee = (amount * PAYPAL_FEE_PERCENT) + PAYPAL_FEE_FIXED;
+    return (amount + fee).toFixed(2);
+  };
+
+  const getDisplayAmount = () => {
+    const baseAmount = selectedMembershipType === 'full' 
+      ? (orgInfo.fullMembershipPrice || '0')
+      : (orgInfo.basicMembershipPrice || '0');
+    
+    if (selectedPaymentMethod === 'paypal') {
+      return calculatePayPalAdjustedAmount(baseAmount);
+    }
+    return baseAmount;
+  };
 
   useEffect(() => {
     if (editingMember && visible) {
@@ -80,6 +108,10 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
     } else if (!visible) {
       resetForm();
     }
+    setShowAddToHistoryPrompt(false);
+    setPendingSave(null);
+    setSelectedMembershipType('full');
+    setSelectedPaymentMethod('cash');
   }, [editingMember, visible]);
 
   const handleAddPlayer = async () => {
@@ -117,9 +149,89 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
       boardMemberRoles: boardMemberRoles.length > 0 ? boardMemberRoles : undefined,
     };
 
+    // For new players with active status, show membership history prompt
+    if (!isEditMode && membershipType === 'active' && currentUser?.isAdmin) {
+      setPendingSave(player);
+      setSelectedMembershipType(membershipLevel);
+      setShowAddToHistoryPrompt(true);
+      return;
+    }
+
     onAdd(player);
     if (!isEditMode) {
       resetForm();
+    }
+  };
+
+  const handleAddToHistoryConfirm = async (addToHistory: boolean) => {
+    if (!pendingSave) return;
+    
+    try {
+      setLoading(true);
+      setShowAddToHistoryPrompt(false);
+      
+      if (addToHistory) {
+        const baseAmount = selectedMembershipType === 'full' 
+          ? (orgInfo.fullMembershipPrice || '0')
+          : (orgInfo.basicMembershipPrice || '0');
+        
+        const amount = selectedPaymentMethod === 'paypal' 
+          ? calculatePayPalAdjustedAmount(baseAmount)
+          : baseAmount;
+        
+        // Update pendingSave to include the membershipLevel
+        pendingSave.membershipLevel = selectedMembershipType;
+        
+        // Generate a temporary ID for the new member (will be replaced by actual ID after save)
+        const tempMemberId = `new_${Date.now()}`;
+        
+        console.log('[AddPlayerModal] ========================================');
+        console.log('[AddPlayerModal] Adding membership record for new player...');
+        console.log('[AddPlayerModal] Member Name:', pendingSave.name);
+        console.log('[AddPlayerModal] Membership Type:', selectedMembershipType);
+        console.log('[AddPlayerModal] Amount:', amount);
+        console.log('[AddPlayerModal] Payment Method:', selectedPaymentMethod);
+        console.log('[AddPlayerModal] ========================================');
+        
+        const insertData = {
+          member_id: tempMemberId,
+          member_name: pendingSave.name || pendingSave.fullName || pendingSave.username,
+          membership_type: selectedMembershipType,
+          amount: amount,
+          payment_method: selectedPaymentMethod,
+          payment_status: 'completed',
+          email: pendingSave.email || '',
+          phone: pendingSave.phone || '',
+          created_at: new Date().toISOString(),
+        };
+        
+        console.log('[AddPlayerModal] Insert data:', JSON.stringify(insertData, null, 2));
+        
+        // Insert the membership payment record
+        const { data, error } = await supabase.from('membership_payments')
+          .insert(insertData)
+          .select();
+        
+        if (error) {
+          console.error('[AddPlayerModal] Error inserting membership payment:', error);
+          Alert.alert('Warning', `Player will be saved but membership history failed: ${error.message}`);
+        } else {
+          console.log('[AddPlayerModal] ✅ Membership payment record created:', data);
+        }
+      }
+      
+      onAdd(pendingSave);
+      console.log('[AddPlayerModal] Player data sent for creation');
+      resetForm();
+    } catch (error) {
+      console.error('[AddPlayerModal] Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save player. Please try again.';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+      setPendingSave(null);
+      setSelectedMembershipType('full');
+      setSelectedPaymentMethod('cash');
     }
   };
 
@@ -142,6 +254,10 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
     setRolexPoints('');
     setProfilePhotoUri(null);
     setBoardMemberRoles([]);
+    setShowAddToHistoryPrompt(false);
+    setPendingSave(null);
+    setSelectedMembershipType('full');
+    setSelectedPaymentMethod('cash');
   };
 
   return (
@@ -514,6 +630,115 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+
+      <Modal visible={showAddToHistoryPrompt} transparent animationType="fade">
+        <View style={styles.promptOverlay}>
+          <View style={styles.promptContainer}>
+            <View style={styles.promptIconContainer}>
+              <FileText size={32} color="#4CAF50" />
+            </View>
+            <Text style={styles.promptTitle}>Add to Member History?</Text>
+            <Text style={styles.promptMessage}>
+              You are adding a new active member. Would you like to add this membership to their historical records?
+            </Text>
+            
+            <Text style={styles.membershipTypeLabel}>Membership Type:</Text>
+            <View style={styles.membershipTypeGroup}>
+              <TouchableOpacity
+                style={[
+                  styles.membershipTypeButton,
+                  selectedMembershipType === 'full' && styles.membershipTypeButtonActive,
+                ]}
+                onPress={() => setSelectedMembershipType('full')}
+              >
+                <Text style={[
+                  styles.membershipTypeButtonText,
+                  selectedMembershipType === 'full' && styles.membershipTypeButtonTextActive,
+                ]}>
+                  Full Member
+                </Text>
+                <Text style={[
+                  styles.membershipTypePrice,
+                  selectedMembershipType === 'full' && styles.membershipTypePriceActive,
+                ]}>
+                  ${orgInfo.fullMembershipPrice || '0'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.membershipTypeButton,
+                  selectedMembershipType === 'basic' && styles.membershipTypeButtonActive,
+                ]}
+                onPress={() => setSelectedMembershipType('basic')}
+              >
+                <Text style={[
+                  styles.membershipTypeButtonText,
+                  selectedMembershipType === 'basic' && styles.membershipTypeButtonTextActive,
+                ]}>
+                  Basic Member
+                </Text>
+                <Text style={[
+                  styles.membershipTypePrice,
+                  selectedMembershipType === 'basic' && styles.membershipTypePriceActive,
+                ]}>
+                  ${orgInfo.basicMembershipPrice || '0'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.membershipTypeLabel}>Payment Method:</Text>
+            <View style={styles.paymentMethodGroup}>
+              {(['cash', 'check', 'zelle', 'venmo', 'paypal'] as const).map((method) => (
+                <TouchableOpacity
+                  key={method}
+                  style={[
+                    styles.paymentMethodButton,
+                    selectedPaymentMethod === method && styles.paymentMethodButtonActive,
+                  ]}
+                  onPress={() => setSelectedPaymentMethod(method)}
+                >
+                  <Text style={[
+                    styles.paymentMethodButtonText,
+                    selectedPaymentMethod === method && styles.paymentMethodButtonTextActive,
+                  ]}>
+                    {method.charAt(0).toUpperCase() + method.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {selectedPaymentMethod === 'paypal' && (
+              <View style={styles.paypalFeeNote}>
+                <Text style={styles.paypalFeeNoteText}>
+                  PayPal fee (3% + $0.30) added. Total charged: ${getDisplayAmount()}
+                </Text>
+              </View>
+            )}
+            
+            <View style={styles.totalAmountContainer}>
+              <Text style={styles.totalAmountLabel}>Amount to Record:</Text>
+              <Text style={styles.totalAmountValue}>${getDisplayAmount()}</Text>
+            </View>
+            
+            <View style={styles.promptButtons}>
+              <TouchableOpacity
+                style={[styles.promptButton, styles.promptButtonSecondary]}
+                onPress={() => handleAddToHistoryConfirm(false)}
+                disabled={loading}
+              >
+                <Text style={styles.promptButtonSecondaryText}>No, Just Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.promptButton, styles.promptButtonPrimary]}
+                onPress={() => handleAddToHistoryConfirm(true)}
+                disabled={loading}
+              >
+                <Text style={styles.promptButtonPrimaryText}>Yes, Add to History</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -755,5 +980,174 @@ const styles = StyleSheet.create({
   },
   roleChipTextActive: {
     color: '#fff',
+  },
+  promptOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  promptContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+  },
+  promptIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#E8F5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  promptTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  promptMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  promptButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  promptButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  promptButtonPrimary: {
+    backgroundColor: '#4CAF50',
+  },
+  promptButtonSecondary: {
+    backgroundColor: '#f0f0f0',
+  },
+  promptButtonPrimaryText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#fff',
+    textAlign: 'center' as const,
+  },
+  promptButtonSecondaryText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  membershipTypeLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#333',
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  membershipTypeGroup: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    marginBottom: 20,
+  },
+  membershipTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    backgroundColor: '#f9f9f9',
+    alignItems: 'center',
+  },
+  membershipTypeButtonActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  membershipTypeButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginBottom: 4,
+  },
+  membershipTypeButtonTextActive: {
+    color: '#2E7D32',
+  },
+  membershipTypePrice: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#999',
+  },
+  membershipTypePriceActive: {
+    color: '#4CAF50',
+  },
+  paymentMethodGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    width: '100%',
+    marginBottom: 12,
+  },
+  paymentMethodButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#f9f9f9',
+  },
+  paymentMethodButtonActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  paymentMethodButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  paymentMethodButtonTextActive: {
+    color: '#2E7D32',
+  },
+  paypalFeeNote: {
+    backgroundColor: '#FFF3E0',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+    width: '100%',
+  },
+  paypalFeeNoteText: {
+    fontSize: 12,
+    color: '#E65100',
+    textAlign: 'center',
+  },
+  totalAmountContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    width: '100%',
+  },
+  totalAmountLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#2E7D32',
+  },
+  totalAmountValue: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#4CAF50',
   },
 });
