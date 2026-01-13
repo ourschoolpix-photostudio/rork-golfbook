@@ -382,10 +382,13 @@ export default function MembersScreen() {
     try {
       console.log('[Members] Manual refresh triggered');
       setIsRefreshing(true);
+      setError(null);
       await refreshMembers();
       console.log('[Members] Manual refresh complete');
     } catch (error) {
       console.error('[Members] Error during manual refresh:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Refresh failed: ${errorMessage}`);
     } finally {
       setIsRefreshing(false);
     }
