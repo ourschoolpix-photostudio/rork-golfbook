@@ -195,7 +195,7 @@ const collapsibleStyles = StyleSheet.create({
 });
 
 export default function MembersScreen() {
-  const { currentUser: authUser, members: allMembersFromContext, updateMember: updateMemberFromContext, refreshMembers } = useAuth();
+  const { currentUser: authUser, members: allMembersFromContext, updateMember: updateMemberFromContext } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -283,11 +283,9 @@ export default function MembersScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      console.log('[Members] Screen focused, refreshing members from Supabase...');
-      refreshMembers().then(() => {
-        loadMembers();
-      });
-    }, [loadMembers, refreshMembers])
+      console.log('[Members] Screen focused, loading members...');
+      loadMembers();
+    }, [loadMembers])
   );
 
   const handleSaveCurrentUser = useCallback(async (updatedMember: Member) => {
