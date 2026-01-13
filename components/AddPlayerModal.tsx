@@ -17,7 +17,12 @@ import { Member } from '@/types';
 import { formatPhoneNumber, getPhoneDigits } from '@/utils/phoneFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  MembershipLevel,
+  PaymentMethod,
+  getDisplayAmount,
+  addMembershipPaymentRecord,
+} from '@/utils/membershipHistoryService';
 
 interface AddPlayerModalProps {
   visible: boolean;
@@ -61,29 +66,16 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
   const [boardMemberRoles, setBoardMemberRoles] = useState<string[]>([]);
   const [showAddToHistoryPrompt, setShowAddToHistoryPrompt] = useState(false);
   const [pendingSave, setPendingSave] = useState<Partial<Member> | null>(null);
-  const [selectedMembershipType, setSelectedMembershipType] = useState<'full' | 'basic'>('full');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'check' | 'zelle' | 'venmo' | 'paypal'>('cash');
+  const [selectedMembershipType, setSelectedMembershipType] = useState<MembershipLevel>('full');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('cash');
   const [loading, setLoading] = useState(false);
 
-  const PAYPAL_FEE_PERCENT = 0.03;
-  const PAYPAL_FEE_FIXED = 0.30;
-
-  const calculatePayPalAdjustedAmount = (baseAmount: string) => {
-    const amount = parseFloat(baseAmount) || 0;
-    const fee = (amount * PAYPAL_FEE_PERCENT) + PAYPAL_FEE_FIXED;
-    return (amount + fee).toFixed(2);
-  };
-
-  const getDisplayAmount = () => {
-    const baseAmount = selectedMembershipType === 'full' 
-      ? (orgInfo.fullMembershipPrice || '0')
-      : (orgInfo.basicMembershipPrice || '0');
-    
-    if (selectedPaymentMethod === 'paypal') {
-      return calculatePayPalAdjustedAmount(baseAmount);
-    }
-    return baseAmount;
-  };
+  const displayAmount = getDisplayAmount(
+    selectedMembershipType,
+    selectedPaymentMethod,
+    orgInfo.fullMembershipPrice || '0',
+    orgInfo.basicMembershipPrice || '0'
+  );
 
   useEffect(() => {
     if (editingMember && visible) {
@@ -171,52 +163,24 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
       setShowAddToHistoryPrompt(false);
       
       if (addToHistory) {
-        const baseAmount = selectedMembershipType === 'full' 
-          ? (orgInfo.fullMembershipPrice || '0')
-          : (orgInfo.basicMembershipPrice || '0');
-        
-        const amount = selectedPaymentMethod === 'paypal' 
-          ? calculatePayPalAdjustedAmount(baseAmount)
-          : baseAmount;
-        
-        // Update pendingSave to include the membershipLevel
         pendingSave.membershipLevel = selectedMembershipType;
         
-        // Generate a temporary ID for the new member (will be replaced by actual ID after save)
         const tempMemberId = `new_${Date.now()}`;
+        const memberName = pendingSave.name || pendingSave.fullName || pendingSave.username || '';
         
-        console.log('[AddPlayerModal] ========================================');
-        console.log('[AddPlayerModal] Adding membership record for new player...');
-        console.log('[AddPlayerModal] Member Name:', pendingSave.name);
-        console.log('[AddPlayerModal] Membership Type:', selectedMembershipType);
-        console.log('[AddPlayerModal] Amount:', amount);
-        console.log('[AddPlayerModal] Payment Method:', selectedPaymentMethod);
-        console.log('[AddPlayerModal] ========================================');
+        const result = await addMembershipPaymentRecord({
+          memberId: tempMemberId,
+          memberName,
+          membershipType: selectedMembershipType,
+          paymentMethod: selectedPaymentMethod,
+          email: pendingSave.email,
+          phone: pendingSave.phone,
+          fullMembershipPrice: orgInfo.fullMembershipPrice || '0',
+          basicMembershipPrice: orgInfo.basicMembershipPrice || '0',
+        });
         
-        const insertData = {
-          member_id: tempMemberId,
-          member_name: pendingSave.name || pendingSave.fullName || pendingSave.username,
-          membership_type: selectedMembershipType,
-          amount: amount,
-          payment_method: selectedPaymentMethod,
-          payment_status: 'completed',
-          email: pendingSave.email || '',
-          phone: pendingSave.phone || '',
-          created_at: new Date().toISOString(),
-        };
-        
-        console.log('[AddPlayerModal] Insert data:', JSON.stringify(insertData, null, 2));
-        
-        // Insert the membership payment record
-        const { data, error } = await supabase.from('membership_payments')
-          .insert(insertData)
-          .select();
-        
-        if (error) {
-          console.error('[AddPlayerModal] Error inserting membership payment:', error);
-          Alert.alert('Warning', `Player will be saved but membership history failed: ${error.message}`);
-        } else {
-          console.log('[AddPlayerModal] ✅ Membership payment record created:', data);
+        if (!result.success) {
+          Alert.alert('Warning', `Player will be saved but membership history failed: ${result.error}`);
         }
       }
       
@@ -710,14 +674,14 @@ export function AddPlayerModal({ visible, onClose, onAdd, editingMember }: AddPl
             {selectedPaymentMethod === 'paypal' && (
               <View style={styles.paypalFeeNote}>
                 <Text style={styles.paypalFeeNoteText}>
-                  PayPal fee (3% + $0.30) added. Total charged: ${getDisplayAmount()}
+                  PayPal fee (3% + $0.30) added. Total charged: ${displayAmount}
                 </Text>
               </View>
             )}
             
             <View style={styles.totalAmountContainer}>
               <Text style={styles.totalAmountLabel}>Amount to Record:</Text>
-              <Text style={styles.totalAmountValue}>${getDisplayAmount()}</Text>
+              <Text style={styles.totalAmountValue}>${displayAmount}</Text>
             </View>
             
             <View style={styles.promptButtons}>

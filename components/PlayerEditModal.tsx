@@ -19,6 +19,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatPhoneNumber, getPhoneDigits } from '@/utils/phoneFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
+import {
+  MembershipLevel,
+  PaymentMethod,
+  getDisplayAmount,
+  addMembershipPaymentRecord,
+} from '@/utils/membershipHistoryService';
 
 interface PlayerEditModalProps {
   visible: boolean;
@@ -65,29 +71,16 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
   const [originalMembershipType, setOriginalMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
   const [showAddToHistoryPrompt, setShowAddToHistoryPrompt] = useState(false);
   const [pendingSave, setPendingSave] = useState<Member | null>(null);
-  const [selectedMembershipType, setSelectedMembershipType] = useState<'full' | 'basic'>('full');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'check' | 'zelle' | 'venmo' | 'paypal'>('cash');
+  const [selectedMembershipType, setSelectedMembershipType] = useState<MembershipLevel>('full');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('zelle');
   const { orgInfo } = useSettings();
 
-  const PAYPAL_FEE_PERCENT = 0.03;
-  const PAYPAL_FEE_FIXED = 0.30;
-
-  const calculatePayPalAdjustedAmount = (baseAmount: string) => {
-    const amount = parseFloat(baseAmount) || 0;
-    const fee = (amount * PAYPAL_FEE_PERCENT) + PAYPAL_FEE_FIXED;
-    return (amount + fee).toFixed(2);
-  };
-
-  const getDisplayAmount = () => {
-    const baseAmount = selectedMembershipType === 'full' 
-      ? (orgInfo.fullMembershipPrice || '0')
-      : (orgInfo.basicMembershipPrice || '0');
-    
-    if (selectedPaymentMethod === 'paypal') {
-      return calculatePayPalAdjustedAmount(baseAmount);
-    }
-    return baseAmount;
-  };
+  const displayAmount = getDisplayAmount(
+    selectedMembershipType,
+    selectedPaymentMethod,
+    orgInfo.fullMembershipPrice || '0',
+    orgInfo.basicMembershipPrice || '0'
+  );
 
   useEffect(() => {
     if (visible) {
@@ -280,100 +273,22 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       setShowAddToHistoryPrompt(false);
       
       if (addToHistory) {
-        const baseAmount = selectedMembershipType === 'full' 
-          ? (orgInfo.fullMembershipPrice || '0')
-          : (orgInfo.basicMembershipPrice || '0');
-        
-        const amount = selectedPaymentMethod === 'paypal' 
-          ? calculatePayPalAdjustedAmount(baseAmount)
-          : baseAmount;
-        
-        const memberId = String(pendingSave.id).trim();
-        
-        // Update pendingSave to include the membershipLevel
         pendingSave.membershipLevel = selectedMembershipType;
         
-        console.log('[PlayerEditModal] ========================================');
-        console.log('[PlayerEditModal] Adding membership renewal to history...');
-        console.log('[PlayerEditModal] Member ID (raw):', pendingSave.id);
-        console.log('[PlayerEditModal] Member ID (trimmed):', memberId);
-        console.log('[PlayerEditModal] Member ID type:', typeof pendingSave.id);
-        console.log('[PlayerEditModal] Member Name:', pendingSave.name);
-        console.log('[PlayerEditModal] Membership Type:', selectedMembershipType);
-        console.log('[PlayerEditModal] Amount:', amount);
-        console.log('[PlayerEditModal] ========================================');
+        const result = await addMembershipPaymentRecord({
+          memberId: String(pendingSave.id).trim(),
+          memberName: pendingSave.name,
+          membershipType: selectedMembershipType,
+          paymentMethod: selectedPaymentMethod,
+          email: pendingSave.email,
+          phone: pendingSave.phone,
+          fullMembershipPrice: orgInfo.fullMembershipPrice || '0',
+          basicMembershipPrice: orgInfo.basicMembershipPrice || '0',
+        });
         
-        const insertData = {
-          member_id: memberId,
-          member_name: pendingSave.name,
-          membership_type: selectedMembershipType,
-          amount: amount,
-          payment_method: selectedPaymentMethod,
-          payment_status: 'completed',
-          email: pendingSave.email || '',
-          phone: pendingSave.phone || '',
-          created_at: new Date().toISOString(),
-        };
-        
-        console.log('[PlayerEditModal] Insert data:', JSON.stringify(insertData, null, 2));
-        
-        const { data, error, status, statusText } = await supabase.from('membership_payments')
-          .insert(insertData)
-          .select();
-        
-        console.log('[PlayerEditModal] Supabase response status:', status, statusText);
-        console.log('[PlayerEditModal] Supabase response data:', JSON.stringify(data, null, 2));
-        console.log('[PlayerEditModal] Supabase response error:', error ? JSON.stringify(error, null, 2) : 'none');
-        
-        if (error) {
-          console.error('[PlayerEditModal] ❌ Error inserting membership payment:');
-          console.error('[PlayerEditModal] Error message:', error.message);
-          console.error('[PlayerEditModal] Error details:', error.details);
-          console.error('[PlayerEditModal] Error hint:', error.hint);
-          console.error('[PlayerEditModal] Error code:', error.code);
-          Alert.alert('Database Error', `Failed to add to history: ${error.message}\n\nPlease check the console for details.`);
-          throw new Error(`Failed to add to history: ${error.message}`);
-        }
-        
-        if (!data || data.length === 0) {
-          console.error('[PlayerEditModal] ❌ Insert returned no data - record may not have been saved');
-          Alert.alert('Warning', 'The record may not have been saved. Please check the history and try again if needed.');
-        } else {
-          console.log('[PlayerEditModal] ✅ Insert returned data');
-          console.log('[PlayerEditModal] Inserted record ID:', data[0]?.id);
-          console.log('[PlayerEditModal] Inserted member_id:', data[0]?.member_id);
-          console.log('[PlayerEditModal] Inserted payment_status:', data[0]?.payment_status);
-          
-          // Verify the record can be found by member_id (same query as history modal)
-          const { data: verifyData, error: verifyError } = await supabase
-            .from('membership_payments')
-            .select('*')
-            .eq('member_id', memberId)
-            .eq('payment_status', 'completed')
-            .order('created_at', { ascending: false });
-          
-          console.log('[PlayerEditModal] Verification query by member_id:', memberId);
-          console.log('[PlayerEditModal] Verification result:', JSON.stringify(verifyData, null, 2));
-          console.log('[PlayerEditModal] Verification error:', verifyError ? JSON.stringify(verifyError, null, 2) : 'none');
-          
-          if (verifyError) {
-            console.error('[PlayerEditModal] ❌ Verification query failed:', verifyError);
-            Alert.alert('Warning', 'Record was created but verification failed. Please check history.');
-          } else if (!verifyData || verifyData.length === 0) {
-            console.error('[PlayerEditModal] ❌ Verification failed - no records found for member_id:', memberId);
-            
-            // Debug: check what member_ids exist in the table
-            const { data: allRecords } = await supabase
-              .from('membership_payments')
-              .select('id, member_id, member_name, payment_status, created_at')
-              .order('created_at', { ascending: false })
-              .limit(10);
-            console.log('[PlayerEditModal] Recent records in table:', JSON.stringify(allRecords, null, 2));
-            
-            Alert.alert('Warning', `Record was inserted but cannot be found by member_id. Check console logs.`);
-          } else {
-            console.log('[PlayerEditModal] ✅ VERIFIED! Found', verifyData.length, 'record(s) for this member');
-          }
+        if (!result.success) {
+          Alert.alert('Database Error', `Failed to add to history: ${result.error}`);
+          throw new Error(`Failed to add to history: ${result.error}`);
         }
       } else {
         console.log('[PlayerEditModal] User chose NOT to add to history');
@@ -390,7 +305,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       setLoading(false);
       setPendingSave(null);
       setSelectedMembershipType('full');
-      setSelectedPaymentMethod('cash');
+      setSelectedPaymentMethod('zelle');
     }
   };
 
@@ -1079,14 +994,14 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
             {selectedPaymentMethod === 'paypal' && (
               <View style={styles.paypalFeeNote}>
                 <Text style={styles.paypalFeeNoteText}>
-                  PayPal fee (3% + $0.30) added. Total charged: ${getDisplayAmount()}
+                  PayPal fee (3% + $0.30) added. Total charged: ${displayAmount}
                 </Text>
               </View>
             )}
             
             <View style={styles.totalAmountContainer}>
               <Text style={styles.totalAmountLabel}>Amount to Record:</Text>
-              <Text style={styles.totalAmountValue}>${getDisplayAmount()}</Text>
+              <Text style={styles.totalAmountValue}>${displayAmount}</Text>
             </View>
             
             <View style={styles.promptButtons}>
