@@ -169,15 +169,18 @@ export function EventPlayerModal({
         .from('membership_payments')
         .insert({
           member_id: player.id,
+          member_name: player.name,
           membership_type: selectedMembershipLevel,
           amount: paymentAmount,
           payment_method: selectedPaymentMethod,
           payment_status: 'completed',
+          email: player.email || 'offline-payment@placeholder.com',
+          phone: player.phone || null,
         });
       
       if (paymentError) {
-        console.error('[EventPlayerModal] Error inserting payment record:', paymentError);
-        throw paymentError;
+        console.error('[EventPlayerModal] Error inserting payment record:', JSON.stringify(paymentError, null, 2));
+        throw new Error(paymentError.message || 'Failed to insert payment record');
       }
       
       // Update the member's membership type and level
@@ -203,9 +206,9 @@ export function EventPlayerModal({
       
       Alert.alert('Success', `${player.name}'s membership has been updated and recorded.`);
       onClose();
-    } catch (error) {
-      console.error('[EventPlayerModal] Error adding to history:', error);
-      Alert.alert('Error', 'Failed to update membership. Please try again.');
+    } catch (error: any) {
+      console.error('[EventPlayerModal] Error adding to history:', error?.message || JSON.stringify(error));
+      Alert.alert('Error', error?.message || 'Failed to update membership. Please try again.');
     } finally {
       setIsSaving(false);
     }
