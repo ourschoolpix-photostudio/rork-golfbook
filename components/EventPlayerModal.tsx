@@ -15,6 +15,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Member, Event } from '@/types';
 import { Registration } from '@/utils/registrationService';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EventPlayerModalProps {
   visible: boolean;
@@ -27,6 +29,9 @@ interface EventPlayerModalProps {
   onMembershipRenewalRequired?: (player: Member) => void;
 }
 
+type MembershipLevel = 'full' | 'basic';
+type PaymentMethod = 'cash' | 'check' | 'zelle' | 'venmo' | 'paypal';
+
 export function EventPlayerModal({
   visible,
   player,
@@ -37,6 +42,7 @@ export function EventPlayerModal({
   onSave,
   onMembershipRenewalRequired,
 }: EventPlayerModalProps) {
+  const { updateMember } = useAuth();
   const [currentHandicap, setCurrentHandicap] = useState('');
   const [adjustedHandicap, setAdjustedHandicap] = useState('');
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
@@ -45,6 +51,13 @@ export function EventPlayerModal({
   const [isSaving, setIsSaving] = useState(false);
   const [isSponsor, setIsSponsor] = useState(false);
   const originalMembershipTypeRef = useRef<'active' | 'in-active' | 'guest'>('active');
+  
+  // Add to History flow states
+  const [showAddToHistoryFlow, setShowAddToHistoryFlow] = useState(false);
+  const [selectedMembershipLevel, setSelectedMembershipLevel] = useState<MembershipLevel | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('cash');
+  const [paymentAmount, setPaymentAmount] = useState('');
+
 
   const isSocialEvent = event?.type === 'social';
 
@@ -77,6 +90,12 @@ export function EventPlayerModal({
       console.log('Normalized to:', normalized);
       setMembershipType(normalized);
       originalMembershipTypeRef.current = normalized;
+      
+      // Reset add to history flow states
+      setShowAddToHistoryFlow(false);
+      setSelectedMembershipLevel(null);
+      setSelectedPaymentMethod('cash');
+      setPaymentAmount('');
     }
   }, [player, registration, visible]);
 
@@ -100,6 +119,85 @@ export function EventPlayerModal({
     return names.slice(0, guestCount).join('\n');
   };
 
+  const handleMembershipTypeChange = (newType: 'active' | 'in-active' | 'guest') => {
+    const wasInactive = originalMembershipTypeRef.current === 'in-active';
+    const isNowActive = newType === 'active';
+    
+    if (wasInactive && isNowActive) {
+      // Show the add to history flow instead of payment flow
+      console.log('[EventPlayerModal] Membership change: in-active -> active, showing add to history flow');
+      setShowAddToHistoryFlow(true);
+      setMembershipType(newType);
+    } else {
+      setMembershipType(newType);
+      setShowAddToHistoryFlow(false);
+      setSelectedMembershipLevel(null);
+    }
+  };
+
+  const handleAddToHistory = async () => {
+    if (!player || !selectedMembershipLevel) {
+      Alert.alert('Error', 'Please select a membership level');
+      return;
+    }
+    
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
+      Alert.alert('Error', 'Please enter a valid payment amount');
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      console.log('[EventPlayerModal] Adding membership to history for:', player.name);
+      console.log('[EventPlayerModal] Level:', selectedMembershipLevel, 'Method:', selectedPaymentMethod, 'Amount:', paymentAmount);
+      
+      // Insert membership payment record
+      const { error: paymentError } = await supabase
+        .from('membership_payments')
+        .insert({
+          member_id: player.id,
+          membership_type: selectedMembershipLevel,
+          amount: paymentAmount,
+          payment_method: selectedPaymentMethod,
+          payment_status: 'completed',
+        });
+      
+      if (paymentError) {
+        console.error('[EventPlayerModal] Error inserting payment record:', paymentError);
+        throw paymentError;
+      }
+      
+      // Update the member's membership type and level
+      const updatedPlayer: Member = {
+        ...player,
+        handicap: parseFloat(currentHandicap) || player.handicap || 0,
+        membershipType: 'active',
+        membershipLevel: selectedMembershipLevel,
+      };
+      
+      await updateMember(player.id, {
+        membershipType: 'active',
+        membershipLevel: selectedMembershipLevel,
+      });
+      
+      console.log('[EventPlayerModal] Membership updated successfully');
+      
+      // Now save the registration changes
+      const guestCount = numberOfGuests ? parseInt(numberOfGuests, 10) : undefined;
+      const guestNamesValue = guestCount ? normalizeGuestNames(guestNames, guestCount) : undefined;
+      
+      await onSave(updatedPlayer, adjustedHandicap === '' ? null : adjustedHandicap, guestCount, guestNamesValue, isSponsor);
+      
+      Alert.alert('Success', `${player.name}'s membership has been updated and recorded.`);
+      onClose();
+    } catch (error) {
+      console.error('[EventPlayerModal] Error adding to history:', error);
+      Alert.alert('Error', 'Failed to update membership. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -107,31 +205,16 @@ export function EventPlayerModal({
       const wasInactive = originalMembershipTypeRef.current === 'in-active';
       const isNowActive = membershipType === 'active';
       
-      if (wasInactive && isNowActive && onMembershipRenewalRequired) {
-        console.log('[EventPlayerModal] Membership change detected: in-active -> active, triggering renewal flow');
-        Alert.alert(
-          'Membership Renewal Required',
-          `${player.name} is currently inactive. To change their status to active, they need to complete the membership renewal process. Would you like to proceed with membership renewal?`,
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-              onPress: () => {
-                setMembershipType('in-active');
-                setIsSaving(false);
-              },
-            },
-            {
-              text: 'Renew Membership',
-              onPress: () => {
-                setIsSaving(false);
-                console.log('[EventPlayerModal] Renew Membership pressed, triggering renewal flow');
-                onMembershipRenewalRequired(player);
-              },
-            },
-          ],
-          { cancelable: false }
-        );
+      // If changing from inactive to active, must go through add to history flow
+      if (wasInactive && isNowActive && !selectedMembershipLevel) {
+        Alert.alert('Membership Level Required', 'Please select Full Member or Basic Member and complete the Add to History form.');
+        setIsSaving(false);
+        return;
+      }
+      
+      // If add to history flow is active and membership level selected, use that flow
+      if (showAddToHistoryFlow && selectedMembershipLevel) {
+        await handleAddToHistory();
         return;
       }
       
@@ -178,7 +261,7 @@ export function EventPlayerModal({
                   styles.membershipButton,
                   membershipType === 'active' && styles.membershipButtonActive,
                 ]}
-                onPress={() => setMembershipType('active')}
+                onPress={() => handleMembershipTypeChange('active')}
               >
                 <Text
                   style={[
@@ -194,7 +277,7 @@ export function EventPlayerModal({
                   styles.membershipButton,
                   membershipType === 'in-active' && styles.membershipButtonActive,
                 ]}
-                onPress={() => setMembershipType('in-active')}
+                onPress={() => handleMembershipTypeChange('in-active')}
               >
                 <Text
                   style={[
@@ -210,7 +293,7 @@ export function EventPlayerModal({
                   styles.membershipButton,
                   membershipType === 'guest' && styles.membershipButtonActive,
                 ]}
-                onPress={() => setMembershipType('guest')}
+                onPress={() => handleMembershipTypeChange('guest')}
               >
                 <Text
                   style={[
@@ -222,6 +305,85 @@ export function EventPlayerModal({
                 </Text>
               </TouchableOpacity>
             </View>
+
+            {showAddToHistoryFlow && (
+              <View style={styles.addToHistoryContainer}>
+                <Text style={styles.addToHistoryTitle}>Add to Membership History</Text>
+                
+                <Text style={styles.fieldLabel}>Membership Level</Text>
+                <View style={styles.levelButtonsContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.levelButton,
+                      selectedMembershipLevel === 'full' && styles.levelButtonActive,
+                    ]}
+                    onPress={() => setSelectedMembershipLevel('full')}
+                  >
+                    <Text
+                      style={[
+                        styles.levelButtonText,
+                        selectedMembershipLevel === 'full' && styles.levelButtonTextActive,
+                      ]}
+                    >
+                      Full Member
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.levelButton,
+                      styles.levelButtonBasic,
+                      selectedMembershipLevel === 'basic' && styles.levelButtonBasicActive,
+                    ]}
+                    onPress={() => setSelectedMembershipLevel('basic')}
+                  >
+                    <Text
+                      style={[
+                        styles.levelButtonText,
+                        selectedMembershipLevel === 'basic' && styles.levelButtonTextActive,
+                      ]}
+                    >
+                      Basic Member
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <Text style={styles.fieldLabel}>Payment Method</Text>
+                <View style={styles.paymentMethodContainer}>
+                  {(['cash', 'check', 'zelle', 'venmo', 'paypal'] as PaymentMethod[]).map((method) => (
+                    <TouchableOpacity
+                      key={method}
+                      style={[
+                        styles.paymentMethodButton,
+                        selectedPaymentMethod === method && styles.paymentMethodButtonActive,
+                      ]}
+                      onPress={() => setSelectedPaymentMethod(method)}
+                    >
+                      <Text
+                        style={[
+                          styles.paymentMethodText,
+                          selectedPaymentMethod === method && styles.paymentMethodTextActive,
+                        ]}
+                      >
+                        {method.charAt(0).toUpperCase() + method.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <Text style={styles.fieldLabel}>Amount Paid</Text>
+                <View style={styles.amountInputContainer}>
+                  <Text style={styles.dollarSign}>$</Text>
+                  <TextInput
+                    style={styles.amountInput}
+                    value={paymentAmount}
+                    onChangeText={setPaymentAmount}
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              </View>
+            )}
 
             <View style={styles.content}>
               {!isSocialEvent && (
@@ -496,5 +658,105 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: '#666',
+  },
+  addToHistoryContainer: {
+    backgroundColor: '#f0f8ff',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  addToHistoryTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#007AFF',
+    marginBottom: 16,
+    textAlign: 'center' as const,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  levelButtonsContainer: {
+    flexDirection: 'row' as const,
+    gap: 10,
+  },
+  levelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    backgroundColor: '#fff',
+    alignItems: 'center' as const,
+  },
+  levelButtonActive: {
+    backgroundColor: '#4CAF50',
+  },
+  levelButtonBasic: {
+    borderColor: '#FF9500',
+  },
+  levelButtonBasicActive: {
+    backgroundColor: '#FF9500',
+  },
+  levelButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#666',
+  },
+  levelButtonTextActive: {
+    color: '#fff',
+  },
+  paymentMethodContainer: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: 8,
+  },
+  paymentMethodButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  paymentMethodButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  paymentMethodText: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    color: '#666',
+  },
+  paymentMethodTextActive: {
+    color: '#fff',
+  },
+  amountInputContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+  },
+  dollarSign: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginRight: 4,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+    paddingVertical: 12,
   },
 });
