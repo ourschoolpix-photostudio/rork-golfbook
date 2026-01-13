@@ -348,8 +348,8 @@ export default function DashboardScreen() {
             setDetailsModalVisible(false);
             setTimeout(() => {
               router.push({
-                pathname: `/(event)/${selectedEvent.id}/registration` as any,
-                params: { openPayment: 'true' }
+                pathname: '/(event)/[eventId]/registration',
+                params: { eventId: selectedEvent.id, openPayment: 'true' }
               });
             }, 100);
           }}
