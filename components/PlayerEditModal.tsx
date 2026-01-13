@@ -133,28 +133,79 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
     }
   }, [member, visible]);
 
-  const uploadProfilePhoto = async (photoUri: string) => {
+  const uploadProfilePhoto = async (photoUri: string, retryCount = 0): Promise<string> => {
+    const MAX_RETRIES = 2;
+    const FETCH_TIMEOUT = 15000;
+    const UPLOAD_TIMEOUT = 30000;
+    
     try {
       const filename = `profile-photos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+      console.log('📸 Starting profile photo upload, attempt:', retryCount + 1);
 
-      const response = await fetch(photoUri);
+      const fetchWithTimeout = async (uri: string, timeout: number): Promise<Response> => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        try {
+          const response = await fetch(uri, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          return response;
+        } catch (err: any) {
+          clearTimeout(timeoutId);
+          if (err.name === 'AbortError') {
+            throw new Error('Request timed out - please check your internet connection');
+          }
+          throw err;
+        }
+      };
+
+      console.log('📥 Fetching image from local URI...');
+      const response = await fetchWithTimeout(photoUri, FETCH_TIMEOUT);
+      
+      console.log('🔄 Converting to array buffer...');
       const arrayBuffer = await response.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
+      console.log('📦 Image size:', uint8Array.length, 'bytes');
 
-      const { error } = await supabase.storage.from('event-photos').upload(filename, uint8Array, {
+      if (uint8Array.length > 5 * 1024 * 1024) {
+        throw new Error('Image too large (max 5MB). Please choose a smaller image.');
+      }
+
+      console.log('🚀 Uploading to Supabase...');
+      const uploadPromise = supabase.storage.from('event-photos').upload(filename, uint8Array, {
         contentType: 'image/jpeg',
         cacheControl: '3600',
         upsert: false,
       });
 
+      const result = await Promise.race([
+        uploadPromise,
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Upload timed out - please try again')), UPLOAD_TIMEOUT)
+        )
+      ]);
+
+      const { error } = result as { error: any };
+
       if (error) {
+        console.error('❌ Supabase upload error:', error);
         throw new Error(`Upload failed: ${error.message}`);
       }
 
       const { data: urlData } = supabase.storage.from('event-photos').getPublicUrl(filename);
+      console.log('✅ Profile photo uploaded successfully:', urlData.publicUrl);
       return urlData.publicUrl;
-    } catch (error) {
-      console.error('Error uploading profile photo:', error);
+    } catch (error: any) {
+      console.error('❌ Error uploading profile photo:', error.message || error);
+      
+      if (retryCount < MAX_RETRIES && 
+          (error.message?.includes('timeout') || 
+           error.message?.includes('network') ||
+           error.message?.includes('Network'))) {
+        console.log(`🔄 Retrying upload... (attempt ${retryCount + 2}/${MAX_RETRIES + 1})`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return uploadProfilePhoto(photoUri, retryCount + 1);
+      }
+      
       throw error;
     }
   };
