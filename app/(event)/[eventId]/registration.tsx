@@ -770,12 +770,11 @@ export default function EventRegistrationScreen() {
 
   const handlePlayerCardPress = async (player: Member) => {
     if (canViewRegistration(currentUser)) {
-      const freshPlayer = allMembers.find(m => m.id === player.id);
-      if (freshPlayer) {
-        setSelectedPlayerForEvent(freshPlayer);
-      } else {
-        setSelectedPlayerForEvent(player);
-      }
+      const freshFromSelected = selectedPlayers.find(m => m.id === player.id);
+      const freshFromMembers = members.find(m => m.id === player.id);
+      const freshPlayer = freshFromSelected || freshFromMembers || player;
+      console.log('[registration] Opening modal for player:', freshPlayer.name, 'membershipType:', freshPlayer.membershipType);
+      setSelectedPlayerForEvent(freshPlayer);
       setEventPlayerModalVisible(true);
     }
   };
