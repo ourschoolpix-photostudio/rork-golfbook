@@ -255,8 +255,8 @@ export default function GroupingsScreen() {
   }, [eventScores]);
 
   const loadGroupsFromStorage = useCallback(async () => {
-    if (!event || members.length === 0 || groupingsLoading) {
-      console.log('[groupings] ⚠️ Cannot load groups - event, members, or groupings not ready');
+    if (!event || members.length === 0) {
+      console.log('[groupings] ⚠️ Cannot load groups - event or members not ready');
       return;
     }
 
@@ -352,7 +352,7 @@ export default function GroupingsScreen() {
     setInitialGroups(JSON.parse(JSON.stringify(enrichedGroups)));
     setCheckedPlayers([]);
     setIsInitialized(true);
-  }, [event, members, activeDay, eventGroupings, groupingsLoading, enrichSlotsWithScores]);
+  }, [event, members, activeDay, eventGroupings, enrichSlotsWithScores]);
 
   useEffect(() => {
     console.log('[groupings] 📍 Initial load effect triggered');
@@ -718,7 +718,7 @@ export default function GroupingsScreen() {
     }
   };
 
-  if (eventLoading || membersLoading || groupingsLoading || scoresLoading) {
+  if (eventLoading || membersLoading || groupingsLoading || scoresLoading || !event || members.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
