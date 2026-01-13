@@ -241,12 +241,18 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
 
       console.log('Saving member:', savedMember.id, savedMember.name);
       
+      const isNewMemberWithActiveStatus = 
+        currentUser?.isAdmin && 
+        !member && 
+        membershipType === 'active';
+      
       const isStatusChangeToActive = 
         currentUser?.isAdmin && 
+        member && 
         originalMembershipType === 'in-active' && 
         membershipType === 'active';
       
-      if (isStatusChangeToActive) {
+      if (isNewMemberWithActiveStatus || isStatusChangeToActive) {
         setPendingSave(savedMember);
         setShowAddToHistoryPrompt(true);
         setLoading(false);
