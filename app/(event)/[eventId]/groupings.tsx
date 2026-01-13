@@ -718,7 +718,7 @@ export default function GroupingsScreen() {
     }
   };
 
-  if (eventLoading || membersLoading || groupingsLoading || scoresLoading || !event || members.length === 0) {
+  if (eventLoading || membersLoading || groupingsLoading || scoresLoading || !event) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
