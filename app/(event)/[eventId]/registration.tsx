@@ -348,13 +348,13 @@ export default function EventRegistrationScreen() {
   }, [eventId]);
 
   useEffect(() => {
-    if (openPayment === 'true' && event && !isCurrentUserRegistered()) {
+    if (openPayment === 'true' && event && !isCurrentUserRegistered() && !currentUser?.isAdmin) {
       const timer = setTimeout(() => {
         setPaymentMethodModalVisible(true);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [openPayment, event]);
+  }, [openPayment, event, currentUser?.isAdmin]);
 
   const handleHomePress = () => {
     router.push('/(tabs)');
