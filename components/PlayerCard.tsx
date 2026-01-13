@@ -64,8 +64,10 @@ export const PlayerCard = memo(function PlayerCard({
     return isLocal ? '#007AFF' : '#FF9500';
   };
 
+  const isFemale = member.gender === 'female';
+
   return (
-    <View style={styles.memberCard}>
+    <View style={[styles.memberCard, isFemale && styles.femaleCard]}>
       <View style={styles.cardContainer}>
         <View style={styles.photoSection}>
           <TouchableOpacity 
@@ -205,6 +207,10 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
+  },
+  femaleCard: {
+    borderWidth: 2,
+    borderColor: '#FF69B4',
   },
   cardContainer: {
     flexDirection: 'row',

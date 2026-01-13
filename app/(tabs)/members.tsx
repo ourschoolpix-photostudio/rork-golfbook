@@ -86,9 +86,11 @@ const CollapsiblePlayerCard = React.memo(function CollapsiblePlayerCard({
     );
   }
 
+  const isFemale = member.gender === 'female';
+
   return (
     <TouchableOpacity
-      style={collapsibleStyles.collapsedCard}
+      style={[collapsibleStyles.collapsedCard, isFemale && collapsibleStyles.femaleCard]}
       onPress={onToggle}
       activeOpacity={0.7}
     >
@@ -145,6 +147,10 @@ const collapsibleStyles = StyleSheet.create({
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
+  },
+  femaleCard: {
+    borderWidth: 2,
+    borderColor: '#FF69B4',
   },
   collapsedContent: {
     flexDirection: 'row',
