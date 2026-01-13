@@ -1723,8 +1723,13 @@ export default function EventRegistrationScreen() {
         onSave={handleSavePlayerChanges}
         onMembershipRenewalRequired={(member) => {
           console.log('[registration] Membership renewal required for:', member.name);
-          setMemberForRenewal(member);
-          setMembershipRenewalModalVisible(true);
+          setEventPlayerModalVisible(false);
+          setSelectedPlayerForEvent(null);
+          setTimeout(() => {
+            setMemberForRenewal(member);
+            setMembershipRenewalModalVisible(true);
+            console.log('[registration] MembershipRenewalModal should now be visible');
+          }, 100);
         }}
       />
 

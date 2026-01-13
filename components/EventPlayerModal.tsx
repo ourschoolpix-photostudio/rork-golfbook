@@ -125,7 +125,7 @@ export function EventPlayerModal({
               text: 'Renew Membership',
               onPress: () => {
                 setIsSaving(false);
-                onClose();
+                console.log('[EventPlayerModal] Renew Membership pressed, triggering renewal flow');
                 onMembershipRenewalRequired(player);
               },
             },
