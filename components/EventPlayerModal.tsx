@@ -17,6 +17,7 @@ import { Member, Event } from '@/types';
 import { Registration } from '@/utils/registrationService';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface EventPlayerModalProps {
   visible: boolean;
@@ -43,6 +44,7 @@ export function EventPlayerModal({
   onMembershipRenewalRequired,
 }: EventPlayerModalProps) {
   const { updateMember } = useAuth();
+  const { orgInfo } = useSettings();
   const [currentHandicap, setCurrentHandicap] = useState('');
   const [adjustedHandicap, setAdjustedHandicap] = useState('');
   const [membershipType, setMembershipType] = useState<'active' | 'in-active' | 'guest'>('active');
@@ -132,6 +134,17 @@ export function EventPlayerModal({
       setMembershipType(newType);
       setShowAddToHistoryFlow(false);
       setSelectedMembershipLevel(null);
+      setPaymentAmount('');
+    }
+  };
+
+  const handleMembershipLevelSelect = (level: MembershipLevel) => {
+    setSelectedMembershipLevel(level);
+    // Auto-populate amount from settings
+    if (level === 'full') {
+      setPaymentAmount(orgInfo.fullMembershipPrice || '');
+    } else {
+      setPaymentAmount(orgInfo.basicMembershipPrice || '');
     }
   };
 
@@ -317,7 +330,7 @@ export function EventPlayerModal({
                       styles.levelButton,
                       selectedMembershipLevel === 'full' && styles.levelButtonActive,
                     ]}
-                    onPress={() => setSelectedMembershipLevel('full')}
+                    onPress={() => handleMembershipLevelSelect('full')}
                   >
                     <Text
                       style={[
@@ -327,6 +340,14 @@ export function EventPlayerModal({
                     >
                       Full Member
                     </Text>
+                    {orgInfo.fullMembershipPrice && (
+                      <Text style={[
+                        styles.levelPriceText,
+                        selectedMembershipLevel === 'full' && styles.levelButtonTextActive,
+                      ]}>
+                        ${orgInfo.fullMembershipPrice}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -334,7 +355,7 @@ export function EventPlayerModal({
                       styles.levelButtonBasic,
                       selectedMembershipLevel === 'basic' && styles.levelButtonBasicActive,
                     ]}
-                    onPress={() => setSelectedMembershipLevel('basic')}
+                    onPress={() => handleMembershipLevelSelect('basic')}
                   >
                     <Text
                       style={[
@@ -344,6 +365,14 @@ export function EventPlayerModal({
                     >
                       Basic Member
                     </Text>
+                    {orgInfo.basicMembershipPrice && (
+                      <Text style={[
+                        styles.levelPriceText,
+                        selectedMembershipLevel === 'basic' && styles.levelButtonTextActive,
+                      ]}>
+                        ${orgInfo.basicMembershipPrice}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 </View>
                 
@@ -382,6 +411,9 @@ export function EventPlayerModal({
                     placeholderTextColor="#999"
                   />
                 </View>
+                {paymentAmount && (
+                  <Text style={styles.amountNote}>Amount auto-filled from settings</Text>
+                )}
               </View>
             )}
 
@@ -709,6 +741,12 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#666',
   },
+  levelPriceText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: '#888',
+    marginTop: 2,
+  },
   levelButtonTextActive: {
     color: '#fff',
   },
@@ -758,5 +796,11 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#1a1a1a',
     paddingVertical: 12,
+  },
+  amountNote: {
+    fontSize: 11,
+    color: '#4CAF50',
+    fontStyle: 'italic' as const,
+    marginTop: 4,
   },
 });
