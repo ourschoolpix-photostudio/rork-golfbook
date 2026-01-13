@@ -363,19 +363,37 @@ export default function EventRegistrationScreen() {
       currentUser &&
       !eventQuery.isLoading && 
       !registrationsQuery.isLoading &&
+      registrationsQuery.data !== undefined &&
       !hasTriggeredAutoRegister
     ) {
-      const isRegistered = selectedPlayers.some((p) => p.id === currentUser?.id);
-      if (!isRegistered) {
-        console.log('[registration] Auto-triggering register button from autoRegister param');
+      // Check directly against registration data, not selectedPlayers (which may not be populated yet)
+      const regs = registrationsQuery.data || [];
+      const isAlreadyRegistered = regs.some((r: any) => r.memberId === currentUser.id);
+      
+      console.log('[registration] Auto-register check:', {
+        autoRegister,
+        eventId: event?.id,
+        currentUserId: currentUser?.id,
+        registrationsCount: regs.length,
+        isAlreadyRegistered,
+        hasTriggeredAutoRegister,
+      });
+      
+      if (!isAlreadyRegistered) {
+        console.log('[registration] Auto-triggering payment modal from autoRegister param');
         setHasTriggeredAutoRegister(true);
+        // Use a slightly longer timeout to ensure UI is fully rendered
         const timer = setTimeout(() => {
+          console.log('[registration] Opening payment method modal now');
           setPaymentMethodModalVisible(true);
-        }, 500);
+        }, 800);
         return () => clearTimeout(timer);
+      } else {
+        console.log('[registration] User already registered, not auto-triggering');
+        setHasTriggeredAutoRegister(true);
       }
     }
-  }, [autoRegister, event, currentUser, eventQuery.isLoading, registrationsQuery.isLoading, selectedPlayers, hasTriggeredAutoRegister]);
+  }, [autoRegister, event, currentUser, eventQuery.isLoading, registrationsQuery.isLoading, registrationsQuery.data, hasTriggeredAutoRegister]);
 
   const handleHomePress = () => {
     router.push('/(tabs)');
