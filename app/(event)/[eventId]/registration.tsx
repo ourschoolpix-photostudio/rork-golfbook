@@ -775,9 +775,11 @@ export default function EventRegistrationScreen() {
     if (canViewRegistration(currentUser)) {
       await registrationsQuery.refetch();
       
-      const freshFromMembers = allMembers.find(m => m.id === player.id);
+      // Prioritize selectedPlayers (local state) as it has the most recent updates
+      // then fall back to allMembers (from AuthContext)
       const freshFromSelected = selectedPlayers.find(m => m.id === player.id);
-      const freshPlayer = freshFromMembers || freshFromSelected || player;
+      const freshFromMembers = allMembers.find(m => m.id === player.id);
+      const freshPlayer = freshFromSelected || freshFromMembers || player;
       
       console.log('[registration] Opening modal for player:', freshPlayer.name, 'membershipType:', freshPlayer.membershipType);
       setSelectedPlayerForEvent(freshPlayer);
@@ -796,6 +798,13 @@ export default function EventRegistrationScreen() {
           membershipType: updatedPlayer.membershipType,
         },
       });
+      
+      // Immediately update local selectedPlayers state with the new membershipType
+      setSelectedPlayers(prev => prev.map(p => 
+        p.id === updatedPlayer.id 
+          ? { ...p, handicap: updatedPlayer.handicap, membershipType: updatedPlayer.membershipType }
+          : p
+      ));
       
       let playerReg = registrations[updatedPlayer.name];
       
@@ -820,6 +829,9 @@ export default function EventRegistrationScreen() {
         Alert.alert('Error', 'Registration not found. Please try removing and re-adding the player.');
         throw new Error('Registration not found');
       }
+      
+      // Invalidate members query to ensure AuthContext gets updated
+      queryClient.invalidateQueries({ queryKey: ['members'] });
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
