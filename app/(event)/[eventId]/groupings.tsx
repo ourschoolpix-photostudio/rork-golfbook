@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -78,6 +78,7 @@ export default function GroupingsScreen() {
   const [showPinModal, setShowPinModal] = useState<boolean>(false);
   const [pinInput, setPinInput] = useState<string>('');
   const [registrations, setRegistrations] = useState<Record<string, any>>({});
+  const isFirstFocus = useRef(true);
   
   const queryClient = useQueryClient();
   const { members: allMembers } = useAuth();
@@ -219,6 +220,12 @@ export default function GroupingsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (isFirstFocus.current) {
+        console.log('[groupings] 📍 First focus - skipping auto-refresh to avoid interfering with initial load');
+        isFirstFocus.current = false;
+        return;
+      }
+      
       console.log('[groupings] 🔄 Screen focused - refreshing all data');
       if (id) {
         refetchGroupings();
