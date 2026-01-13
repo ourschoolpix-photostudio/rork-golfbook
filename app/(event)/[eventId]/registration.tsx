@@ -198,8 +198,9 @@ export default function EventRegistrationScreen() {
       queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
     },
     onError: (err) => {
-      console.error('[registration] ❌ Error updating payment status:', err);
-      Alert.alert('Error', 'Failed to update payment status.');
+      const errorMessage = err instanceof Error ? err.message : JSON.stringify(err);
+      console.error('[registration] ❌ Error updating payment status:', errorMessage);
+      Alert.alert('Error', `Failed to update payment status: ${errorMessage}`);
     },
   });
 
@@ -595,7 +596,9 @@ export default function EventRegistrationScreen() {
         updates,
       });
     } catch (error) {
-      console.error('[registration] ❌ Payment toggle failed:', error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      console.error('[registration] ❌ Payment toggle failed:', errorMessage);
+      Alert.alert('Error', `Payment toggle failed: ${errorMessage}`);
     }
   };
 
