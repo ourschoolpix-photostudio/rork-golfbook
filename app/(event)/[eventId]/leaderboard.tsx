@@ -9,6 +9,11 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Member, Event } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
+const formatScore = (score: number): string => {
+  const rounded = Math.round(score * 10) / 10;
+  return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(1);
+};
+
 interface LeaderboardEntry {
   member: Member;
   grossScore: number;
@@ -363,7 +368,7 @@ export default function LeaderboardScreen() {
                     </Text>
                   </View>
                   <View style={styles.pointsContainer}>
-                    <Text style={styles.pointsValue}>{entry.netScore}</Text>
+                    <Text style={styles.pointsValue}>{formatScore(entry.netScore)}</Text>
                     <Text style={styles.pointsLabel}>net</Text>
                     <Text style={styles.pointsValue}>{entry.member.rolexPoints || 0}</Text>
                     <Text style={styles.pointsLabel}>rolex pts</Text>
@@ -424,9 +429,9 @@ export default function LeaderboardScreen() {
                         </Text>
                       </View>
                       <View style={styles.pointsContainer}>
-                        <Text style={styles.pointsValue}>{entry.netScore}</Text>
+                        <Text style={styles.pointsValue}>{formatScore(entry.netScore)}</Text>
                         <Text style={styles.pointsLabel}>net</Text>
-                        <Text style={styles.pointsValue}>{entry.grossScore}</Text>
+                        <Text style={styles.pointsValue}>{formatScore(entry.grossScore)}</Text>
                         <Text style={styles.pointsLabel}>gross</Text>
                       </View>
                     </View>
@@ -477,9 +482,9 @@ export default function LeaderboardScreen() {
                         </Text>
                       </View>
                       <View style={styles.pointsContainer}>
-                        <Text style={styles.pointsValue}>{entry.netScore}</Text>
+                        <Text style={styles.pointsValue}>{formatScore(entry.netScore)}</Text>
                         <Text style={styles.pointsLabel}>net</Text>
-                        <Text style={styles.pointsValue}>{entry.grossScore}</Text>
+                        <Text style={styles.pointsValue}>{formatScore(entry.grossScore)}</Text>
                         <Text style={styles.pointsLabel}>gross</Text>
                       </View>
                     </View>
