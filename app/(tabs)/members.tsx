@@ -195,7 +195,7 @@ const collapsibleStyles = StyleSheet.create({
 });
 
 export default function MembersScreen() {
-  const { currentUser: authUser, members: allMembersFromContext, updateMember: updateMemberFromContext } = useAuth();
+  const { currentUser: authUser, members: allMembersFromContext, updateMember: updateMemberFromContext, refreshMembers } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -210,6 +210,7 @@ export default function MembersScreen() {
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [showListingModal, setShowListingModal] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
 
   const loadMembers = useCallback(async () => {
@@ -377,6 +378,19 @@ export default function MembersScreen() {
     });
   }, []);
 
+  const handleManualRefresh = useCallback(async () => {
+    try {
+      console.log('[Members] Manual refresh triggered');
+      setIsRefreshing(true);
+      await refreshMembers();
+      console.log('[Members] Manual refresh complete');
+    } catch (error) {
+      console.error('[Members] Error during manual refresh:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refreshMembers]);
+
 
 
   const getFilterTitle = () => {
@@ -413,6 +427,19 @@ export default function MembersScreen() {
             fontSize: 20,
             fontWeight: '700',
           },
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={handleManualRefresh}
+              disabled={isRefreshing}
+              style={{ marginRight: 16, opacity: isRefreshing ? 0.5 : 1 }}
+            >
+              <Ionicons
+                name={isRefreshing ? 'refresh-circle' : 'refresh'}
+                size={24}
+                color="#007AFF"
+              />
+            </TouchableOpacity>
+          ),
         }}
       />
       <View style={styles.container}>
