@@ -138,6 +138,8 @@ export default function EventRegistrationScreen() {
     },
     enabled: !!eventId && !!eventQuery.data,
     retry: 2,
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
   });
 
   const createMemberMutation = useMutation({
@@ -216,20 +218,30 @@ export default function EventRegistrationScreen() {
       console.log('[registration] 🔄 Manual refresh triggered');
       console.log('[registration] 🔄 Current registrations count:', registrationsQuery.data?.length || 0);
       
-      const results = await Promise.all([
-        eventQuery.refetch(),
-        registrationsQuery.refetch(),
-      ]);
+      await queryClient.cancelQueries({ queryKey: ['registrations', eventId] });
+      await queryClient.cancelQueries({ queryKey: ['events', eventId] });
       
-      console.log('[registration] 📊 Event refetch result:', results[0].isSuccess ? 'SUCCESS' : 'FAILED');
-      console.log('[registration] 📊 Registrations refetch result:', results[1].isSuccess ? 'SUCCESS' : 'FAILED');
-      console.log('[registration] 📊 New registrations count:', results[1].data?.length || 0);
-      console.log('[registration] 📊 Registrations data:', JSON.stringify(results[1].data, null, 2));
+      queryClient.removeQueries({ queryKey: ['registrations', eventId] });
+      queryClient.removeQueries({ queryKey: ['events', eventId] });
       
-      queryClient.invalidateQueries({ queryKey: ['events', eventId] });
-      queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
+      console.log('[registration] 🗑️ Removed cached queries');
+      
+      const eventResult = await eventQuery.refetch();
+      const registrationsResult = await registrationsQuery.refetch();
+      
+      console.log('[registration] 📊 Event refetch result:', eventResult.isSuccess ? 'SUCCESS' : 'FAILED');
+      console.log('[registration] 📊 Registrations refetch result:', registrationsResult.isSuccess ? 'SUCCESS' : 'FAILED');
+      
+      const newRegs = registrationsResult.data || [];
+      console.log('[registration] 📊 New registrations count:', newRegs.length);
+      console.log('[registration] 📊 Registrations data:', JSON.stringify(newRegs, null, 2));
+      
+      if (newRegs.length > 0) {
+        console.log('[registration] 📋 First registration:', JSON.stringify(newRegs[0], null, 2));
+      }
       
       console.log('[registration] ✅ Manual refresh completed');
+      Alert.alert('Success', `Refreshed! Found ${newRegs.length} registrations.`);
     } catch (error) {
       console.error('[registration] ❌ Error during manual refresh:', error);
       Alert.alert('Error', 'Failed to refresh data. Please try again.');
