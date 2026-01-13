@@ -34,6 +34,7 @@ import { Member, User, Event } from '@/types';
 import { EventPlayerModal } from '@/components/EventPlayerModal';
 import { ZelleInvoiceModal } from '@/components/ZelleInvoiceModal';
 import { PayPalInvoiceModal } from '@/components/PayPalInvoiceModal';
+import { MembershipRenewalModal } from '@/components/MembershipRenewalModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
@@ -92,6 +93,8 @@ export default function EventRegistrationScreen() {
   const [includeHandicapForPDF, setIncludeHandicapForPDF] = useState<boolean>(false);
   const [generatingInvoiceForPlayer, setGeneratingInvoiceForPlayer] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [membershipRenewalModalVisible, setMembershipRenewalModalVisible] = useState(false);
+  const [memberForRenewal, setMemberForRenewal] = useState<Member | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -1718,7 +1721,26 @@ export default function EventRegistrationScreen() {
           setSelectedPlayerForEvent(null);
         }}
         onSave={handleSavePlayerChanges}
+        onMembershipRenewalRequired={(member) => {
+          console.log('[registration] Membership renewal required for:', member.name);
+          setMemberForRenewal(member);
+          setMembershipRenewalModalVisible(true);
+        }}
       />
+
+      {memberForRenewal && (
+        <MembershipRenewalModal
+          visible={membershipRenewalModalVisible}
+          member={memberForRenewal}
+          onClose={async () => {
+            console.log('[registration] MembershipRenewalModal closed');
+            setMembershipRenewalModalVisible(false);
+            setMemberForRenewal(null);
+            await refreshMembers();
+            await registrationsQuery.refetch();
+          }}
+        />
+      )}
 
       {addCustomGuestModalVisible && (
         <View style={styles.modalOverlay}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ScrollView,
   Keyboard,
   TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +24,7 @@ interface EventPlayerModalProps {
   event: Event | null;
   onClose: () => void;
   onSave: (player: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number, guestNames?: string, isSponsor?: boolean) => Promise<void>;
+  onMembershipRenewalRequired?: (player: Member) => void;
 }
 
 export function EventPlayerModal({
@@ -33,6 +35,7 @@ export function EventPlayerModal({
   event,
   onClose,
   onSave,
+  onMembershipRenewalRequired,
 }: EventPlayerModalProps) {
   const [currentHandicap, setCurrentHandicap] = useState('');
   const [adjustedHandicap, setAdjustedHandicap] = useState('');
@@ -41,6 +44,7 @@ export function EventPlayerModal({
   const [guestNames, setGuestNames] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSponsor, setIsSponsor] = useState(false);
+  const originalMembershipTypeRef = useRef<'active' | 'in-active' | 'guest'>('active');
 
   const isSocialEvent = event?.type === 'social';
 
@@ -72,6 +76,7 @@ export function EventPlayerModal({
       
       console.log('Normalized to:', normalized);
       setMembershipType(normalized);
+      originalMembershipTypeRef.current = normalized;
     }
   }, [player, registration, visible]);
 
@@ -98,6 +103,38 @@ export function EventPlayerModal({
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      
+      const wasInactive = originalMembershipTypeRef.current === 'in-active';
+      const isNowActive = membershipType === 'active';
+      
+      if (wasInactive && isNowActive && onMembershipRenewalRequired) {
+        console.log('[EventPlayerModal] Membership change detected: in-active -> active, triggering renewal flow');
+        Alert.alert(
+          'Membership Renewal Required',
+          `${player.name} is currently inactive. To change their status to active, they need to complete the membership renewal process. Would you like to proceed with membership renewal?`,
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => {
+                setMembershipType('in-active');
+                setIsSaving(false);
+              },
+            },
+            {
+              text: 'Renew Membership',
+              onPress: () => {
+                setIsSaving(false);
+                onClose();
+                onMembershipRenewalRequired(player);
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+        return;
+      }
+      
       const updatedPlayer: Member = {
         ...player,
         handicap: parseFloat(currentHandicap) || player.handicap || 0,
