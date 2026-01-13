@@ -57,7 +57,7 @@ export default function EventRegistrationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { eventId, openPayment } = useLocalSearchParams<{ eventId: string; openPayment?: string }>();
-  const { currentUser, members: allMembers } = useAuth();
+  const { currentUser, members: allMembers, refreshMembers } = useAuth();
   const { addNotification } = useNotifications();
   const { orgInfo } = useSettings();
   const [event, setEvent] = useState<Event | null>(null);
@@ -830,10 +830,9 @@ export default function EventRegistrationScreen() {
         throw new Error('Registration not found');
       }
       
-      // Invalidate members query to ensure AuthContext gets updated
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Refresh AuthContext members to ensure membershipType change persists across navigation
+      console.log('[registration] 🔄 Refreshing AuthContext members...');
+      await refreshMembers();
       
       await eventQuery.refetch();
       await registrationsQuery.refetch();
