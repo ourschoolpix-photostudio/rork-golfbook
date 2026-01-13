@@ -58,7 +58,6 @@ export function EventPlayerModal({
   const [showAddToHistoryFlow, setShowAddToHistoryFlow] = useState(false);
   const [selectedMembershipLevel, setSelectedMembershipLevel] = useState<MembershipLevel | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('cash');
-  const [paymentAmount, setPaymentAmount] = useState('');
 
 
   const isSocialEvent = event?.type === 'social';
@@ -97,7 +96,6 @@ export function EventPlayerModal({
       setShowAddToHistoryFlow(false);
       setSelectedMembershipLevel(null);
       setSelectedPaymentMethod('cash');
-      setPaymentAmount('');
     }
   }, [player, registration, visible]);
 
@@ -134,18 +132,35 @@ export function EventPlayerModal({
       setMembershipType(newType);
       setShowAddToHistoryFlow(false);
       setSelectedMembershipLevel(null);
-      setPaymentAmount('');
     }
+  };
+
+  const getBasePrice = (level: MembershipLevel): number => {
+    const price = level === 'full' 
+      ? orgInfo.fullMembershipPrice 
+      : orgInfo.basicMembershipPrice;
+    return parseFloat(price) || 0;
+  };
+
+  const calculatePayPalAdjustedPrice = (basePrice: number): number => {
+    // PayPal fee: 3% + $0.30
+    return basePrice * 1.03 + 0.30;
+  };
+
+  const getDisplayAmount = (): string => {
+    if (!selectedMembershipLevel) return '';
+    const basePrice = getBasePrice(selectedMembershipLevel);
+    if (basePrice === 0) return '';
+    
+    if (selectedPaymentMethod === 'paypal') {
+      const adjusted = calculatePayPalAdjustedPrice(basePrice);
+      return adjusted.toFixed(2);
+    }
+    return basePrice.toFixed(2);
   };
 
   const handleMembershipLevelSelect = (level: MembershipLevel) => {
     setSelectedMembershipLevel(level);
-    // Auto-populate amount from settings
-    if (level === 'full') {
-      setPaymentAmount(orgInfo.fullMembershipPrice || '');
-    } else {
-      setPaymentAmount(orgInfo.basicMembershipPrice || '');
-    }
   };
 
   const handleAddToHistory = async () => {
@@ -154,15 +169,20 @@ export function EventPlayerModal({
       return;
     }
     
-    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-      Alert.alert('Error', 'Please enter a valid payment amount');
+    const basePrice = getBasePrice(selectedMembershipLevel);
+    if (basePrice <= 0) {
+      Alert.alert('Error', 'Membership price not configured in settings');
       return;
     }
+    
+    const finalAmount = selectedPaymentMethod === 'paypal' 
+      ? calculatePayPalAdjustedPrice(basePrice).toFixed(2)
+      : basePrice.toFixed(2);
     
     try {
       setIsSaving(true);
       console.log('[EventPlayerModal] Adding membership to history for:', player.name);
-      console.log('[EventPlayerModal] Level:', selectedMembershipLevel, 'Method:', selectedPaymentMethod, 'Amount:', paymentAmount);
+      console.log('[EventPlayerModal] Level:', selectedMembershipLevel, 'Method:', selectedPaymentMethod, 'Amount:', finalAmount);
       
       // Insert membership payment record
       const { error: paymentError } = await supabase
@@ -171,7 +191,7 @@ export function EventPlayerModal({
           member_id: player.id,
           member_name: player.name,
           membership_type: selectedMembershipLevel,
-          amount: paymentAmount,
+          amount: finalAmount,
           payment_method: selectedPaymentMethod,
           payment_status: 'completed',
           email: player.email || 'offline-payment@placeholder.com',
@@ -402,20 +422,18 @@ export function EventPlayerModal({
                   ))}
                 </View>
                 
-                <Text style={styles.fieldLabel}>Amount Paid</Text>
-                <View style={styles.amountInputContainer}>
+                <Text style={styles.fieldLabel}>Amount to Record</Text>
+                <View style={styles.amountDisplayContainer}>
                   <Text style={styles.dollarSign}>$</Text>
-                  <TextInput
-                    style={styles.amountInput}
-                    value={paymentAmount}
-                    onChangeText={setPaymentAmount}
-                    keyboardType="decimal-pad"
-                    placeholder="0.00"
-                    placeholderTextColor="#999"
-                  />
+                  <Text style={styles.amountDisplay}>{getDisplayAmount() || '0.00'}</Text>
                 </View>
-                {paymentAmount && (
-                  <Text style={styles.amountNote}>Amount auto-filled from settings</Text>
+                {selectedMembershipLevel && selectedPaymentMethod === 'paypal' && (
+                  <Text style={styles.paypalAdjustNote}>
+                    Includes PayPal fee (3% + $0.30)
+                  </Text>
+                )}
+                {selectedMembershipLevel && selectedPaymentMethod !== 'paypal' && (
+                  <Text style={styles.amountNote}>Amount from settings</Text>
                 )}
               </View>
             )}
@@ -778,14 +796,15 @@ const styles = StyleSheet.create({
   paymentMethodTextActive: {
     color: '#fff',
   },
-  amountInputContainer: {
+  amountDisplayContainer: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
     paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   dollarSign: {
     fontSize: 18,
@@ -793,16 +812,20 @@ const styles = StyleSheet.create({
     color: '#666',
     marginRight: 4,
   },
-  amountInput: {
-    flex: 1,
+  amountDisplay: {
     fontSize: 18,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     color: '#1a1a1a',
-    paddingVertical: 12,
   },
   amountNote: {
     fontSize: 11,
     color: '#4CAF50',
+    fontStyle: 'italic' as const,
+    marginTop: 4,
+  },
+  paypalAdjustNote: {
+    fontSize: 11,
+    color: '#007AFF',
     fontStyle: 'italic' as const,
     marginTop: 4,
   },
