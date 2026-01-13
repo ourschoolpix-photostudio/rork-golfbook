@@ -150,8 +150,13 @@ export function validateScoreData(score: any): ValidationResult {
   }
 
   if (score.totalScore !== undefined && score.totalScore !== null) {
-    if (typeof score.totalScore !== 'number' || score.totalScore < 18 || score.totalScore > 270) {
-      errors.push('Total score must be a number between 18 and 270');
+    // Calculate scored holes count to validate total score range
+    const scoredHolesCount = score.holes ? score.holes.filter((h: any) => h !== null && typeof h === 'number').length : 0;
+    const minScore = scoredHolesCount; // Minimum 1 stroke per hole
+    const maxScore = scoredHolesCount * 15; // Maximum 15 strokes per hole
+    
+    if (typeof score.totalScore !== 'number' || (scoredHolesCount > 0 && (score.totalScore < minScore || score.totalScore > maxScore))) {
+      errors.push(`Total score must be a number between ${minScore} and ${maxScore} for ${scoredHolesCount} holes`);
     }
   }
 
