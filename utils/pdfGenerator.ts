@@ -1312,9 +1312,10 @@ export async function generateInvoicePDF(
         if (orgInfo?.paypalClientId && orgInfo?.paypalClientSecret) {
           try {
             console.log('[pdfGenerator] 🎯 Creating PayPal order for email invoice...');
-            const serviceFeePercentage = 0.05;
+            const serviceFeePercentage = 0.03;
+            const serviceFeeFixed = 0.30;
             const subtotal = total;
-            const serviceFeeAmount = subtotal * serviceFeePercentage;
+            const serviceFeeAmount = (subtotal * serviceFeePercentage) + serviceFeeFixed;
             const totalWithFee = subtotal + serviceFeeAmount;
             
             const paypalOrder = await createPayPalOrder({
@@ -1333,7 +1334,7 @@ export async function generateInvoicePDF(
             emailBody += `
       <p><strong>Option 2: PayPal</strong><br/>
       <a href="${paypalOrder.approvalUrl}" style="display: inline-block; background: #0070BA; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 700; margin-top: 8px;">Pay ${totalWithFee.toFixed(2)} with PayPal</a><br/>
-      <span style="font-size: 12px; color: #666; margin-top: 4px; display: inline-block;">Includes ${serviceFeeAmount.toFixed(2)} service fee</span></p>`;
+      <span style="font-size: 12px; color: #666; margin-top: 4px; display: inline-block;">Includes ${serviceFeeAmount.toFixed(2)} service fee (3% + $0.30)</span></p>`;
           } catch (error) {
             console.error('[pdfGenerator] ❌ Failed to create PayPal order for email:');
             if (error instanceof Error) {
