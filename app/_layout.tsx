@@ -259,7 +259,9 @@ function RootLayoutNav() {
 
   useEffect(() => {
     if (!authLoading && Platform.OS !== 'web' && isHydrated) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch((error) => {
+        console.log('[RootLayoutNav] SplashScreen.hideAsync error (safe to ignore):', error.message);
+      });
     }
   }, [authLoading, isHydrated]);
 
