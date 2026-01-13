@@ -5,6 +5,7 @@ import { Member } from '@/types';
 import { localStorageService } from '@/utils/localStorageService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeMembers } from '@/utils/useRealtimeSubscription';
 
 const STORAGE_KEYS = {
   CURRENT_USER: '@golf_current_user',
@@ -152,6 +153,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
+
+  useRealtimeMembers(
+    useCallback(() => {
+      console.log('[AuthContext] 🔄 Real-time member update detected, refetching members...');
+      fetchMembers();
+    }, [fetchMembers]),
+    !useLocalStorage
+  );
 
   const addMemberDirect = useCallback(async (member: Member) => {
     try {

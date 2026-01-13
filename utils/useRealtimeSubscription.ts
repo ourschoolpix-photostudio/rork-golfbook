@@ -139,3 +139,47 @@ export function useRealtimeRegistrations(eventId: string, enabled: boolean = tru
     }
   }, [eventId, enabled, queryClient]);
 }
+
+export function useRealtimeMembers(onMemberChange: () => void, enabled: boolean = true) {
+  useEffect(() => {
+    if (!enabled) return;
+
+    console.log('[Realtime] 🔴 Subscribing to members table');
+
+    try {
+      const channel = supabase
+        .channel('members-all')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'members',
+          },
+          (payload) => {
+            try {
+              const memberName = (payload.new as any)?.name || (payload.old as any)?.name || 'Unknown';
+              console.log('[Realtime] 👤 Member change detected:', payload.eventType, memberName);
+              onMemberChange();
+            } catch (error) {
+              console.error('[Realtime] Error handling member change:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] Members subscription status:', status);
+        });
+
+      return () => {
+        try {
+          console.log('[Realtime] 🔴 Unsubscribing from members');
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.error('[Realtime] Error unsubscribing from members:', error);
+        }
+      };
+    } catch (error) {
+      console.error('[Realtime] Error setting up members subscription:', error);
+    }
+  }, [enabled, onMemberChange]);
+}
