@@ -136,7 +136,7 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       setShowAddToHistoryPrompt(false);
       setPendingSave(null);
       setSelectedMembershipType('full');
-      setSelectedPaymentMethod('cash');
+      setSelectedPaymentMethod('zelle');
     }
   }, [member, visible]);
 
@@ -1450,6 +1450,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: '#fff',
+    textAlign: 'center' as const,
   },
   promptButtonSecondaryText: {
     fontSize: 14,
