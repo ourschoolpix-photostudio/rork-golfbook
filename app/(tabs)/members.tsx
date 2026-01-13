@@ -9,6 +9,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Alert,
 } from 'react-native';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useFocusEffect, Stack } from 'expo-router';
@@ -309,6 +310,32 @@ export default function MembersScreen() {
     setShowRenewalModal(true);
   }, []);
 
+  const handleEditProfileTap = useCallback(() => {
+    if (currentUser?.membershipType === 'in-active') {
+      Alert.alert(
+        'Profile Editing Prohibited',
+        'Editing your profile is prohibited for non-active members. Would you like to renew your membership?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => console.log('[Members] User cancelled profile edit'),
+          },
+          {
+            text: 'Renew Membership',
+            onPress: () => {
+              console.log('[Members] User chose to renew membership');
+              handleRenewMembership();
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+    } else {
+      setShowEditModal(true);
+    }
+  }, [currentUser, handleRenewMembership]);
+
   const handleSaveMember = useCallback(async (updatedMember: Member) => {
     try {
       console.log('[Members] Saving member:', updatedMember.name);
@@ -455,7 +482,7 @@ export default function MembersScreen() {
                   isAdmin={authUser?.isAdmin || false}
                   isCurrentUser={true}
                   currentUser={authUser}
-                  onEdit={currentUser.membershipType === 'in-active' ? handleRenewMembership : () => setShowEditModal(true)}
+                  onEdit={handleEditProfileTap}
                   onHistoryPress={() => handleHistoryPress(currentUser)}
                 />
               </TouchableOpacity>
