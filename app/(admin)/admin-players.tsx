@@ -15,6 +15,7 @@ import { Member } from '@/types';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { PlayerCard } from '@/components/PlayerCard';
 import { AdminFooter } from '@/components/AdminFooter';
+import { PlayerHistoricalRecordsModal } from '@/components/PlayerHistoricalRecordsModal';
 
 export default function AdminPlayersScreen() {
   const router = useRouter();
@@ -25,6 +26,8 @@ export default function AdminPlayersScreen() {
   const [filterType, setFilterType] = useState<'all' | 'active' | 'in-active' | 'guests' | 'local' | 'outofstate'>('all');
   const [searchText, setSearchText] = useState('');
   const [selectedForActivation, setSelectedForActivation] = useState<Set<string>>(new Set());
+  const [historyMember, setHistoryMember] = useState<Member | null>(null);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
 
   useEffect(() => {
     console.log('[AdminPlayers] Loading members from AuthContext');
@@ -390,6 +393,10 @@ export default function AdminPlayersScreen() {
             showCheckbox={true}
             isSelected={selectedForActivation.has(item.id)}
             onCheckboxPress={() => handleToggleBulkSelect(item.id)}
+            onHistoryPress={() => {
+              setHistoryMember(item);
+              setHistoryModalVisible(true);
+            }}
           />
         )}
         ListEmptyComponent={<Text style={styles.emptyText}>No players found</Text>}
@@ -405,6 +412,14 @@ export default function AdminPlayersScreen() {
         }}
         onSave={handleSavePlayer}
         isLimitedMode={false}
+      />
+      <PlayerHistoricalRecordsModal
+        visible={historyModalVisible}
+        member={historyMember}
+        onClose={() => {
+          setHistoryModalVisible(false);
+          setHistoryMember(null);
+        }}
       />
       <AdminFooter />
     </View>
