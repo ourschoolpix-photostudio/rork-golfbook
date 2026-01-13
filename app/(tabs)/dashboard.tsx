@@ -349,7 +349,7 @@ export default function DashboardScreen() {
             setTimeout(() => {
               router.push({
                 pathname: '/(event)/[eventId]/registration',
-                params: { eventId: selectedEvent.id, openPayment: 'true' }
+                params: { eventId: selectedEvent.id, autoRegister: 'true' }
               });
             }, 100);
           }}
