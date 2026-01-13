@@ -347,7 +347,10 @@ export default function DashboardScreen() {
           onRegister={() => {
             setDetailsModalVisible(false);
             setTimeout(() => {
-              router.push(`/(event)/${selectedEvent.id}/registration` as any);
+              router.push({
+                pathname: `/(event)/${selectedEvent.id}/registration` as any,
+                params: { openPayment: 'true' }
+              });
             }, 100);
           }}
           currentUserId={currentUser?.id}

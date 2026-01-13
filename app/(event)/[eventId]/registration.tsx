@@ -669,7 +669,10 @@ export default function EventRegistrationScreen() {
 
   const handleRegisterCurrentUser = () => {
     if (!currentUser || !event) return;
-    setPaymentMethodModalVisible(true);
+    setEventDetailsModalVisible(false);
+    setTimeout(() => {
+      setPaymentMethodModalVisible(true);
+    }, 100);
   };
 
   const handleZelleRegistration = async (ghin: string, email: string, phone: string, numberOfGuests?: number, guestNames?: string, paymentStatus?: 'paid' | 'pending') => {
