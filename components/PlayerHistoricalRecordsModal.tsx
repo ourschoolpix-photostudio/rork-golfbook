@@ -672,6 +672,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 14,
+    fontWeight: '700' as const,
     color: '#666',
     marginTop: 2,
   },
