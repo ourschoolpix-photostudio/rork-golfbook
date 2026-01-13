@@ -110,9 +110,7 @@ export default function EventRegistrationScreen() {
     queryKey: ['events', eventId],
     queryFn: async () => {
       try {
-        console.log('[registration] 🔍 Fetching event:', eventId);
         const data = await supabaseService.events.get(eventId!);
-        console.log('[registration] ✅ Event fetched successfully:', data?.id, data?.name);
         return data;
       } catch (error) {
         console.error('[registration] ❌ Error fetching event:', error);
@@ -127,9 +125,7 @@ export default function EventRegistrationScreen() {
     queryKey: ['registrations', eventId],
     queryFn: async () => {
       try {
-        console.log('[registration] 🔍 Fetching registrations for event:', eventId);
         const data = await supabaseService.registrations.getAll(eventId!);
-        console.log('[registration] ✅ Registrations fetched:', data?.length || 0);
         return data;
       } catch (error) {
         console.error('[registration] ❌ Error fetching registrations:', error);
@@ -199,7 +195,6 @@ export default function EventRegistrationScreen() {
     mutationFn: ({ registrationId, updates }: { registrationId: string; updates: any }) => 
       supabaseService.registrations.update(registrationId, updates),
     onSuccess: () => {
-      console.log('[registration] ✅ Payment status updated successfully');
       queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
     },
     onError: (err) => {
@@ -215,32 +210,16 @@ export default function EventRegistrationScreen() {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
-      console.log('[registration] 🔄 Manual refresh triggered');
-      console.log('[registration] 🔄 Current registrations count:', registrationsQuery.data?.length || 0);
-      
       await queryClient.cancelQueries({ queryKey: ['registrations', eventId] });
       await queryClient.cancelQueries({ queryKey: ['events', eventId] });
       
       queryClient.removeQueries({ queryKey: ['registrations', eventId] });
       queryClient.removeQueries({ queryKey: ['events', eventId] });
       
-      console.log('[registration] 🗑️ Removed cached queries');
-      
       const eventResult = await eventQuery.refetch();
       const registrationsResult = await registrationsQuery.refetch();
       
-      console.log('[registration] 📊 Event refetch result:', eventResult.isSuccess ? 'SUCCESS' : 'FAILED');
-      console.log('[registration] 📊 Registrations refetch result:', registrationsResult.isSuccess ? 'SUCCESS' : 'FAILED');
-      
       const newRegs = registrationsResult.data || [];
-      console.log('[registration] 📊 New registrations count:', newRegs.length);
-      console.log('[registration] 📊 Registrations data:', JSON.stringify(newRegs, null, 2));
-      
-      if (newRegs.length > 0) {
-        console.log('[registration] 📋 First registration:', JSON.stringify(newRegs[0], null, 2));
-      }
-      
-      console.log('[registration] ✅ Manual refresh completed');
       Alert.alert('Success', `Refreshed! Found ${newRegs.length} registrations.`);
     } catch (error) {
       console.error('[registration] ❌ Error during manual refresh:', error);
@@ -252,7 +231,6 @@ export default function EventRegistrationScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      console.log('[registration] 🔄 Screen focused - refetching event data');
       eventQuery.refetch();
     }, [eventId])
   );
@@ -268,7 +246,6 @@ export default function EventRegistrationScreen() {
       
       const loadRegs = async () => {
         const regs = registrationsQuery.data || [];
-        console.log('[registration] Loaded regs from backend:', regs);
         
         await registrationCache.cacheRegistrations(foundEvent.id, regs);
         
@@ -277,7 +254,6 @@ export default function EventRegistrationScreen() {
         
         regs.forEach(reg => {
           if (reg.isCustomGuest) {
-            console.log('[registration] 🎯 Processing custom guest:', reg.customGuestName);
             const customGuestMember: Member = {
               id: reg.id,
               name: reg.customGuestName || 'Unknown Guest',
@@ -331,8 +307,6 @@ export default function EventRegistrationScreen() {
           }
         });
         
-        console.log('[registration] Built registered players list:', registered.length);
-        console.log('[registration] Built regMap:', regMap);
         setSelectedPlayers(registered);
         setRegistrations(regMap);
       };
@@ -345,11 +319,6 @@ export default function EventRegistrationScreen() {
 
   useEffect(() => {
     setMembers(allMembers);
-    console.log('[registration] ⚠️ Total members loaded:', allMembers.length);
-    console.log('[registration] First 5 members:', allMembers.slice(0, 5).map(m => ({ name: m.name, id: m.id, type: m.membershipType })));
-    console.log('[registration] Active members:', allMembers.filter(m => m.membershipType === 'active').length);
-    console.log('[registration] Inactive members:', allMembers.filter(m => m.membershipType === 'in-active').length);
-    console.log('[registration] Guests:', allMembers.filter(m => m.membershipType === 'guest').length);
   }, [allMembers]);
 
   useEffect(() => {
@@ -433,8 +402,6 @@ export default function EventRegistrationScreen() {
   };
 
   const handleBulkAddPlayers = async () => {
-    console.log('=== handleBulkAddPlayers started ===');
-    console.log('selectedForBulkAdd size:', selectedForBulkAdd.size);
     if (selectedForBulkAdd.size === 0) {
       Alert.alert('No Players Selected', 'Please select at least one player to add.');
       return;
@@ -448,7 +415,6 @@ export default function EventRegistrationScreen() {
 
     try {
       const playersToAdd = members.filter((m) => selectedForBulkAdd.has(m.id));
-      console.log('Players to add:', playersToAdd.length, playersToAdd.map(p => p.name));
 
       let updated = [...selectedPlayers];
       let newRegs: Record<string, any> = { ...registrations };
@@ -457,12 +423,10 @@ export default function EventRegistrationScreen() {
 
       for (const player of playersToAdd) {
         if (updated.find((p) => p.id === player.id)) {
-          console.log('Player already registered:', player.name);
           continue;
         }
 
         try {
-          console.log('Creating registration for:', player.name);
           const guestCount = event.type === 'social' ? parseInt(playerGuestCounts[player.id] || '0', 10) : undefined;
           const guestNamesValue = event.type === 'social' ? normalizeGuestNames(playerGuestNames[player.id], guestCount || 0) : undefined;
           const isSponsor = playerSponsorFlags[player.id] || false;
@@ -487,8 +451,6 @@ export default function EventRegistrationScreen() {
               });
             }
           }
-          
-          console.log('✓ Registration created:', player.name, 'with guest count:', guestCount);
 
           updated = [...updated, player];
           addedCount++;
@@ -498,10 +460,7 @@ export default function EventRegistrationScreen() {
         }
       }
 
-      console.log(`Total successfully added: ${addedCount}, failed: ${failedPlayers.length}`);
-
       if (addedCount > 0) {
-        console.log('✓ Registrations updated');
         setSelectedPlayers(updated);
         await registrationsQuery.refetch();
       }
@@ -517,8 +476,6 @@ export default function EventRegistrationScreen() {
           `Failed to add: ${failedPlayers.join(', ')}`
         );
       }
-
-      console.log('=== handleBulkAddPlayers completed ===');
     } catch (error) {
       console.error('Fatal error in handleBulkAddPlayers:', error);
       Alert.alert('Error', 'Failed to add players. Please check console.');
@@ -537,19 +494,15 @@ export default function EventRegistrationScreen() {
   });
 
   const handleRemovePlayer = async (playerId: string) => {
-    console.log('[registration] 🗑️ REMOVE PLAYER STARTED - playerId:', playerId);
     const playerToRemove = selectedPlayers.find((p) => p.id === playerId);
-    console.log('[registration] Player to remove:', playerToRemove?.name);
     const playerReg = registrations[playerToRemove?.name || ''];
     const isCustomGuest = playerReg?.isCustomGuest || false;
-    console.log('[registration] Is custom guest:', isCustomGuest);
     
     if (event && currentUser) {
       const eventGroupings = groupingsQuery.data || [];
       const playerInGroupings = eventGroupings.filter((g: any) => g.slots.includes(playerId));
       
       if (playerInGroupings.length > 0) {
-        console.log(`[registration] 🔍 Player found in ${playerInGroupings.length} groupings. Removing from groups first...`);
         
         const updatedGroupings = eventGroupings.map((g: any) => {
           if (g.slots.includes(playerId)) {
@@ -567,41 +520,32 @@ export default function EventRegistrationScreen() {
             groupings: updatedGroupings,
             syncedBy: currentUser.id,
           });
-          console.log('[registration] ✅ Player removed from groupings successfully');
         } catch (error) {
           console.error('[registration] ❌ Error removing player from groupings:', error);
           Alert.alert('Warning', 'Failed to remove player from groupings, but will continue with unregistration.');
         }
-      } else {
-        console.log('[registration] ℹ️ Player not found in any groupings');
       }
     }
     
     const updated = selectedPlayers.filter((p) => p.id !== playerId);
-    console.log('[registration] Updated players list:', updated.map(p => p.name));
     setSelectedPlayers(updated);
     
     if (event) {
-      console.log('[registration] Unregistering player from event');
       await unregisterMutation.mutateAsync({
         eventId: event.id,
         memberId: playerId,
       });
-      console.log('[registration] ✓ Player unregistered');
     }
 
     if (playerToRemove) {
       const playerReg = registrations[playerToRemove.name];
-      console.log('[registration] Backend registration found:', !!playerReg);
       
       if (isCustomGuest && playerReg) {
         try {
-          console.log('[registration] Deleting custom guest registration directly:', playerReg.id);
           await supabase
             .from('event_registrations')
             .delete()
             .eq('id', playerReg.id);
-          console.log('[registration] ✓ Custom guest registration deleted from database');
         } catch (error) {
           console.error('[registration] ❌ Error deleting custom guest registration:', error);
         }
@@ -610,9 +554,7 @@ export default function EventRegistrationScreen() {
       const newRegistrations = { ...registrations };
       delete newRegistrations[playerToRemove.name];
       setRegistrations(newRegistrations);
-      console.log('[registration] ✓ Player removed from registrations map');
     }
-    console.log('[registration] 🗑️ REMOVE PLAYER COMPLETED - All data cleaned up');
   };
 
   const handleRemoveAllPlayers = async () => {
@@ -640,20 +582,14 @@ export default function EventRegistrationScreen() {
       return;
     }
     
-    console.log('[registration] 🔄 Toggling payment status for:', playerName);
-    console.log('[registration] Current registration:', { id: playerReg.id, currentStatus: playerReg.paymentStatus });
-    
     const currentStatus = playerReg.paymentStatus;
     const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
     const backendStatus = newStatus === 'unpaid' ? 'pending' : newStatus;
-    
-    console.log('[registration] New status will be:', backendStatus);
     
     try {
       const updates: any = { paymentStatus: backendStatus };
       
       if (currentStatus === 'unpaid' && newStatus === 'paid') {
-        console.log('[registration] 💡 Status changed from unpaid to paid - resetting email indicator');
         updates.emailSent = false;
       }
       
@@ -661,7 +597,6 @@ export default function EventRegistrationScreen() {
         registrationId: playerReg.id,
         updates,
       });
-      console.log('[registration] ✅ Payment status toggle completed');
     } catch (error) {
       console.error('[registration] ❌ Payment toggle failed:', error);
     }
@@ -683,10 +618,6 @@ export default function EventRegistrationScreen() {
     const handicapValue = addCustomGuestHandicap.trim() !== '' ? addCustomGuestHandicap.trim() : null;
 
     try {
-      console.log('[registration] 🎯 Adding custom guest (no member record):', addCustomGuestName.trim());
-      console.log('[registration] Guest count:', guestCount, 'Sponsor:', addCustomGuestIsSponsor, 'Handicap:', handicapValue);
-      
-      console.log('[registration] Creating registration directly without member record...');
       const { error } = await supabase
         .from('event_registrations')
         .insert({
@@ -708,11 +639,7 @@ export default function EventRegistrationScreen() {
         throw new Error(`Failed to create registration: ${error.message}`);
       }
       
-      console.log('[registration] ✓ Custom guest registration created');
-      
-      console.log('[registration] Refetching registrations to sync UI...');
       await registrationsQuery.refetch();
-      console.log('[registration] ✓ Refetch complete');
       
       setAddCustomGuestName('');
       setAddCustomGuestCount('');
@@ -720,8 +647,6 @@ export default function EventRegistrationScreen() {
       setAddCustomGuestHandicap('');
       setAddCustomGuestIsSponsor(false);
       setAddCustomGuestModalVisible(false);
-      
-      console.log('[registration] ✅ Custom guest added successfully!');
     } catch (error) {
       console.error('[registration] ❌ Error adding custom guest:', error);
       if (error instanceof Error) {
@@ -753,11 +678,6 @@ export default function EventRegistrationScreen() {
     }
 
     try {
-      console.log('[Registration] Starting Zelle registration...');
-      console.log('[Registration] Member:', currentUserMember.name, 'Event:', event.name);
-      console.log('[Registration] Guest count:', numberOfGuests);
-      
-      console.log('[Registration] Step 1: Updating member info...');
       await updateMemberMutation.mutateAsync({
         memberId: currentUserMember.id,
         updates: {
@@ -766,19 +686,14 @@ export default function EventRegistrationScreen() {
           phone,
         },
       });
-      console.log('[Registration] ✓ Member info updated');
 
-      console.log('[Registration] Step 2: Creating registration...');
       await registerMutation.mutateAsync({
         eventId: event.id,
         memberId: currentUserMember.id,
       });
-      console.log('[Registration] ✓ Registration created');
       
-      console.log('[Registration] Step 3: Refetching registrations...');
       const backendRegs = await registrationsQuery.refetch();
       const userReg = backendRegs.data?.find((r: any) => r.memberId === currentUserMember.id);
-      console.log('[Registration] Found user registration:', userReg ? `ID: ${userReg.id}` : 'NOT FOUND');
       
       if (userReg) {
         const updates: any = {};
@@ -789,22 +704,18 @@ export default function EventRegistrationScreen() {
         }
         
         if (paymentStatus === 'paid') {
-          console.log('[Registration] Setting payment status to PAID');
           updates.paymentStatus = 'paid';
         }
         
         if (Object.keys(updates).length > 0) {
-          console.log('[Registration] Step 4: Updating registration with:', updates);
           await updateRegistrationMutation.mutateAsync({
             registrationId: userReg.id,
             updates,
           });
-          console.log('[Registration] ✓ Registration updated');
         }
       }
       
       if (paymentStatus !== 'paid' && paymentStatus !== undefined) {
-        console.log('[Registration] Step 5: Adding notification for Zelle/unpaid registration');
         try {
           const paymentMethodText = paymentStatus === 'pending' ? 'Zelle' : 'PayPal';
           await addNotification({
@@ -819,24 +730,18 @@ export default function EventRegistrationScreen() {
               paymentMethod: paymentStatus === 'pending' ? 'zelle' : 'paypal',
             },
           });
-          console.log('[Registration] ✓ Notification added');
         } catch (notifError) {
           console.error('[Registration] ⚠️ Warning: Failed to add notification:', notifError);
         }
-      } else {
-        console.log('[Registration] Skipping notification for PayPal payment (already paid)');
       }
 
       const updated = [...selectedPlayers, currentUserMember];
       setSelectedPlayers(updated);
       
-      console.log('[Registration] Step 6: Final refetch of registrations...');
       await registrationsQuery.refetch();
-      console.log('[Registration] ✓ Final refetch complete');
 
       setZelleInvoiceModalVisible(false);
       setPaypalInvoiceModalVisible(false);
-      console.log('[Registration] ✅ Registration completed successfully!');
     } catch (error) {
       console.error('[Registration] ❌ ERROR during registration:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -864,7 +769,6 @@ export default function EventRegistrationScreen() {
   };
 
   const handlePlayerCardPress = async (player: Member) => {
-    console.log('[registration] handlePlayerCardPress - currentUser:', currentUser ? { id: currentUser.id, name: currentUser.name, isAdmin: currentUser.isAdmin } : 'NULL');
     if (canViewRegistration(currentUser)) {
       const freshPlayer = allMembers.find(m => m.id === player.id);
       if (freshPlayer) {
@@ -878,13 +782,6 @@ export default function EventRegistrationScreen() {
 
   const handleSavePlayerChanges = async (updatedPlayer: Member, adjustedHandicap: string | null | undefined, numberOfGuests?: number, guestNames?: string, isSponsor?: boolean) => {
     try {
-      console.log('[registration] 💾 Saving player changes:', {
-        player: updatedPlayer.name,
-        adjustedHandicap,
-        numberOfGuests,
-        guestNames,
-        isSponsor,
-      });
       
       await updateMemberMutation.mutateAsync({
         memberId: updatedPlayer.id,
@@ -904,17 +801,13 @@ export default function EventRegistrationScreen() {
       setSelectedPlayers(updatedSelectedPlayers);
 
       let playerReg = registrations[updatedPlayer.name];
-      console.log('[registration] 🔍 Found player registration in local state:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
       
       if (!playerReg) {
-        console.log('[registration] 🔍 Registration not in local state, fetching from backend by memberId...');
         const backendRegs = await registrationsQuery.refetch();
         playerReg = backendRegs.data?.find((r: any) => r.memberId === updatedPlayer.id);
-        console.log('[registration] 🔍 Found in backend:', playerReg ? `ID: ${playerReg.id}` : 'NOT FOUND');
       }
       
       if (playerReg) {
-        console.log('[registration] 📤 Updating registration in backend...');
         await updateRegistrationMutation.mutateAsync({
           registrationId: playerReg.id,
           updates: {
@@ -924,20 +817,8 @@ export default function EventRegistrationScreen() {
             isSponsor,
           },
         });
-        console.log('[registration] ✅ Backend update complete');
         
-        console.log('[registration] 🔄 Refetching registrations...');
-        const refetchResult = await registrationsQuery.refetch();
-        console.log('[registration] 📊 Refetch complete, data length:', refetchResult.data?.length);
-        
-        if (refetchResult.data) {
-          const updatedRegData = refetchResult.data.find((r: any) => r.id === playerReg.id);
-          console.log('[registration] 🎯 Updated registration from backend:', {
-            id: updatedRegData?.id,
-            adjustedHandicap: updatedRegData?.adjustedHandicap,
-            numberOfGuests: updatedRegData?.numberOfGuests,
-          });
-        }
+        await registrationsQuery.refetch();
       } else {
         console.error('[registration] ❌ Registration not found for player:', updatedPlayer.name, 'memberId:', updatedPlayer.id);
         Alert.alert('Error', 'Registration not found. Please try removing and re-adding the player.');
@@ -950,7 +831,6 @@ export default function EventRegistrationScreen() {
 
   const handleGeneratePDF = async () => {
     if (!event || !currentUser?.isAdmin) {
-      console.log('[registration] PDF generation not allowed');
       return;
     }
 
@@ -985,7 +865,6 @@ export default function EventRegistrationScreen() {
   const handleOutputFormatSelected = async (format: 'pdf' | 'text' | 'checkin') => {
     setOutputFormatModalVisible(false);
     const regs = registrationsQuery.data || [];
-    console.log('[registration] 📊 All registrations for export:', regs.length);
 
     if (format === 'checkin') {
       setIsGeneratingPDF(true);
@@ -997,7 +876,6 @@ export default function EventRegistrationScreen() {
             event,
           }, orgInfo.logoUrl);
         }
-        console.log('[registration] ✅ Check-in PDF generated successfully');
       } catch (error) {
         console.error('[registration] ❌ Check-in PDF generation error:', error);
         Alert.alert('Error', 'Failed to generate check-in PDF. Please try again.');
@@ -1017,7 +895,6 @@ export default function EventRegistrationScreen() {
             includeHandicapForPDF
           );
         }
-        console.log('[registration] ✅ PDF generated successfully');
       } catch (error) {
         console.error('[registration] ❌ PDF generation error:', error);
         Alert.alert('Error', 'Failed to generate PDF. Please try again.');
@@ -1039,7 +916,6 @@ export default function EventRegistrationScreen() {
           setGeneratedTextContent(textContent);
         }
         setTextPreviewModalVisible(true);
-        console.log('[registration] ✅ Text generated successfully');
       } catch (error) {
         console.error('[registration] ❌ Text generation error:', error);
         Alert.alert('Error', 'Failed to generate text. Please try again.');
@@ -1062,13 +938,11 @@ export default function EventRegistrationScreen() {
 
   const handleEmailInvoice = async (player: Member, playerReg: any) => {
     if (!currentUser?.isAdmin) {
-      console.log('[registration] ⛔ Email invoice access denied - not an admin');
       return;
     }
     
     try {
       setGeneratingInvoiceForPlayer(player.id);
-      console.log('[registration] 📧 Generating invoice for:', player.name);
       
       if (!event) {
         Alert.alert('Error', 'Event not found');
@@ -1100,10 +974,7 @@ export default function EventRegistrationScreen() {
           registrationId: playerReg.id,
           updates: { emailSent: true },
         });
-        console.log('[registration] ✅ Email sent status updated');
       }
-      
-      console.log('[registration] ✅ Invoice generated successfully');
     } catch (error) {
       console.error('[registration] ❌ Invoice generation error:', error);
       let errorMessage = 'Unknown error occurred';
@@ -1296,8 +1167,6 @@ export default function EventRegistrationScreen() {
 
   if (eventQuery.isError) {
     const errorMessage = eventQuery.error instanceof Error ? eventQuery.error.message : 'Failed to load event data';
-    console.error('[registration] 🔴 Event query error:', errorMessage);
-    console.error('[registration] 🔴 Full error:', eventQuery.error);
     
     return (
       <SafeAreaView style={styles.container}>
@@ -1315,7 +1184,6 @@ export default function EventRegistrationScreen() {
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => {
-              console.log('[registration] 🔄 Retrying event fetch...');
               eventQuery.refetch();
             }}
           >
@@ -1351,15 +1219,6 @@ export default function EventRegistrationScreen() {
       </SafeAreaView>
     );
   }
-
-  console.log('[registration] 👤 Current user check:', {
-    hasUser: !!currentUser,
-    userId: currentUser?.id,
-    userName: currentUser?.name,
-    isAdmin: currentUser?.isAdmin,
-    boardMemberRoles: currentUser?.boardMemberRoles,
-    canAddPlayers: canAddPlayers(currentUser),
-  });
 
   return (
     <>
@@ -1728,7 +1587,6 @@ export default function EventRegistrationScreen() {
                               isPaid ? styles.paymentBadgePaid : styles.paymentBadgeUnpaid,
                             ]}
                             onPress={() => {
-                              console.log('[registration] Payment badge tapped for:', player.name);
                               if (canTogglePaymentStatus(currentUser) && playerReg) {
                                 handlePaymentToggle(player.name, playerReg);
                               }
@@ -1805,7 +1663,6 @@ export default function EventRegistrationScreen() {
                         <TouchableOpacity
                           style={styles.removePlayerButton}
                           onPress={() => {
-                            console.log('[registration] Remove button tapped for player:', player.name);
                             handleRemovePlayer(player.id);
                           }}
                           activeOpacity={0.7}
@@ -2255,7 +2112,6 @@ export default function EventRegistrationScreen() {
             setEvent({ ...event, status: newStatus });
             
             if (newStatus === 'complete') {
-              console.log('[Registration] Event completed, calculating tournament handicaps...');
               
               const numberOfDays = event.numberOfDays || 1;
               const allRegs = registrationsQuery.data || [];
@@ -2307,14 +2163,11 @@ export default function EventRegistrationScreen() {
                       memberId: member.id,
                       updates: { tournamentHandicaps: updatedRecords },
                     });
-                    console.log(`[Registration] Updated tournament handicap for ${member.name}:`, tournamentHandicap);
                   } catch (error) {
                     console.error(`[Registration] Failed to update tournament handicap for ${member.name}:`, error);
                   }
                 }
               }
-              
-              console.log('[Registration] Tournament handicaps calculation complete');
             }
           }
         }}
