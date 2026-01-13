@@ -390,7 +390,7 @@ export default function ScoringScreen() {
       for (const player of myGroup) {
         if (player && player.id) {
           const playerScores = holeScores[player.id] || {};
-          const holesArray = Array(18).fill(0);
+          const holesArray = Array(18).fill(null);
           
           Object.entries(playerScores).forEach(([hole, score]) => {
             const holeNum = parseInt(hole, 10);
