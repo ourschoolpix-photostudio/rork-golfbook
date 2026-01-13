@@ -217,6 +217,7 @@ export default function MembersScreen() {
   const [showListingModal, setShowListingModal] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
 
 
   const loadMembers = useCallback(async () => {
@@ -285,8 +286,14 @@ export default function MembersScreen() {
       result = result.filter(member => member.name.toLowerCase().includes(searchLower));
     }
     
+    if (genderFilter === 'male') {
+      result = result.filter(m => m.gender === 'male');
+    } else if (genderFilter === 'female') {
+      result = result.filter(m => m.gender === 'female');
+    }
+    
     return result;
-  }, [members, filterType, searchText]);
+  }, [members, filterType, searchText, genderFilter]);
 
   useFocusEffect(
     useCallback(() => {
@@ -547,7 +554,23 @@ export default function MembersScreen() {
           </View>
 
           <View style={styles.filterTitleCard}>
-            <Text style={styles.filterTitleText}>{getFilterTitle()}</Text>
+            <View style={styles.filterTitleRow}>
+              <Text style={styles.filterTitleText}>{getFilterTitle()}</Text>
+              <View style={styles.genderCountsContainer}>
+                <TouchableOpacity
+                  style={[styles.genderFilterButton, genderFilter === 'male' && styles.genderFilterButtonActive]}
+                  onPress={() => setGenderFilter(genderFilter === 'male' ? 'all' : 'male')}
+                >
+                  <Text style={[styles.genderFilterButtonText, genderFilter === 'male' && styles.genderFilterButtonTextActive]}>Male: {members.filter(m => m.gender === 'male').length}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.genderFilterButton, styles.genderFilterButtonFemale, genderFilter === 'female' && styles.genderFilterButtonFemaleActive]}
+                  onPress={() => setGenderFilter(genderFilter === 'female' ? 'all' : 'female')}
+                >
+                  <Text style={[styles.genderFilterButtonText, genderFilter === 'female' && styles.genderFilterButtonTextActive]}>Female: {members.filter(m => m.gender === 'female').length}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             {authUser?.isAdmin && (
               <TouchableOpacity
                 style={styles.listingButton}
@@ -759,15 +782,48 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: '#a0a0a0',
     borderBottomWidth: 1,
     borderBottomColor: '#888',
+  },
+  filterTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
   },
   filterTitleText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  genderCountsContainer: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  genderFilterButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 5,
+    backgroundColor: '#007AFF',
+  },
+  genderFilterButtonActive: {
+    backgroundColor: '#003D99',
+  },
+  genderFilterButtonFemale: {
+    backgroundColor: '#FF69B4',
+  },
+  genderFilterButtonFemaleActive: {
+    backgroundColor: '#C71585',
+  },
+  genderFilterButtonText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  genderFilterButtonTextActive: {
+    fontWeight: '700',
   },
   listingButton: {
     flexDirection: 'row',
