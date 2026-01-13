@@ -278,11 +278,41 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
       setLoading(true);
       setShowAddToHistoryPrompt(false);
       
+      const isNewMember = !member;
+      
       if (addToHistory) {
         pendingSave.membershipLevel = selectedMembershipType;
+      }
+      
+      // Save the member first
+      await onSave(pendingSave);
+      console.log('[PlayerEditModal] Member saved successfully');
+      
+      if (addToHistory) {
+        let memberId = String(pendingSave.id).trim();
+        
+        // For new members, query the database to get the real ID
+        if (isNewMember) {
+          console.log('[PlayerEditModal] New member - fetching real ID from database...');
+          const { data: savedMember, error } = await supabase
+            .from('members')
+            .select('id')
+            .eq('username', pendingSave.username)
+            .single();
+          
+          if (error || !savedMember) {
+            console.error('[PlayerEditModal] Could not find saved member:', error);
+            Alert.alert('Warning', 'Member saved but could not add to membership history - member ID not found');
+            onClose();
+            return;
+          }
+          
+          memberId = String(savedMember.id);
+          console.log('[PlayerEditModal] Found real member ID:', memberId);
+        }
         
         const result = await addMembershipPaymentRecord({
-          memberId: String(pendingSave.id).trim(),
+          memberId: memberId,
           memberName: pendingSave.name,
           membershipType: selectedMembershipType,
           paymentMethod: selectedPaymentMethod,
@@ -293,18 +323,17 @@ export function PlayerEditModal({ visible, member, onClose, onSave, isLimitedMod
         });
         
         if (!result.success) {
-          Alert.alert('Database Error', `Failed to add to history: ${result.error}`);
-          throw new Error(`Failed to add to history: ${result.error}`);
+          Alert.alert('Warning', `Member saved but failed to add to history: ${result.error}`);
+        } else {
+          console.log('[PlayerEditModal] Membership history record added successfully');
         }
       } else {
         console.log('[PlayerEditModal] User chose NOT to add to history');
       }
       
-      await onSave(pendingSave);
-      console.log('Member saved successfully');
       onClose();
     } catch (error) {
-      console.error('Error saving member with history:', error);
+      console.error('[PlayerEditModal] Error saving member with history:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to save member. Please try again.';
       Alert.alert('Error', errorMessage);
     } finally {
