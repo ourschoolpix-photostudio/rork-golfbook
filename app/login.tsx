@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  Pressable,
+  TouchableWithoutFeedback,
   Image,
   ActivityIndicator,
 } from 'react-native';
@@ -235,71 +235,71 @@ export default function LoginScreen() {
   return (
     <>
       <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-          <Pressable style={styles.content} onPress={Keyboard.dismiss}>
-            {loadingOrg ? (
-              <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
-            ) : (
-              <>
-                {orgInfo?.logoUrl ? (
-                  <Image source={{ uri: orgInfo.logoUrl }} style={styles.logo} />
-                ) : null}
-                <Text style={styles.title} numberOfLines={1}>
-                  {orgInfo?.name || 'DMV Vietnamese Golf Association'}
-                </Text>
-              </>
-            )}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
+            <View style={styles.content}>
+              {loadingOrg ? (
+                <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+              ) : (
+                <>
+                  {orgInfo?.logoUrl ? (
+                    <Image source={{ uri: orgInfo.logoUrl }} style={styles.logo} />
+                  ) : null}
+                  <Text style={styles.title} numberOfLines={1}>
+                    {orgInfo?.name || 'DMV Vietnamese Golf Association'}
+                  </Text>
+                </>
+              )}
 
-            <View style={styles.form}>
-              <Text style={styles.label}>Username</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter username"
-                placeholderTextColor="#999"
-                value={username}
-                onChangeText={setUsername}
-                editable={!loading}
-                autoCapitalize="words"
-                returnKeyType="next"
-                pointerEvents="auto"
-              />
+              <View style={styles.form}>
+                <Text style={styles.label}>Username</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter username"
+                  placeholderTextColor="#999"
+                  value={username}
+                  onChangeText={setUsername}
+                  editable={!loading}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                />
 
-              <Text style={styles.label}>PIN</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter 4-digit PIN"
-                placeholderTextColor="#999"
-                value={pin}
-                onChangeText={setPin}
-                secureTextEntry
-                keyboardType="number-pad"
-                maxLength={4}
-                editable={!loading}
-                blurOnSubmit={false}
-                pointerEvents="auto"
-              />
+                <Text style={styles.label}>PIN</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter 4-digit PIN"
+                  placeholderTextColor="#999"
+                  value={pin}
+                  onChangeText={setPin}
+                  secureTextEntry
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  editable={!loading}
+                  blurOnSubmit={false}
+                />
 
-              <TouchableOpacity
-                style={[styles.button, loading && styles.buttonDisabled]}
-                onPress={handleLogin}
-                disabled={loading}
-              >
-                <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Login'}</Text>
-              </TouchableOpacity>
-
-              {biometricAvailable && hasSavedBiometric && (
                 <TouchableOpacity
-                  style={styles.biometricButton}
-                  onPress={handleBiometricLogin}
+                  style={[styles.button, loading && styles.buttonDisabled]}
+                  onPress={handleLogin}
                   disabled={loading}
                 >
-                  <Fingerprint size={24} color="#007AFF" />
-                  <Text style={styles.biometricButtonText}>Login with Biometrics</Text>
+                  <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Login'}</Text>
                 </TouchableOpacity>
-              )}
+
+                {biometricAvailable && hasSavedBiometric && (
+                  <TouchableOpacity
+                    style={styles.biometricButton}
+                    onPress={handleBiometricLogin}
+                    disabled={loading}
+                  >
+                    <Fingerprint size={24} color="#007AFF" />
+                    <Text style={styles.biometricButtonText}>Login with Biometrics</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-          </Pressable>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </SafeAreaView>
 
     <PlayerEditModal
