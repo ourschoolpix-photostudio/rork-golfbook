@@ -5,7 +5,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Bird, Zap } from 'lucide-react-native';
-import { Audio } from 'expo-av';
+
 import { EventFooter } from '@/components/EventFooter';
 import { TeeHoleIndicator } from '@/components/TeeHoleIndicator';
 import { authService } from '@/utils/auth';
@@ -387,22 +387,6 @@ export default function ScoringScreen() {
     return scoredHoles.length === 18;
   };
 
-  const playSuccessSound = async () => {
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3' },
-        { shouldPlay: true, volume: 0.5 }
-      );
-      sound.setOnPlaybackStatusUpdate((status: any) => {
-        if (status.isLoaded && status.didJustFinish) {
-          sound.unloadAsync();
-        }
-      });
-    } catch (error) {
-      console.log('[scoring] Could not play sound:', error);
-    }
-  };
-
   const handleSubmitScores = async () => {
     if (!eventId || !currentUser) return;
 
@@ -414,8 +398,6 @@ export default function ScoringScreen() {
       );
       return;
     }
-
-    await playSuccessSound();
     setIsSubmitting(true);
     try {
       const scoresSubmitted = [];
