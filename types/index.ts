@@ -88,6 +88,7 @@ export interface Event {
   day1HolePars?: string[];
   day1SlopeRating?: string;
   day1CourseRating?: string;
+  day1CourseId?: string;
   day2StartTime?: string;
   day2StartPeriod?: 'AM' | 'PM';
   day2EndTime?: string;
@@ -99,6 +100,7 @@ export interface Event {
   day2HolePars?: string[];
   day2SlopeRating?: string;
   day2CourseRating?: string;
+  day2CourseId?: string;
   day3StartTime?: string;
   day3StartPeriod?: 'AM' | 'PM';
   day3EndTime?: string;
@@ -110,6 +112,7 @@ export interface Event {
   day3HolePars?: string[];
   day3SlopeRating?: string;
   day3CourseRating?: string;
+  day3CourseId?: string;
   holePars?: string[];
   flightACutoff?: string;
   flightBCutoff?: string;

@@ -73,6 +73,9 @@ type EventFormType = {
   day1HolePars?: string[];
   day2HolePars?: string[];
   day3HolePars?: string[];
+  day1CourseId?: string;
+  day2CourseId?: string;
+  day3CourseId?: string;
   flightATrophy1st: boolean;
   flightATrophy2nd: boolean;
   flightATrophy3rd: boolean;
@@ -198,6 +201,9 @@ export default function AdminEventsScreen() {
     day1HolePars: Array(18).fill(''),
     day2HolePars: Array(18).fill(''),
     day3HolePars: Array(18).fill(''),
+    day1CourseId: '',
+    day2CourseId: '',
+    day3CourseId: '',
   });
 
   const registrationsQuery = useQuery({
@@ -327,6 +333,9 @@ export default function AdminEventsScreen() {
       day1HolePars: Array(18).fill(''),
       day2HolePars: Array(18).fill(''),
       day3HolePars: Array(18).fill(''),
+      day1CourseId: '',
+      day2CourseId: '',
+      day3CourseId: '',
     });
   };
 
@@ -372,6 +381,7 @@ export default function AdminEventsScreen() {
             day1SlopeRating: form.day1SlopeRating,
             day1CourseRating: form.day1CourseRating,
             day1HolePars: form.day1HolePars,
+            day1CourseId: form.day1CourseId,
             day2StartTime: form.day2StartTime,
             day2StartPeriod: form.day2StartPeriod,
             day2EndTime: form.day2EndTime,
@@ -383,6 +393,7 @@ export default function AdminEventsScreen() {
             day2SlopeRating: form.day2SlopeRating,
             day2CourseRating: form.day2CourseRating,
             day2HolePars: form.day2HolePars,
+            day2CourseId: form.day2CourseId,
             day3StartTime: form.day3StartTime,
             day3StartPeriod: form.day3StartPeriod,
             day3EndTime: form.day3EndTime,
@@ -394,6 +405,7 @@ export default function AdminEventsScreen() {
             day3SlopeRating: form.day3SlopeRating,
             day3CourseRating: form.day3CourseRating,
             day3HolePars: form.day3HolePars,
+            day3CourseId: form.day3CourseId,
             flightACutoff: form.flightACutoff,
             flightBCutoff: form.flightBCutoff,
             flightATeebox: form.flightATeebox,
@@ -457,6 +469,7 @@ export default function AdminEventsScreen() {
           day1SlopeRating: form.day1SlopeRating,
           day1CourseRating: form.day1CourseRating,
           day1HolePars: form.day1HolePars,
+          day1CourseId: form.day1CourseId,
           day2StartTime: form.day2StartTime,
           day2StartPeriod: form.day2StartPeriod,
           day2EndTime: form.day2EndTime,
@@ -468,6 +481,7 @@ export default function AdminEventsScreen() {
           day2SlopeRating: form.day2SlopeRating,
           day2CourseRating: form.day2CourseRating,
           day2HolePars: form.day2HolePars,
+          day2CourseId: form.day2CourseId,
           day3StartTime: form.day3StartTime,
           day3StartPeriod: form.day3StartPeriod,
           day3EndTime: form.day3EndTime,
@@ -479,6 +493,7 @@ export default function AdminEventsScreen() {
           day3SlopeRating: form.day3SlopeRating,
           day3CourseRating: form.day3CourseRating,
           day3HolePars: form.day3HolePars,
+          day3CourseId: form.day3CourseId,
           flightACutoff: form.flightACutoff,
           flightBCutoff: form.flightBCutoff,
           flightATeebox: form.flightATeebox,
@@ -660,6 +675,9 @@ export default function AdminEventsScreen() {
       day1HolePars: event.day1HolePars || Array(18).fill(''),
       day2HolePars: event.day2HolePars || Array(18).fill(''),
       day3HolePars: event.day3HolePars || Array(18).fill(''),
+      day1CourseId: event.day1CourseId || '',
+      day2CourseId: event.day2CourseId || '',
+      day3CourseId: event.day3CourseId || '',
     });
     setModalVisible(true);
   };
