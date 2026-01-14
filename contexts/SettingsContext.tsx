@@ -67,7 +67,14 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       }
       
       console.log('📥 [SettingsContext] Fetching settings from Supabase...');
-      const { data, error } = await supabase.from('organization_settings').select('*').single();
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Settings fetch timeout')), 5000)
+      );
+      
+      const fetchPromise = supabase.from('organization_settings').select('*').single();
+      
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
       if (error && error.code !== 'PGRST116') throw error;
       

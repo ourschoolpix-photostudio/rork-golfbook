@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  TouchableWithoutFeedback,
+  Pressable,
   Image,
   ActivityIndicator,
 } from 'react-native';
@@ -234,10 +234,9 @@ export default function LoginScreen() {
 
   return (
     <>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-          <View style={styles.content}>
+          <Pressable style={styles.content} onPress={Keyboard.dismiss}>
             {loadingOrg ? (
               <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
             ) : (
@@ -256,17 +255,20 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter username"
+                placeholderTextColor="#999"
                 value={username}
                 onChangeText={setUsername}
                 editable={!loading}
                 autoCapitalize="words"
                 returnKeyType="next"
+                pointerEvents="auto"
               />
 
               <Text style={styles.label}>PIN</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter 4-digit PIN"
+                placeholderTextColor="#999"
                 value={pin}
                 onChangeText={setPin}
                 secureTextEntry
@@ -274,6 +276,7 @@ export default function LoginScreen() {
                 maxLength={4}
                 editable={!loading}
                 blurOnSubmit={false}
+                pointerEvents="auto"
               />
 
               <TouchableOpacity
@@ -295,12 +298,9 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               )}
             </View>
-
-
-          </View>
+          </Pressable>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </TouchableWithoutFeedback>
 
     <PlayerEditModal
       visible={showPinChangeModal}
