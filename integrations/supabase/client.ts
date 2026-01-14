@@ -28,6 +28,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: false,
   },
   global: {
+    fetch: fetch,
     headers: {
       'x-my-custom-header': 'golf-app',
     },
