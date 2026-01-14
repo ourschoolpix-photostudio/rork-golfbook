@@ -84,6 +84,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         day1LeadingHole: e.day1_leading_hole,
         day1Par: e.day1_par,
         day1HolePars: e.day1_hole_pars,
+        day1SlopeRating: e.day1_slope_rating,
+        day1CourseRating: e.day1_course_rating,
         day2StartTime: e.day2_start_time,
         day2StartPeriod: e.day2_start_period,
         day2EndTime: e.day2_end_time,
@@ -93,6 +95,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         day2LeadingHole: e.day2_leading_hole,
         day2Par: e.day2_par,
         day2HolePars: e.day2_hole_pars,
+        day2SlopeRating: e.day2_slope_rating,
+        day2CourseRating: e.day2_course_rating,
         day3StartTime: e.day3_start_time,
         day3StartPeriod: e.day3_start_period,
         day3EndTime: e.day3_end_time,
@@ -102,6 +106,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         day3LeadingHole: e.day3_leading_hole,
         day3Par: e.day3_par,
         day3HolePars: e.day3_hole_pars,
+        day3SlopeRating: e.day3_slope_rating,
+        day3CourseRating: e.day3_course_rating,
         flightACutoff: e.flight_a_cutoff,
         flightBCutoff: e.flight_b_cutoff,
         flightATeebox: e.flight_a_teebox,
@@ -314,6 +320,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         if (updates.day1LeadingHole !== undefined) supabaseUpdates.day1_leading_hole = updates.day1LeadingHole;
         if (updates.day1Par !== undefined) supabaseUpdates.day1_par = updates.day1Par;
         if (updates.day1HolePars !== undefined) supabaseUpdates.day1_hole_pars = updates.day1HolePars;
+        if (updates.day1SlopeRating !== undefined) supabaseUpdates.day1_slope_rating = updates.day1SlopeRating;
+        if (updates.day1CourseRating !== undefined) supabaseUpdates.day1_course_rating = updates.day1CourseRating;
         if (updates.day2StartTime !== undefined) supabaseUpdates.day2_start_time = updates.day2StartTime;
         if (updates.day2StartPeriod !== undefined) supabaseUpdates.day2_start_period = updates.day2StartPeriod;
         if (updates.day2EndTime !== undefined) supabaseUpdates.day2_end_time = updates.day2EndTime;
@@ -323,6 +331,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         if (updates.day2LeadingHole !== undefined) supabaseUpdates.day2_leading_hole = updates.day2LeadingHole;
         if (updates.day2Par !== undefined) supabaseUpdates.day2_par = updates.day2Par;
         if (updates.day2HolePars !== undefined) supabaseUpdates.day2_hole_pars = updates.day2HolePars;
+        if (updates.day2SlopeRating !== undefined) supabaseUpdates.day2_slope_rating = updates.day2SlopeRating;
+        if (updates.day2CourseRating !== undefined) supabaseUpdates.day2_course_rating = updates.day2CourseRating;
         if (updates.day3StartTime !== undefined) supabaseUpdates.day3_start_time = updates.day3StartTime;
         if (updates.day3StartPeriod !== undefined) supabaseUpdates.day3_start_period = updates.day3StartPeriod;
         if (updates.day3EndTime !== undefined) supabaseUpdates.day3_end_time = updates.day3EndTime;
@@ -332,6 +342,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         if (updates.day3LeadingHole !== undefined) supabaseUpdates.day3_leading_hole = updates.day3LeadingHole;
         if (updates.day3Par !== undefined) supabaseUpdates.day3_par = updates.day3Par;
         if (updates.day3HolePars !== undefined) supabaseUpdates.day3_hole_pars = updates.day3HolePars;
+        if (updates.day3SlopeRating !== undefined) supabaseUpdates.day3_slope_rating = updates.day3SlopeRating;
+        if (updates.day3CourseRating !== undefined) supabaseUpdates.day3_course_rating = updates.day3CourseRating;
         if (updates.flightACutoff !== undefined) supabaseUpdates.flight_a_cutoff = updates.flightACutoff;
         if (updates.flightBCutoff !== undefined) supabaseUpdates.flight_b_cutoff = updates.flightBCutoff;
         if (updates.flightATeebox !== undefined) supabaseUpdates.flight_a_teebox = updates.flightATeebox;
