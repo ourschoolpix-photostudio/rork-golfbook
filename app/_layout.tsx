@@ -16,7 +16,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 
 
-Appearance.setColorScheme('light');
+// Set light color scheme safely
+try {
+  if (typeof Appearance?.setColorScheme === 'function') {
+    Appearance.setColorScheme('light');
+  }
+} catch {
+  console.log('[App] Appearance.setColorScheme not supported');
+}
 
 console.log('🚀 [App] Starting application...');
 console.log('🔧 [App] Platform:', Platform.OS);
