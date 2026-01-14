@@ -447,7 +447,10 @@ export default function ScoringScreen() {
       Alert.alert(
         'Success',
         `Scores submitted successfully for Day ${selectedDay}!\n\nLeaderboard will update automatically.`,
-        [{ text: 'OK' }]
+        [{ 
+          text: 'OK',
+          onPress: () => handleNextHole()
+        }]
       );
     } catch (error) {
       console.error('[scoring] Error submitting scores:', error);
