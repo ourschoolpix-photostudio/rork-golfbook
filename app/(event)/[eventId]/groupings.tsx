@@ -204,8 +204,14 @@ export default function GroupingsScreen() {
           const key = `useCourseHandicap_${event.id}`;
           const value = await AsyncStorage.getItem(key);
           if (value !== null) {
-            setUseCourseHandicap(value === 'true');
-            console.log('[groupings] Loaded course handicap setting:', value === 'true');
+            const boolValue = value === 'true';
+            setUseCourseHandicap(prev => {
+              if (prev !== boolValue) {
+                console.log('[groupings] Course handicap setting changed:', boolValue);
+                return boolValue;
+              }
+              return prev;
+            });
           }
         } catch (error) {
           console.error('[groupings] Error loading course handicap setting:', error);

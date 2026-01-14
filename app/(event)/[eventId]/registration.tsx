@@ -341,6 +341,7 @@ export default function EventRegistrationScreen() {
             const boolValue = value === 'true';
             setUseCourseHandicap(prev => {
               if (prev !== boolValue) {
+                console.log('[registration] Course handicap setting changed:', boolValue);
                 return boolValue;
               }
               return prev;
@@ -352,6 +353,9 @@ export default function EventRegistrationScreen() {
       }
     };
     loadCourseHandicapSetting();
+    
+    const interval = setInterval(loadCourseHandicapSetting, 500);
+    return () => clearInterval(interval);
   }, [eventId]);
 
   const autoRegisterProcessedRef = React.useRef(false);
