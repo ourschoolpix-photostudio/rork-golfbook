@@ -76,24 +76,40 @@ export const getDisplayHandicap = (
   // PRIORITY 2: If course handicap is enabled and event has slope rating, calculate course handicap
   if (useCourseHandicap && event) {
     let slopeRating: number | null = null;
+    let slopeRatingStr: string | undefined = undefined;
     
     // Get slope rating based on day
-    if (day === 1 && event.day1SlopeRating) {
-      slopeRating = parseFloat(event.day1SlopeRating);
-    } else if (day === 2 && event.day2SlopeRating) {
-      slopeRating = parseFloat(event.day2SlopeRating);
-    } else if (day === 3 && event.day3SlopeRating) {
-      slopeRating = parseFloat(event.day3SlopeRating);
+    if (day === 1) {
+      slopeRatingStr = event.day1SlopeRating;
+    } else if (day === 2) {
+      slopeRatingStr = event.day2SlopeRating;
+    } else if (day === 3) {
+      slopeRatingStr = event.day3SlopeRating;
     }
+    
+    if (slopeRatingStr) {
+      slopeRating = parseFloat(slopeRatingStr);
+    }
+    
+    console.log(`[handicapHelper] Course handicap check for ${member.name} on day ${day}:`, {
+      useCourseHandicap,
+      slopeRatingStr,
+      slopeRating,
+      baseHandicap,
+      eventId: event.id,
+    });
     
     if (slopeRating && !isNaN(slopeRating) && slopeRating > 0) {
       const courseHandicap = calculateCourseHandicap(baseHandicap, slopeRating);
-      console.log(`[handicapHelper] Using course handicap for ${member.name}: ${courseHandicap} (base: ${baseHandicap}, slope: ${slopeRating})`);
+      console.log(`[handicapHelper] ✅ Using COURSE handicap for ${member.name}: ${courseHandicap} (base: ${baseHandicap}, slope: ${slopeRating})`);
       return courseHandicap;
+    } else {
+      console.log(`[handicapHelper] ⚠️ Course handicap requested but no valid slope rating found for day ${day}. Event slope rating: ${slopeRatingStr}. Falling back to base handicap: ${baseHandicap}`);
     }
   }
   
   // PRIORITY 3: Fall back to base handicap
+  console.log(`[handicapHelper] Using base handicap for ${member.name}: ${baseHandicap}`);
   return baseHandicap;
 };
 
