@@ -11,8 +11,11 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { X, Plus, Edit2, Trash2, Save, Download } from 'lucide-react-native';
+import { X, Plus, Edit2, Trash2, Save, Download, Camera, ImageIcon } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { generateText } from '@rork-ai/toolkit-sdk';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +48,8 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
   const [slopeRating, setSlopeRating] = useState<string>('');
   const [courseRating, setCourseRating] = useState<string>('');
   const [courseUrl, setCourseUrl] = useState<string>('');
+  const [scoreCardImage, setScoreCardImage] = useState<string | null>(null);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState<boolean>(false);
 
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
   const strokeIndexInputRefs = React.useRef<(TextInput | null)[]>([]);
@@ -204,6 +209,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setSlopeRating('');
     setCourseRating('');
     setCourseUrl('');
+    setScoreCardImage(null);
   };
 
   const handleStartCreate = () => {
@@ -214,6 +220,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setSlopeRating('');
     setCourseRating('');
     setCourseUrl('');
+    setScoreCardImage(null);
   };
 
   const handleFetchFromUrl = async () => {
@@ -227,6 +234,158 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
       'Automatic URL scraping is not currently supported. Please enter the course information manually below.\n\nTip: You can find scorecard information on the golf course\'s official website and enter the hole pars one by one.',
       [{ text: 'OK' }]
     );
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to use this feature.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setScoreCardImage(asset.uri);
+        
+        if (asset.base64) {
+          await analyzeScoreCardImage(asset.base64, asset.mimeType || 'image/jpeg');
+        }
+      }
+    } catch (error) {
+      console.error('[CoursesManagementModal] Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Please allow camera access to use this feature.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setScoreCardImage(asset.uri);
+        
+        if (asset.base64) {
+          await analyzeScoreCardImage(asset.base64, asset.mimeType || 'image/jpeg');
+        }
+      }
+    } catch (error) {
+      console.error('[CoursesManagementModal] Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
+  const analyzeScoreCardImage = async (base64Data: string, mimeType: string) => {
+    setIsAnalyzingImage(true);
+    console.log('[CoursesManagementModal] Analyzing scorecard image...');
+
+    interface CourseData {
+      courseName: string;
+      holePars: number[];
+      strokeIndices?: number[];
+      courseRating?: number;
+      slopeRating?: number;
+    }
+
+    try {
+      const responseText = await generateText({
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Analyze this golf course scorecard image and extract the following information. Return ONLY a valid JSON object with no additional text:
+
+{
+  "courseName": "Name of the golf course",
+  "holePars": [par1, par2, ..., par18],
+  "strokeIndices": [si1, si2, ..., si18],
+  "courseRating": 72.3,
+  "slopeRating": 113
+}
+
+Rules:
+- holePars must be an array of exactly 18 numbers (each between 3-6)
+- strokeIndices is optional, if visible include all 18 values (1-18, where 1 = hardest hole)
+- courseRating and slopeRating are optional, include if visible
+- If only 9 holes visible, duplicate them to make 18
+- Make reasonable assumptions if values are unclear`,
+              },
+              {
+                type: 'image',
+                image: `data:${mimeType};base64,${base64Data}`,
+              },
+            ],
+          },
+        ],
+      });
+
+      console.log('[CoursesManagementModal] Raw response:', responseText);
+
+      // Extract JSON from the response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No valid JSON found in response');
+      }
+
+      const result = JSON.parse(jsonMatch[0]) as CourseData;
+      console.log('[CoursesManagementModal] Parsed result:', result);
+
+      // Apply the extracted data to the form
+      if (result.courseName) {
+        setCourseName(result.courseName);
+      }
+
+      if (result.holePars && result.holePars.length === 18) {
+        setHolePars(result.holePars.map((p: number) => p.toString()));
+      }
+
+      if (result.strokeIndices && result.strokeIndices.length === 18) {
+        setStrokeIndices(result.strokeIndices.map((si: number) => si.toString()));
+      }
+
+      if (result.courseRating) {
+        setCourseRating(result.courseRating.toString());
+      }
+
+      if (result.slopeRating) {
+        setSlopeRating(result.slopeRating.toString());
+      }
+
+      Alert.alert(
+        'Success',
+        `Extracted course information for "${result.courseName || 'Unknown Course'}". Please review and adjust the values if needed.`
+      );
+    } catch (error) {
+      console.error('[CoursesManagementModal] Error analyzing image:', error);
+      Alert.alert(
+        'Analysis Failed',
+        'Could not extract course information from the image. Please ensure the image clearly shows a golf scorecard and try again, or enter the information manually.'
+      );
+    } finally {
+      setIsAnalyzingImage(false);
+    }
   };
 
   const handleStartEdit = (course: Course) => {
@@ -408,6 +567,52 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {isFormVisible ? (
               <>
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Import from Photo</Text>
+                  <Text style={styles.sectionDescription}>
+                    Take a photo or select an image of a scorecard to automatically extract course information.
+                  </Text>
+                  
+                  <View style={styles.imageImportRow}>
+                    <TouchableOpacity
+                      style={[styles.imageButton, isAnalyzingImage && styles.imageButtonDisabled]}
+                      onPress={handleTakePhoto}
+                      disabled={isAnalyzingImage}
+                    >
+                      <Camera size={20} color={isAnalyzingImage ? '#999' : '#1B5E20'} />
+                      <Text style={[styles.imageButtonText, isAnalyzingImage && styles.imageButtonTextDisabled]}>Take Photo</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={[styles.imageButton, isAnalyzingImage && styles.imageButtonDisabled]}
+                      onPress={handlePickImage}
+                      disabled={isAnalyzingImage}
+                    >
+                      <ImageIcon size={20} color={isAnalyzingImage ? '#999' : '#1B5E20'} />
+                      <Text style={[styles.imageButtonText, isAnalyzingImage && styles.imageButtonTextDisabled]}>Choose Image</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {isAnalyzingImage && (
+                    <View style={styles.analyzingContainer}>
+                      <ActivityIndicator size="small" color="#1B5E20" />
+                      <Text style={styles.analyzingText}>Analyzing scorecard...</Text>
+                    </View>
+                  )}
+
+                  {scoreCardImage && !isAnalyzingImage && (
+                    <View style={styles.imagePreviewContainer}>
+                      <Image source={{ uri: scoreCardImage }} style={styles.imagePreview} resizeMode="contain" />
+                      <TouchableOpacity
+                        style={styles.removeImageButton}
+                        onPress={() => setScoreCardImage(null)}
+                      >
+                        <X size={16} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Import from URL (Optional)</Text>
                   <Text style={styles.sectionDescription}>
@@ -883,5 +1088,71 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  imageImportRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  imageButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#1B5E20',
+    backgroundColor: '#f0f7f0',
+  },
+  imageButtonDisabled: {
+    borderColor: '#ccc',
+    backgroundColor: '#f5f5f5',
+  },
+  imageButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#1B5E20',
+  },
+  imageButtonTextDisabled: {
+    color: '#999',
+  },
+  analyzingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f0f7f0',
+    borderRadius: 8,
+  },
+  analyzingText: {
+    fontSize: 14,
+    color: '#1B5E20',
+    fontWeight: '500' as const,
+  },
+  imagePreviewContainer: {
+    marginTop: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f5f5f5',
+    position: 'relative',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 14,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
