@@ -55,7 +55,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
       
       console.log('📥 [AuthContext] Fetching members from Supabase...');
-      const { data, error } = await supabase.from('members').select('*');
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Member fetch timeout')), 3000)
+      );
+      
+      const fetchPromise = supabase.from('members').select('*');
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
       if (error) throw error;
       
