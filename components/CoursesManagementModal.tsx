@@ -404,6 +404,10 @@ Rules:
   };
 
   const handleSave = async () => {
+    // Clear temporary fetch fields before saving
+    setScoreCardImage(null);
+    setCourseUrl('');
+
     if (!courseName.trim()) {
       Alert.alert('Error', 'Please enter a course name');
       return;
