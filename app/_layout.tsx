@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, ErrorInfo } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { StyleSheet, View, Platform, Alert, Appearance } from "react-native";
+import { StyleSheet, View, Platform, Alert, Appearance, Text } from "react-native";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { EventsProvider } from "@/contexts/EventsContext";
 import { GamesProvider } from "@/contexts/GamesContext";
@@ -19,12 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 Appearance.setColorScheme('light');
 
 console.log('🚀 [App] Starting application...');
-console.log('🔧 [App] Environment variables:', {
-  hasApiBaseUrl: !!process.env.EXPO_PUBLIC_RORK_API_BASE_URL,
-  apiBaseUrl: process.env.EXPO_PUBLIC_RORK_API_BASE_URL,
-  hasSupabaseUrl: !!process.env.EXPO_PUBLIC_SUPABASE_URL,
-  platform: Platform.OS,
-});
+console.log('🔧 [App] Platform:', Platform.OS);
 
 const originalWarn = console.warn;
 console.warn = (...args: any[]) => {
@@ -291,29 +286,62 @@ function RootLayoutNav() {
   );
 }
 
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('❌ [ErrorBoundary] Caught error:', error.message);
+    console.error('❌ [ErrorBoundary] Error stack:', error.stack);
+    console.error('❌ [ErrorBoundary] Component stack:', errorInfo.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Something went wrong</Text>
+          <Text style={styles.errorMessage}>{this.state.error?.message || 'Unknown error'}</Text>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function RootLayout() {
-
-
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={styles.container}>
-          <OfflineModeProvider>
-            <SettingsProvider>
-              <AuthProvider>
-                <NotificationsProvider>
-                  <EventsProvider>
-                    <GamesProvider>
-                      <RootLayoutNav />
-                    </GamesProvider>
-                  </EventsProvider>
-                </NotificationsProvider>
-              </AuthProvider>
-            </SettingsProvider>
-          </OfflineModeProvider>
-        </GestureHandlerRootView>
-      </QueryClientProvider>
-    </trpc.Provider>
+    <ErrorBoundary>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <GestureHandlerRootView style={styles.container}>
+            <OfflineModeProvider>
+              <SettingsProvider>
+                <AuthProvider>
+                  <NotificationsProvider>
+                    <EventsProvider>
+                      <GamesProvider>
+                        <RootLayoutNav />
+                      </GamesProvider>
+                    </EventsProvider>
+                  </NotificationsProvider>
+                </AuthProvider>
+              </SettingsProvider>
+            </OfflineModeProvider>
+          </GestureHandlerRootView>
+        </QueryClientProvider>
+      </trpc.Provider>
+    </ErrorBoundary>
   );
 }
 
@@ -324,5 +352,23 @@ const styles = StyleSheet.create({
   loading: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600' as const,
+    color: '#dc3545',
+    marginBottom: 12,
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 });
