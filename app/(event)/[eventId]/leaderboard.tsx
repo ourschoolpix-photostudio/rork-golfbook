@@ -278,6 +278,7 @@ export default function LeaderboardScreen() {
           <TouchableOpacity
             style={[styles.tabButton, selectedDay !== 'rolex' && styles.tabButtonActive]}
             onPress={() => handleDaySelect('all')}
+            activeOpacity={0.7}
           >
             <Text style={[styles.tabButtonText, selectedDay !== 'rolex' && styles.tabButtonTextActive]}>
               Tournament
@@ -286,6 +287,7 @@ export default function LeaderboardScreen() {
           <TouchableOpacity
             style={[styles.tabButton, selectedDay === 'rolex' && styles.tabButtonActive]}
             onPress={() => handleDaySelect('rolex')}
+            activeOpacity={0.7}
           >
             <Text style={[styles.tabButtonText, selectedDay === 'rolex' && styles.tabButtonTextActive]}>
               Rolex Points
@@ -575,28 +577,42 @@ const styles = StyleSheet.create({
   },
   tabSelector: {
     flexDirection: 'row' as const,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
   },
   tabButton: {
     flex: 1,
     height: 48,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   tabButtonActive: {
-    borderBottomColor: '#1B5E20',
+    backgroundColor: '#1B5E20',
+    borderColor: '#1B5E20',
+    shadowColor: '#1B5E20',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   tabButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600' as const,
-    color: '#999',
+    color: '#666',
   },
   tabButtonTextActive: {
-    color: '#1B5E20',
+    color: '#fff',
     fontWeight: '700' as const,
   },
   daySelector: {
