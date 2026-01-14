@@ -548,7 +548,7 @@ export default function AdminEventsScreen() {
   };
 
   const handleFormChange = (field: string, value: any) => {
-    setForm({ ...form, [field]: value });
+    setForm((prevForm) => ({ ...prevForm, [field]: value }));
   };
 
   const handleDeleteEvent = async (id: string) => {
