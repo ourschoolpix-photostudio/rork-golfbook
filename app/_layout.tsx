@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState, ErrorInfo } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { StyleSheet, View, Platform, Alert, Appearance, Text } from "react-native";
+import { StyleSheet, View, Platform, Alert, Text } from "react-native";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { EventsProvider } from "@/contexts/EventsContext";
 import { GamesProvider } from "@/contexts/GamesContext";
@@ -13,17 +13,6 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import * as Linking from 'expo-linking';
 import { supabase } from '@/integrations/supabase/client';
-
-
-
-// Set light color scheme safely
-try {
-  if (typeof Appearance?.setColorScheme === 'function') {
-    Appearance.setColorScheme('light');
-  }
-} catch {
-  console.log('[App] Appearance.setColorScheme not supported');
-}
 
 console.log('🚀 [App] Starting application...');
 console.log('🔧 [App] Platform:', Platform.OS);
