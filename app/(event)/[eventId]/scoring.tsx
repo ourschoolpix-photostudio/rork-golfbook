@@ -29,6 +29,8 @@ export default function ScoringScreen() {
   const [scoreMeOnly, setScoreMeOnly] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
+  const [isDayLocked, setIsDayLocked] = useState<boolean>(false);
+  const [lastDayTap, setLastDayTap] = useState<{ day: number; time: number } | null>(null);
 
   const { data: eventData, isLoading: eventLoading, error: eventError } = useQuery({
     queryKey: ['events', eventId],
@@ -612,12 +614,50 @@ export default function ScoringScreen() {
           {event.numberOfDays && event.numberOfDays > 1 && Array.from({ length: event.numberOfDays }, (_, i) => i + 1).map(day => (
             <TouchableOpacity
               key={day}
-              style={[styles.dayButton, selectedDay === day && styles.dayButtonActive]}
-              onPress={() => setSelectedDay(day)}
+              style={[
+                styles.dayButton,
+                selectedDay === day && styles.dayButtonActive,
+                selectedDay === day && isDayLocked && styles.dayButtonLocked,
+              ]}
+              onPress={() => {
+                const now = Date.now();
+                
+                if (selectedDay === day) {
+                  if (lastDayTap && lastDayTap.day === day && now - lastDayTap.time < 500) {
+                    setIsDayLocked(!isDayLocked);
+                    Alert.alert(
+                      isDayLocked ? 'Day Unlocked' : 'Day Locked',
+                      isDayLocked
+                        ? `Day ${day} is now unlocked. You can switch between days.`
+                        : `Day ${day} is now locked. Double-tap again to unlock.`,
+                      [{ text: 'OK' }]
+                    );
+                    setLastDayTap(null);
+                  } else {
+                    setLastDayTap({ day, time: now });
+                  }
+                } else {
+                  if (isDayLocked) {
+                    Alert.alert(
+                      'Day Locked',
+                      `Day ${selectedDay} is locked. Double-tap Day ${selectedDay} to unlock before switching.`,
+                      [{ text: 'OK' }]
+                    );
+                  } else {
+                    setSelectedDay(day);
+                    setLastDayTap(null);
+                  }
+                }
+              }}
             >
-              <Text style={[styles.dayButtonText, selectedDay === day && styles.dayButtonTextActive]}>
-                Day {day}
-              </Text>
+              <View style={styles.dayButtonContent}>
+                <Text style={[styles.dayButtonText, selectedDay === day && styles.dayButtonTextActive]}>
+                  Day {day}
+                </Text>
+                {selectedDay === day && isDayLocked && (
+                  <Ionicons name="lock-closed" size={14} color="#fff" style={styles.lockIcon} />
+                )}
+              </View>
             </TouchableOpacity>
           ))}
           <TouchableOpacity
@@ -1034,6 +1074,15 @@ const styles = StyleSheet.create({
   dayButtonActive: {
     backgroundColor: '#1B5E20',
   },
+  dayButtonLocked: {
+    backgroundColor: '#FF6B00',
+    borderColor: '#FF6B00',
+  },
+  dayButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   dayButtonText: {
     fontSize: 11,
     fontWeight: '600',
@@ -1042,6 +1091,9 @@ const styles = StyleSheet.create({
   },
   dayButtonTextActive: {
     color: '#fff',
+  },
+  lockIcon: {
+    marginLeft: 2,
   },
   scoreMeOnlyButton: {
     flex: 1,
