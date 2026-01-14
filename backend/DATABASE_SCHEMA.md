@@ -301,6 +301,26 @@ CREATE TABLE offline_operations (
 );
 ```
 
+### courses
+Stores golf course information for reuse across events and games.
+
+```sql
+CREATE TABLE courses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  par INTEGER NOT NULL,
+  hole_pars INTEGER[] NOT NULL,
+  is_public BOOLEAN DEFAULT false,
+  member_id TEXT,
+  source TEXT DEFAULT 'admin' CHECK (source IN ('admin', 'personal')),
+  stroke_indices INTEGER[],
+  course_rating NUMERIC(4,1),
+  slope_rating NUMERIC(4,1),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
 ## Indexes
 
 ```sql
@@ -328,6 +348,10 @@ CREATE INDEX idx_offline_operations_member ON offline_operations(member_id);
 CREATE INDEX idx_offline_operations_event ON offline_operations(event_id);
 CREATE INDEX idx_offline_operations_status ON offline_operations(status);
 CREATE INDEX idx_offline_operations_created_at ON offline_operations(created_at);
+CREATE INDEX idx_courses_member ON courses(member_id);
+CREATE INDEX idx_courses_public ON courses(is_public);
+CREATE INDEX idx_courses_name ON courses(name);
+CREATE INDEX idx_courses_source ON courses(source);
 ```
 
 ## Row Level Security (RLS) Policies

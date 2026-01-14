@@ -60,7 +60,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
       console.log('[CoursesManagementModal] Fetching courses for member:', currentUser?.id);
       let query = supabase.from('courses').select('*');
       
-      query = query.eq('source_type', 'admin');
+      query = query.eq('source', 'admin');
       query = query.order('name', { ascending: true });
       
       const { data, error } = await query;
@@ -80,7 +80,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
         courseRating: course.course_rating,
         memberId: course.member_id,
         isPublic: course.is_public,
-        source: course.source_type,
+        source: course.source,
         createdAt: course.created_at,
         updatedAt: course.updated_at,
       }));
@@ -116,7 +116,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
           slope_rating: input.slopeRating,
           course_rating: input.courseRating,
           is_public: input.isPublic,
-          source_type: input.source,
+          source: input.source,
         })
         .select()
         .single();
