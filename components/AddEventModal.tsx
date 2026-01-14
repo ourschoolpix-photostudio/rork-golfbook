@@ -215,7 +215,7 @@ export function AddEventModal({
     onFormChange('memo', text);
   };
 
-  const handleCourseSelect = (day: 1 | 2 | 3, courseId: string) => {
+  const handleCourseSelect = (day: 1 | 2 | 3, courseId: string, overrideTeeBox?: 'tips' | 'men' | 'lady') => {
     const course = adminCourses.find((c: any) => c.id === courseId);
     if (!course) {
       console.log('[AddEventModal] ❌ Course not found for ID:', courseId);
@@ -232,7 +232,7 @@ export function AddEventModal({
 
     const prefix = `day${day}` as 'day1' | 'day2' | 'day3';
     const teeBoxKey = `${prefix}TeeBox` as 'day1TeeBox' | 'day2TeeBox' | 'day3TeeBox';
-    const currentTeeBox = form[teeBoxKey] || 'men';
+    const currentTeeBox = overrideTeeBox || form[teeBoxKey] || 'men';
     
     let slopeRating: number | undefined;
     let courseRating: number | undefined;
@@ -678,7 +678,7 @@ export function AddEventModal({
                           onPress={() => {
                             onFormChange('day1TeeBox', 'tips');
                             if (form.day1CourseId) {
-                              handleCourseSelect(1, form.day1CourseId);
+                              handleCourseSelect(1, form.day1CourseId, 'tips');
                             }
                           }}
                         >
@@ -689,7 +689,7 @@ export function AddEventModal({
                           onPress={() => {
                             onFormChange('day1TeeBox', 'men');
                             if (form.day1CourseId) {
-                              handleCourseSelect(1, form.day1CourseId);
+                              handleCourseSelect(1, form.day1CourseId, 'men');
                             }
                           }}
                         >
@@ -700,7 +700,7 @@ export function AddEventModal({
                           onPress={() => {
                             onFormChange('day1TeeBox', 'lady');
                             if (form.day1CourseId) {
-                              handleCourseSelect(1, form.day1CourseId);
+                              handleCourseSelect(1, form.day1CourseId, 'lady');
                             }
                           }}
                         >
@@ -892,7 +892,7 @@ export function AddEventModal({
                           onPress={() => {
                             onFormChange('day2TeeBox', 'tips');
                             if (form.day2CourseId) {
-                              handleCourseSelect(2, form.day2CourseId);
+                              handleCourseSelect(2, form.day2CourseId, 'tips');
                             }
                           }}
                         >
@@ -903,7 +903,7 @@ export function AddEventModal({
                           onPress={() => {
                             onFormChange('day2TeeBox', 'men');
                             if (form.day2CourseId) {
-                              handleCourseSelect(2, form.day2CourseId);
+                              handleCourseSelect(2, form.day2CourseId, 'men');
                             }
                           }}
                         >
@@ -914,7 +914,7 @@ export function AddEventModal({
                           onPress={() => {
                             onFormChange('day2TeeBox', 'lady');
                             if (form.day2CourseId) {
-                              handleCourseSelect(2, form.day2CourseId);
+                              handleCourseSelect(2, form.day2CourseId, 'lady');
                             }
                           }}
                         >
@@ -1120,7 +1120,7 @@ export function AddEventModal({
                           onPress={() => {
                             onFormChange('day3TeeBox', 'tips');
                             if (form.day3CourseId) {
-                              handleCourseSelect(3, form.day3CourseId);
+                              handleCourseSelect(3, form.day3CourseId, 'tips');
                             }
                           }}
                         >
@@ -1131,7 +1131,7 @@ export function AddEventModal({
                           onPress={() => {
                             onFormChange('day3TeeBox', 'men');
                             if (form.day3CourseId) {
-                              handleCourseSelect(3, form.day3CourseId);
+                              handleCourseSelect(3, form.day3CourseId, 'men');
                             }
                           }}
                         >
@@ -1142,7 +1142,7 @@ export function AddEventModal({
                           onPress={() => {
                             onFormChange('day3TeeBox', 'lady');
                             if (form.day3CourseId) {
-                              handleCourseSelect(3, form.day3CourseId);
+                              handleCourseSelect(3, form.day3CourseId, 'lady');
                             }
                           }}
                         >
