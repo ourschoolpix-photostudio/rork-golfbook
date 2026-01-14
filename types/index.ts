@@ -254,8 +254,17 @@ export interface Course {
   par: number;
   holePars: number[];
   strokeIndices?: number[];
+  slopeRating?: number;
+  courseRating?: number;
+  men_slope_rating?: number;
+  men_course_rating?: number;
+  women_slope_rating?: number;
+  women_course_rating?: number;
+  slope_rating?: number;
+  course_rating?: number;
   memberId?: string;
   isPublic: boolean;
+  source?: 'admin' | 'personal';
   createdAt: string;
   updatedAt: string;
 }

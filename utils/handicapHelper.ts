@@ -91,12 +91,16 @@ export const getDisplayHandicap = (
       slopeRating = parseFloat(slopeRatingStr);
     }
     
-    console.log(`[handicapHelper] Course handicap check for ${member.name} on day ${day}:`, {
+    console.log(`[handicapHelper] 🎯 Course handicap check for ${member.name} on day ${day}:`, {
       useCourseHandicap,
+      day1SlopeRating: event.day1SlopeRating,
+      day2SlopeRating: event.day2SlopeRating,
+      day3SlopeRating: event.day3SlopeRating,
       slopeRatingStr,
       slopeRating,
       baseHandicap,
       eventId: event.id,
+      eventName: event.name,
     });
     
     if (slopeRating && !isNaN(slopeRating) && slopeRating > 0) {
@@ -104,7 +108,19 @@ export const getDisplayHandicap = (
       console.log(`[handicapHelper] ✅ Using COURSE handicap for ${member.name}: ${courseHandicap} (base: ${baseHandicap}, slope: ${slopeRating})`);
       return courseHandicap;
     } else {
-      console.log(`[handicapHelper] ⚠️ Course handicap requested but no valid slope rating found for day ${day}. Event slope rating: ${slopeRatingStr}. Falling back to base handicap: ${baseHandicap}`);
+      console.log(`[handicapHelper] ⚠️ Course handicap requested but no valid slope rating found for day ${day}`);
+      console.log(`[handicapHelper] ⚠️ Event data:`, {
+        day1SlopeRating: event.day1SlopeRating,
+        day2SlopeRating: event.day2SlopeRating,
+        day3SlopeRating: event.day3SlopeRating,
+        day1CourseRating: event.day1CourseRating,
+        day2CourseRating: event.day2CourseRating,
+        day3CourseRating: event.day3CourseRating,
+        day1Course: event.day1Course,
+        day2Course: event.day2Course,
+        day3Course: event.day3Course,
+      });
+      console.log(`[handicapHelper] ⚠️ Falling back to base handicap: ${baseHandicap}`);
     }
   }
   

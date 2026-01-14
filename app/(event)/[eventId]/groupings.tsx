@@ -207,7 +207,15 @@ export default function GroupingsScreen() {
             const boolValue = value === 'true';
             setUseCourseHandicap(prev => {
               if (prev !== boolValue) {
-                console.log('[groupings] Course handicap setting changed:', boolValue);
+                console.log('[groupings] 🔄 Course handicap setting changed:', boolValue);
+                console.log('[groupings] 📊 Current event slope ratings:', {
+                  day1SlopeRating: event?.day1SlopeRating,
+                  day2SlopeRating: event?.day2SlopeRating,
+                  day3SlopeRating: event?.day3SlopeRating,
+                  activeDay,
+                  eventId: event?.id,
+                  eventName: event?.name,
+                });
                 return boolValue;
               }
               return prev;
@@ -222,7 +230,7 @@ export default function GroupingsScreen() {
     
     const interval = setInterval(loadCourseHandicapSetting, 500);
     return () => clearInterval(interval);
-  }, [event]);
+  }, [event, activeDay]);
 
   useFocusEffect(
     useCallback(() => {
