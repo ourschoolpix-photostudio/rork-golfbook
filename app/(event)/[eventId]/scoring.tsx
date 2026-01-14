@@ -143,7 +143,14 @@ export default function ScoringScreen() {
         }
       }
     };
+    
     loadCourseHandicapSetting();
+    
+    const interval = setInterval(() => {
+      loadCourseHandicapSetting();
+    }, 1000);
+    
+    return () => clearInterval(interval);
   }, [eventId]);
 
   const loadMyGroup = useCallback(async (golfEvent: Event, userId: string, dayNumber: number, groupings: any[], members: any[], registrations: any[]) => {
@@ -281,6 +288,13 @@ export default function ScoringScreen() {
       loadMyGroup(event, currentUser.id, selectedDay, eventGroupings, allMembers, eventRegistrations);
     }
   }, [event, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, eventGroupings, allMembers, eventRegistrations, loadMyGroup]);
+
+  useEffect(() => {
+    if (event && currentUser && eventId && !groupingsLoading && !membersLoading && !registrationsLoading && eventGroupings.length > 0) {
+      console.log('[scoring] useCourseHandicap changed, recalculating handicaps:', useCourseHandicap);
+      loadMyGroup(event, currentUser.id, selectedDay, eventGroupings, allMembers, eventRegistrations);
+    }
+  }, [useCourseHandicap, event, currentUser, eventId, groupingsLoading, membersLoading, registrationsLoading, eventGroupings, allMembers, eventRegistrations, selectedDay, loadMyGroup]);
 
 
 
