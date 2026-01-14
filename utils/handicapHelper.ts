@@ -93,9 +93,13 @@ export const getDisplayHandicap = (
     
     console.log(`[handicapHelper] 🎯 Course handicap check for ${member.name} on day ${day}:`, {
       useCourseHandicap,
+      memberGender: member.gender,
       day1SlopeRating: event.day1SlopeRating,
       day2SlopeRating: event.day2SlopeRating,
       day3SlopeRating: event.day3SlopeRating,
+      day1TeeBox: event.day1TeeBox,
+      day2TeeBox: event.day2TeeBox,
+      day3TeeBox: event.day3TeeBox,
       slopeRatingStr,
       slopeRating,
       baseHandicap,
@@ -109,7 +113,9 @@ export const getDisplayHandicap = (
       return courseHandicap;
     } else {
       console.log(`[handicapHelper] ⚠️ Course handicap requested but no valid slope rating found for day ${day}`);
-      console.log(`[handicapHelper] ⚠️ Event data:`, {
+      console.log(`[handicapHelper] ⚠️ slopeRatingStr value:`, slopeRatingStr, 'type:', typeof slopeRatingStr);
+      console.log(`[handicapHelper] ⚠️ slopeRating parsed value:`, slopeRating, 'type:', typeof slopeRating);
+      console.log(`[handicapHelper] ⚠️ Full event data:`, {
         day1SlopeRating: event.day1SlopeRating,
         day2SlopeRating: event.day2SlopeRating,
         day3SlopeRating: event.day3SlopeRating,
@@ -119,6 +125,9 @@ export const getDisplayHandicap = (
         day1Course: event.day1Course,
         day2Course: event.day2Course,
         day3Course: event.day3Course,
+        day1CourseId: event.day1CourseId,
+        day2CourseId: event.day2CourseId,
+        day3CourseId: event.day3CourseId,
       });
       console.log(`[handicapHelper] ⚠️ Falling back to base handicap: ${baseHandicap}`);
     }

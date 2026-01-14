@@ -47,6 +47,7 @@ interface AddEventModalProps {
     day1CourseRating: string;
     day1HolePars?: string[];
     day1CourseId?: string;
+    day1TeeBox?: 'tips' | 'men' | 'lady';
     day2StartTime: string;
     day2StartPeriod: 'AM' | 'PM';
     day2EndTime: string;
@@ -59,6 +60,7 @@ interface AddEventModalProps {
     day2CourseRating: string;
     day2HolePars?: string[];
     day2CourseId?: string;
+    day2TeeBox?: 'tips' | 'men' | 'lady';
     day3StartTime: string;
     day3StartPeriod: 'AM' | 'PM';
     day3EndTime: string;
@@ -71,6 +73,7 @@ interface AddEventModalProps {
     day3CourseRating: string;
     day3HolePars?: string[];
     day3CourseId?: string;
+    day3TeeBox?: 'tips' | 'men' | 'lady';
     flightACutoff: string;
     flightBCutoff: string;
     flightATeebox: string;
@@ -214,33 +217,57 @@ export function AddEventModal({
 
   const handleCourseSelect = (day: 1 | 2 | 3, courseId: string) => {
     const course = adminCourses.find((c: any) => c.id === courseId);
-    if (!course) return;
+    if (!course) {
+      console.log('[AddEventModal] ❌ Course not found for ID:', courseId);
+      return;
+    }
 
-    console.log('[AddEventModal] Selected course:', course);
-    console.log('[AddEventModal] Men slope rating:', course.men_slope_rating);
-    console.log('[AddEventModal] Men course rating:', course.men_course_rating);
+    console.log('[AddEventModal] ✅ Selected course:', course.name);
+    console.log('[AddEventModal] 📊 Available ratings:', {
+      tips: { slope: course.tips_slope_rating, rating: course.tips_course_rating },
+      men: { slope: course.men_slope_rating, rating: course.men_course_rating },
+      lady: { slope: course.lady_slope_rating, rating: course.lady_course_rating },
+      default: { slope: course.slope_rating, rating: course.course_rating },
+    });
 
     const prefix = `day${day}` as 'day1' | 'day2' | 'day3';
+    const teeBoxKey = `${prefix}TeeBox` as 'day1TeeBox' | 'day2TeeBox' | 'day3TeeBox';
+    const currentTeeBox = form[teeBoxKey] || 'men';
     
-    const menSlopeRating = course.men_slope_rating || course.slope_rating;
-    const menCourseRating = course.men_course_rating || course.course_rating;
+    let slopeRating: number | undefined;
+    let courseRating: number | undefined;
+    
+    if (currentTeeBox === 'tips') {
+      slopeRating = course.tips_slope_rating || course.slope_rating;
+      courseRating = course.tips_course_rating || course.course_rating;
+    } else if (currentTeeBox === 'lady') {
+      slopeRating = course.lady_slope_rating || course.slope_rating;
+      courseRating = course.lady_course_rating || course.course_rating;
+    } else {
+      slopeRating = course.men_slope_rating || course.slope_rating;
+      courseRating = course.men_course_rating || course.course_rating;
+    }
+    
+    console.log('[AddEventModal] 🎯 Using tee box:', currentTeeBox);
+    console.log('[AddEventModal] 🎯 Selected slope rating:', slopeRating);
+    console.log('[AddEventModal] 🎯 Selected course rating:', courseRating);
     
     onFormChange(`${prefix}CourseId`, courseId);
     onFormChange(`${prefix}Course`, course.name);
     onFormChange(`${prefix}Par`, course.par?.toString() || '');
-    onFormChange(`${prefix}SlopeRating`, menSlopeRating?.toString() || '');
-    onFormChange(`${prefix}CourseRating`, menCourseRating?.toString() || '');
-    
-    console.log('[AddEventModal] Setting slope rating to:', menSlopeRating?.toString() || '');
-    console.log('[AddEventModal] Setting course rating to:', menCourseRating?.toString() || '');
+    onFormChange(`${prefix}SlopeRating`, slopeRating?.toString() || '');
+    onFormChange(`${prefix}CourseRating`, courseRating?.toString() || '');
+    onFormChange(teeBoxKey, currentTeeBox);
     
     if (course.hole_pars && course.hole_pars.length === 18) {
       onFormChange(`${prefix}HolePars`, course.hole_pars.map((p: number) => p.toString()));
     }
 
-    if (day === 1) setShowCourseDropdown1(false);
-    if (day === 2) setShowCourseDropdown2(false);
-    if (day === 3) setShowCourseDropdown3(false);
+    setShowCourseDropdown1(false);
+    setShowCourseDropdown2(false);
+    setShowCourseDropdown3(false);
+    
+    console.log('[AddEventModal] ✅ Course selection complete');
   };
 
   const displayEntryFee = form.entryFee ? `$${form.entryFee}` : '';
