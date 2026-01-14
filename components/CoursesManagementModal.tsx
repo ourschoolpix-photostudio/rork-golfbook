@@ -28,6 +28,12 @@ interface Course {
   strokeIndices?: number[];
   slopeRating?: number;
   courseRating?: number;
+  tipsCourseRating?: number;
+  tipsSlopeRating?: number;
+  menCourseRating?: number;
+  menSlopeRating?: number;
+  ladyCourseRating?: number;
+  ladySlopeRating?: number;
   memberId: string;
   isPublic: boolean;
 }
@@ -47,6 +53,12 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
   const [strokeIndices, setStrokeIndices] = useState<string[]>(new Array(18).fill(''));
   const [slopeRating, setSlopeRating] = useState<string>('');
   const [courseRating, setCourseRating] = useState<string>('');
+  const [tipsCourseRating, setTipsCourseRating] = useState<string>('');
+  const [tipsSlopeRating, setTipsSlopeRating] = useState<string>('');
+  const [menCourseRating, setMenCourseRating] = useState<string>('');
+  const [menSlopeRating, setMenSlopeRating] = useState<string>('');
+  const [ladyCourseRating, setLadyCourseRating] = useState<string>('');
+  const [ladySlopeRating, setLadySlopeRating] = useState<string>('');
   const [courseUrl, setCourseUrl] = useState<string>('');
   const [scoreCardImage, setScoreCardImage] = useState<string | null>(null);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState<boolean>(false);
@@ -78,6 +90,12 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
         strokeIndices: course.stroke_indices,
         slopeRating: course.slope_rating,
         courseRating: course.course_rating,
+        tipsCourseRating: course.tips_course_rating,
+        tipsSlopeRating: course.tips_slope_rating,
+        menCourseRating: course.men_course_rating,
+        menSlopeRating: course.men_slope_rating,
+        ladyCourseRating: course.lady_course_rating,
+        ladySlopeRating: course.lady_slope_rating,
         memberId: course.member_id,
         isPublic: course.is_public,
         source: course.source,
@@ -100,6 +118,12 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
       strokeIndices?: number[];
       slopeRating?: number;
       courseRating?: number;
+      tipsCourseRating?: number;
+      tipsSlopeRating?: number;
+      menCourseRating?: number;
+      menSlopeRating?: number;
+      ladyCourseRating?: number;
+      ladySlopeRating?: number;
       isPublic: boolean;
       source: string;
     }) => {
@@ -115,6 +139,12 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
           stroke_indices: input.strokeIndices,
           slope_rating: input.slopeRating,
           course_rating: input.courseRating,
+          tips_course_rating: input.tipsCourseRating,
+          tips_slope_rating: input.tipsSlopeRating,
+          men_course_rating: input.menCourseRating,
+          men_slope_rating: input.menSlopeRating,
+          lady_course_rating: input.ladyCourseRating,
+          lady_slope_rating: input.ladySlopeRating,
           is_public: input.isPublic,
           source: input.source,
         })
@@ -144,6 +174,12 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
       strokeIndices?: number[];
       slopeRating?: number;
       courseRating?: number;
+      tipsCourseRating?: number;
+      tipsSlopeRating?: number;
+      menCourseRating?: number;
+      menSlopeRating?: number;
+      ladyCourseRating?: number;
+      ladySlopeRating?: number;
     }) => {
       console.log('[CoursesManagementModal] Updating course:', input.courseId);
       
@@ -156,6 +192,12 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
       if (input.strokeIndices !== undefined) updateData.stroke_indices = input.strokeIndices;
       if (input.slopeRating !== undefined) updateData.slope_rating = input.slopeRating;
       if (input.courseRating !== undefined) updateData.course_rating = input.courseRating;
+      if (input.tipsCourseRating !== undefined) updateData.tips_course_rating = input.tipsCourseRating;
+      if (input.tipsSlopeRating !== undefined) updateData.tips_slope_rating = input.tipsSlopeRating;
+      if (input.menCourseRating !== undefined) updateData.men_course_rating = input.menCourseRating;
+      if (input.menSlopeRating !== undefined) updateData.men_slope_rating = input.menSlopeRating;
+      if (input.ladyCourseRating !== undefined) updateData.lady_course_rating = input.ladyCourseRating;
+      if (input.ladySlopeRating !== undefined) updateData.lady_slope_rating = input.ladySlopeRating;
 
       const { data, error } = await supabase
         .from('courses')
@@ -208,6 +250,12 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setStrokeIndices(new Array(18).fill(''));
     setSlopeRating('');
     setCourseRating('');
+    setTipsCourseRating('');
+    setTipsSlopeRating('');
+    setMenCourseRating('');
+    setMenSlopeRating('');
+    setLadyCourseRating('');
+    setLadySlopeRating('');
     setCourseUrl('');
     setScoreCardImage(null);
   };
@@ -219,6 +267,12 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setStrokeIndices(new Array(18).fill(''));
     setSlopeRating('');
     setCourseRating('');
+    setTipsCourseRating('');
+    setTipsSlopeRating('');
+    setMenCourseRating('');
+    setMenSlopeRating('');
+    setLadyCourseRating('');
+    setLadySlopeRating('');
     setCourseUrl('');
     setScoreCardImage(null);
   };
@@ -401,6 +455,12 @@ Rules:
     setStrokeIndices(indices);
     setSlopeRating(course.slopeRating ? course.slopeRating.toString() : '');
     setCourseRating(course.courseRating ? course.courseRating.toString() : '');
+    setTipsCourseRating(course.tipsCourseRating ? course.tipsCourseRating.toString() : '');
+    setTipsSlopeRating(course.tipsSlopeRating ? course.tipsSlopeRating.toString() : '');
+    setMenCourseRating(course.menCourseRating ? course.menCourseRating.toString() : '');
+    setMenSlopeRating(course.menSlopeRating ? course.menSlopeRating.toString() : '');
+    setLadyCourseRating(course.ladyCourseRating ? course.ladyCourseRating.toString() : '');
+    setLadySlopeRating(course.ladySlopeRating ? course.ladySlopeRating.toString() : '');
   };
 
   const handleSave = async () => {
@@ -448,6 +508,12 @@ Rules:
 
     const parsedSlopeRating = slopeRating.trim() ? parseFloat(slopeRating) : undefined;
     const parsedCourseRating = courseRating.trim() ? parseFloat(courseRating) : undefined;
+    const parsedTipsCourseRating = tipsCourseRating.trim() ? parseFloat(tipsCourseRating) : undefined;
+    const parsedTipsSlopeRating = tipsSlopeRating.trim() ? parseFloat(tipsSlopeRating) : undefined;
+    const parsedMenCourseRating = menCourseRating.trim() ? parseFloat(menCourseRating) : undefined;
+    const parsedMenSlopeRating = menSlopeRating.trim() ? parseFloat(menSlopeRating) : undefined;
+    const parsedLadyCourseRating = ladyCourseRating.trim() ? parseFloat(ladyCourseRating) : undefined;
+    const parsedLadySlopeRating = ladySlopeRating.trim() ? parseFloat(ladySlopeRating) : undefined;
 
     if (parsedSlopeRating !== undefined && (isNaN(parsedSlopeRating) || parsedSlopeRating < 55 || parsedSlopeRating > 155)) {
       Alert.alert('Error', 'Slope rating must be between 55 and 155');
@@ -458,6 +524,22 @@ Rules:
       Alert.alert('Error', 'Course rating must be between 60 and 80');
       return;
     }
+
+    const validateTeeRatings = (name: string, course?: number, slope?: number) => {
+      if (slope !== undefined && (isNaN(slope) || slope < 55 || slope > 155)) {
+        Alert.alert('Error', `${name} slope rating must be between 55 and 155`);
+        return false;
+      }
+      if (course !== undefined && (isNaN(course) || course < 60 || course > 80)) {
+        Alert.alert('Error', `${name} course rating must be between 60 and 80`);
+        return false;
+      }
+      return true;
+    };
+
+    if (!validateTeeRatings('Tips', parsedTipsCourseRating, parsedTipsSlopeRating)) return;
+    if (!validateTeeRatings('Men', parsedMenCourseRating, parsedMenSlopeRating)) return;
+    if (!validateTeeRatings('Lady', parsedLadyCourseRating, parsedLadySlopeRating)) return;
 
     const totalPar = parsedHolePars.reduce((sum, par) => sum + par, 0);
 
@@ -471,6 +553,12 @@ Rules:
           strokeIndices: parsedStrokeIndices.length === 18 ? parsedStrokeIndices : undefined,
           slopeRating: parsedSlopeRating,
           courseRating: parsedCourseRating,
+          tipsCourseRating: parsedTipsCourseRating,
+          tipsSlopeRating: parsedTipsSlopeRating,
+          menCourseRating: parsedMenCourseRating,
+          menSlopeRating: parsedMenSlopeRating,
+          ladyCourseRating: parsedLadyCourseRating,
+          ladySlopeRating: parsedLadySlopeRating,
         });
         console.log('[CoursesManagementModal] Updated course:', editingCourse.id);
       } else {
@@ -482,6 +570,12 @@ Rules:
           strokeIndices: parsedStrokeIndices.length === 18 ? parsedStrokeIndices : undefined,
           slopeRating: parsedSlopeRating,
           courseRating: parsedCourseRating,
+          tipsCourseRating: parsedTipsCourseRating,
+          tipsSlopeRating: parsedTipsSlopeRating,
+          menCourseRating: parsedMenCourseRating,
+          menSlopeRating: parsedMenSlopeRating,
+          ladyCourseRating: parsedLadyCourseRating,
+          ladySlopeRating: parsedLadySlopeRating,
           isPublic: false,
           source: 'admin',
         });
@@ -686,29 +780,92 @@ Rules:
                 </View>
 
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Course Rating & Slope (Optional)</Text>
-                  <View style={styles.ratingRow}>
-                    <View style={styles.ratingInput}>
-                      <Text style={styles.ratingLabel}>Course Rating</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="e.g., 72.3"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                        value={courseRating}
-                        onChangeText={setCourseRating}
-                      />
+                  <Text style={styles.sectionTitle}>Tee Box Ratings (Optional)</Text>
+                  <Text style={styles.sectionDescription}>
+                    Enter course rating and slope for each tee box. Tips = Back tees, Men = Middle tees, Lady = Forward tees.
+                  </Text>
+                  
+                  <View style={styles.teeBoxSection}>
+                    <Text style={styles.teeBoxLabel}>Tips (Back Tees)</Text>
+                    <View style={styles.ratingRow}>
+                      <View style={styles.ratingInput}>
+                        <Text style={styles.ratingLabel}>Course Rating</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="e.g., 74.5"
+                          placeholderTextColor="#999"
+                          keyboardType="decimal-pad"
+                          value={tipsCourseRating}
+                          onChangeText={setTipsCourseRating}
+                        />
+                      </View>
+                      <View style={styles.ratingInput}>
+                        <Text style={styles.ratingLabel}>Slope Rating</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="e.g., 135"
+                          placeholderTextColor="#999"
+                          keyboardType="decimal-pad"
+                          value={tipsSlopeRating}
+                          onChangeText={setTipsSlopeRating}
+                        />
+                      </View>
                     </View>
-                    <View style={styles.ratingInput}>
-                      <Text style={styles.ratingLabel}>Slope Rating</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="e.g., 113"
-                        placeholderTextColor="#999"
-                        keyboardType="decimal-pad"
-                        value={slopeRating}
-                        onChangeText={setSlopeRating}
-                      />
+                  </View>
+
+                  <View style={styles.teeBoxSection}>
+                    <Text style={styles.teeBoxLabel}>Men (Middle Tees)</Text>
+                    <View style={styles.ratingRow}>
+                      <View style={styles.ratingInput}>
+                        <Text style={styles.ratingLabel}>Course Rating</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="e.g., 72.3"
+                          placeholderTextColor="#999"
+                          keyboardType="decimal-pad"
+                          value={menCourseRating}
+                          onChangeText={setMenCourseRating}
+                        />
+                      </View>
+                      <View style={styles.ratingInput}>
+                        <Text style={styles.ratingLabel}>Slope Rating</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="e.g., 128"
+                          placeholderTextColor="#999"
+                          keyboardType="decimal-pad"
+                          value={menSlopeRating}
+                          onChangeText={setMenSlopeRating}
+                        />
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.teeBoxSection}>
+                    <Text style={styles.teeBoxLabel}>Lady (Forward Tees)</Text>
+                    <View style={styles.ratingRow}>
+                      <View style={styles.ratingInput}>
+                        <Text style={styles.ratingLabel}>Course Rating</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="e.g., 70.1"
+                          placeholderTextColor="#999"
+                          keyboardType="decimal-pad"
+                          value={ladyCourseRating}
+                          onChangeText={setLadyCourseRating}
+                        />
+                      </View>
+                      <View style={styles.ratingInput}>
+                        <Text style={styles.ratingLabel}>Slope Rating</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="e.g., 118"
+                          placeholderTextColor="#999"
+                          keyboardType="decimal-pad"
+                          value={ladySlopeRating}
+                          onChangeText={setLadySlopeRating}
+                        />
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -790,12 +947,24 @@ Rules:
                         <View style={styles.courseInfo}>
                           <Text style={styles.courseName}>{course.name}</Text>
                           <Text style={styles.coursePar}>Par {course.par}</Text>
-                          {(course.courseRating || course.slopeRating) && (
-                            <Text style={styles.courseDetails}>
-                              {course.courseRating ? `Rating: ${course.courseRating}` : ''}
-                              {course.courseRating && course.slopeRating ? ' • ' : ''}
-                              {course.slopeRating ? `Slope: ${course.slopeRating}` : ''}
-                            </Text>
+                          {(course.tipsCourseRating || course.tipsSlopeRating || course.menCourseRating || course.menSlopeRating || course.ladyCourseRating || course.ladySlopeRating) && (
+                            <View style={styles.teeRatingsPreview}>
+                              {(course.tipsCourseRating || course.tipsSlopeRating) && (
+                                <Text style={styles.courseDetails}>
+                                  Tips: {course.tipsCourseRating || '-'}/{course.tipsSlopeRating || '-'}
+                                </Text>
+                              )}
+                              {(course.menCourseRating || course.menSlopeRating) && (
+                                <Text style={styles.courseDetails}>
+                                  Men: {course.menCourseRating || '-'}/{course.menSlopeRating || '-'}
+                                </Text>
+                              )}
+                              {(course.ladyCourseRating || course.ladySlopeRating) && (
+                                <Text style={styles.courseDetails}>
+                                  Lady: {course.ladyCourseRating || '-'}/{course.ladySlopeRating || '-'}
+                                </Text>
+                              )}
+                            </View>
                           )}
                         </View>
                         <View style={styles.courseActions}>
@@ -1064,6 +1233,23 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#666',
     marginBottom: 8,
+  },
+  teeBoxSection: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#1B5E20',
+  },
+  teeBoxLabel: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#1B5E20',
+    marginBottom: 10,
+  },
+  teeRatingsPreview: {
+    marginTop: 4,
   },
   courseDetails: {
     fontSize: 12,
