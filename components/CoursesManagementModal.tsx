@@ -12,7 +12,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { X, Plus, Edit2, Trash2, Save } from 'lucide-react-native';
+import { X, Plus, Edit2, Trash2, Save, Download } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +44,8 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
   const [strokeIndices, setStrokeIndices] = useState<string[]>(new Array(18).fill(''));
   const [slopeRating, setSlopeRating] = useState<string>('');
   const [courseRating, setCourseRating] = useState<string>('');
+  const [courseUrl, setCourseUrl] = useState<string>('');
+  const [isFetchingUrl, setIsFetchingUrl] = useState<boolean>(false);
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
   const strokeIndexInputRefs = React.useRef<(TextInput | null)[]>([]);
 
@@ -201,6 +203,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setStrokeIndices(new Array(18).fill(''));
     setSlopeRating('');
     setCourseRating('');
+    setCourseUrl('');
   };
 
   const handleStartCreate = () => {
@@ -210,6 +213,120 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setStrokeIndices(new Array(18).fill(''));
     setSlopeRating('');
     setCourseRating('');
+    setCourseUrl('');
+  };
+
+  const handleFetchFromUrl = async () => {
+    if (!courseUrl.trim()) {
+      Alert.alert('Error', 'Please enter a URL');
+      return;
+    }
+
+    let url = courseUrl.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+
+    setIsFetchingUrl(true);
+    console.log('[CoursesManagementModal] Fetching course data from URL:', url);
+
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_TOOLKIT_URL}/api/web-fetch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url,
+          prompt: `Extract golf course information from this page. I need:
+1. Course name
+2. Par for each of the 18 holes (as an array of numbers, holes 1-18)
+3. Stroke index/handicap for each hole if available (as an array of numbers, holes 1-18)
+4. Course rating (if available)
+5. Slope rating (if available)
+6. Total par
+
+Return the data as JSON in this exact format:
+{
+  "name": "Course Name",
+  "holePars": [4, 3, 5, 4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 5, 4],
+  "strokeIndices": [7, 15, 1, 9, 3, 17, 11, 5, 13, 8, 16, 2, 10, 4, 18, 12, 6, 14],
+  "courseRating": 72.3,
+  "slopeRating": 131,
+  "totalPar": 72
+}
+
+If you can only find 9 holes, still return 18 holes by duplicating the front 9 for back 9.
+If stroke indices are not available, omit that field.
+If course/slope rating not available, omit those fields.
+Only return the JSON, no other text.`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch URL');
+      }
+
+      const result = await response.json();
+      console.log('[CoursesManagementModal] Web fetch result:', result);
+
+      let courseData;
+      try {
+        const content = result.content || result.result || result;
+        const jsonMatch = typeof content === 'string' 
+          ? content.match(/\{[\s\S]*\}/)
+          : null;
+        
+        if (jsonMatch) {
+          courseData = JSON.parse(jsonMatch[0]);
+        } else if (typeof content === 'object') {
+          courseData = content;
+        } else {
+          throw new Error('Could not parse course data');
+        }
+      } catch (parseError) {
+        console.error('[CoursesManagementModal] Parse error:', parseError);
+        throw new Error('Could not parse course information from the page');
+      }
+
+      if (courseData.name) {
+        setCourseName(courseData.name);
+      }
+
+      if (courseData.holePars && Array.isArray(courseData.holePars) && courseData.holePars.length >= 9) {
+        let pars = courseData.holePars;
+        if (pars.length === 9) {
+          pars = [...pars, ...pars];
+        }
+        setHolePars(pars.slice(0, 18).map((p: number) => p.toString()));
+      }
+
+      if (courseData.strokeIndices && Array.isArray(courseData.strokeIndices) && courseData.strokeIndices.length >= 9) {
+        let indices = courseData.strokeIndices;
+        if (indices.length === 9) {
+          indices = [...indices, ...indices.map((i: number) => i)];
+        }
+        setStrokeIndices(indices.slice(0, 18).map((s: number) => s.toString()));
+      }
+
+      if (courseData.courseRating) {
+        setCourseRating(courseData.courseRating.toString());
+      }
+
+      if (courseData.slopeRating) {
+        setSlopeRating(courseData.slopeRating.toString());
+      }
+
+      Alert.alert('Success', 'Course information imported! Please review and adjust if needed.');
+    } catch (error) {
+      console.error('[CoursesManagementModal] Error fetching from URL:', error);
+      Alert.alert(
+        'Import Failed', 
+        'Could not extract course information from this URL. The page may not contain scorecard data, or it may be in an unsupported format. You can still enter the information manually.'
+      );
+    } finally {
+      setIsFetchingUrl(false);
+    }
   };
 
   const handleStartEdit = (course: Course) => {
@@ -391,6 +508,39 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {isFormVisible ? (
               <>
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Import from URL (Optional)</Text>
+                  <Text style={styles.sectionDescription}>
+                    Paste a link to the course scorecard page to auto-fill information, or enter manually below.
+                  </Text>
+                  <View style={styles.urlRow}>
+                    <TextInput
+                      style={[styles.input, styles.urlInput]}
+                      placeholder="https://golfcourse.com/scorecard"
+                      placeholderTextColor="#999"
+                      value={courseUrl}
+                      onChangeText={setCourseUrl}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                    />
+                    <TouchableOpacity
+                      style={[styles.fetchButton, isFetchingUrl && styles.fetchButtonDisabled]}
+                      onPress={handleFetchFromUrl}
+                      disabled={isFetchingUrl}
+                    >
+                      {isFetchingUrl ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <>
+                          <Download size={16} color="#fff" />
+                          <Text style={styles.fetchButtonText}>Fetch</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Course Name</Text>
                   <TextInput
@@ -817,5 +967,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 4,
+  },
+  urlRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'stretch',
+  },
+  urlInput: {
+    flex: 1,
+  },
+  fetchButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  fetchButtonDisabled: {
+    backgroundColor: '#999',
+  },
+  fetchButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });
