@@ -670,12 +670,13 @@ export function AddEventModal({
                     </View>
                   )}
                   {form.day1CourseId && (
-                    <View style={styles.fieldColumn}>
-                      <Text style={styles.fieldLabel}>Tee Box</Text>
+                    <View style={styles.teeBoxSection}>
+                      <Text style={styles.teeBoxSectionLabel}>Select Tee Box (affects slope & rating)</Text>
                       <View style={styles.teeBoxButtons}>
                         <TouchableOpacity
                           style={[styles.teeBoxButton, form.day1TeeBox === 'tips' && styles.teeBoxButtonActive]}
                           onPress={() => {
+                            console.log('[AddEventModal] Day 1 - Switching to Tips tee box');
                             onFormChange('day1TeeBox', 'tips');
                             if (form.day1CourseId) {
                               handleCourseSelect(1, form.day1CourseId, 'tips');
@@ -685,19 +686,21 @@ export function AddEventModal({
                           <Text style={[styles.teeBoxButtonText, form.day1TeeBox === 'tips' && styles.teeBoxButtonTextActive]}>Tips</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={[styles.teeBoxButton, form.day1TeeBox === 'men' && styles.teeBoxButtonActive]}
+                          style={[styles.teeBoxButton, (form.day1TeeBox === 'men' || !form.day1TeeBox) && styles.teeBoxButtonActive]}
                           onPress={() => {
+                            console.log('[AddEventModal] Day 1 - Switching to Men tee box');
                             onFormChange('day1TeeBox', 'men');
                             if (form.day1CourseId) {
                               handleCourseSelect(1, form.day1CourseId, 'men');
                             }
                           }}
                         >
-                          <Text style={[styles.teeBoxButtonText, form.day1TeeBox === 'men' && styles.teeBoxButtonTextActive]}>Men</Text>
+                          <Text style={[styles.teeBoxButtonText, (form.day1TeeBox === 'men' || !form.day1TeeBox) && styles.teeBoxButtonTextActive]}>Men</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.teeBoxButton, form.day1TeeBox === 'lady' && styles.teeBoxButtonActive]}
                           onPress={() => {
+                            console.log('[AddEventModal] Day 1 - Switching to Lady tee box');
                             onFormChange('day1TeeBox', 'lady');
                             if (form.day1CourseId) {
                               handleCourseSelect(1, form.day1CourseId, 'lady');
@@ -884,12 +887,13 @@ export function AddEventModal({
                     </View>
                   )}
                   {form.day2CourseId && (
-                    <View style={styles.fieldColumn}>
-                      <Text style={styles.fieldLabel}>Tee Box</Text>
+                    <View style={styles.teeBoxSection}>
+                      <Text style={styles.teeBoxSectionLabel}>Select Tee Box (affects slope & rating)</Text>
                       <View style={styles.teeBoxButtons}>
                         <TouchableOpacity
                           style={[styles.teeBoxButton, form.day2TeeBox === 'tips' && styles.teeBoxButtonActive]}
                           onPress={() => {
+                            console.log('[AddEventModal] Day 2 - Switching to Tips tee box');
                             onFormChange('day2TeeBox', 'tips');
                             if (form.day2CourseId) {
                               handleCourseSelect(2, form.day2CourseId, 'tips');
@@ -899,19 +903,21 @@ export function AddEventModal({
                           <Text style={[styles.teeBoxButtonText, form.day2TeeBox === 'tips' && styles.teeBoxButtonTextActive]}>Tips</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={[styles.teeBoxButton, form.day2TeeBox === 'men' && styles.teeBoxButtonActive]}
+                          style={[styles.teeBoxButton, (form.day2TeeBox === 'men' || !form.day2TeeBox) && styles.teeBoxButtonActive]}
                           onPress={() => {
+                            console.log('[AddEventModal] Day 2 - Switching to Men tee box');
                             onFormChange('day2TeeBox', 'men');
                             if (form.day2CourseId) {
                               handleCourseSelect(2, form.day2CourseId, 'men');
                             }
                           }}
                         >
-                          <Text style={[styles.teeBoxButtonText, form.day2TeeBox === 'men' && styles.teeBoxButtonTextActive]}>Men</Text>
+                          <Text style={[styles.teeBoxButtonText, (form.day2TeeBox === 'men' || !form.day2TeeBox) && styles.teeBoxButtonTextActive]}>Men</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.teeBoxButton, form.day2TeeBox === 'lady' && styles.teeBoxButtonActive]}
                           onPress={() => {
+                            console.log('[AddEventModal] Day 2 - Switching to Lady tee box');
                             onFormChange('day2TeeBox', 'lady');
                             if (form.day2CourseId) {
                               handleCourseSelect(2, form.day2CourseId, 'lady');
@@ -1112,12 +1118,13 @@ export function AddEventModal({
                     </View>
                   )}
                   {form.day3CourseId && (
-                    <View style={styles.fieldColumn}>
-                      <Text style={styles.fieldLabel}>Tee Box</Text>
+                    <View style={styles.teeBoxSection}>
+                      <Text style={styles.teeBoxSectionLabel}>Select Tee Box (affects slope & rating)</Text>
                       <View style={styles.teeBoxButtons}>
                         <TouchableOpacity
                           style={[styles.teeBoxButton, form.day3TeeBox === 'tips' && styles.teeBoxButtonActive]}
                           onPress={() => {
+                            console.log('[AddEventModal] Day 3 - Switching to Tips tee box');
                             onFormChange('day3TeeBox', 'tips');
                             if (form.day3CourseId) {
                               handleCourseSelect(3, form.day3CourseId, 'tips');
@@ -1127,19 +1134,21 @@ export function AddEventModal({
                           <Text style={[styles.teeBoxButtonText, form.day3TeeBox === 'tips' && styles.teeBoxButtonTextActive]}>Tips</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={[styles.teeBoxButton, form.day3TeeBox === 'men' && styles.teeBoxButtonActive]}
+                          style={[styles.teeBoxButton, (form.day3TeeBox === 'men' || !form.day3TeeBox) && styles.teeBoxButtonActive]}
                           onPress={() => {
+                            console.log('[AddEventModal] Day 3 - Switching to Men tee box');
                             onFormChange('day3TeeBox', 'men');
                             if (form.day3CourseId) {
                               handleCourseSelect(3, form.day3CourseId, 'men');
                             }
                           }}
                         >
-                          <Text style={[styles.teeBoxButtonText, form.day3TeeBox === 'men' && styles.teeBoxButtonTextActive]}>Men</Text>
+                          <Text style={[styles.teeBoxButtonText, (form.day3TeeBox === 'men' || !form.day3TeeBox) && styles.teeBoxButtonTextActive]}>Men</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.teeBoxButton, form.day3TeeBox === 'lady' && styles.teeBoxButtonActive]}
                           onPress={() => {
+                            console.log('[AddEventModal] Day 3 - Switching to Lady tee box');
                             onFormChange('day3TeeBox', 'lady');
                             if (form.day3CourseId) {
                               handleCourseSelect(3, form.day3CourseId, 'lady');
@@ -2041,5 +2050,20 @@ const styles = StyleSheet.create({
   },
   teeBoxButtonTextActive: {
     color: '#fff',
+  },
+  teeBoxSection: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+  },
+  teeBoxSectionLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#007AFF',
+    marginBottom: 10,
+    textAlign: 'center',
   },
 });
