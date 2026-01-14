@@ -9,8 +9,6 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
   Image,
   ActivityIndicator,
 } from 'react-native';
@@ -236,8 +234,7 @@ export default function LoginScreen() {
     <>
       <SafeAreaView style={styles.container}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.content}>
+          <View style={styles.content}>
               {loadingOrg ? (
                 <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
               ) : (
@@ -298,7 +295,6 @@ export default function LoginScreen() {
                 )}
               </View>
             </View>
-          </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </SafeAreaView>
 
