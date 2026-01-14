@@ -353,12 +353,18 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
     setIsAnalyzingImage(true);
     console.log('[CoursesManagementModal] Analyzing scorecard image...');
 
+    interface TeeBoxRatings {
+      courseRating?: number;
+      slopeRating?: number;
+    }
+
     interface CourseData {
       courseName: string;
       holePars: number[];
       strokeIndices?: number[];
-      courseRating?: number;
-      slopeRating?: number;
+      tips?: TeeBoxRatings;
+      men?: TeeBoxRatings;
+      lady?: TeeBoxRatings;
     }
 
     try {
@@ -375,16 +381,27 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
   "courseName": "Name of the golf course",
   "holePars": [par1, par2, ..., par18],
   "strokeIndices": [si1, si2, ..., si18],
-  "courseRating": 72.3,
-  "slopeRating": 113
+  "tips": { "courseRating": 74.5, "slopeRating": 135 },
+  "men": { "courseRating": 72.3, "slopeRating": 128 },
+  "lady": { "courseRating": 70.1, "slopeRating": 118 }
 }
+
+IMPORTANT - Tee Box Ratings:
+- Golf scorecards typically show multiple tee boxes with different ratings
+- "tips" = Back tees (longest, most difficult) - often labeled as "Black", "Tips", "Championship", "Back", or the longest yardage
+- "men" = Middle tees (standard men's tees) - often labeled as "White", "Blue", "Men", "Regular", or middle yardage
+- "lady" = Forward tees (shortest) - often labeled as "Red", "Gold", "Ladies", "Forward", or shortest yardage
+- Look for Course Rating (CR) and Slope Rating (SR) values next to each tee box row
+- Course Rating is typically 67-77 (decimal like 72.3)
+- Slope Rating is typically 100-155 (whole number like 128)
+- Extract ALL tee box ratings you can find in the image
 
 Rules:
 - holePars must be an array of exactly 18 numbers (each between 3-6)
 - strokeIndices is optional, if visible include all 18 values (1-18, where 1 = hardest hole)
-- courseRating and slopeRating are optional, include if visible
 - If only 9 holes visible, duplicate them to make 18
-- Make reasonable assumptions if values are unclear`,
+- Make reasonable assumptions if values are unclear
+- Include ALL tee box ratings visible on the scorecard`,
               },
               {
                 type: 'image',
@@ -397,7 +414,6 @@ Rules:
 
       console.log('[CoursesManagementModal] Raw response:', responseText);
 
-      // Extract JSON from the response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No valid JSON found in response');
@@ -406,7 +422,6 @@ Rules:
       const result = JSON.parse(jsonMatch[0]) as CourseData;
       console.log('[CoursesManagementModal] Parsed result:', result);
 
-      // Apply the extracted data to the form
       if (result.courseName) {
         setCourseName(result.courseName);
       }
@@ -419,17 +434,39 @@ Rules:
         setStrokeIndices(result.strokeIndices.map((si: number) => si.toString()));
       }
 
-      if (result.courseRating) {
-        setCourseRating(result.courseRating.toString());
+      if (result.tips?.courseRating) {
+        setTipsCourseRating(result.tips.courseRating.toString());
+      }
+      if (result.tips?.slopeRating) {
+        setTipsSlopeRating(result.tips.slopeRating.toString());
       }
 
-      if (result.slopeRating) {
-        setSlopeRating(result.slopeRating.toString());
+      if (result.men?.courseRating) {
+        setMenCourseRating(result.men.courseRating.toString());
       }
+      if (result.men?.slopeRating) {
+        setMenSlopeRating(result.men.slopeRating.toString());
+      }
+
+      if (result.lady?.courseRating) {
+        setLadyCourseRating(result.lady.courseRating.toString());
+      }
+      if (result.lady?.slopeRating) {
+        setLadySlopeRating(result.lady.slopeRating.toString());
+      }
+
+      const extractedRatings: string[] = [];
+      if (result.tips?.courseRating || result.tips?.slopeRating) extractedRatings.push('Tips');
+      if (result.men?.courseRating || result.men?.slopeRating) extractedRatings.push('Men');
+      if (result.lady?.courseRating || result.lady?.slopeRating) extractedRatings.push('Lady');
+
+      const ratingsMsg = extractedRatings.length > 0 
+        ? `\n\nTee box ratings found: ${extractedRatings.join(', ')}` 
+        : '\n\nNo tee box ratings were detected. You may need to enter them manually.';
 
       Alert.alert(
         'Success',
-        `Extracted course information for "${result.courseName || 'Unknown Course'}". Please review and adjust the values if needed.`
+        `Extracted course information for "${result.courseName || 'Unknown Course'}". Please review and adjust the values if needed.${ratingsMsg}`
       );
     } catch (error) {
       console.error('[CoursesManagementModal] Error analyzing image:', error);
