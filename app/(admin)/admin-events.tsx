@@ -76,6 +76,9 @@ type EventFormType = {
   day1CourseId?: string;
   day2CourseId?: string;
   day3CourseId?: string;
+  day1TeeBox?: 'tips' | 'men' | 'lady';
+  day2TeeBox?: 'tips' | 'men' | 'lady';
+  day3TeeBox?: 'tips' | 'men' | 'lady';
   flightATrophy1st: boolean;
   flightATrophy2nd: boolean;
   flightATrophy3rd: boolean;
@@ -204,6 +207,9 @@ export default function AdminEventsScreen() {
     day1CourseId: '',
     day2CourseId: '',
     day3CourseId: '',
+    day1TeeBox: 'men',
+    day2TeeBox: 'men',
+    day3TeeBox: 'men',
   });
 
   const registrationsQuery = useQuery({
@@ -336,6 +342,9 @@ export default function AdminEventsScreen() {
       day1CourseId: '',
       day2CourseId: '',
       day3CourseId: '',
+      day1TeeBox: 'men',
+      day2TeeBox: 'men',
+      day3TeeBox: 'men',
     });
   };
 
@@ -382,6 +391,7 @@ export default function AdminEventsScreen() {
             day1CourseRating: form.day1CourseRating,
             day1HolePars: form.day1HolePars,
             day1CourseId: form.day1CourseId,
+            day1TeeBox: form.day1TeeBox,
             day2StartTime: form.day2StartTime,
             day2StartPeriod: form.day2StartPeriod,
             day2EndTime: form.day2EndTime,
@@ -394,6 +404,7 @@ export default function AdminEventsScreen() {
             day2CourseRating: form.day2CourseRating,
             day2HolePars: form.day2HolePars,
             day2CourseId: form.day2CourseId,
+            day2TeeBox: form.day2TeeBox,
             day3StartTime: form.day3StartTime,
             day3StartPeriod: form.day3StartPeriod,
             day3EndTime: form.day3EndTime,
@@ -406,6 +417,7 @@ export default function AdminEventsScreen() {
             day3CourseRating: form.day3CourseRating,
             day3HolePars: form.day3HolePars,
             day3CourseId: form.day3CourseId,
+            day3TeeBox: form.day3TeeBox,
             flightACutoff: form.flightACutoff,
             flightBCutoff: form.flightBCutoff,
             flightATeebox: form.flightATeebox,
@@ -470,6 +482,7 @@ export default function AdminEventsScreen() {
           day1CourseRating: form.day1CourseRating,
           day1HolePars: form.day1HolePars,
           day1CourseId: form.day1CourseId,
+          day1TeeBox: form.day1TeeBox,
           day2StartTime: form.day2StartTime,
           day2StartPeriod: form.day2StartPeriod,
           day2EndTime: form.day2EndTime,
@@ -482,6 +495,7 @@ export default function AdminEventsScreen() {
           day2CourseRating: form.day2CourseRating,
           day2HolePars: form.day2HolePars,
           day2CourseId: form.day2CourseId,
+          day2TeeBox: form.day2TeeBox,
           day3StartTime: form.day3StartTime,
           day3StartPeriod: form.day3StartPeriod,
           day3EndTime: form.day3EndTime,
@@ -494,6 +508,7 @@ export default function AdminEventsScreen() {
           day3CourseRating: form.day3CourseRating,
           day3HolePars: form.day3HolePars,
           day3CourseId: form.day3CourseId,
+          day3TeeBox: form.day3TeeBox,
           flightACutoff: form.flightACutoff,
           flightBCutoff: form.flightBCutoff,
           flightATeebox: form.flightATeebox,
@@ -678,6 +693,9 @@ export default function AdminEventsScreen() {
       day1CourseId: event.day1CourseId || '',
       day2CourseId: event.day2CourseId || '',
       day3CourseId: event.day3CourseId || '',
+      day1TeeBox: event.day1TeeBox || 'men',
+      day2TeeBox: event.day2TeeBox || 'men',
+      day3TeeBox: event.day3TeeBox || 'men',
     });
     setModalVisible(true);
   };
