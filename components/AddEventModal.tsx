@@ -141,6 +141,10 @@ export function AddEventModal({
         if (error) throw error;
         setAdminCourses(data || []);
         console.log('[AddEventModal] Fetched courses:', data?.length);
+        if (data && data.length > 0) {
+          console.log('[AddEventModal] Sample course data:', data[0]);
+          console.log('[AddEventModal] Course fields:', Object.keys(data[0]));
+        }
       } catch (error) {
         console.error('[AddEventModal] Error fetching courses:', error);
         setAdminCourses([]);
@@ -209,16 +213,26 @@ export function AddEventModal({
   };
 
   const handleCourseSelect = (day: 1 | 2 | 3, courseId: string) => {
-    const course = adminCourses.find((c: { id: string }) => c.id === courseId);
+    const course = adminCourses.find((c: any) => c.id === courseId);
     if (!course) return;
+
+    console.log('[AddEventModal] Selected course:', course);
+    console.log('[AddEventModal] Men slope rating:', course.men_slope_rating);
+    console.log('[AddEventModal] Men course rating:', course.men_course_rating);
 
     const prefix = `day${day}` as 'day1' | 'day2' | 'day3';
     
+    const menSlopeRating = course.men_slope_rating || course.slope_rating;
+    const menCourseRating = course.men_course_rating || course.course_rating;
+    
     onFormChange(`${prefix}CourseId`, courseId);
     onFormChange(`${prefix}Course`, course.name);
-    onFormChange(`${prefix}Par`, course.par.toString());
-    onFormChange(`${prefix}SlopeRating`, course.men_slope_rating?.toString() || '');
-    onFormChange(`${prefix}CourseRating`, course.men_course_rating?.toString() || '');
+    onFormChange(`${prefix}Par`, course.par?.toString() || '');
+    onFormChange(`${prefix}SlopeRating`, menSlopeRating?.toString() || '');
+    onFormChange(`${prefix}CourseRating`, menCourseRating?.toString() || '');
+    
+    console.log('[AddEventModal] Setting slope rating to:', menSlopeRating?.toString() || '');
+    console.log('[AddEventModal] Setting course rating to:', menCourseRating?.toString() || '');
     
     if (course.hole_pars && course.hole_pars.length === 18) {
       onFormChange(`${prefix}HolePars`, course.hole_pars.map((p: number) => p.toString()));
