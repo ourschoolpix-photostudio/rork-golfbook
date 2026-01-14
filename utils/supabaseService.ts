@@ -286,8 +286,8 @@ export const supabaseService = {
       if (updates.day1HolePars !== undefined) supabaseUpdates.day1_hole_pars = updates.day1HolePars;
       if (updates.day1SlopeRating !== undefined) supabaseUpdates.day1_slope_rating = updates.day1SlopeRating;
       if (updates.day1CourseRating !== undefined) supabaseUpdates.day1_course_rating = updates.day1CourseRating;
-      if (updates.day1CourseId !== undefined) supabaseUpdates.day1_course_id = updates.day1CourseId;
-      if (updates.day1TeeBox !== undefined) supabaseUpdates.day1_tee_box = updates.day1TeeBox;
+      if (updates.day1CourseId !== undefined) supabaseUpdates.day1_course_id = updates.day1CourseId || null;
+      if (updates.day1TeeBox !== undefined) supabaseUpdates.day1_tee_box = updates.day1TeeBox || null;
       if (updates.day2StartTime !== undefined) supabaseUpdates.day2_start_time = updates.day2StartTime;
       if (updates.day2StartPeriod !== undefined) supabaseUpdates.day2_start_period = updates.day2StartPeriod;
       if (updates.day2EndTime !== undefined) supabaseUpdates.day2_end_time = updates.day2EndTime;
@@ -299,8 +299,8 @@ export const supabaseService = {
       if (updates.day2HolePars !== undefined) supabaseUpdates.day2_hole_pars = updates.day2HolePars;
       if (updates.day2SlopeRating !== undefined) supabaseUpdates.day2_slope_rating = updates.day2SlopeRating;
       if (updates.day2CourseRating !== undefined) supabaseUpdates.day2_course_rating = updates.day2CourseRating;
-      if (updates.day2CourseId !== undefined) supabaseUpdates.day2_course_id = updates.day2CourseId;
-      if (updates.day2TeeBox !== undefined) supabaseUpdates.day2_tee_box = updates.day2TeeBox;
+      if (updates.day2CourseId !== undefined) supabaseUpdates.day2_course_id = updates.day2CourseId || null;
+      if (updates.day2TeeBox !== undefined) supabaseUpdates.day2_tee_box = updates.day2TeeBox || null;
       if (updates.day3StartTime !== undefined) supabaseUpdates.day3_start_time = updates.day3StartTime;
       if (updates.day3StartPeriod !== undefined) supabaseUpdates.day3_start_period = updates.day3StartPeriod;
       if (updates.day3EndTime !== undefined) supabaseUpdates.day3_end_time = updates.day3EndTime;
@@ -312,8 +312,8 @@ export const supabaseService = {
       if (updates.day3HolePars !== undefined) supabaseUpdates.day3_hole_pars = updates.day3HolePars;
       if (updates.day3SlopeRating !== undefined) supabaseUpdates.day3_slope_rating = updates.day3SlopeRating;
       if (updates.day3CourseRating !== undefined) supabaseUpdates.day3_course_rating = updates.day3CourseRating;
-      if (updates.day3CourseId !== undefined) supabaseUpdates.day3_course_id = updates.day3CourseId;
-      if (updates.day3TeeBox !== undefined) supabaseUpdates.day3_tee_box = updates.day3TeeBox;
+      if (updates.day3CourseId !== undefined) supabaseUpdates.day3_course_id = updates.day3CourseId || null;
+      if (updates.day3TeeBox !== undefined) supabaseUpdates.day3_tee_box = updates.day3TeeBox || null;
       if (updates.flightACutoff !== undefined) supabaseUpdates.flight_a_cutoff = updates.flightACutoff;
       if (updates.flightBCutoff !== undefined) supabaseUpdates.flight_b_cutoff = updates.flightBCutoff;
       if (updates.flightATeebox !== undefined) supabaseUpdates.flight_a_teebox = updates.flightATeebox;
@@ -349,12 +349,20 @@ export const supabaseService = {
       if (updates.archived !== undefined) supabaseUpdates.archived = updates.archived;
       if (updates.archivedAt !== undefined) supabaseUpdates.archived_at = updates.archivedAt;
 
+      console.log('[supabaseService.events.update] Updating event:', eventId);
+      console.log('[supabaseService.events.update] Updates:', JSON.stringify(supabaseUpdates, null, 2));
+      
       const { error } = await supabase
         .from('events')
         .update(supabaseUpdates)
         .eq('id', eventId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('[supabaseService.events.update] Error:', JSON.stringify(error, null, 2));
+        throw new Error(`Failed to update event: ${error.message} (code: ${error.code})`);
+      }
+      
+      console.log('[supabaseService.events.update] ✅ Event updated successfully');
     },
 
     delete: async (eventId: string) => {

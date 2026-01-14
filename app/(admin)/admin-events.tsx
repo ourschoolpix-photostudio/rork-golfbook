@@ -556,9 +556,11 @@ export default function AdminEventsScreen() {
       setEditingId(null);
       setModalVisible(false);
       await loadEvents();
-    } catch (error) {
-      console.error('Error saving event:', error);
-      Alert.alert('Error', 'Failed to save event. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.toString() || JSON.stringify(error);
+      console.error('Error saving event:', errorMessage);
+      console.error('Full error details:', JSON.stringify(error, null, 2));
+      Alert.alert('Error', `Failed to save event: ${errorMessage}`);
     }
   };
 
