@@ -276,7 +276,7 @@ export default function LeaderboardScreen() {
 
         <View style={styles.tabSelector}>
           <TouchableOpacity
-            style={[styles.tabButton, selectedDay !== 'rolex' && styles.tabButtonActive]}
+            style={[styles.tabButton, styles.tabButtonLeft, selectedDay !== 'rolex' && styles.tabButtonActive]}
             onPress={() => handleDaySelect('all')}
             activeOpacity={0.7}
           >
@@ -285,7 +285,7 @@ export default function LeaderboardScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tabButton, selectedDay === 'rolex' && styles.tabButtonActive]}
+            style={[styles.tabButton, styles.tabButtonRight, selectedDay === 'rolex' && styles.tabButtonActive]}
             onPress={() => handleDaySelect('rolex')}
             activeOpacity={0.7}
           >
@@ -578,24 +578,30 @@ const styles = StyleSheet.create({
   tabSelector: {
     flexDirection: 'row' as const,
     backgroundColor: '#f5f5f5',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
   },
   tabButton: {
     flex: 1,
     height: 48,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    borderRadius: 24,
+    borderRadius: 0,
     backgroundColor: '#fff',
-    borderWidth: 2,
+    borderTopWidth: 2,
+    borderBottomWidth: 2,
     borderColor: '#ddd',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+  },
+  tabButtonLeft: {
+    borderLeftWidth: 2,
+    borderRightWidth: 1,
+  },
+  tabButtonRight: {
+    borderLeftWidth: 1,
+    borderRightWidth: 2,
   },
   tabButtonActive: {
     backgroundColor: '#1B5E20',
