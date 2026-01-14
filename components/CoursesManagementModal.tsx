@@ -45,7 +45,7 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
   const [slopeRating, setSlopeRating] = useState<string>('');
   const [courseRating, setCourseRating] = useState<string>('');
   const [courseUrl, setCourseUrl] = useState<string>('');
-  const [isFetchingUrl, setIsFetchingUrl] = useState<boolean>(false);
+
   const holeInputRefs = React.useRef<(TextInput | null)[]>([]);
   const strokeIndexInputRefs = React.useRef<(TextInput | null)[]>([]);
 
@@ -222,111 +222,11 @@ export default function CoursesManagementModal({ visible, onClose }: CoursesMana
       return;
     }
 
-    let url = courseUrl.trim();
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = 'https://' + url;
-    }
-
-    setIsFetchingUrl(true);
-    console.log('[CoursesManagementModal] Fetching course data from URL:', url);
-
-    try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_TOOLKIT_URL}/api/web-fetch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url,
-          prompt: `Extract golf course information from this page. I need:
-1. Course name
-2. Par for each of the 18 holes (as an array of numbers, holes 1-18)
-3. Stroke index/handicap for each hole if available (as an array of numbers, holes 1-18)
-4. Course rating (if available)
-5. Slope rating (if available)
-6. Total par
-
-Return the data as JSON in this exact format:
-{
-  "name": "Course Name",
-  "holePars": [4, 3, 5, 4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 5, 4],
-  "strokeIndices": [7, 15, 1, 9, 3, 17, 11, 5, 13, 8, 16, 2, 10, 4, 18, 12, 6, 14],
-  "courseRating": 72.3,
-  "slopeRating": 131,
-  "totalPar": 72
-}
-
-If you can only find 9 holes, still return 18 holes by duplicating the front 9 for back 9.
-If stroke indices are not available, omit that field.
-If course/slope rating not available, omit those fields.
-Only return the JSON, no other text.`,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch URL');
-      }
-
-      const result = await response.json();
-      console.log('[CoursesManagementModal] Web fetch result:', result);
-
-      let courseData;
-      try {
-        const content = result.content || result.result || result;
-        const jsonMatch = typeof content === 'string' 
-          ? content.match(/\{[\s\S]*\}/)
-          : null;
-        
-        if (jsonMatch) {
-          courseData = JSON.parse(jsonMatch[0]);
-        } else if (typeof content === 'object') {
-          courseData = content;
-        } else {
-          throw new Error('Could not parse course data');
-        }
-      } catch (parseError) {
-        console.error('[CoursesManagementModal] Parse error:', parseError);
-        throw new Error('Could not parse course information from the page');
-      }
-
-      if (courseData.name) {
-        setCourseName(courseData.name);
-      }
-
-      if (courseData.holePars && Array.isArray(courseData.holePars) && courseData.holePars.length >= 9) {
-        let pars = courseData.holePars;
-        if (pars.length === 9) {
-          pars = [...pars, ...pars];
-        }
-        setHolePars(pars.slice(0, 18).map((p: number) => p.toString()));
-      }
-
-      if (courseData.strokeIndices && Array.isArray(courseData.strokeIndices) && courseData.strokeIndices.length >= 9) {
-        let indices = courseData.strokeIndices;
-        if (indices.length === 9) {
-          indices = [...indices, ...indices.map((i: number) => i)];
-        }
-        setStrokeIndices(indices.slice(0, 18).map((s: number) => s.toString()));
-      }
-
-      if (courseData.courseRating) {
-        setCourseRating(courseData.courseRating.toString());
-      }
-
-      if (courseData.slopeRating) {
-        setSlopeRating(courseData.slopeRating.toString());
-      }
-
-      Alert.alert('Success', 'Course information imported! Please review and adjust if needed.');
-    } catch (error) {
-      console.error('[CoursesManagementModal] Error fetching from URL:', error);
-      Alert.alert(
-        'Import Failed', 
-        'Could not extract course information from this URL. The page may not contain scorecard data, or it may be in an unsupported format. You can still enter the information manually.'
-      );
-    } finally {
-      setIsFetchingUrl(false);
-    }
+    Alert.alert(
+      'URL Import Not Available',
+      'Automatic URL scraping is not currently supported. Please enter the course information manually below.\n\nTip: You can find scorecard information on the golf course\'s official website and enter the hole pars one by one.',
+      [{ text: 'OK' }]
+    );
   };
 
   const handleStartEdit = (course: Course) => {
@@ -511,7 +411,7 @@ Only return the JSON, no other text.`,
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Import from URL (Optional)</Text>
                   <Text style={styles.sectionDescription}>
-                    Paste a link to the course scorecard page to auto-fill information, or enter manually below.
+                    URL import is not currently available. Please enter course information manually below.
                   </Text>
                   <View style={styles.urlRow}>
                     <TextInput
@@ -525,18 +425,11 @@ Only return the JSON, no other text.`,
                       keyboardType="url"
                     />
                     <TouchableOpacity
-                      style={[styles.fetchButton, isFetchingUrl && styles.fetchButtonDisabled]}
+                      style={styles.fetchButton}
                       onPress={handleFetchFromUrl}
-                      disabled={isFetchingUrl}
                     >
-                      {isFetchingUrl ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : (
-                        <>
-                          <Download size={16} color="#fff" />
-                          <Text style={styles.fetchButtonText}>Fetch</Text>
-                        </>
-                      )}
+                      <Download size={16} color="#fff" />
+                      <Text style={styles.fetchButtonText}>Info</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -985,9 +878,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  fetchButtonDisabled: {
-    backgroundColor: '#999',
-  },
+
   fetchButtonText: {
     color: '#fff',
     fontSize: 14,
