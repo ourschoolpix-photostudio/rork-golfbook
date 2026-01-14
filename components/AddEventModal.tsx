@@ -217,11 +217,11 @@ export function AddEventModal({
     onFormChange(`${prefix}CourseId`, courseId);
     onFormChange(`${prefix}Course`, course.name);
     onFormChange(`${prefix}Par`, course.par.toString());
-    onFormChange(`${prefix}SlopeRating`, course.slopeRating?.toString() || '');
-    onFormChange(`${prefix}CourseRating`, course.courseRating?.toString() || '');
+    onFormChange(`${prefix}SlopeRating`, course.men_slope_rating?.toString() || '');
+    onFormChange(`${prefix}CourseRating`, course.men_course_rating?.toString() || '');
     
-    if (course.holePars && course.holePars.length === 18) {
-      onFormChange(`${prefix}HolePars`, course.holePars.map((p: number) => p.toString()));
+    if (course.hole_pars && course.hole_pars.length === 18) {
+      onFormChange(`${prefix}HolePars`, course.hole_pars.map((p: number) => p.toString()));
     }
 
     if (day === 1) setShowCourseDropdown1(false);
