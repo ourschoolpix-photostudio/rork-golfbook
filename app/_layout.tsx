@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { StyleSheet, View, Platform, Alert } from "react-native";
+import { StyleSheet, View, Platform, Alert, Appearance } from "react-native";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { EventsProvider } from "@/contexts/EventsContext";
 import { GamesProvider } from "@/contexts/GamesContext";
@@ -15,6 +15,8 @@ import * as Linking from 'expo-linking';
 import { supabase } from '@/integrations/supabase/client';
 
 
+
+Appearance.setColorScheme('light');
 
 console.log('🚀 [App] Starting application...');
 console.log('🔧 [App] Environment variables:', {
