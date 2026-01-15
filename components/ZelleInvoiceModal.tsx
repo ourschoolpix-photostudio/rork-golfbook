@@ -7,9 +7,9 @@ import {
   Modal,
   TextInput,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Alert } from '@/utils/alertPolyfill';
 import { Ionicons } from '@expo/vector-icons';
 import { Member, Event } from '@/types';
 import { TournamentTermsModal } from './TournamentTermsModal';

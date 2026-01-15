@@ -1,4 +1,4 @@
-import { Platform, Alert } from 'react-native';
+import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import * as MailComposer from 'expo-mail-composer';
@@ -81,28 +81,33 @@ function generateWebPDF(htmlContent: string, eventName: string, type: string): v
   try {
     console.log('[pdfGenerator] 🌐 Starting web PDF generation for type:', type);
     
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      Alert.alert(
-        'Pop-up Blocked',
-        'Please allow pop-ups for this site to generate PDFs',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
     
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${eventName.replace(/[^a-z0-9]/gi, '_')}_${type}.html`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
-    printWindow.onload = () => {
-      console.log('[pdfGenerator] ✅ Print window loaded, triggering print dialog');
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
-    };
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 100);
     
-    console.log('[pdfGenerator] ✅ Print dialog opened successfully');
+    console.log('[pdfGenerator] ✅ HTML file download initiated');
+    
+    setTimeout(() => {
+      if (window.confirm('Would you like to print the document now?')) {
+        const printWindow = window.open(url, '_blank');
+        if (printWindow) {
+          printWindow.onload = () => {
+            printWindow.print();
+          };
+        }
+      }
+    }, 300);
   } catch (error) {
     console.error('[pdfGenerator] ❌ Web PDF generation failed:', error);
     throw error;

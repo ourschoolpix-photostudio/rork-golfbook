@@ -7,12 +7,12 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   TextInput,
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
+import { Alert } from '@/utils/alertPolyfill';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
