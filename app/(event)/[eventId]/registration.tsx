@@ -12,7 +12,7 @@ import {
   Keyboard,
   ActivityIndicator,
   Platform,
-  Share,
+  Clipboard,
 } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -91,6 +91,9 @@ export default function EventRegistrationScreen() {
   const [pdfOptionsModalVisible, setPdfOptionsModalVisible] = useState(false);
   const [handicapConfirmModalVisible, setHandicapConfirmModalVisible] = useState(false);
   const [selectedPdfOption, setSelectedPdfOption] = useState<'checkin' | 'weelist' | 'text' | null>(null);
+  const [textResultModalVisible, setTextResultModalVisible] = useState(false);
+  const [textResultContent, setTextResultContent] = useState('');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -894,6 +897,18 @@ export default function EventRegistrationScreen() {
       unpaid: unpaidPlayers.length,
     });
 
+    if (selectedPdfOption === 'text') {
+      console.log('[registration] Generating Text List...');
+      const textContent = generateTextList(sortedPlayers, includeHandicaps);
+      console.log('[registration] Text generated, length:', textContent.length);
+      setTextResultContent(textContent);
+      setTextResultModalVisible(true);
+      setSelectedPdfOption(null);
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+
     try {
       if (selectedPdfOption === 'checkin') {
         console.log('[registration] Generating Check In PDF...');
@@ -939,22 +954,6 @@ export default function EventRegistrationScreen() {
             Alert.alert('PDF Generated', 'PDF was created but sharing is not available on this device.');
           }
         }
-      } else if (selectedPdfOption === 'text') {
-        console.log('[registration] Generating Text List...');
-        const textContent = generateTextList(sortedPlayers, includeHandicaps);
-        console.log('[registration] Text generated, length:', textContent.length);
-        console.log('[registration] Text content preview:', textContent.substring(0, 200));
-        
-        if (Platform.OS === 'web') {
-          Alert.alert('Player List', textContent);
-        } else {
-          console.log('[registration] Opening share dialog for text');
-          const result = await Share.share({
-            message: textContent,
-            title: `${event.name} - Player List`,
-          });
-          console.log('[registration] Share result:', result);
-        }
       } else {
         console.error('[registration] Unknown PDF option:', selectedPdfOption);
         Alert.alert('Error', 'Unknown list type selected');
@@ -965,9 +964,18 @@ export default function EventRegistrationScreen() {
       console.error('[registration] Error generating list:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       Alert.alert('Error', `Failed to generate list: ${errorMessage}`);
+    } finally {
+      setIsGeneratingPdf(false);
     }
     
     setSelectedPdfOption(null);
+  };
+
+  const handleCopyTextToClipboard = () => {
+    Clipboard.setString(textResultContent);
+    Alert.alert('Copied', 'Player list copied to clipboard');
+    setTextResultModalVisible(false);
+    setTextResultContent('');
   };
 
   const generateCheckInPdf = (paidPlayers: Member[], unpaidPlayers: Member[], includeHandicaps: boolean): string => {
@@ -2241,17 +2249,57 @@ export default function EventRegistrationScreen() {
               <TouchableOpacity
                 style={[styles.handicapChoiceButton, { backgroundColor: '#1B5E20' }]}
                 onPress={() => handleGenerateList(true)}
+                disabled={isGeneratingPdf}
               >
-                <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                {isGeneratingPdf ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                )}
                 <Text style={styles.handicapChoiceButtonText}>Yes, Include Handicaps</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.handicapChoiceButton, { backgroundColor: '#666' }]}
                 onPress={() => handleGenerateList(false)}
+                disabled={isGeneratingPdf}
               >
-                <Ionicons name="close-circle" size={24} color="#fff" />
+                {isGeneratingPdf ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="close-circle" size={24} color="#fff" />
+                )}
                 <Text style={styles.handicapChoiceButtonText}>No, Names Only</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {textResultModalVisible && (
+        <View style={styles.pdfModalOverlay}>
+          <View style={styles.textResultModal}>
+            <View style={styles.pdfModalHeader}>
+              <Text style={styles.pdfModalTitle}>Player List</Text>
+              <TouchableOpacity onPress={() => {
+                setTextResultModalVisible(false);
+                setTextResultContent('');
+              }}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.textResultContent} showsVerticalScrollIndicator={true}>
+              <Text style={styles.textResultText}>{textResultContent}</Text>
+            </ScrollView>
+
+            <View style={styles.textResultFooter}>
+              <TouchableOpacity
+                style={styles.copyButton}
+                onPress={handleCopyTextToClipboard}
+              >
+                <Ionicons name="copy-outline" size={20} color="#fff" />
+                <Text style={styles.copyButtonText}>Copy to Clipboard</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -3363,6 +3411,50 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   handicapChoiceButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  textResultModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 450,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  textResultContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    maxHeight: 400,
+  },
+  textResultText: {
+    fontSize: 14,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    color: '#333',
+    lineHeight: 22,
+  },
+  textResultFooter: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  copyButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center',
+    backgroundColor: '#1B5E20',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+  },
+  copyButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#fff',
