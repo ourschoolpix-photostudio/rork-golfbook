@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import * as MailComposer from 'expo-mail-composer';
@@ -1060,6 +1060,74 @@ function buildRegistrationTextContent(
   return textContent;
 }
 
+interface PlainTextEmailParams {
+  member: Member;
+  event: Event;
+  registration: any;
+  orgInfo?: { name?: string; logoUrl?: string; zellePhone?: string; paypalClientId?: string; paypalClientSecret?: string; paypalMode?: 'sandbox' | 'live' };
+  isPaid: boolean;
+  total: number;
+  isSponsor: boolean;
+  dateRange: string;
+  tournamentFlight: string | null;
+}
+
+function buildPlainTextEmailBody(params: PlainTextEmailParams): string {
+  const { member, event, orgInfo, isPaid, total, isSponsor, dateRange, tournamentFlight } = params;
+  
+  let body = '';
+  
+  body += isPaid ? 'PAYMENT CONFIRMATION' : 'REGISTRATION INVOICE';
+  body += '\n\n';
+  
+  if (isSponsor) {
+    body += '** SPONSOR REGISTRATION **\n\n';
+  }
+  
+  body += '--- Member Information ---\n';
+  body += `Name: ${member.name}\n`;
+  if (member.email) body += `Email: ${member.email}\n`;
+  if (member.phone) body += `Phone: ${formatPhoneNumber(member.phone)}\n`;
+  if (tournamentFlight) body += `Flight: ${tournamentFlight}\n`;
+  body += '\n';
+  
+  body += `--- ${event.type === 'tournament' ? 'Tournament' : 'Event'} Information ---\n`;
+  body += `Event: ${event.name}\n`;
+  body += `Date: ${dateRange}\n`;
+  if (event.location) body += `Location: ${event.location}\n`;
+  if (event.numberOfDays) body += `Number of Days: ${event.numberOfDays}\n`;
+  if (!isSponsor) body += `Entry Fee: ${(Number(event.entryFee) || 0).toFixed(2)}\n`;
+  body += '\n';
+  
+  body += '--- Payment Summary ---\n';
+  body += `Total Amount: ${total.toFixed(2)}\n`;
+  body += `Status: ${isPaid ? 'PAID IN FULL' : `AMOUNT DUE: ${total.toFixed(2)}`}\n`;
+  body += '\n';
+  
+  if (!isPaid && (orgInfo?.zellePhone || orgInfo?.paypalClientId)) {
+    body += '--- Payment Instructions ---\n';
+    body += 'Please complete your payment using one of the following methods:\n\n';
+    
+    if (orgInfo?.zellePhone) {
+      body += `Option 1: Zelle\n`;
+      body += `Send ${total.toFixed(2)} to: ${formatPhoneNumber(orgInfo.zellePhone)}\n`;
+      body += '(No fees for Zelle payments)\n\n';
+    }
+    
+    if (orgInfo?.paypalClientId) {
+      body += `Option 2: PayPal\n`;
+      body += 'Contact the event organizer for PayPal payment link.\n\n';
+    }
+  }
+  
+  body += '---\n';
+  body += 'Thank you for your registration!\n';
+  body += 'If you have any questions, please contact the event organizer.\n';
+  if (orgInfo?.name) body += `\n${orgInfo.name}\n`;
+  
+  return body;
+}
+
 interface InvoicePDFOptions {
   registration: any;
   member: Member;
@@ -1077,10 +1145,11 @@ export async function generateInvoicePDF(
     console.log('[pdfGenerator] openEmail:', openEmail, 'member.email:', member.email);
 
     console.log('[pdfGenerator] 🔍 Checking email composer availability...');
-    const isMailAvailable = await MailComposer.isAvailableAsync();
+    const isMailAvailable = Platform.OS !== 'web' && await MailComposer.isAvailableAsync();
     console.log('[pdfGenerator] MailComposer.isAvailableAsync():', isMailAvailable);
+    console.log('[pdfGenerator] Platform.OS:', Platform.OS);
     
-    if (openEmail && member.email && isMailAvailable) {
+    if (openEmail && member.email) {
       console.log('[pdfGenerator] ✅ All conditions met for email composer');
       const entryFee = Number(event.entryFee) || 0;
       const numberOfGuests = registration?.numberOfGuests || 0;
@@ -1389,30 +1458,78 @@ export async function generateInvoicePDF(
 </body>
 </html>`;
 
-      console.log('[pdfGenerator] 📧 About to call MailComposer.composeAsync...');
+      console.log('[pdfGenerator] 📧 About to open email composer...');
       console.log('[pdfGenerator] Recipients:', [member.email]);
       console.log('[pdfGenerator] Subject:', `${event.name} - Registration Invoice`);
       console.log('[pdfGenerator] Body length:', emailBody.length);
       
-      const result = await MailComposer.composeAsync({
-        recipients: [member.email],
-        subject: `${event.name} - Registration Invoice`,
-        body: emailBody,
-        isHtml: true,
-      });
-      
-      console.log('[pdfGenerator] ✅ MailComposer result:', result);
-      console.log('[pdfGenerator] ✅ Email composer result status:', result.status);
-      
-      if (result.status === 'sent') {
-        console.log('[pdfGenerator] 📧 Email was sent!');
-      } else if (result.status === 'saved') {
-        console.log('[pdfGenerator] 💾 Email was saved as draft');
-      } else if (result.status === 'cancelled') {
-        console.log('[pdfGenerator] ❌ Email was cancelled by user');
+      if (Platform.OS === 'web') {
+        console.log('[pdfGenerator] 🌐 Using web mailto: fallback...');
+        const plainTextBody = buildPlainTextEmailBody({
+          member,
+          event,
+          registration,
+          orgInfo,
+          isPaid,
+          total,
+          isSponsor,
+          dateRange,
+          tournamentFlight,
+        });
+        
+        const subject = encodeURIComponent(`${event.name} - Registration Invoice`);
+        const body = encodeURIComponent(plainTextBody);
+        const mailtoUrl = `mailto:${member.email}?subject=${subject}&body=${body}`;
+        
+        console.log('[pdfGenerator] 📧 Opening mailto URL...');
+        await Linking.openURL(mailtoUrl);
+        console.log('[pdfGenerator] ✅ mailto opened successfully');
+        
+        return { status: 'sent' };
+      } else if (isMailAvailable) {
+        const result = await MailComposer.composeAsync({
+          recipients: [member.email],
+          subject: `${event.name} - Registration Invoice`,
+          body: emailBody,
+          isHtml: true,
+        });
+        
+        console.log('[pdfGenerator] ✅ MailComposer result:', result);
+        console.log('[pdfGenerator] ✅ Email composer result status:', result.status);
+        
+        if (result.status === 'sent') {
+          console.log('[pdfGenerator] 📧 Email was sent!');
+        } else if (result.status === 'saved') {
+          console.log('[pdfGenerator] 💾 Email was saved as draft');
+        } else if (result.status === 'cancelled') {
+          console.log('[pdfGenerator] ❌ Email was cancelled by user');
+        }
+        
+        return result;
+      } else {
+        console.log('[pdfGenerator] ⚠️ Mail composer not available, using Linking fallback...');
+        const plainTextBody = buildPlainTextEmailBody({
+          member,
+          event,
+          registration,
+          orgInfo,
+          isPaid,
+          total,
+          isSponsor,
+          dateRange,
+          tournamentFlight,
+        });
+        
+        const subject = encodeURIComponent(`${event.name} - Registration Invoice`);
+        const body = encodeURIComponent(plainTextBody);
+        const mailtoUrl = `mailto:${member.email}?subject=${subject}&body=${body}`;
+        
+        console.log('[pdfGenerator] 📧 Opening mailto URL...');
+        await Linking.openURL(mailtoUrl);
+        console.log('[pdfGenerator] ✅ mailto opened successfully');
+        
+        return { status: 'sent' };
       }
-      
-      return result;
     } else {
       console.log('[pdfGenerator] 📄 Generating PDF for sharing (no email or openEmail=false)...');
       console.log('[pdfGenerator] Reason: openEmail=', openEmail, 'member.email=', member.email, 'isMailAvailable=', isMailAvailable);
