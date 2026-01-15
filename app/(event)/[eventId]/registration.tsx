@@ -27,6 +27,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseService } from '@/utils/supabaseService';
+import { useRealtimeRegistrations } from '@/utils/useRealtimeSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -103,6 +104,8 @@ export default function EventRegistrationScreen() {
   const [htmlViewerTitle, setHtmlViewerTitle] = useState('');
 
   const queryClient = useQueryClient();
+
+  useRealtimeRegistrations(eventId || '', !!eventId);
 
   const scoresQuery = useQuery({
     queryKey: ['event-scores', eventId],
