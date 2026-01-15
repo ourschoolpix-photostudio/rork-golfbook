@@ -30,7 +30,8 @@ import { supabaseService } from '@/utils/supabaseService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useSettings } from '@/contexts/SettingsContext';
-import { formatDateForDisplay } from '@/utils/dateUtils';
+import { formatDateForDisplay, formatDateAsFullDay } from '@/utils/dateUtils';
+import { formatPhoneNumber } from '@/utils/phoneFormatter';
 
 import { registrationCache } from '@/utils/registrationCache';
 import { Member, Event } from '@/types';
@@ -1408,6 +1409,330 @@ export default function EventRegistrationScreen() {
     return selectedPlayers.some((p) => p.id === currentUser.id && p.pin === currentUser.pin);
   };
 
+  const generatePlayerInvoiceHtml = (player: Member, playerReg: any): string => {
+    if (!event || !orgInfo) return '';
+    
+    const entryFee = Number(event.entryFee) || 0;
+    const guestCount = playerReg?.numberOfGuests || 0;
+    const totalPeople = 1 + guestCount;
+    const totalAmount = entryFee * totalPeople;
+    
+    const paypalFee = (totalAmount * 0.03) + 0.30;
+    const paypalTotal = totalAmount + paypalFee;
+    
+    const zellePhone = formatPhoneNumber(orgInfo.zellePhone || '5714811006');
+    
+    const getPaymentDeadline = () => {
+      if (!event.date) return 'N/A';
+      const eventDate = new Date(event.date);
+      const deadlineDate = new Date(eventDate);
+      deadlineDate.setDate(deadlineDate.getDate() - 10);
+      return deadlineDate.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    };
+
+    const paypalLink = orgInfo.paypalClientId 
+      ? `https://www.paypal.com/paypalme/${orgInfo.paypalClientId}/${paypalTotal.toFixed(2)}` 
+      : '';
+    
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+      color: white;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .header p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 32px 24px;
+    }
+    .greeting {
+      font-size: 18px;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+    }
+    .event-card {
+      background-color: #f8f9fa;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid #e0e0e0;
+    }
+    .event-card h2 {
+      color: #1B5E20;
+      font-size: 22px;
+      margin: 0 0 16px 0;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      color: #666;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .detail-value {
+      color: #1a1a1a;
+      font-weight: 600;
+      font-size: 15px;
+      text-align: right;
+    }
+    .amount-box {
+      background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+      border: 2px solid #1B5E20;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .amount-label {
+      color: #2E7D32;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .amount-value {
+      color: #1B5E20;
+      font-size: 42px;
+      font-weight: 700;
+    }
+    .payment-section {
+      margin-bottom: 24px;
+    }
+    .payment-section h3 {
+      color: #333;
+      font-size: 18px;
+      margin: 0 0 16px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #1B5E20;
+    }
+    .zelle-box {
+      background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
+      border: 2px solid #6B21A8;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .zelle-label {
+      color: #6B21A8;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .zelle-number {
+      color: #6B21A8;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .paypal-box {
+      background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+      border: 2px solid #D97706;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .paypal-label {
+      color: #92400E;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .paypal-amount {
+      color: #D97706;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .paypal-note {
+      color: #92400E;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .paypal-button {
+      display: inline-block;
+      background: #0070BA;
+      color: white;
+      padding: 14px 32px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .deadline-box {
+      background-color: #FEE2E2;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .deadline-box p {
+      color: #DC2626;
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .footer {
+      background-color: #f8f9fa;
+      padding: 32px 24px;
+      text-align: center;
+      border-top: 1px solid #e0e0e0;
+    }
+    .thank-you {
+      color: #1B5E20;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .footer-text {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>REGISTRATION INVOICE</h1>
+      <p>${orgInfo.name || 'Golf Club'}</p>
+    </div>
+    
+    <div class="content">
+      <p class="greeting">Hello <strong>${player.name}</strong>,</p>
+      
+      <div class="event-card">
+        <h2>${event.name}</h2>
+        <div class="detail-row">
+          <span class="detail-label">Venue</span>
+          <span class="detail-value">${event.venue || event.location}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Date</span>
+          <span class="detail-value">${formatDateAsFullDay(event.date, event.numberOfDays, 1)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Registrant</span>
+          <span class="detail-value">${player.name}${guestCount > 0 ? ` + ${guestCount} guest${guestCount > 1 ? 's' : ''}` : ''}</span>
+        </div>
+      </div>
+      
+      <div class="amount-box">
+        <p class="amount-label">Total Amount Due</p>
+        <p class="amount-value">${totalAmount.toFixed(2)}</p>
+      </div>
+      
+      <div class="payment-section">
+        <h3>Payment Options</h3>
+        
+        <div class="zelle-box">
+          <p class="zelle-label">PAY VIA ZELLE</p>
+          <p class="zelle-number">${zellePhone}</p>
+        </div>
+        
+        <div class="paypal-box">
+          <p class="paypal-label">PAY VIA PAYPAL</p>
+          <p class="paypal-amount">${paypalTotal.toFixed(2)}</p>
+          <p class="paypal-note">(Includes 3% + $0.30 processing fee)</p>
+          ${paypalLink ? `<a href="${paypalLink}" class="paypal-button">Pay with PayPal</a>` : '<p style="color:#666;">Contact organizer for PayPal details</p>'}
+        </div>
+      </div>
+      
+      <div class="deadline-box">
+        <p>⏰ Payment must be received by <strong>${getPaymentDeadline()}</strong></p>
+        <p style="margin-top: 8px; font-weight: normal;">Your registration will be removed if payment is not received by the deadline.</p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p class="thank-you">Thank You for Registering!</p>
+      <p class="footer-text">We look forward to seeing you at the event.<br>If you have any questions, please contact us.</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+  };
+
+  const handleSendPlayerInvoice = async (player: Member, playerReg: any) => {
+    if (!player.email) {
+      Alert.alert('No Email', 'This player does not have an email address on file.');
+      return;
+    }
+
+    const isAvailable = await MailComposer.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert('Email Not Available', 'Please configure an email account on your device.');
+      return;
+    }
+
+    const htmlContent = generatePlayerInvoiceHtml(player, playerReg);
+    const subject = `Registration Invoice - ${event?.name || 'Event'}`;
+
+    try {
+      const result = await MailComposer.composeAsync({
+        recipients: [player.email],
+        subject,
+        body: htmlContent,
+        isHtml: true,
+      });
+
+      if (result.status === MailComposer.MailComposerStatus.SENT) {
+        if (playerReg?.id) {
+          await updateRegistrationMutation.mutateAsync({
+            registrationId: playerReg.id,
+            updates: { emailSent: true },
+          });
+          await registrationsQuery.refetch();
+        }
+        Alert.alert('Success', `Invoice sent to ${player.email}`);
+      }
+    } catch (error) {
+      console.error('[registration] Error sending invoice email:', error);
+      Alert.alert('Error', 'Failed to send email. Please try again.');
+    }
+  };
+
   const handlePlayerCardPress = async (player: Member) => {
     if (canViewRegistration(currentUser)) {
       await registrationsQuery.refetch();
@@ -2109,6 +2434,20 @@ export default function EventRegistrationScreen() {
                             </View>
                           )}
                         </View>
+
+                        {canViewRegistration(currentUser) && (
+                          <TouchableOpacity
+                            style={styles.emailInvoiceButton}
+                            onPress={() => handleSendPlayerInvoice(player, playerReg)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="mail-outline" size={18} color="#007AFF" />
+                            <View style={[
+                              styles.emailStatusDot,
+                              playerReg?.emailSent ? styles.emailStatusDotSent : styles.emailStatusDotPending,
+                            ]} />
+                          </TouchableOpacity>
+                        )}
                         
 
                       </View>
@@ -3445,6 +3784,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 50,
     elevation: 50,
+  },
+  emailInvoiceButton: {
+    position: 'relative' as const,
+    padding: 8,
+    marginLeft: 4,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  emailStatusDot: {
+    position: 'absolute' as const,
+    top: 4,
+    right: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#fff',
+  },
+  emailStatusDotPending: {
+    backgroundColor: '#FF3B30',
+  },
+  emailStatusDotSent: {
+    backgroundColor: '#34C759',
   },
   sortButton: {
     paddingVertical: 10,
