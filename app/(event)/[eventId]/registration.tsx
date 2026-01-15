@@ -2066,13 +2066,15 @@ export default function EventRegistrationScreen() {
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>REGISTRATION</Text>
         </View>
-        <TouchableOpacity
-          style={styles.pdfButton}
-          onPress={() => setPdfOptionsModalVisible(true)}
-        >
-          <Ionicons name="document-text-outline" size={16} color="#fff" />
-          <Text style={styles.pdfButtonText}>PDF</Text>
-        </TouchableOpacity>
+        {currentUser?.isAdmin && (
+          <TouchableOpacity
+            style={styles.pdfButton}
+            onPress={() => setPdfOptionsModalVisible(true)}
+          >
+            <Ionicons name="document-text-outline" size={16} color="#fff" />
+            <Text style={styles.pdfButtonText}>PDF</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {event && event.photoUrl && (
