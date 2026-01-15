@@ -1160,35 +1160,45 @@ export async function generateInvoicePDF(
       }
     }
 
-    // Native iOS/Android - use MailComposer with HTML
-    console.log('[pdfGenerator] 📧 Using MailComposer for native...');
+    // Native iOS/Android - Generate PDF and attach to email
+    console.log('[pdfGenerator] 📧 Using MailComposer with PDF attachment for native...');
     try {
+      // First generate the PDF
+      const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
+      console.log('[pdfGenerator] 📄 Generating PDF for email attachment...');
+      
+      const { uri } = await Print.printToFileAsync({
+        html: htmlContent,
+        base64: false,
+      });
+      console.log('[pdfGenerator] ✅ PDF created at:', uri);
+
       const isMailAvailable = await MailComposer.isAvailableAsync();
       console.log('[pdfGenerator] MailComposer.isAvailableAsync():', isMailAvailable);
       
       if (isMailAvailable) {
+        // Create a simple text body with the PDF attached
+        const textBody = `Dear ${member.name},\n\nThank you for registering for ${event.name}!\n\nPlease find your invoice attached to this email.\n\n${!isPaid ? `Amount Due: ${total.toFixed(2)}\n\nPayment Options:\n${orgInfo?.zellePhone ? `• Zelle: ${orgInfo.zellePhone}\n` : ''}${orgInfo?.paypalClientId ? `• PayPal: https://www.paypal.com/paypalme/cgamembers/${total.toFixed(2)}\n` : ''}` : 'Your payment has been received. Thank you!'}\n\nIf you have any questions, please contact the event organizer.\n\nBest regards,\n${orgInfo?.name || 'Event Organizer'}`;
+
+        console.log('[pdfGenerator] 📧 Opening mail composer with PDF attachment...');
+        
         const result = await MailComposer.composeAsync({
           recipients: [member.email],
           subject: subject,
-          body: htmlBody,
-          isHtml: true,
+          body: textBody,
+          isHtml: false,
+          attachments: [uri],
         });
 
         console.log('[pdfGenerator] ✅ MailComposer result:', result.status);
         return { status: result.status as 'sent' | 'saved' | 'cancelled' };
       } else {
-        console.log('[pdfGenerator] ⚠️ MailComposer not available, using share fallback...');
-        // Fall back to sharing the invoice as a PDF
-        const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
-        const { uri } = await Print.printToFileAsync({
-          html: htmlContent,
-          base64: false,
-        });
+        console.log('[pdfGenerator] ⚠️ MailComposer not available, using share sheet...');
         
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(uri, {
             mimeType: 'application/pdf',
-            dialogTitle: 'Share Invoice',
+            dialogTitle: `Share Invoice for ${member.name}`,
             UTI: 'com.adobe.pdf',
           });
           return { status: 'pdf_shared' };
@@ -1199,8 +1209,8 @@ export async function generateInvoicePDF(
     } catch (error) {
       console.error('[pdfGenerator] ❌ MailComposer failed:', error);
       
-      // Last resort - try to share as PDF
-      console.log('[pdfGenerator] 📄 Attempting PDF share as last resort...');
+      // Last resort - try to share as PDF via share sheet
+      console.log('[pdfGenerator] 📄 Attempting share sheet as fallback...');
       try {
         const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
         const { uri } = await Print.printToFileAsync({
@@ -1211,13 +1221,13 @@ export async function generateInvoicePDF(
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(uri, {
             mimeType: 'application/pdf',
-            dialogTitle: 'Share Invoice',
+            dialogTitle: `Share Invoice for ${member.name}`,
             UTI: 'com.adobe.pdf',
           });
           return { status: 'pdf_shared' };
         }
       } catch (pdfError) {
-        console.error('[pdfGenerator] ❌ PDF fallback also failed:', pdfError);
+        console.error('[pdfGenerator] ❌ Share sheet fallback also failed:', pdfError);
       }
       
       return { status: 'failed', error: error instanceof Error ? error.message : 'Failed to compose email' };
