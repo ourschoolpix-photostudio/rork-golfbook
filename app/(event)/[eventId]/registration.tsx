@@ -1294,15 +1294,21 @@ export default function EventRegistrationScreen() {
     let playersHtml = '';
     
     if (type === 'checkin') {
-      const generatePlayerRows = (players: Member[], startIndex: number = 1) => {
+      const sortedAllPlayers = [...allPlayers].sort((a, b) => a.name.localeCompare(b.name));
+      
+      const generatePlayerRows = (players: Member[]) => {
         return players.map((player, index) => {
           const playerReg = registrations[player.name];
           const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
+          const isPaid = playerReg?.paymentStatus === 'paid';
+          const unpaidLabel = !isPaid ? '<span style="color: #DC2626; font-weight: 600; font-size: 12px;">UNPAID</span>' : '';
+          
           return `
             <tr style="border-bottom: 1px solid #eee;">
-              <td style="padding: 8px 4px; width: 30px; color: #999;">${startIndex + index}.</td>
+              <td style="padding: 8px 4px; width: 30px; color: #333; font-weight: 600;">${index + 1}.</td>
               <td style="padding: 8px 4px;">${player.name}</td>
               ${includeHandicaps ? `<td style="padding: 8px 4px; text-align: right; color: #1976D2;">${handicap}</td>` : ''}
+              <td style="padding: 8px 4px; width: 80px; text-align: right;">${unpaidLabel}</td>
               <td style="padding: 8px 4px; width: 30px; text-align: center;">☐</td>
             </tr>
           `;
@@ -1310,24 +1316,13 @@ export default function EventRegistrationScreen() {
       };
       
       playersHtml = `
-        <div style="margin-bottom: 20px;">
-          <div style="background: #E8F5E9; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-bottom: 12px;">
-            <span style="color: #1B5E20; font-weight: 700;">✓ PAID (${paidPlayers.length})</span>
-          </div>
-          <table style="width: 100%; border-collapse: collapse;">
-            ${generatePlayerRows(paidPlayers, 1)}
-          </table>
-        </div>
         <div>
-          <div style="background: #FFEBEE; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-bottom: 12px;">
-            <span style="color: #C62828; font-weight: 700;">✗ UNPAID (${unpaidPlayers.length})</span>
-          </div>
           <table style="width: 100%; border-collapse: collapse;">
-            ${generatePlayerRows(unpaidPlayers, 1)}
+            ${generatePlayerRows(sortedAllPlayers)}
           </table>
         </div>
         <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
-          Total: ${paidPlayers.length + unpaidPlayers.length} players
+          Total: ${allPlayers.length} players
         </div>
       `;
     } else if (type === 'weelist') {
