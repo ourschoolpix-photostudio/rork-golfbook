@@ -80,33 +80,29 @@ async function generateNativePDF(htmlContent: string, eventName: string, type: s
 function generateWebPDF(htmlContent: string, eventName: string, type: string): void {
   try {
     console.log('[pdfGenerator] 🌐 Starting web PDF generation for type:', type);
-    const now = new Date();
-    const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
-    const yymmdd = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
-    const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '');
-    const filename = `${hhmm}${yymmdd}${cleanEventName}.html`;
     
-    console.log('[pdfGenerator] 📄 Creating file:', filename);
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    console.log('[pdfGenerator] ✅ Web download initiated successfully');
-    
-    if (Platform.OS === 'web') {
-      setTimeout(() => {
-        Alert.alert(
-          'Download Started',
-          `Your ${type} file has been downloaded. Check your browser's download folder for ${filename}`,
-          [{ text: 'OK' }]
-        );
-      }, 100);
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      Alert.alert(
+        'Pop-up Blocked',
+        'Please allow pop-ups for this site to generate PDFs',
+        [{ text: 'OK' }]
+      );
+      return;
     }
+    
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    printWindow.onload = () => {
+      console.log('[pdfGenerator] ✅ Print window loaded, triggering print dialog');
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    };
+    
+    console.log('[pdfGenerator] ✅ Print dialog opened successfully');
   } catch (error) {
     console.error('[pdfGenerator] ❌ Web PDF generation failed:', error);
     throw error;
