@@ -8,12 +8,13 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
-  Linking,
   Share,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
+import * as MailComposer from 'expo-mail-composer';
 
 import { Member } from '@/types';
 
@@ -307,24 +308,77 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
   const openEmailClient = useCallback(async () => {
     if (selectedFields.length === 0) return;
     
-    console.log('[MemberListingModal] Opening email client...');
+    console.log('[MemberListingModal] Opening email client with HTML...');
     
     try {
-      const subject = encodeURIComponent(categoryLabels[activeTab]);
-      const body = encodeURIComponent(emailOutput);
-      const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
-      
-      const canOpen = await Linking.canOpenURL(mailtoUrl);
-      if (canOpen) {
-        await Linking.openURL(mailtoUrl);
-        console.log('[MemberListingModal] Email client opened');
-      } else {
-        console.error('[MemberListingModal] Cannot open email client');
+      const isAvailable = await MailComposer.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Email Not Available', 'Please configure an email account on your device.');
+        return;
       }
+      
+      const maxDigits = String(filteredMembers.length).length;
+      let rowsHTML = '';
+      
+      filteredMembers.forEach((member, index) => {
+        const paddedNum = String(index + 1).padStart(maxDigits, '0');
+        const parts: string[] = [];
+        
+        const nameField = selectedFields.find(f => f.key === 'name');
+        if (nameField) {
+          parts.push(`<strong>${getFieldValue(member, 'name')}</strong>`);
+        }
+        
+        selectedFields.forEach(f => {
+          if (f.key !== 'name') {
+            const value = getFieldValue(member, f.key);
+            parts.push(`<span style="color: #666;">${f.label}: ${value}</span>`);
+          }
+        });
+        
+        rowsHTML += `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px 4px; width: 35px; color: #999; font-size: 13px;">${paddedNum}.</td>
+            <td style="padding: 8px 4px; font-size: 14px;">${parts.join(' &nbsp;|&nbsp; ')}</td>
+          </tr>
+        `;
+      });
+      
+      const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+  <div style="background-color: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    <div style="text-align: center; border-bottom: 2px solid #1B5E20; padding-bottom: 16px; margin-bottom: 20px;">
+      <h2 style="color: #1B5E20; margin: 0 0 4px 0; font-size: 22px;">${categoryLabels[activeTab]}</h2>
+      <p style="color: #666; margin: 0; font-size: 14px;">${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}</p>
+    </div>
+    <table style="width: 100%; border-collapse: collapse;">
+      ${rowsHTML}
+    </table>
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 2px solid #1B5E20; text-align: center;">
+      <p style="color: #1B5E20; font-weight: 700; margin: 0; font-size: 15px;">Total: ${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+      
+      await MailComposer.composeAsync({
+        subject: categoryLabels[activeTab],
+        body: htmlBody,
+        isHtml: true,
+      });
+      
+      console.log('[MemberListingModal] Email composer opened with HTML');
     } catch (error) {
       console.error('[MemberListingModal] Email client error:', error);
+      Alert.alert('Error', 'Failed to open email composer');
     }
-  }, [emailOutput, activeTab, categoryLabels, selectedFields]);
+  }, [filteredMembers, selectedFields, activeTab, categoryLabels, getFieldValue]);
 
   const handleCopy = useCallback(async () => {
     const content = outputTab === 'text' ? textOutput : emailOutput;
