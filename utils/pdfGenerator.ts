@@ -2,7 +2,6 @@ import { Platform, Linking } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import * as MailComposer from 'expo-mail-composer';
-import { createPayPalOrder } from '@/utils/paypalService';
 import type { Member, Event, Grouping } from '@/types';
 import { type LabelOverride } from '@/utils/groupingsHelper';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
@@ -1138,421 +1137,219 @@ interface InvoicePDFOptions {
 export async function generateInvoicePDF(
   options: InvoicePDFOptions,
   openEmail: boolean = false
-): Promise<any> {
-  try {
-    const { registration, member, event, orgInfo } = options;
-    console.log('[pdfGenerator] 📧 Starting invoice generation...');
-    console.log('[pdfGenerator] openEmail:', openEmail, 'member.email:', member.email);
+): Promise<{ status: 'sent' | 'saved' | 'cancelled' | 'failed' | 'pdf_shared'; error?: string }> {
+  const { registration, member, event, orgInfo } = options;
+  
+  console.log('[pdfGenerator] 📧 Starting invoice generation...');
+  console.log('[pdfGenerator] openEmail:', openEmail, 'member.email:', member.email);
+  console.log('[pdfGenerator] Platform.OS:', Platform.OS);
 
-    console.log('[pdfGenerator] 🔍 Checking email composer availability...');
-    const isMailAvailable = Platform.OS !== 'web' && await MailComposer.isAvailableAsync();
-    console.log('[pdfGenerator] MailComposer.isAvailableAsync():', isMailAvailable);
-    console.log('[pdfGenerator] Platform.OS:', Platform.OS);
+  const entryFee = Number(event.entryFee) || 0;
+  const numberOfGuests = registration?.numberOfGuests || 0;
+  const isSponsor = registration?.isSponsor || false;
+  const totalPeople = isSponsor ? 0 : 1 + numberOfGuests;
+  const total = entryFee * totalPeople;
+  const isPaid = registration?.paymentStatus === 'paid';
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
+  const dateRange = event.endDate && event.endDate !== event.date 
+    ? `${formatDate(event.date)} - ${formatDate(event.endDate)}` 
+    : formatDate(event.date);
+
+  const tournamentFlight = event.type === 'tournament' 
+    ? calculateTournamentFlight(
+        member,
+        Number(event.flightACutoff) || undefined,
+        Number(event.flightBCutoff) || undefined,
+        registration,
+        event,
+        false,
+        1
+      )
+    : null;
+
+  if (openEmail && member.email) {
+    console.log('[pdfGenerator] ✅ Attempting to open email client...');
     
-    if (openEmail && member.email) {
-      console.log('[pdfGenerator] ✅ All conditions met for email composer');
-      const entryFee = Number(event.entryFee) || 0;
-      const numberOfGuests = registration?.numberOfGuests || 0;
-      const isSponsor = registration?.isSponsor || false;
-      const totalPeople = isSponsor ? 0 : 1 + numberOfGuests;
-      const total = entryFee * totalPeople;
-      const isPaid = registration?.paymentStatus === 'paid';
-      
-      const tournamentFlight = event.type === 'tournament' 
-        ? calculateTournamentFlight(
-            member,
-            Number(event.flightACutoff) || undefined,
-            Number(event.flightBCutoff) || undefined,
-            registration,
-            event,
-            false,
-            1
-          )
-        : null;
-      
-      const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr + 'T00:00:00');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${month}/${day}/${year}`;
-      };
-      
-      const dateRange = event.endDate && event.endDate !== event.date 
-        ? `${formatDate(event.date)} - ${formatDate(event.endDate)}` 
-        : formatDate(event.date);
+    const plainTextBody = buildPlainTextEmailBody({
+      member,
+      event,
+      registration,
+      orgInfo,
+      isPaid,
+      total,
+      isSponsor,
+      dateRange,
+      tournamentFlight,
+    });
 
-      let emailBody = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #1B5E20; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-    .header h1 { margin: 0; font-size: 24px; }
-    .content { background: #f9f9f9; padding: 20px; border: 1px solid #e0e0e0; border-top: none; }
-    .section { background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #e0e0e0; }
-    .section-title { font-weight: 700; color: #1B5E20; margin-bottom: 10px; font-size: 16px; }
-    .detail-row { margin-bottom: 8px; }
-    .detail-label { font-weight: 600; color: #666; }
-    .total-section { background: #E8F5E9; padding: 15px; border-radius: 8px; margin-top: 15px; }
-    .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 18px; font-weight: 700; color: #1B5E20; }
-    .payment-status { padding: 15px; border-radius: 8px; text-align: center; font-weight: 700; margin-top: 15px; }
-    .paid { background: #E8F5E9; color: #2E7D32; border: 2px solid #2E7D32; }
-    .unpaid { background: #FFF9E6; color: #F57C00; border: 2px solid #F57C00; }
-    .payment-instructions { background: #E3F2FD; padding: 15px; border-radius: 8px; border: 2px solid #1976D2; margin-top: 15px; }
-    .payment-instructions h3 { color: #1976D2; margin-top: 0; }
-    .sponsor-badge { background: #FF9500; color: white; padding: 10px 20px; border-radius: 20px; display: inline-block; margin-bottom: 15px; }
-    .footer { text-align: center; color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>${isPaid ? 'PAYMENT CONFIRMATION' : 'REGISTRATION INVOICE'}</h1>
-  </div>
-  <div class="content">`;
+    const subject = `${event.name} - Registration Invoice`;
 
-      if (isSponsor) {
-        emailBody += `
-    <div class="sponsor-badge">SPONSOR REGISTRATION</div>`;
+    if (Platform.OS === 'web') {
+      console.log('[pdfGenerator] 🌐 Using web mailto...');
+      try {
+        const encodedSubject = encodeURIComponent(subject);
+        const encodedBody = encodeURIComponent(plainTextBody);
+        const mailtoUrl = `mailto:${member.email}?subject=${encodedSubject}&body=${encodedBody}`;
+        
+        await Linking.openURL(mailtoUrl);
+        console.log('[pdfGenerator] ✅ Web mailto opened successfully');
+        return { status: 'sent' };
+      } catch (error) {
+        console.error('[pdfGenerator] ❌ Web mailto failed:', error);
+        return { status: 'failed', error: error instanceof Error ? error.message : 'Failed to open email' };
       }
+    }
 
-      emailBody += `
-    <div class="section">
-      <div class="section-title">Member Information</div>
-      <div class="detail-row"><span class="detail-label">Name:</span> ${member.name}</div>
-      ${member.email ? `<div class="detail-row"><span class="detail-label">Email:</span> ${member.email}</div>` : ''}
-      ${member.phone ? `<div class="detail-row"><span class="detail-label">Phone:</span> ${formatPhoneNumber(member.phone)}</div>` : ''}
-      ${tournamentFlight ? `<div class="detail-row"><span class="detail-label">Flight:</span> ${tournamentFlight}</div>` : ''}
+    let isMailAvailable = false;
+    try {
+      isMailAvailable = await MailComposer.isAvailableAsync();
+      console.log('[pdfGenerator] MailComposer.isAvailableAsync():', isMailAvailable);
+    } catch (error) {
+      console.error('[pdfGenerator] ❌ Error checking mail availability:', error);
+    }
+
+    if (isMailAvailable) {
+      console.log('[pdfGenerator] 📧 Using MailComposer...');
+      try {
+        const htmlBody = buildEmailHTMLBody({
+          member,
+          event,
+          registration,
+          orgInfo,
+          isPaid,
+          total,
+          isSponsor,
+          dateRange,
+          tournamentFlight,
+        });
+
+        const result = await MailComposer.composeAsync({
+          recipients: [member.email],
+          subject: subject,
+          body: htmlBody,
+          isHtml: true,
+        });
+
+        console.log('[pdfGenerator] ✅ MailComposer result:', result.status);
+        return { status: result.status as 'sent' | 'saved' | 'cancelled' };
+      } catch (error) {
+        console.error('[pdfGenerator] ❌ MailComposer failed:', error);
+        console.log('[pdfGenerator] Falling back to mailto...');
+      }
+    }
+
+    console.log('[pdfGenerator] 📧 Using Linking.openURL mailto fallback...');
+    try {
+      const encodedSubject = encodeURIComponent(subject);
+      const encodedBody = encodeURIComponent(plainTextBody);
+      const mailtoUrl = `mailto:${member.email}?subject=${encodedSubject}&body=${encodedBody}`;
+      
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
+      console.log('[pdfGenerator] Can open mailto URL:', canOpen);
+      
+      if (canOpen) {
+        await Linking.openURL(mailtoUrl);
+        console.log('[pdfGenerator] ✅ mailto opened successfully');
+        return { status: 'sent' };
+      } else {
+        console.error('[pdfGenerator] ❌ Cannot open mailto URL');
+        return { status: 'failed', error: 'No email app available on this device' };
+      }
+    } catch (error) {
+      console.error('[pdfGenerator] ❌ mailto fallback failed:', error);
+      return { status: 'failed', error: error instanceof Error ? error.message : 'Failed to open email' };
+    }
+  } else {
+    console.log('[pdfGenerator] 📄 Generating PDF for sharing...');
+    console.log('[pdfGenerator] Reason: openEmail=', openEmail, 'member.email=', member.email);
+    
+    try {
+      const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
+      
+      if (Platform.OS === 'web') {
+        console.log('[pdfGenerator] 🌐 Using web PDF generation...');
+        generateWebPDF(htmlContent, event.name, 'Invoice');
+        return { status: 'pdf_shared' };
+      }
+      
+      console.log('[pdfGenerator] 📱 Using native PDF generation...');
+      await generateNativePDF(htmlContent, event.name, 'Invoice');
+      return { status: 'pdf_shared' };
+    } catch (error) {
+      console.error('[pdfGenerator] ❌ PDF generation failed:', error);
+      return { status: 'failed', error: error instanceof Error ? error.message : 'Failed to generate PDF' };
+    }
+  }
+}
+
+function buildEmailHTMLBody(params: PlainTextEmailParams): string {
+  const { member, event, orgInfo, isPaid, total, isSponsor, dateRange, tournamentFlight } = params;
+  
+  let html = `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background: #1B5E20; color: white; padding: 20px; text-align: center;">
+    <h1 style="margin: 0; font-size: 24px;">${isPaid ? 'PAYMENT CONFIRMATION' : 'REGISTRATION INVOICE'}</h1>
+  </div>
+  
+  <div style="padding: 20px; background: #f9f9f9;">`;
+
+  if (isSponsor) {
+    html += `<div style="background: #FF9500; color: white; padding: 10px 20px; border-radius: 20px; display: inline-block; margin-bottom: 15px;">SPONSOR REGISTRATION</div>`;
+  }
+
+  html += `
+    <div style="background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
+      <h3 style="color: #1B5E20; margin-top: 0;">Member Information</h3>
+      <p><strong>Name:</strong> ${member.name}</p>
+      ${member.email ? `<p><strong>Email:</strong> ${member.email}</p>` : ''}
+      ${member.phone ? `<p><strong>Phone:</strong> ${formatPhoneNumber(member.phone)}</p>` : ''}
+      ${tournamentFlight ? `<p><strong>Flight:</strong> ${tournamentFlight}</p>` : ''}
     </div>
 
-    <div class="section">
-      <div class="section-title">${event.type === 'tournament' ? 'Tournament Information' : 'Venue Information'}</div>
-      <ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">
-        <li style="margin-bottom: 6px;">Event: ${event.name}</li>
-        <li style="margin-bottom: 6px;">Date: ${dateRange}</li>
-        ${event.location ? `<li style="margin-bottom: 6px;">Location: ${event.location}</li>` : ''}
-        ${event.numberOfDays ? `<li style="margin-bottom: 6px;">Number of Days: ${event.numberOfDays}</li>` : ''}
-        ${!isSponsor ? `<li style="margin-bottom: 6px;">Entry Fee: ${entryFee.toFixed(2)}</li>` : ''}
-      </ul>
-    </div>`;
+    <div style="background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
+      <h3 style="color: #1B5E20; margin-top: 0;">Event Information</h3>
+      <p><strong>Event:</strong> ${event.name}</p>
+      <p><strong>Date:</strong> ${dateRange}</p>
+      ${event.location ? `<p><strong>Location:</strong> ${event.location}</p>` : ''}
+      ${!isSponsor ? `<p><strong>Entry Fee:</strong> ${(Number(event.entryFee) || 0).toFixed(2)}</p>` : ''}
+    </div>
 
-      // Add day-by-day details
-      const daysDetails: string[] = [];
-      if (event.numberOfDays && event.numberOfDays >= 1) {
-        for (let day = 1; day <= event.numberOfDays; day++) {
-          const dayKey = `day${day}` as const;
-          const startTime = (event as any)[`${dayKey}StartTime`];
-          const startPeriod = (event as any)[`${dayKey}StartPeriod`];
-          const startType = (event as any)[`${dayKey}StartType`];
-          const course = (event as any)[`${dayKey}Course`];
-          
-          if (startTime || startType || course) {
-            let dayDetail = `<div style="margin-top: 12px; padding: 12px; background: #f5f5f5; border-left: 3px solid #1B5E20; border-radius: 4px;">`;
-            dayDetail += `<div style="font-weight: 700; color: #1B5E20; margin-bottom: 6px;">Day ${day}</div>`;
-            
-            if (course) {
-              dayDetail += `<div class="detail-row"><span class="detail-label">Course:</span> ${course}</div>`;
-            }
-            
-            if (startType) {
-              const startTypeFormatted = startType === 'tee-time' ? 'Tee Time' : 'Shotgun';
-              dayDetail += `<div class="detail-row"><span class="detail-label">Start Type:</span> ${startTypeFormatted}</div>`;
-            }
-            
-            if (startTime && startPeriod) {
-              dayDetail += `<div class="detail-row"><span class="detail-label">Start Time:</span> ${startTime} ${startPeriod}</div>`;
-            }
-            
-            dayDetail += `</div>`;
-            daysDetails.push(dayDetail);
-          }
-        }
-      }
-      
-      if (daysDetails.length > 0) {
-        emailBody += `
-    <div class="section">
-      <div class="section-title">Daily Schedule</div>
-      ${daysDetails.join('')}
-    </div>`;
-      }
-
-      // Add trophy and prize details
-      const trophyDetails: string[] = [];
-      
-      if (event.type === 'tournament') {
-        const flights = ['A', 'B', 'C', 'L'];
-        
-        for (const flight of flights) {
-          const trophies: string[] = [];
-          const prizes: string[] = [];
-          
-          if ((event as any)[`flight${flight}Trophy1st`]) trophies.push('1st Place');
-          if ((event as any)[`flight${flight}Trophy2nd`]) trophies.push('2nd Place');
-          if ((event as any)[`flight${flight}Trophy3rd`]) trophies.push('3rd Place');
-          
-          const prize1st = (event as any)[`flight${flight}CashPrize1st`];
-          const prize2nd = (event as any)[`flight${flight}CashPrize2nd`];
-          const prize3rd = (event as any)[`flight${flight}CashPrize3rd`];
-          
-          if (prize1st) prizes.push(`1st: ${prize1st}`);
-          if (prize2nd) prizes.push(`2nd: ${prize2nd}`);
-          if (prize3rd) prizes.push(`3rd: ${prize3rd}`);
-          
-          if (trophies.length > 0 || prizes.length > 0) {
-            let flightDetail = `<div style="margin-bottom: 8px;">`;
-            flightDetail += `<div style="font-weight: 600; color: #1B5E20;">Flight ${flight}:</div>`;
-            
-            if (trophies.length > 0) {
-              flightDetail += `<div style="margin-left: 12px;">Trophies: ${trophies.join(', ')}</div>`;
-            }
-            
-            if (prizes.length > 0) {
-              flightDetail += `<div style="margin-left: 12px;">Prizes: ${prizes.join(', ')}</div>`;
-            }
-            
-            flightDetail += `</div>`;
-            trophyDetails.push(flightDetail);
-          }
-        }
-        
-        // Low gross
-        if (event.lowGrossTrophy || event.lowGrossCashPrize) {
-          let lowGrossDetail = `<div style="margin-bottom: 8px;">`;
-          lowGrossDetail += `<div style="font-weight: 600; color: #1B5E20;">Low Gross:</div>`;
-          
-          if (event.lowGrossTrophy) {
-            lowGrossDetail += `<div style="margin-left: 12px;">Trophy: Yes</div>`;
-          }
-          
-          if (event.lowGrossCashPrize) {
-            lowGrossDetail += `<div style="margin-left: 12px;">Prize: ${event.lowGrossCashPrize}</div>`;
-          }
-          
-          lowGrossDetail += `</div>`;
-          trophyDetails.push(lowGrossDetail);
-        }
-        
-        // Closest to pin
-        if (event.closestToPin) {
-          trophyDetails.push(`<div style="margin-bottom: 8px;"><div style="font-weight: 600; color: #1B5E20;">Closest to Pin:</div><div style="margin-left: 12px;">${event.closestToPin}</div></div>`);
-        }
-      }
-      
-      if (trophyDetails.length > 0) {
-        emailBody += `
-    <div class="section">
-      <div class="section-title">Trophies & Prizes</div>
-      ${trophyDetails.join('')}
-    </div>`;
-      }
-
-      // Add final details (memo/description)
-      if (event.memo || event.description) {
-        const details = event.memo || event.description || '';
-        const detailLines = details.split('\n').filter((line: string) => line.trim() !== '');
-        let detailsHTML = '<ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">';
-        detailLines.forEach((line: string) => {
-          detailsHTML += `<li style="margin-bottom: 6px;">${line.trim()}</li>`;
-        });
-        detailsHTML += '</ul>';
-        
-        emailBody += `
-    <div class="section">
-      <div class="section-title">Registration Includes</div>
-      ${detailsHTML}
-    </div>`;
-      }
-
-
-      if (isSponsor) {
-        emailBody += `
-    <div class="section">
-      <div class="section-title">Thank You!</div>
-      <p>Thank you for your generous sponsorship! Your registration is complimentary.</p>
-    </div>`;
-      }
-
-      emailBody += `
-    <div class="total-section">
-      <div class="total-row">
+    <div style="background: #E8F5E9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; color: #1B5E20;">
         <span>Total Amount:</span>
         <span>${total.toFixed(2)}</span>
       </div>
     </div>
 
-    <div class="payment-status ${isPaid ? 'paid' : 'unpaid'}">
+    <div style="padding: 15px; border-radius: 8px; text-align: center; font-weight: 700; ${isPaid ? 'background: #E8F5E9; color: #2E7D32; border: 2px solid #2E7D32;' : 'background: #FFF9E6; color: #F57C00; border: 2px solid #F57C00;'}">
       ${isPaid ? '✓ PAID IN FULL' : `AMOUNT DUE: ${total.toFixed(2)}`}
     </div>`;
 
-      if (!isPaid && (orgInfo?.zellePhone || orgInfo?.paypalClientId)) {
-        emailBody += `
-    <div class="payment-instructions">
-      <h3>Payment Instructions</h3>
-      <p>Please complete your payment using one of the following methods:</p>`;
-        
-        if (orgInfo?.zellePhone) {
-          const formattedPhone = formatPhoneNumber(orgInfo.zellePhone);
-          emailBody += `
-      <p><strong>Option 1: Zelle (${total.toFixed(2)})</strong><br/>Send payment to: <strong>${formattedPhone}</strong><br/><span style="font-size: 12px; color: #666; font-style: italic;">No fees for Zelle payments</span></p>`;
-        }
-        
-        if (orgInfo?.paypalClientId && orgInfo?.paypalClientSecret) {
-          try {
-            console.log('[pdfGenerator] 🎯 Creating PayPal order for email invoice...');
-            const serviceFeePercentage = 0.03;
-            const serviceFeeFixed = 0.30;
-            const subtotal = total;
-            const serviceFeeAmount = (subtotal * serviceFeePercentage) + serviceFeeFixed;
-            const totalWithFee = subtotal + serviceFeeAmount;
-            
-            const paypalOrder = await createPayPalOrder({
-              amount: totalWithFee,
-              eventName: event.name,
-              eventId: event.id,
-              playerEmail: member.email,
-              paypalClientId: orgInfo.paypalClientId,
-              paypalClientSecret: orgInfo.paypalClientSecret,
-              paypalMode: orgInfo.paypalMode || 'sandbox',
-            });
-            
-            console.log('[pdfGenerator] ✅ PayPal order created:', paypalOrder.orderId);
-            console.log('[pdfGenerator] 📧 Including approval URL in email:', paypalOrder.approvalUrl);
-            
-            emailBody += `
-      <p><strong>Option 2: PayPal</strong><br/>
-      <a href="${paypalOrder.approvalUrl}" style="display: inline-block; background: #0070BA; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 700; margin-top: 8px;">Pay ${totalWithFee.toFixed(2)} with PayPal</a><br/>
-      <span style="font-size: 12px; color: #666; margin-top: 4px; display: inline-block;">Includes ${serviceFeeAmount.toFixed(2)} service fee (3% + $0.30)</span></p>`;
-          } catch (error) {
-            console.error('[pdfGenerator] ❌ Failed to create PayPal order for email:');
-            if (error instanceof Error) {
-              console.error('[pdfGenerator] Error message:', error.message);
-              console.error('[pdfGenerator] Error stack:', error.stack);
-            } else if (typeof error === 'object' && error !== null) {
-              try {
-                console.error('[pdfGenerator] Error object:', JSON.stringify(error, null, 2));
-              } catch {
-                console.error('[pdfGenerator] Error (non-serializable):', String(error));
-              }
-            } else {
-              console.error('[pdfGenerator] Error (raw):', error);
-            }
-            emailBody += `
-      <p><strong>Option 2: PayPal</strong><br/>
-      <span style="color: #DC2626;">PayPal payment link unavailable. Please contact the event organizer or use Zelle.</span></p>`;
-          }
-        }
-        
-        emailBody += `
+  if (!isPaid && orgInfo?.zellePhone) {
+    html += `
+    <div style="background: #E3F2FD; padding: 15px; border-radius: 8px; border: 2px solid #1976D2; margin-top: 15px;">
+      <h3 style="color: #1976D2; margin-top: 0;">Payment Instructions</h3>
+      <p><strong>Zelle:</strong> Send ${total.toFixed(2)} to ${formatPhoneNumber(orgInfo.zellePhone)}</p>
     </div>`;
-      }
+  }
 
-      emailBody += `
-    <div class="footer">
+  html += `
+    <div style="text-align: center; color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
       <p>Thank you for your registration!</p>
-      <p>If you have any questions, please contact the event organizer.</p>
       ${orgInfo?.name ? `<p><strong>${orgInfo.name}</strong></p>` : ''}
     </div>
   </div>
-</body>
-</html>`;
+</div>`;
 
-      console.log('[pdfGenerator] 📧 About to open email composer...');
-      console.log('[pdfGenerator] Recipients:', [member.email]);
-      console.log('[pdfGenerator] Subject:', `${event.name} - Registration Invoice`);
-      console.log('[pdfGenerator] Body length:', emailBody.length);
-      
-      if (Platform.OS === 'web') {
-        console.log('[pdfGenerator] 🌐 Using web mailto: fallback...');
-        const plainTextBody = buildPlainTextEmailBody({
-          member,
-          event,
-          registration,
-          orgInfo,
-          isPaid,
-          total,
-          isSponsor,
-          dateRange,
-          tournamentFlight,
-        });
-        
-        const subject = encodeURIComponent(`${event.name} - Registration Invoice`);
-        const body = encodeURIComponent(plainTextBody);
-        const mailtoUrl = `mailto:${member.email}?subject=${subject}&body=${body}`;
-        
-        console.log('[pdfGenerator] 📧 Opening mailto URL...');
-        await Linking.openURL(mailtoUrl);
-        console.log('[pdfGenerator] ✅ mailto opened successfully');
-        
-        return { status: 'sent' };
-      } else if (isMailAvailable) {
-        const result = await MailComposer.composeAsync({
-          recipients: [member.email],
-          subject: `${event.name} - Registration Invoice`,
-          body: emailBody,
-          isHtml: true,
-        });
-        
-        console.log('[pdfGenerator] ✅ MailComposer result:', result);
-        console.log('[pdfGenerator] ✅ Email composer result status:', result.status);
-        
-        if (result.status === 'sent') {
-          console.log('[pdfGenerator] 📧 Email was sent!');
-        } else if (result.status === 'saved') {
-          console.log('[pdfGenerator] 💾 Email was saved as draft');
-        } else if (result.status === 'cancelled') {
-          console.log('[pdfGenerator] ❌ Email was cancelled by user');
-        }
-        
-        return result;
-      } else {
-        console.log('[pdfGenerator] ⚠️ Mail composer not available, using Linking fallback...');
-        const plainTextBody = buildPlainTextEmailBody({
-          member,
-          event,
-          registration,
-          orgInfo,
-          isPaid,
-          total,
-          isSponsor,
-          dateRange,
-          tournamentFlight,
-        });
-        
-        const subject = encodeURIComponent(`${event.name} - Registration Invoice`);
-        const body = encodeURIComponent(plainTextBody);
-        const mailtoUrl = `mailto:${member.email}?subject=${subject}&body=${body}`;
-        
-        console.log('[pdfGenerator] 📧 Opening mailto URL...');
-        await Linking.openURL(mailtoUrl);
-        console.log('[pdfGenerator] ✅ mailto opened successfully');
-        
-        return { status: 'sent' };
-      }
-    } else {
-      console.log('[pdfGenerator] 📄 Generating PDF for sharing (no email or openEmail=false)...');
-      console.log('[pdfGenerator] Reason: openEmail=', openEmail, 'member.email=', member.email, 'isMailAvailable=', isMailAvailable);
-      
-      const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
-      
-      if (Platform.OS === 'web') {
-        console.log('[pdfGenerator] 🌐 Using web PDF generation...');
-        return generateWebPDF(htmlContent, event.name, 'Invoice');
-      }
-      
-      console.log('[pdfGenerator] 📱 Using native PDF generation...');
-      return generateNativePDF(htmlContent, event.name, 'Invoice');
-    }
-  } catch (error) {
-    console.error('[pdfGenerator] ❌ Invoice generation error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error generating invoice';
-    console.error('[pdfGenerator] Error details:', errorMessage);
-    if (error instanceof Error && error.stack) {
-      console.error('[pdfGenerator] Stack trace:', error.stack);
-    }
-    throw error instanceof Error ? error : new Error(errorMessage);
-  }
+  return html;
 }
 
 export function buildInvoiceHTMLContent(

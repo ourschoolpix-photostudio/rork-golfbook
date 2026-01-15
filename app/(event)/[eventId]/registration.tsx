@@ -1064,81 +1064,69 @@ export default function EventRegistrationScreen() {
       return;
     }
     
-    try {
-      console.log('[registration] 📧 Starting invoice generation for:', player.name);
-      setGeneratingInvoiceForPlayer(player.id);
-      
-      if (!event) {
-        console.error('[registration] ❌ No event found');
-        Alert.alert('Error', 'Event not found');
-        return;
-      }
+    console.log('[registration] 📧 Starting invoice generation for:', player.name);
+    setGeneratingInvoiceForPlayer(player.id);
+    
+    if (!event) {
+      console.error('[registration] ❌ No event found');
+      Alert.alert('Error', 'Event not found');
+      setGeneratingInvoiceForPlayer(null);
+      return;
+    }
 
-      const shouldOpenEmail = !!player.email;
-      
-      console.log('[registration] 📧 Player email:', player.email);
-      console.log('[registration] 📧 Should open email:', shouldOpenEmail);
-      
-      if (!shouldOpenEmail) {
-        Alert.alert(
-          'No Email Address', 
-          `${player.name} does not have an email address on file. The invoice PDF will be created and you can share it manually.`,
-          [{ text: 'OK' }]
-        );
-      }
-
-      console.log('[registration] 📧 Calling generateInvoicePDF...');
-      const result = await generateInvoicePDF(
-        {
-          registration: playerReg,
-          member: player,
-          event,
-          orgInfo,
-        },
-        shouldOpenEmail
+    const shouldOpenEmail = !!player.email;
+    
+    console.log('[registration] 📧 Player email:', player.email);
+    console.log('[registration] 📧 Should open email:', shouldOpenEmail);
+    
+    if (!shouldOpenEmail) {
+      Alert.alert(
+        'No Email Address', 
+        `${player.name} does not have an email address on file. The invoice PDF will be created and you can share it manually.`,
+        [{ text: 'OK' }]
       );
-      console.log('[registration] ✅ generateInvoicePDF completed, result:', result);
-      
-      if (playerReg?.id) {
-        console.log('[registration] 📧 Updating emailSent flag for registration:', playerReg.id);
+    }
+
+    console.log('[registration] 📧 Calling generateInvoicePDF...');
+    const result = await generateInvoicePDF(
+      {
+        registration: playerReg,
+        member: player,
+        event,
+        orgInfo,
+      },
+      shouldOpenEmail
+    );
+    console.log('[registration] ✅ generateInvoicePDF completed, result:', result);
+    
+    if (result.status === 'failed') {
+      console.error('[registration] ❌ Invoice generation failed:', result.error);
+      Alert.alert('Error', result.error || 'Failed to open email');
+      setGeneratingInvoiceForPlayer(null);
+      return;
+    }
+    
+    if (result.status === 'cancelled') {
+      console.log('[registration] ⚠️ Email was cancelled by user');
+      setGeneratingInvoiceForPlayer(null);
+      return;
+    }
+    
+    if ((result.status === 'sent' || result.status === 'saved' || result.status === 'pdf_shared') && playerReg?.id) {
+      console.log('[registration] 📧 Updating emailSent flag for registration:', playerReg.id);
+      try {
         await updateRegistrationMutation.mutateAsync({
           registrationId: playerReg.id,
           updates: { emailSent: true },
         });
         console.log('[registration] ✅ emailSent flag updated successfully');
-      } else {
-        console.warn('[registration] ⚠️ No playerReg.id found, skipping emailSent update');
+      } catch (updateError) {
+        console.error('[registration] ⚠️ Failed to update emailSent flag:', updateError);
       }
-
-      console.log('[registration] ✅ Invoice generation process completed successfully');
-    } catch (error) {
-      console.error('[registration] ❌ Invoice generation error:', error);
-      let errorMessage = 'Unknown error occurred';
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-        console.error('[registration] Error message:', error.message);
-        if (error.stack) {
-          console.error('[registration] Stack trace:', error.stack);
-        }
-      } else if (typeof error === 'object' && error !== null) {
-        try {
-          errorMessage = JSON.stringify(error);
-          console.error('[registration] Error object (stringified):', errorMessage);
-        } catch {
-          errorMessage = String(error);
-          console.error('[registration] Error string:', errorMessage);
-        }
-      } else {
-        errorMessage = String(error);
-        console.error('[registration] Error (as string):', errorMessage);
-      }
-      
-      Alert.alert('Error', `Failed to generate invoice: ${errorMessage}`);
-    } finally {
-      console.log('[registration] 🏁 Cleaning up - setting generatingInvoiceForPlayer to null');
-      setGeneratingInvoiceForPlayer(null);
     }
+
+    console.log('[registration] ✅ Invoice generation process completed successfully');
+    setGeneratingInvoiceForPlayer(null);
   };
 
   const getPlayersFlights = useMemo((): Record<string, Member[]> => {
