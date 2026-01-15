@@ -920,14 +920,22 @@ export default function EventRegistrationScreen() {
           await Print.printAsync({ html: checkInHtml });
         } else {
           console.log('[registration] Native platform - generating PDF file');
-          const { uri } = await Print.printToFileAsync({ html: checkInHtml });
+          const { uri } = await Print.printToFileAsync({ 
+            html: checkInHtml,
+            base64: false,
+          });
           console.log('[registration] PDF file created at:', uri);
           
           const isAvailable = await Sharing.isAvailableAsync();
           console.log('[registration] Sharing available:', isAvailable);
           
           if (isAvailable) {
-            await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Check In List' });
+            const shareOptions = Platform.OS === 'ios' 
+              ? { UTI: 'com.adobe.pdf' }
+              : { mimeType: 'application/pdf', dialogTitle: 'Check In List' };
+            console.log('[registration] Sharing with options:', shareOptions);
+            await Sharing.shareAsync(uri, shareOptions);
+            console.log('[registration] Share completed');
           } else {
             Alert.alert('PDF Generated', 'PDF was created but sharing is not available on this device.');
           }
@@ -942,14 +950,22 @@ export default function EventRegistrationScreen() {
           await Print.printAsync({ html: weeListHtml });
         } else {
           console.log('[registration] Native platform - generating PDF file');
-          const { uri } = await Print.printToFileAsync({ html: weeListHtml });
+          const { uri } = await Print.printToFileAsync({ 
+            html: weeListHtml,
+            base64: false,
+          });
           console.log('[registration] PDF file created at:', uri);
           
           const isAvailable = await Sharing.isAvailableAsync();
           console.log('[registration] Sharing available:', isAvailable);
           
           if (isAvailable) {
-            await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Wee List' });
+            const shareOptions = Platform.OS === 'ios' 
+              ? { UTI: 'com.adobe.pdf' }
+              : { mimeType: 'application/pdf', dialogTitle: 'Wee List' };
+            console.log('[registration] Sharing with options:', shareOptions);
+            await Sharing.shareAsync(uri, shareOptions);
+            console.log('[registration] Share completed');
           } else {
             Alert.alert('PDF Generated', 'PDF was created but sharing is not available on this device.');
           }
