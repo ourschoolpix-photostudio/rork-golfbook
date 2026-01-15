@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import * as MailComposer from 'expo-mail-composer';
@@ -79,12 +79,14 @@ async function generateNativePDF(htmlContent: string, eventName: string, type: s
 
 function generateWebPDF(htmlContent: string, eventName: string, type: string): void {
   try {
+    console.log('[pdfGenerator] 🌐 Starting web PDF generation for type:', type);
     const now = new Date();
     const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
     const yymmdd = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
     const cleanEventName = eventName.replace(/[^a-zA-Z0-9]/g, '');
     const filename = `${hhmm}${yymmdd}${cleanEventName}.html`;
     
+    console.log('[pdfGenerator] 📄 Creating file:', filename);
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -94,9 +96,20 @@ function generateWebPDF(htmlContent: string, eventName: string, type: string): v
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    console.log('[pdfGenerator] Web download initiated');
+    console.log('[pdfGenerator] ✅ Web download initiated successfully');
+    
+    if (Platform.OS === 'web') {
+      setTimeout(() => {
+        Alert.alert(
+          'Download Started',
+          `Your ${type} file has been downloaded. Check your browser's download folder for ${filename}`,
+          [{ text: 'OK' }]
+        );
+      }, 100);
+    }
   } catch (error) {
-    console.error('[pdfGenerator] Web error:', error);
+    console.error('[pdfGenerator] ❌ Web PDF generation failed:', error);
+    throw error;
   }
 }
 
