@@ -408,8 +408,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 8,
+    paddingVertical: 16,
   },
   headerTitle: {
     fontSize: 16,
