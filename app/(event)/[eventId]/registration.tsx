@@ -2435,33 +2435,31 @@ export default function EventRegistrationScreen() {
                           )}
                         </View>
 
-                        {canViewRegistration(currentUser) && (
+                      </View>
+
+                      {canViewRegistration(currentUser) && (
+                        <View style={styles.bottomActionsRow}>
                           <TouchableOpacity
-                            style={styles.emailInvoiceButton}
+                            style={styles.emailInvoiceButtonBottom}
                             onPress={() => handleSendPlayerInvoice(player, playerReg)}
                             activeOpacity={0.7}
                           >
-                            <Ionicons name="mail-outline" size={18} color="#007AFF" />
+                            <Ionicons name="mail-outline" size={16} color="#007AFF" />
                             <View style={[
                               styles.emailStatusDot,
                               playerReg?.emailSent ? styles.emailStatusDotSent : styles.emailStatusDotPending,
                             ]} />
                           </TouchableOpacity>
-                        )}
-                        
-
-                      </View>
-
-                      {canViewRegistration(currentUser) && (
-                        <TouchableOpacity
-                          style={styles.removePlayerButton}
-                          onPress={() => {
-                            handleRemovePlayer(player.id);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons name="close" size={12} color="#fff" />
-                        </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.removePlayerButtonInline}
+                            onPress={() => {
+                              handleRemovePlayer(player.id);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="close" size={12} color="#fff" />
+                          </TouchableOpacity>
+                        </View>
                       )}
                     </View>
                   );
@@ -3784,6 +3782,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 50,
     elevation: 50,
+  },
+  bottomActionsRow: {
+    position: 'absolute' as const,
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    zIndex: 50,
+    elevation: 50,
+  },
+  emailInvoiceButtonBottom: {
+    position: 'relative' as const,
+    width: 28,
+    height: 28,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 14,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  removePlayerButtonInline: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF3B30',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   emailInvoiceButton: {
     position: 'relative' as const,
