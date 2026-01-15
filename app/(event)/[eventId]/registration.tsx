@@ -1070,7 +1070,11 @@ export default function EventRegistrationScreen() {
       }, 0);
   }, [registrations, event?.entryFee]);
 
-  if (eventQuery.isLoading || registrationsQuery.isLoading) {
+  const isLoadingData = eventQuery.isLoading || 
+    registrationsQuery.isLoading || 
+    (!!eventQuery.data && !registrationsQuery.data && registrationsQuery.fetchStatus !== 'idle');
+
+  if (isLoadingData) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
