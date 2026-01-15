@@ -13,10 +13,11 @@ import {
   ActivityIndicator,
   Platform,
   Clipboard,
+  Share,
 } from 'react-native';
 import * as MailComposer from 'expo-mail-composer';
 import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
+
 
 import { Alert } from '@/utils/alertPolyfill';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -985,15 +986,15 @@ export default function EventRegistrationScreen() {
       if (Platform.OS === 'web') {
         Alert.alert('PDF Generated', 'PDF download started.');
       } else {
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'application/pdf',
+        await Share.share(
+          {
+            url: uri,
+            title: `${eventName} - Player List`,
+          },
+          {
             dialogTitle: `${eventName} - Player List`,
-          });
-        } else {
-          Alert.alert('Sharing Not Available', 'Cannot share on this device.');
-        }
+          }
+        );
       }
       
       setTextResultModalVisible(false);
@@ -1131,15 +1132,15 @@ export default function EventRegistrationScreen() {
       if (Platform.OS === 'web') {
         Alert.alert('PDF Generated', 'PDF download started.');
       } else {
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'application/pdf',
+        await Share.share(
+          {
+            url: uri,
+            title: `${eventName} - ${htmlViewerTitle}`,
+          },
+          {
             dialogTitle: `${eventName} - ${htmlViewerTitle}`,
-          });
-        } else {
-          Alert.alert('Sharing Not Available', 'Cannot share on this device.');
-        }
+          }
+        );
       }
       
       setHtmlViewerVisible(false);
