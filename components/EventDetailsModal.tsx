@@ -175,11 +175,15 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     <Modal visible={visible} animationType="slide" transparent={false}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={24} color="#fff" />
-          </TouchableOpacity>
+          <View style={{ width: 44 }} />
           <Text style={styles.headerTitle}>EVENT DETAILS</Text>
-          <View style={{ width: 40 }} />
+          <TouchableOpacity 
+            style={styles.closeButton} 
+            onPress={onClose}
+            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+          >
+            <Ionicons name="close" size={26} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.contentWrapper}>
@@ -408,7 +412,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+    minHeight: 60,
   },
   headerTitle: {
     fontSize: 16,
@@ -417,9 +423,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
