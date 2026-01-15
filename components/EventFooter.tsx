@@ -166,21 +166,48 @@ export function EventFooter({
   };
 
   const [isNavigating, setIsNavigating] = React.useState(false);
+  const navigationTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const navigateTo = (route: string) => {
-    if (isNavigating) return;
-    
-    setIsNavigating(true);
-    try {
-      if (route === 'home') {
-        router.push('/(tabs)/dashboard');
-      } else {
-        router.push(`/(event)/${eventId}/${route}` as any);
+  React.useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
       }
-    } finally {
-      setTimeout(() => setIsNavigating(false), 1000);
+    };
+  }, []);
+
+  const navigateTo = React.useCallback((route: string) => {
+    if (isNavigating) {
+      console.log('[EventFooter] Already navigating, ignoring tap');
+      return;
     }
-  };
+    
+    console.log('[EventFooter] Navigating to:', route);
+    setIsNavigating(true);
+    
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+    
+    requestAnimationFrame(() => {
+      try {
+        if (route === 'home') {
+          router.push('/(tabs)/dashboard');
+        } else if (route === 'registration') {
+          router.push(`/(event)/${eventId}/registration` as any);
+        } else {
+          router.push(`/(event)/${eventId}/${route}` as any);
+        }
+      } catch (error) {
+        console.error('[EventFooter] Navigation error:', error);
+      }
+      
+      navigationTimeoutRef.current = setTimeout(() => {
+        setIsNavigating(false);
+        console.log('[EventFooter] Navigation guard reset');
+      }, 500);
+    });
+  }, [isNavigating, eventId, router]);
 
   const isActive = (route: string) => {
     if (route === 'home') return false;
