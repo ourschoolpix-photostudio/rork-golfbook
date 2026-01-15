@@ -175,8 +175,6 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
     <Modal visible={visible} animationType="slide" transparent={false}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <View style={{ width: 44 }} />
-          <Text style={styles.headerTitle}>EVENT DETAILS</Text>
           <TouchableOpacity 
             style={styles.closeButton} 
             onPress={onClose}
@@ -184,6 +182,8 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           >
             <Ionicons name="close" size={26} color="#fff" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>EVENT DETAILS</Text>
+          <View style={{ width: 44 }} />
         </View>
 
         <View style={styles.contentWrapper}>
@@ -412,9 +412,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 20,
     paddingBottom: 16,
-    minHeight: 60,
+    minHeight: 70,
   },
   headerTitle: {
     fontSize: 16,
