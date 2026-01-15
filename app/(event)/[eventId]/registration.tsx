@@ -15,6 +15,8 @@ import {
   Clipboard,
 } from 'react-native';
 import * as MailComposer from 'expo-mail-composer';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 import { Alert } from '@/utils/alertPolyfill';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -951,6 +953,57 @@ export default function EventRegistrationScreen() {
     setTextResultContent('');
   };
 
+  const handleSaveTextAsPdf = async () => {
+    const eventName = event?.name || 'Event';
+    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; }
+            h1 { color: #1B5E20; font-size: 24px; margin-bottom: 4px; }
+            .date { color: #666; font-size: 14px; margin-bottom: 20px; }
+            .divider { border-top: 1px solid #ccc; margin: 16px 0; }
+            pre { font-family: monospace; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+          </style>
+        </head>
+        <body>
+          <h1>${eventName}</h1>
+          <div class="date">${eventDate}</div>
+          <div class="divider"></div>
+          <pre>${textResultContent}</pre>
+        </body>
+      </html>
+    `;
+    
+    try {
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      
+      if (Platform.OS === 'web') {
+        Alert.alert('PDF Generated', 'PDF download started.');
+      } else {
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: `${eventName} - Player List`,
+          });
+        } else {
+          Alert.alert('Sharing Not Available', 'Cannot share on this device.');
+        }
+      }
+      
+      setTextResultModalVisible(false);
+      setTextResultContent('');
+    } catch (error) {
+      console.error('[registration] Error generating PDF:', error);
+      Alert.alert('Error', 'Failed to generate PDF');
+    }
+  };
+
   const handleEmailTextList = async () => {
     const isAvailable = await MailComposer.isAvailableAsync();
     if (!isAvailable) {
@@ -959,18 +1012,141 @@ export default function EventRegistrationScreen() {
     }
     
     const eventName = event?.name || 'Event';
+    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
     const subject = `${eventName} - Player List`;
+    
+    const htmlBody = `
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <h2 style="color: #1B5E20; margin-bottom: 4px;">${eventName}</h2>
+  <p style="color: #666; margin-top: 0;">${eventDate}</p>
+  <hr style="border: none; border-top: 1px solid #ccc;">
+  <pre style="font-family: monospace; font-size: 14px; line-height: 1.6;">${textResultContent}</pre>
+</body>
+</html>
+    `;
     
     try {
       await MailComposer.composeAsync({
         subject,
-        body: textResultContent,
+        body: htmlBody,
+        isHtml: true,
       });
       setTextResultModalVisible(false);
       setTextResultContent('');
     } catch (error) {
       console.error('[registration] Error sending email:', error);
       Alert.alert('Error', 'Failed to open email composer');
+    }
+  };
+
+  const handleSaveHtmlAsPdf = async () => {
+    const eventName = event?.name || 'Event';
+    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
+    
+    let data: any = {};
+    try {
+      data = JSON.parse(htmlViewerContent);
+    } catch (e) {
+      console.error('Failed to parse HTML content:', e);
+    }
+    
+    let playersHtml = '';
+    
+    if (data.type === 'checkin') {
+      playersHtml += `
+        <div style="margin-bottom: 20px;">
+          <div style="background: #E8F5E9; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-bottom: 12px;">
+            <span style="color: #1B5E20; font-weight: 700;">✓ PAID (${data.paid?.length || 0})</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${data.paid?.map((player: any) => `
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px 4px; width: 30px; color: #999;">${player.index}.</td>
+                <td style="padding: 8px 4px;">${player.name}</td>
+                ${data.includeHandicaps ? `<td style="padding: 8px 4px; text-align: right; color: #1976D2;">${player.handicap}</td>` : ''}
+                <td style="padding: 8px 4px; width: 30px; text-align: center;">☐</td>
+              </tr>
+            `).join('') || ''}
+          </table>
+        </div>
+        <div>
+          <div style="background: #FFEBEE; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-bottom: 12px;">
+            <span style="color: #C62828; font-weight: 700;">✗ UNPAID (${data.unpaid?.length || 0})</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${data.unpaid?.map((player: any) => `
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px 4px; width: 30px; color: #999;">${player.index}.</td>
+                <td style="padding: 8px 4px;">${player.name}</td>
+                ${data.includeHandicaps ? `<td style="padding: 8px 4px; text-align: right; color: #1976D2;">${player.handicap}</td>` : ''}
+                <td style="padding: 8px 4px; width: 30px; text-align: center;">☐</td>
+              </tr>
+            `).join('') || ''}
+          </table>
+        </div>
+        <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
+          Total: ${(data.paid?.length || 0) + (data.unpaid?.length || 0)} players
+        </div>
+      `;
+    } else if (data.type === 'weelist') {
+      playersHtml += `
+        <div style="display: flex; flex-wrap: wrap;">
+          ${data.players?.map((player: any) => `
+            <div style="width: 50%; padding: 4px; box-sizing: border-box;">
+              <span style="font-size: 12px;">${player.index}. ${player.name}${data.includeHandicaps ? ` (${player.handicap})` : ''}</span>
+            </div>
+          `).join('') || ''}
+        </div>
+        <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
+          Total: ${data.players?.length || 0} players
+        </div>
+      `;
+    }
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; }
+            h1 { color: #1B5E20; font-size: 24px; margin-bottom: 4px; text-align: center; }
+            .date { color: #666; font-size: 14px; margin-bottom: 20px; text-align: center; }
+            .divider { border-top: 1px solid #ccc; margin: 16px 0; }
+          </style>
+        </head>
+        <body>
+          <h1>${eventName}</h1>
+          <div class="date">${eventDate}</div>
+          <div class="divider"></div>
+          ${playersHtml}
+        </body>
+      </html>
+    `;
+    
+    try {
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      
+      if (Platform.OS === 'web') {
+        Alert.alert('PDF Generated', 'PDF download started.');
+      } else {
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: `${eventName} - ${htmlViewerTitle}`,
+          });
+        } else {
+          Alert.alert('Sharing Not Available', 'Cannot share on this device.');
+        }
+      }
+      
+      setHtmlViewerVisible(false);
+      setHtmlViewerContent('');
+    } catch (error) {
+      console.error('[registration] Error generating PDF:', error);
+      Alert.alert('Error', 'Failed to generate PDF');
     }
   };
 
@@ -992,34 +1168,73 @@ export default function EventRegistrationScreen() {
       console.error('Failed to parse HTML content:', e);
     }
     
-    let emailBody = `${eventName}\n${eventDate}\n${'─'.repeat(30)}\n\n`;
+    let playersHtml = '';
     
     if (data.type === 'checkin') {
-      emailBody += `PAID (${data.paid?.length || 0})\n`;
-      data.paid?.forEach((player: any) => {
-        const handicapText = data.includeHandicaps ? ` (${player.handicap})` : '';
-        emailBody += `${player.index}. ${player.name}${handicapText}\n`;
-      });
-      
-      emailBody += `\nUNPAID (${data.unpaid?.length || 0})\n`;
-      data.unpaid?.forEach((player: any) => {
-        const handicapText = data.includeHandicaps ? ` (${player.handicap})` : '';
-        emailBody += `${player.index}. ${player.name}${handicapText}\n`;
-      });
-      
-      emailBody += `\n${'─'.repeat(30)}\nTotal: ${(data.paid?.length || 0) + (data.unpaid?.length || 0)} players`;
+      playersHtml += `
+        <div style="margin-bottom: 20px;">
+          <div style="background: #E8F5E9; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-bottom: 12px;">
+            <span style="color: #1B5E20; font-weight: 700;">✓ PAID (${data.paid?.length || 0})</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${data.paid?.map((player: any) => `
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px 4px; width: 30px; color: #999;">${player.index}.</td>
+                <td style="padding: 8px 4px;">${player.name}</td>
+                ${data.includeHandicaps ? `<td style="padding: 8px 4px; text-align: right; color: #1976D2;">${player.handicap}</td>` : ''}
+              </tr>
+            `).join('') || ''}
+          </table>
+        </div>
+        <div>
+          <div style="background: #FFEBEE; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-bottom: 12px;">
+            <span style="color: #C62828; font-weight: 700;">✗ UNPAID (${data.unpaid?.length || 0})</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${data.unpaid?.map((player: any) => `
+              <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 8px 4px; width: 30px; color: #999;">${player.index}.</td>
+                <td style="padding: 8px 4px;">${player.name}</td>
+                ${data.includeHandicaps ? `<td style="padding: 8px 4px; text-align: right; color: #1976D2;">${player.handicap}</td>` : ''}
+              </tr>
+            `).join('') || ''}
+          </table>
+        </div>
+        <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
+          Total: ${(data.paid?.length || 0) + (data.unpaid?.length || 0)} players
+        </div>
+      `;
     } else if (data.type === 'weelist') {
-      data.players?.forEach((player: any) => {
-        const handicapText = data.includeHandicaps ? ` (${player.handicap})` : '';
-        emailBody += `${player.index}. ${player.name}${handicapText}\n`;
-      });
-      emailBody += `\n${'─'.repeat(30)}\nTotal: ${data.players?.length || 0} players`;
+      playersHtml += `
+        <div style="display: flex; flex-wrap: wrap;">
+          ${data.players?.map((player: any) => `
+            <div style="width: 50%; padding: 4px; box-sizing: border-box;">
+              <span style="font-size: 12px;">${player.index}. ${player.name}${data.includeHandicaps ? ` (${player.handicap})` : ''}</span>
+            </div>
+          `).join('') || ''}
+        </div>
+        <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
+          Total: ${data.players?.length || 0} players
+        </div>
+      `;
     }
+    
+    const htmlBody = `
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <h2 style="color: #1B5E20; margin-bottom: 4px; text-align: center;">${eventName}</h2>
+  <p style="color: #666; margin-top: 0; text-align: center;">${eventDate}</p>
+  <hr style="border: none; border-top: 1px solid #ccc;">
+  ${playersHtml}
+</body>
+</html>
+    `;
     
     try {
       await MailComposer.composeAsync({
         subject,
-        body: emailBody,
+        body: htmlBody,
+        isHtml: true,
       });
       setHtmlViewerVisible(false);
       setHtmlViewerContent('');
@@ -2273,11 +2488,18 @@ export default function EventRegistrationScreen() {
                   <Text style={styles.copyButtonText}>Copy</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleSaveTextAsPdf}
+                >
+                  <Ionicons name="share-outline" size={20} color="#fff" />
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={styles.emailButton}
                   onPress={handleEmailTextList}
                 >
                   <Ionicons name="mail-outline" size={20} color="#fff" />
-                  <Text style={styles.emailButtonText}>Save & Email</Text>
+                  <Text style={styles.emailButtonText}>Email</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -2384,13 +2606,22 @@ export default function EventRegistrationScreen() {
               </ScrollView>
               
               <View style={styles.htmlViewerFooter}>
-                <TouchableOpacity
-                  style={styles.emailButton}
-                  onPress={handleEmailHtmlList}
-                >
-                  <Ionicons name="mail-outline" size={20} color="#fff" />
-                  <Text style={styles.emailButtonText}>Save & Email</Text>
-                </TouchableOpacity>
+                <View style={styles.footerButtonsRow}>
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={handleSaveHtmlAsPdf}
+                  >
+                    <Ionicons name="share-outline" size={20} color="#fff" />
+                    <Text style={styles.saveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.emailButton}
+                    onPress={handleEmailHtmlList}
+                  >
+                    <Ionicons name="mail-outline" size={20} color="#fff" />
+                    <Text style={styles.emailButtonText}>Email</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
@@ -3699,6 +3930,22 @@ const styles = StyleSheet.create({
   footerButtonsRow: {
     flexDirection: 'row' as const,
     gap: 12,
+  },
+  saveButton: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center',
+    backgroundColor: '#FF9500',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
   },
   emailButton: {
     flex: 1,
