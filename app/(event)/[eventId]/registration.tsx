@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -239,87 +239,109 @@ export default function EventRegistrationScreen() {
     }, [eventId])
   );
 
-  useEffect(() => {
-    if (eventQuery.data) {
-      const foundEvent = eventQuery.data;
-      setEvent(foundEvent);
-      
-      if (foundEvent.type === 'social') {
-        setActiveSort('abc');
-      }
-      
-      const loadRegs = async () => {
-        const regs = registrationsQuery.data || [];
+  const isProcessingRef = useRef(false);
+  const lastProcessedKeyRef = useRef<string>('');
+
+  const processRegistrations = useCallback((regs: any[], membersData: Member[]) => {
+    const registered: Member[] = [];
+    const regMap: Record<string, any> = {};
+    
+    for (const reg of regs) {
+      if (reg.isCustomGuest) {
+        const customGuestMember: Member = {
+          id: reg.id,
+          name: reg.customGuestName || 'Unknown Guest',
+          handicap: 0,
+          membershipType: 'guest' as const,
+          pin: '',
+          isAdmin: false,
+          ghin: undefined,
+          email: undefined,
+          phone: undefined,
+          address: undefined,
+          rolexPoints: 0,
+          profilePhotoUrl: undefined,
+          createdAt: new Date().toISOString(),
+        };
+        registered.push(customGuestMember);
         
-        await registrationCache.cacheRegistrations(foundEvent.id, regs);
-        
-        const registered: Member[] = [];
-        const regMap: Record<string, any> = {};
-        
-        regs.forEach(reg => {
-          if (reg.isCustomGuest) {
-            const customGuestMember: Member = {
-              id: reg.id,
-              name: reg.customGuestName || 'Unknown Guest',
-              handicap: 0,
-              membershipType: 'guest' as const,
-              pin: '',
-              isAdmin: false,
-              ghin: undefined,
-              email: undefined,
-              phone: undefined,
-              address: undefined,
-              rolexPoints: 0,
-              profilePhotoUrl: undefined,
-              createdAt: new Date().toISOString(),
-            };
-            registered.push(customGuestMember);
-            
-            regMap[customGuestMember.name] = {
-              id: reg.id,
-              eventId: reg.eventId,
-              playerName: customGuestMember.name,
-              playerPhone: reg.playerPhone,
-              paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
-              paymentMethod: 'zelle',
-              adjustedHandicap: reg.adjustedHandicap,
-              numberOfGuests: reg.numberOfGuests || 0,
-              guestNames: reg.guestNames || null,
-              isSponsor: reg.isSponsor || false,
-              isCustomGuest: true,
-              emailSent: reg.emailSent || false,
-            };
-          } else if (reg.memberId) {
-            const member = allMembers.find(m => m.id === reg.memberId);
-            if (member) {
-              registered.push(member);
-              regMap[member.name] = {
-                id: reg.id,
-                eventId: reg.eventId,
-                playerName: member.name,
-                playerPhone: reg.playerPhone,
-                paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
-                paymentMethod: 'zelle',
-                adjustedHandicap: reg.adjustedHandicap,
-                numberOfGuests: reg.numberOfGuests || 0,
-                guestNames: reg.guestNames || null,
-                isSponsor: reg.isSponsor || false,
-                isCustomGuest: false,
-                emailSent: reg.emailSent || false,
-              };
-            }
-          }
-        });
-        
-        setSelectedPlayers(registered);
-        setRegistrations(regMap);
-      };
-      
-      if (registrationsQuery.data) {
-        loadRegs();
+        regMap[customGuestMember.name] = {
+          id: reg.id,
+          eventId: reg.eventId,
+          playerName: customGuestMember.name,
+          playerPhone: reg.playerPhone,
+          paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
+          paymentMethod: 'zelle',
+          adjustedHandicap: reg.adjustedHandicap,
+          numberOfGuests: reg.numberOfGuests || 0,
+          guestNames: reg.guestNames || null,
+          isSponsor: reg.isSponsor || false,
+          isCustomGuest: true,
+          emailSent: reg.emailSent || false,
+        };
+      } else if (reg.memberId) {
+        const member = membersData.find(m => m.id === reg.memberId);
+        if (member) {
+          registered.push(member);
+          regMap[member.name] = {
+            id: reg.id,
+            eventId: reg.eventId,
+            playerName: member.name,
+            playerPhone: reg.playerPhone,
+            paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
+            paymentMethod: 'zelle',
+            adjustedHandicap: reg.adjustedHandicap,
+            numberOfGuests: reg.numberOfGuests || 0,
+            guestNames: reg.guestNames || null,
+            isSponsor: reg.isSponsor || false,
+            isCustomGuest: false,
+            emailSent: reg.emailSent || false,
+          };
+        }
       }
     }
-  }, [eventQuery.data, allMembers, registrationsQuery.data]);
+    
+    return { registered, regMap };
+  }, []);
+
+  useEffect(() => {
+    if (!eventQuery.data || isProcessingRef.current) {
+      return;
+    }
+    
+    const foundEvent = eventQuery.data;
+    const regs = registrationsQuery.data || [];
+    
+    const dataKey = `${foundEvent.id}-${regs.length}-${regs.map(r => r.id).join(',')}`;
+    if (dataKey === lastProcessedKeyRef.current) {
+      return;
+    }
+    
+    isProcessingRef.current = true;
+    lastProcessedKeyRef.current = dataKey;
+    
+    console.log('[registration] Processing data, regs count:', regs.length);
+    
+    setEvent(foundEvent);
+    
+    if (foundEvent.type === 'social') {
+      setActiveSort('abc');
+    }
+    
+    if (registrationsQuery.data) {
+      registrationCache.cacheRegistrations(foundEvent.id, regs).catch(err => {
+        console.error('[registration] Cache error:', err);
+      });
+      
+      const { registered, regMap } = processRegistrations(regs, allMembers);
+      setSelectedPlayers(registered);
+      setRegistrations(regMap);
+    }
+    
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 100);
+  }, [eventQuery.data, registrationsQuery.data, allMembers, processRegistrations]);
 
   useEffect(() => {
     setMembers(allMembers);
