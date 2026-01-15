@@ -1342,7 +1342,7 @@ export default function EventRegistrationScreen() {
       }).join('');
       
       playersHtml = `
-        <div style="display: flex; flex-direction: column;">
+        <div>
           ${playerItems}
         </div>
         <div style="margin-top: 16px; padding-top: 8px; border-top: 2px solid #1B5E20; text-align: center; color: #666; font-size: 14px; font-weight: 600;">
