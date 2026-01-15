@@ -14,8 +14,7 @@ import {
   Platform,
   Clipboard,
 } from 'react-native';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
+
 import { Alert } from '@/utils/alertPolyfill';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -94,6 +93,9 @@ export default function EventRegistrationScreen() {
   const [textResultModalVisible, setTextResultModalVisible] = useState(false);
   const [textResultContent, setTextResultContent] = useState('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [htmlViewerVisible, setHtmlViewerVisible] = useState(false);
+  const [htmlViewerContent, setHtmlViewerContent] = useState('');
+  const [htmlViewerTitle, setHtmlViewerTitle] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -911,67 +913,21 @@ export default function EventRegistrationScreen() {
 
     try {
       if (selectedPdfOption === 'checkin') {
-        console.log('[registration] Generating Check In PDF...');
-        const checkInHtml = generateCheckInPdf(paidPlayers, unpaidPlayers, includeHandicaps);
+        console.log('[registration] Generating Check In List...');
+        const checkInHtml = generateCheckInHtml(paidPlayers, unpaidPlayers, includeHandicaps);
         console.log('[registration] HTML generated, length:', checkInHtml.length);
-        
-        if (Platform.OS === 'web') {
-          console.log('[registration] Web platform - using printAsync');
-          await Print.printAsync({ html: checkInHtml });
-        } else {
-          console.log('[registration] Native platform - generating PDF file');
-          const { uri } = await Print.printToFileAsync({ 
-            html: checkInHtml,
-            base64: false,
-          });
-          console.log('[registration] PDF file created at:', uri);
-          
-          const isAvailable = await Sharing.isAvailableAsync();
-          console.log('[registration] Sharing available:', isAvailable);
-          
-          if (isAvailable) {
-            const shareOptions = Platform.OS === 'ios' 
-              ? { UTI: 'com.adobe.pdf' }
-              : { mimeType: 'application/pdf', dialogTitle: 'Check In List' };
-            console.log('[registration] Sharing with options:', shareOptions);
-            await Sharing.shareAsync(uri, shareOptions);
-            console.log('[registration] Share completed');
-          } else {
-            Alert.alert('PDF Generated', 'PDF was created but sharing is not available on this device.');
-          }
-        }
+        setHtmlViewerTitle('Check In List');
+        setHtmlViewerContent(checkInHtml);
+        setHtmlViewerVisible(true);
       } else if (selectedPdfOption === 'weelist') {
-        console.log('[registration] Generating Wee List PDF...');
-        const weeListHtml = generateWeeListPdf(sortedPlayers, includeHandicaps);
+        console.log('[registration] Generating Wee List...');
+        const weeListHtml = generateWeeListHtml(sortedPlayers, includeHandicaps);
         console.log('[registration] HTML generated, length:', weeListHtml.length);
-        
-        if (Platform.OS === 'web') {
-          console.log('[registration] Web platform - using printAsync');
-          await Print.printAsync({ html: weeListHtml });
-        } else {
-          console.log('[registration] Native platform - generating PDF file');
-          const { uri } = await Print.printToFileAsync({ 
-            html: weeListHtml,
-            base64: false,
-          });
-          console.log('[registration] PDF file created at:', uri);
-          
-          const isAvailable = await Sharing.isAvailableAsync();
-          console.log('[registration] Sharing available:', isAvailable);
-          
-          if (isAvailable) {
-            const shareOptions = Platform.OS === 'ios' 
-              ? { UTI: 'com.adobe.pdf' }
-              : { mimeType: 'application/pdf', dialogTitle: 'Wee List' };
-            console.log('[registration] Sharing with options:', shareOptions);
-            await Sharing.shareAsync(uri, shareOptions);
-            console.log('[registration] Share completed');
-          } else {
-            Alert.alert('PDF Generated', 'PDF was created but sharing is not available on this device.');
-          }
-        }
+        setHtmlViewerTitle('Wee List');
+        setHtmlViewerContent(weeListHtml);
+        setHtmlViewerVisible(true);
       } else {
-        console.error('[registration] Unknown PDF option:', selectedPdfOption);
+        console.error('[registration] Unknown option:', selectedPdfOption);
         Alert.alert('Error', 'Unknown list type selected');
       }
       
@@ -994,116 +950,35 @@ export default function EventRegistrationScreen() {
     setTextResultContent('');
   };
 
-  const generateCheckInPdf = (paidPlayers: Member[], unpaidPlayers: Member[], includeHandicaps: boolean): string => {
-    const eventName = event?.name || 'Event';
-    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
-    
-    const generatePlayerRow = (player: Member, index: number) => {
-      const playerReg = registrations[player.name];
-      const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
-      return `
-        <tr>
-          <td style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0; width: 30px;">${index + 1}</td>
-          <td style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0;">${player.name}</td>
-          ${includeHandicaps ? `<td style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0; text-align: center;">${handicap}</td>` : ''}
-          <td style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0; width: 60px;">☐</td>
-        </tr>
-      `;
+  const generateCheckInHtml = (paidPlayers: Member[], unpaidPlayers: Member[], includeHandicaps: boolean): string => {
+    const generatePlayerItems = (players: Member[]) => {
+      return players.map((player, index) => {
+        const playerReg = registrations[player.name];
+        const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
+        return { name: player.name, handicap, index: index + 1 };
+      });
     };
 
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          h1 { color: #1B5E20; font-size: 24px; margin-bottom: 4px; }
-          h2 { color: #666; font-size: 14px; margin-top: 0; font-weight: normal; }
-          h3 { color: #333; font-size: 16px; margin-top: 24px; margin-bottom: 8px; padding: 8px; background: #f0f0f0; }
-          table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          th { text-align: left; padding: 8px 12px; background: #1B5E20; color: white; }
-          .paid-section h3 { background: #E8F5E9; color: #1B5E20; }
-          .unpaid-section h3 { background: #FFEBEE; color: #C62828; }
-        </style>
-      </head>
-      <body>
-        <h1>${eventName}</h1>
-        <h2>${eventDate} - Check In List</h2>
-        
-        <div class="paid-section">
-          <h3>PAID (${paidPlayers.length})</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                ${includeHandicaps ? '<th style="text-align: center;">Hcp</th>' : ''}
-                <th>✓</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${paidPlayers.map((p, i) => generatePlayerRow(p, i)).join('')}
-            </tbody>
-          </table>
-        </div>
-        
-        <div class="unpaid-section">
-          <h3>UNPAID (${unpaidPlayers.length})</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                ${includeHandicaps ? '<th style="text-align: center;">Hcp</th>' : ''}
-                <th>✓</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${unpaidPlayers.map((p, i) => generatePlayerRow(p, i)).join('')}
-            </tbody>
-          </table>
-        </div>
-        
-        <p style="margin-top: 20px; font-size: 10px; color: #999;">Total: ${paidPlayers.length + unpaidPlayers.length} players</p>
-      </body>
-      </html>
-    `;
+    return JSON.stringify({
+      type: 'checkin',
+      paid: generatePlayerItems(paidPlayers),
+      unpaid: generatePlayerItems(unpaidPlayers),
+      includeHandicaps,
+    });
   };
 
-  const generateWeeListPdf = (players: Member[], includeHandicaps: boolean): string => {
-    const eventName = event?.name || 'Event';
-    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
-    
+  const generateWeeListHtml = (players: Member[], includeHandicaps: boolean): string => {
     const playerItems = players.map((player, index) => {
       const playerReg = registrations[player.name];
       const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
-      const handicapText = includeHandicaps ? ` (${handicap})` : '';
-      return `<span style="display: inline-block; width: 48%; font-size: 9px; padding: 2px 0;">${index + 1}. ${player.name}${handicapText}</span>`;
-    }).join('');
+      return { name: player.name, handicap, index: index + 1 };
+    });
 
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          @page { size: 8.5in 2in; margin: 0.25in; }
-          body { font-family: Arial, sans-serif; padding: 8px; font-size: 9px; }
-          h1 { font-size: 11px; margin: 0 0 4px 0; color: #1B5E20; }
-          h2 { font-size: 8px; margin: 0 0 6px 0; color: #666; font-weight: normal; }
-          .players { line-height: 1.4; }
-        </style>
-      </head>
-      <body>
-        <h1>${eventName}</h1>
-        <h2>${eventDate} - ${players.length} Players</h2>
-        <div class="players">
-          ${playerItems}
-        </div>
-      </body>
-      </html>
-    `;
+    return JSON.stringify({
+      type: 'weelist',
+      players: playerItems,
+      includeHandicaps,
+    });
   };
 
   const generateTextList = (players: Member[], includeHandicaps: boolean): string => {
@@ -2322,6 +2197,108 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
+      {htmlViewerVisible && (() => {
+        let data: any = {};
+        try {
+          data = JSON.parse(htmlViewerContent);
+        } catch (e) {
+          console.error('Failed to parse HTML content:', e);
+        }
+        
+        const eventName = event?.name || 'Event';
+        const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
+        
+        return (
+          <View style={styles.htmlViewerOverlay}>
+            <View style={styles.htmlViewerModal}>
+              <View style={styles.htmlViewerHeader}>
+                <Text style={styles.htmlViewerTitle}>{htmlViewerTitle}</Text>
+                <TouchableOpacity onPress={() => {
+                  setHtmlViewerVisible(false);
+                  setHtmlViewerContent('');
+                }}>
+                  <Ionicons name="close" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.htmlViewerContent} showsVerticalScrollIndicator={true}>
+                <View style={styles.htmlEventHeader}>
+                  <Text style={styles.htmlEventName}>{eventName}</Text>
+                  <Text style={styles.htmlEventDate}>{eventDate}</Text>
+                </View>
+                
+                {data.type === 'checkin' && (
+                  <>
+                    <View style={styles.htmlSectionHeader}>
+                      <View style={[styles.htmlSectionBadge, { backgroundColor: '#E8F5E9' }]}>
+                        <Ionicons name="checkmark-circle" size={16} color="#1B5E20" />
+                        <Text style={[styles.htmlSectionTitle, { color: '#1B5E20' }]}>PAID ({data.paid?.length || 0})</Text>
+                      </View>
+                    </View>
+                    {data.paid?.map((player: any) => (
+                      <View key={`paid-${player.index}`} style={styles.htmlPlayerRow}>
+                        <Text style={styles.htmlPlayerIndex}>{player.index}.</Text>
+                        <Text style={styles.htmlPlayerName}>{player.name}</Text>
+                        {data.includeHandicaps && (
+                          <View style={styles.htmlHandicapBadge}>
+                            <Text style={styles.htmlHandicapText}>{player.handicap}</Text>
+                          </View>
+                        )}
+                        <View style={styles.htmlCheckbox}>
+                          <Text style={styles.htmlCheckboxText}>☐</Text>
+                        </View>
+                      </View>
+                    ))}
+                    
+                    <View style={[styles.htmlSectionHeader, { marginTop: 16 }]}>
+                      <View style={[styles.htmlSectionBadge, { backgroundColor: '#FFEBEE' }]}>
+                        <Ionicons name="close-circle" size={16} color="#C62828" />
+                        <Text style={[styles.htmlSectionTitle, { color: '#C62828' }]}>UNPAID ({data.unpaid?.length || 0})</Text>
+                      </View>
+                    </View>
+                    {data.unpaid?.map((player: any) => (
+                      <View key={`unpaid-${player.index}`} style={styles.htmlPlayerRow}>
+                        <Text style={styles.htmlPlayerIndex}>{player.index}.</Text>
+                        <Text style={styles.htmlPlayerName}>{player.name}</Text>
+                        {data.includeHandicaps && (
+                          <View style={styles.htmlHandicapBadge}>
+                            <Text style={styles.htmlHandicapText}>{player.handicap}</Text>
+                          </View>
+                        )}
+                        <View style={styles.htmlCheckbox}>
+                          <Text style={styles.htmlCheckboxText}>☐</Text>
+                        </View>
+                      </View>
+                    ))}
+                    
+                    <View style={styles.htmlTotalRow}>
+                      <Text style={styles.htmlTotalText}>Total: {(data.paid?.length || 0) + (data.unpaid?.length || 0)} players</Text>
+                    </View>
+                  </>
+                )}
+                
+                {data.type === 'weelist' && (
+                  <>
+                    <View style={styles.htmlWeeListContainer}>
+                      {data.players?.map((player: any) => (
+                        <View key={`wee-${player.index}`} style={styles.htmlWeeListItem}>
+                          <Text style={styles.htmlWeeListText}>
+                            {player.index}. {player.name}{data.includeHandicaps ? ` (${player.handicap})` : ''}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                    <View style={styles.htmlTotalRow}>
+                      <Text style={styles.htmlTotalText}>Total: {data.players?.length || 0} players</Text>
+                    </View>
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        );
+      })()}
+
       {paymentMethodModalVisible && (
         <View style={styles.paymentModalOverlay}>
           <View style={styles.paymentModal}>
@@ -3474,5 +3451,150 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#fff',
+  },
+  htmlViewerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  htmlViewerModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '92%',
+    maxWidth: 500,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  htmlViewerHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#1B5E20',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  htmlViewerTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  htmlViewerContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  htmlEventHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  htmlEventName: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#1B5E20',
+    textAlign: 'center',
+  },
+  htmlEventDate: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  htmlSectionHeader: {
+    marginBottom: 8,
+  },
+  htmlSectionBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  htmlSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  htmlPlayerRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fafafa',
+    marginBottom: 2,
+    borderRadius: 6,
+  },
+  htmlPlayerIndex: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#999',
+    width: 28,
+  },
+  htmlPlayerName: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  htmlHandicapBadge: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  htmlHandicapText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#1976D2',
+  },
+  htmlCheckbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  htmlCheckboxText: {
+    fontSize: 16,
+    color: '#ccc',
+  },
+  htmlTotalRow: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    alignItems: 'center',
+  },
+  htmlTotalText: {
+    fontSize: 12,
+    color: '#999',
+  },
+  htmlWeeListContainer: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+  },
+  htmlWeeListItem: {
+    width: '50%',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  htmlWeeListText: {
+    fontSize: 12,
+    color: '#333',
   },
 });
