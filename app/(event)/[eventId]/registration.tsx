@@ -378,29 +378,30 @@ export default function EventRegistrationScreen() {
     }
   }, [eventDetailsModalVisible]);
 
-  useEffect(() => {
-    const loadCourseHandicapSetting = async () => {
-      if (eventId) {
-        try {
-          const key = `useCourseHandicap_${eventId}`;
-          const value = await AsyncStorage.getItem(key);
-          if (value !== null) {
-            const boolValue = value === 'true';
-            setUseCourseHandicap(prev => {
-              if (prev !== boolValue) {
-                console.log('[registration] 🔄 Course handicap setting changed:', boolValue);
-                return boolValue;
-              }
-              return prev;
-            });
-          }
-        } catch (error) {
-          console.error('[registration] Error loading course handicap setting:', error);
+  const loadCourseHandicapSetting = useCallback(async () => {
+    if (eventId) {
+      try {
+        const key = `useCourseHandicap_${eventId}`;
+        const value = await AsyncStorage.getItem(key);
+        if (value !== null) {
+          const boolValue = value === 'true';
+          setUseCourseHandicap(prev => {
+            if (prev !== boolValue) {
+              console.log('[registration] 🔄 Course handicap setting changed:', boolValue);
+              return boolValue;
+            }
+            return prev;
+          });
         }
+      } catch (error) {
+        console.error('[registration] Error loading course handicap setting:', error);
       }
-    };
-    loadCourseHandicapSetting();
+    }
   }, [eventId]);
+
+  useEffect(() => {
+    loadCourseHandicapSetting();
+  }, [loadCourseHandicapSetting]);
 
   const autoRegisterProcessedRef = React.useRef(false);
 
@@ -2488,6 +2489,7 @@ export default function EventRegistrationScreen() {
         }
         event={event}
         onClose={async () => {
+          await loadCourseHandicapSetting();
           await registrationsQuery.refetch();
           setEventPlayerModalVisible(false);
           setSelectedPlayerForEvent(null);
