@@ -4,8 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState, ErrorInfo } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StyleSheet, View, Platform, Text } from "react-native";
-import { Alert, setCustomAlertHandler } from "@/utils/alertPolyfill";
-import { CustomAlert } from "@/components/CustomAlert";
+import { Alert } from "@/utils/alertPolyfill";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { EventsProvider } from "@/contexts/EventsContext";
 import { GamesProvider } from "@/contexts/GamesContext";
@@ -56,21 +55,7 @@ function RootLayoutNav() {
   const [isHydrated, setIsHydrated] = useState(Platform.OS === 'web');
   const [timeoutReached, setTimeoutReached] = useState(false);
   const [splashHidden, setSplashHidden] = useState(false);
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertConfig, setAlertConfig] = useState<{
-    title: string;
-    message?: string;
-    buttons?: { text?: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }[];
-  }>({ title: '' });
 
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      setCustomAlertHandler((title, message, buttons) => {
-        setAlertConfig({ title, message, buttons });
-        setAlertVisible(true);
-      });
-    }
-  }, []);
 
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
@@ -297,15 +282,6 @@ function RootLayoutNav() {
         <Stack.Screen name="(game)/[gameId]" options={{ headerShown: false }} />
         <Stack.Screen name="paypal" options={{ headerShown: false }} />
       </Stack>
-      {Platform.OS !== 'web' && (
-        <CustomAlert
-          visible={alertVisible}
-          title={alertConfig.title}
-          message={alertConfig.message}
-          buttons={alertConfig.buttons}
-          onClose={() => setAlertVisible(false)}
-        />
-      )}
     </>
   );
 }

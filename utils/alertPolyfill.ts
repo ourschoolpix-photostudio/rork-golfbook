@@ -6,12 +6,6 @@ interface AlertButton {
   style?: 'default' | 'cancel' | 'destructive';
 }
 
-let customAlertHandler: ((title: string, message?: string, buttons?: AlertButton[]) => void) | null = null;
-
-export function setCustomAlertHandler(handler: (title: string, message?: string, buttons?: AlertButton[]) => void) {
-  customAlertHandler = handler;
-}
-
 export const Alert = {
   alert: (
     title: string,
@@ -42,9 +36,8 @@ export const Alert = {
         }
       }
     } else {
-      if (customAlertHandler) {
-        customAlertHandler(title, message, buttons);
-      }
+      // Always use native Alert on iOS/Android - it respects device light/dark mode
+      RNAlert.alert(title, message, buttons, options);
     }
   },
 
