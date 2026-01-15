@@ -1070,13 +1070,18 @@ interface InvoicePDFOptions {
 export async function generateInvoicePDF(
   options: InvoicePDFOptions,
   openEmail: boolean = false
-): Promise<string | void> {
+): Promise<any> {
   try {
     const { registration, member, event, orgInfo } = options;
     console.log('[pdfGenerator] 📧 Starting invoice generation...');
     console.log('[pdfGenerator] openEmail:', openEmail, 'member.email:', member.email);
 
-    if (openEmail && member.email && await MailComposer.isAvailableAsync()) {
+    console.log('[pdfGenerator] 🔍 Checking email composer availability...');
+    const isMailAvailable = await MailComposer.isAvailableAsync();
+    console.log('[pdfGenerator] MailComposer.isAvailableAsync():', isMailAvailable);
+    
+    if (openEmail && member.email && isMailAvailable) {
+      console.log('[pdfGenerator] ✅ All conditions met for email composer');
       const entryFee = Number(event.entryFee) || 0;
       const numberOfGuests = registration?.numberOfGuests || 0;
       const isSponsor = registration?.isSponsor || false;
@@ -1384,16 +1389,33 @@ export async function generateInvoicePDF(
 </body>
 </html>`;
 
-      await MailComposer.composeAsync({
+      console.log('[pdfGenerator] 📧 About to call MailComposer.composeAsync...');
+      console.log('[pdfGenerator] Recipients:', [member.email]);
+      console.log('[pdfGenerator] Subject:', `${event.name} - Registration Invoice`);
+      console.log('[pdfGenerator] Body length:', emailBody.length);
+      
+      const result = await MailComposer.composeAsync({
         recipients: [member.email],
         subject: `${event.name} - Registration Invoice`,
         body: emailBody,
         isHtml: true,
       });
       
-      console.log('[pdfGenerator] ✅ Email composer opened successfully');
+      console.log('[pdfGenerator] ✅ MailComposer result:', result);
+      console.log('[pdfGenerator] ✅ Email composer result status:', result.status);
+      
+      if (result.status === 'sent') {
+        console.log('[pdfGenerator] 📧 Email was sent!');
+      } else if (result.status === 'saved') {
+        console.log('[pdfGenerator] 💾 Email was saved as draft');
+      } else if (result.status === 'cancelled') {
+        console.log('[pdfGenerator] ❌ Email was cancelled by user');
+      }
+      
+      return result;
     } else {
       console.log('[pdfGenerator] 📄 Generating PDF for sharing (no email or openEmail=false)...');
+      console.log('[pdfGenerator] Reason: openEmail=', openEmail, 'member.email=', member.email, 'isMailAvailable=', isMailAvailable);
       
       const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
       
