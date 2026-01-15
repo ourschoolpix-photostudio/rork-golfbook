@@ -973,11 +973,11 @@ export default function EventRegistrationScreen() {
     `;
     
     try {
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      
       if (Platform.OS === 'web') {
-        Alert.alert('PDF Generated', 'PDF download started.');
+        console.log('[registration] Opening print dialog for web (text list)...');
+        await Print.printAsync({ html: htmlContent });
       } else {
+        const { uri } = await Print.printToFileAsync({ html: htmlContent });
         await Share.share(
           {
             url: uri,
@@ -993,7 +993,7 @@ export default function EventRegistrationScreen() {
       setTextResultContent('');
     } catch (error) {
       console.error('[registration] Error generating PDF:', error);
-      Alert.alert('Error', 'Failed to generate PDF');
+      Alert.alert('Error', 'Failed to generate PDF. Please try again.');
     }
   };
 
@@ -1119,11 +1119,11 @@ export default function EventRegistrationScreen() {
     `;
     
     try {
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      
       if (Platform.OS === 'web') {
-        Alert.alert('PDF Generated', 'PDF download started.');
+        console.log('[registration] Opening print dialog for web (HTML list)...');
+        await Print.printAsync({ html: htmlContent });
       } else {
+        const { uri } = await Print.printToFileAsync({ html: htmlContent });
         await Share.share(
           {
             url: uri,
@@ -1139,7 +1139,7 @@ export default function EventRegistrationScreen() {
       setHtmlViewerContent('');
     } catch (error) {
       console.error('[registration] Error generating PDF:', error);
-      Alert.alert('Error', 'Failed to generate PDF');
+      Alert.alert('Error', 'Failed to generate PDF. Please try again.');
     }
   };
 
@@ -1359,15 +1359,17 @@ export default function EventRegistrationScreen() {
       </html>
     `;
     
+    const listTitle = type === 'checkin' ? 'Check In List' : 'Wee List';
+    
     try {
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      console.log('[registration] PDF generated at:', uri);
-      
-      const listTitle = type === 'checkin' ? 'Check In List' : 'Wee List';
-      
       if (Platform.OS === 'web') {
-        Alert.alert('PDF Generated', 'PDF download started.');
+        console.log('[registration] Opening print dialog for web...');
+        await Print.printAsync({ html: htmlContent });
+        console.log('[registration] Print dialog opened successfully');
       } else {
+        const { uri } = await Print.printToFileAsync({ html: htmlContent });
+        console.log('[registration] PDF generated at:', uri);
+        
         await Share.share(
           {
             url: uri,
@@ -1377,12 +1379,11 @@ export default function EventRegistrationScreen() {
             dialogTitle: `${eventName} - ${listTitle}`,
           }
         );
+        console.log('[registration] Share sheet opened successfully');
       }
-      
-      console.log('[registration] Share sheet opened successfully');
     } catch (error) {
       console.error('[registration] Error generating PDF:', error);
-      Alert.alert('Error', 'Failed to generate PDF');
+      Alert.alert('Error', 'Failed to generate PDF. Please try again.');
     }
   };
 
