@@ -917,19 +917,11 @@ export default function EventRegistrationScreen() {
 
     try {
       if (selectedPdfOption === 'checkin') {
-        console.log('[registration] Generating Check In List...');
-        const checkInHtml = generateCheckInHtml(paidPlayers, unpaidPlayers, includeHandicaps);
-        console.log('[registration] HTML generated, length:', checkInHtml.length);
-        setHtmlViewerTitle('Check In List');
-        setHtmlViewerContent(checkInHtml);
-        setHtmlViewerVisible(true);
+        console.log('[registration] Generating Check In List PDF...');
+        await generateAndSharePdf('checkin', paidPlayers, unpaidPlayers, sortedPlayers, includeHandicaps);
       } else if (selectedPdfOption === 'weelist') {
-        console.log('[registration] Generating Wee List...');
-        const weeListHtml = generateWeeListHtml(sortedPlayers, includeHandicaps);
-        console.log('[registration] HTML generated, length:', weeListHtml.length);
-        setHtmlViewerTitle('Wee List');
-        setHtmlViewerContent(weeListHtml);
-        setHtmlViewerVisible(true);
+        console.log('[registration] Generating Wee List PDF...');
+        await generateAndSharePdf('weelist', paidPlayers, unpaidPlayers, sortedPlayers, includeHandicaps);
       } else {
         console.error('[registration] Unknown option:', selectedPdfOption);
         Alert.alert('Error', 'Unknown list type selected');
@@ -1274,6 +1266,124 @@ export default function EventRegistrationScreen() {
       players: playerItems,
       includeHandicaps,
     });
+  };
+
+  const generateAndSharePdf = async (
+    type: 'checkin' | 'weelist',
+    paidPlayers: Member[],
+    unpaidPlayers: Member[],
+    allPlayers: Member[],
+    includeHandicaps: boolean
+  ) => {
+    const eventName = event?.name || 'Event';
+    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
+    
+    let playersHtml = '';
+    
+    if (type === 'checkin') {
+      const generatePlayerRows = (players: Member[], startIndex: number = 1) => {
+        return players.map((player, index) => {
+          const playerReg = registrations[player.name];
+          const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
+          return `
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 4px; width: 30px; color: #999;">${startIndex + index}.</td>
+              <td style="padding: 8px 4px;">${player.name}</td>
+              ${includeHandicaps ? `<td style="padding: 8px 4px; text-align: right; color: #1976D2;">${handicap}</td>` : ''}
+              <td style="padding: 8px 4px; width: 30px; text-align: center;">☐</td>
+            </tr>
+          `;
+        }).join('');
+      };
+      
+      playersHtml = `
+        <div style="margin-bottom: 20px;">
+          <div style="background: #E8F5E9; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-bottom: 12px;">
+            <span style="color: #1B5E20; font-weight: 700;">✓ PAID (${paidPlayers.length})</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${generatePlayerRows(paidPlayers, 1)}
+          </table>
+        </div>
+        <div>
+          <div style="background: #FFEBEE; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-bottom: 12px;">
+            <span style="color: #C62828; font-weight: 700;">✗ UNPAID (${unpaidPlayers.length})</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${generatePlayerRows(unpaidPlayers, 1)}
+          </table>
+        </div>
+        <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
+          Total: ${paidPlayers.length + unpaidPlayers.length} players
+        </div>
+      `;
+    } else if (type === 'weelist') {
+      const playerItems = allPlayers.map((player, index) => {
+        const playerReg = registrations[player.name];
+        const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
+        return `
+          <div style="width: 50%; padding: 4px; box-sizing: border-box;">
+            <span style="font-size: 12px;">${index + 1}. ${player.name}${includeHandicaps ? ` (${handicap})` : ''}</span>
+          </div>
+        `;
+      }).join('');
+      
+      playersHtml = `
+        <div style="display: flex; flex-wrap: wrap;">
+          ${playerItems}
+        </div>
+        <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
+          Total: ${allPlayers.length} players
+        </div>
+      `;
+    }
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; }
+            h1 { color: #1B5E20; font-size: 24px; margin-bottom: 4px; text-align: center; }
+            .date { color: #666; font-size: 14px; margin-bottom: 20px; text-align: center; }
+            .divider { border-top: 1px solid #ccc; margin: 16px 0; }
+          </style>
+        </head>
+        <body>
+          <h1>${eventName}</h1>
+          <div class="date">${eventDate}</div>
+          <div class="divider"></div>
+          ${playersHtml}
+        </body>
+      </html>
+    `;
+    
+    try {
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      console.log('[registration] PDF generated at:', uri);
+      
+      const listTitle = type === 'checkin' ? 'Check In List' : 'Wee List';
+      
+      if (Platform.OS === 'web') {
+        Alert.alert('PDF Generated', 'PDF download started.');
+      } else {
+        await Share.share(
+          {
+            url: uri,
+            title: `${eventName} - ${listTitle}`,
+          },
+          {
+            dialogTitle: `${eventName} - ${listTitle}`,
+          }
+        );
+      }
+      
+      console.log('[registration] Share sheet opened successfully');
+    } catch (error) {
+      console.error('[registration] Error generating PDF:', error);
+      Alert.alert('Error', 'Failed to generate PDF');
+    }
   };
 
   const generateTextList = (players: Member[], includeHandicaps: boolean): string => {
