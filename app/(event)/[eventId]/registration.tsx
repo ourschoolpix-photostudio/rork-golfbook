@@ -117,14 +117,16 @@ export default function EventRegistrationScreen() {
     queryKey: ['registrations', eventId],
     queryFn: async () => {
       try {
+        console.log('[registration] 🔄 Fetching registrations for event:', eventId);
         const data = await supabaseService.registrations.getAll(eventId!);
+        console.log('[registration] ✅ Fetched registrations count:', data?.length || 0);
         return data;
       } catch (error) {
         console.error('[registration] ❌ Error fetching registrations:', error);
         throw error;
       }
     },
-    enabled: !!eventId && !!eventQuery.data,
+    enabled: !!eventId,
     retry: 2,
     staleTime: 0,
     gcTime: 1000 * 60 * 5,
@@ -299,7 +301,13 @@ export default function EventRegistrationScreen() {
   }, []);
 
   useEffect(() => {
-    if (!eventQuery.data || isProcessingRef.current) {
+    // Wait for both queries to complete before processing
+    if (!eventQuery.data || registrationsQuery.isLoading || isProcessingRef.current) {
+      console.log('[registration] Waiting for data:', {
+        hasEventData: !!eventQuery.data,
+        registrationsLoading: registrationsQuery.isLoading,
+        isProcessing: isProcessingRef.current,
+      });
       return;
     }
     
@@ -318,7 +326,7 @@ export default function EventRegistrationScreen() {
     isProcessingRef.current = true;
     lastProcessedKeyRef.current = dataKey;
     
-    console.log('[registration] Processing data, regs count:', regs.length);
+    console.log('[registration] ✅ Processing data, regs count:', regs.length);
     
     setEvent(foundEvent);
     
@@ -326,22 +334,22 @@ export default function EventRegistrationScreen() {
       setActiveSort('abc');
     }
     
-    if (registrationsQuery.data) {
-      registrationCache.cacheRegistrations(foundEvent.id, regs).catch(err => {
-        console.error('[registration] Cache error:', err);
-      });
-      
-      const { registered, regMap } = processRegistrations(regs, allMembers);
-      setSelectedPlayers(registered);
-      setRegistrations(regMap);
-    }
+    // Always process registrations (even if empty array)
+    registrationCache.cacheRegistrations(foundEvent.id, regs).catch(err => {
+      console.error('[registration] Cache error:', err);
+    });
+    
+    const { registered, regMap } = processRegistrations(regs, allMembers);
+    console.log('[registration] ✅ Processed players count:', registered.length);
+    setSelectedPlayers(registered);
+    setRegistrations(regMap);
     
     setTimeout(() => {
       if (isMountedRef.current) {
         isProcessingRef.current = false;
       }
     }, 100);
-  }, [eventQuery.data, registrationsQuery.data, allMembers, processRegistrations]);
+  }, [eventQuery.data, registrationsQuery.data, registrationsQuery.isLoading, allMembers, processRegistrations]);
 
   useEffect(() => {
     setMembers(allMembers);
