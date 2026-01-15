@@ -9,14 +9,12 @@ import {
   Image,
   Alert,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,17 +24,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatDateForDisplay } from '@/utils/dateUtils';
-import { registrationService } from '@/utils/registrationService';
+
 import { registrationCache } from '@/utils/registrationCache';
 import { generateRegistrationPDF, generateRegistrationText, generateCheckInPDF, generateInvoicePDF } from '@/utils/pdfGenerator';
 import * as Clipboard from 'expo-clipboard';
-import { Member, User, Event } from '@/types';
+import { Member, Event } from '@/types';
 import { EventPlayerModal } from '@/components/EventPlayerModal';
 import { ZelleInvoiceModal } from '@/components/ZelleInvoiceModal';
 import { PayPalInvoiceModal } from '@/components/PayPalInvoiceModal';
 import { MembershipRenewalModal } from '@/components/MembershipRenewalModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
-import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
+import { EventStatus } from '@/components/EventStatusButton';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import { EventFooter } from '@/components/EventFooter';
 import {
@@ -47,7 +45,6 @@ import {
 } from '@/utils/handicapHelper';
 import {
   canViewRegistration,
-  canModifyOnlineCourseHandicap,
   canStartEvent,
   canRemoveAllPlayers,
   canTogglePaymentStatus,
@@ -233,13 +230,7 @@ export default function EventRegistrationScreen() {
     }
   };
 
-  useFocusEffect(
-    React.useCallback(() => {
-      if (isMountedRef.current && !eventQuery.isFetching) {
-        eventQuery.refetch();
-      }
-    }, [eventId])
-  );
+
 
   const isProcessingRef = useRef(false);
   const lastProcessedKeyRef = useRef<string>('');
