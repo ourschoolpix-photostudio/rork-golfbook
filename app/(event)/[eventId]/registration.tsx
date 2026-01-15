@@ -13,10 +13,10 @@ import {
   ActivityIndicator,
   Platform,
   Clipboard,
-  Share,
 } from 'react-native';
 import * as MailComposer from 'expo-mail-composer';
 import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 
 import { Alert } from '@/utils/alertPolyfill';
@@ -978,15 +978,15 @@ export default function EventRegistrationScreen() {
         await Print.printAsync({ html: htmlContent });
       } else {
         const { uri } = await Print.printToFileAsync({ html: htmlContent });
-        await Share.share(
-          {
-            url: uri,
-            title: `${eventName} - Player List`,
-          },
-          {
+        console.log('[registration] PDF generated at:', uri);
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
             dialogTitle: `${eventName} - Player List`,
-          }
-        );
+          });
+        } else {
+          Alert.alert('Sharing not available', 'Sharing is not available on this device.');
+        }
       }
       
       setTextResultModalVisible(false);
@@ -1124,15 +1124,15 @@ export default function EventRegistrationScreen() {
         await Print.printAsync({ html: htmlContent });
       } else {
         const { uri } = await Print.printToFileAsync({ html: htmlContent });
-        await Share.share(
-          {
-            url: uri,
-            title: `${eventName} - ${htmlViewerTitle}`,
-          },
-          {
+        console.log('[registration] PDF generated at:', uri);
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
             dialogTitle: `${eventName} - ${htmlViewerTitle}`,
-          }
-        );
+          });
+        } else {
+          Alert.alert('Sharing not available', 'Sharing is not available on this device.');
+        }
       }
       
       setHtmlViewerVisible(false);
@@ -1370,16 +1370,15 @@ export default function EventRegistrationScreen() {
         const { uri } = await Print.printToFileAsync({ html: htmlContent });
         console.log('[registration] PDF generated at:', uri);
         
-        await Share.share(
-          {
-            url: uri,
-            title: `${eventName} - ${listTitle}`,
-          },
-          {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
             dialogTitle: `${eventName} - ${listTitle}`,
-          }
-        );
-        console.log('[registration] Share sheet opened successfully');
+          });
+          console.log('[registration] Share sheet opened successfully');
+        } else {
+          Alert.alert('Sharing not available', 'Sharing is not available on this device.');
+        }
       }
     } catch (error) {
       console.error('[registration] Error generating PDF:', error);
