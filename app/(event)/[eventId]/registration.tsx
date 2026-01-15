@@ -2286,6 +2286,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
     paddingVertical: 14,
+    paddingTop: 12,
     position: 'relative',
   },
   headerTitle: {

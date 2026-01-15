@@ -633,6 +633,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
     paddingVertical: 6,
+    paddingTop: 12,
   },
   titleText: {
     fontSize: 18,
