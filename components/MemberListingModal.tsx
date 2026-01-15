@@ -438,8 +438,11 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
                     <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #1B5E20;">
                       Total: ${filteredMembers.length} Member${filteredMembers.length !== 1 ? 's' : ''}
                     </p>
-                    <p style="margin: 0; font-size: 12px; color: #999999;">
-                      This list was generated from the VGA Golf App
+                    <p style="margin: 0; font-size: 14px; color: #666666;">
+                      Thank you for your registration!
+                    </p>
+                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #888888;">
+                      Generated from the VGA Golf App
                     </p>
                   </td>
                 </tr>
