@@ -1296,7 +1296,15 @@ function buildEmailHTMLBody(params: PlainTextEmailParams): string {
   const entryFee = Number(event.entryFee) || 0;
   const numberOfGuests = registration?.numberOfGuests || 0;
   const invoiceNumber = registration?.id?.substring(0, 8).toUpperCase() || 'N/A';
-  const invoiceDate = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+  const invoiceDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  
+  const getPaymentDeadline = () => {
+    if (!event.date) return 'N/A';
+    const eventDate = new Date(event.date);
+    const deadlineDate = new Date(eventDate);
+    deadlineDate.setDate(deadlineDate.getDate() - 10);
+    return deadlineDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
   
   let html = `
 <!DOCTYPE html>
@@ -1319,13 +1327,21 @@ function buildEmailHTMLBody(params: PlainTextEmailParams): string {
             </td>
           </tr>
           
+          <!-- Thank You Message -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%); padding: 25px 30px; text-align: center;">
+              <p style="margin: 0; font-size: 18px; color: #1B5E20; font-weight: 600;">🎉 Thank you for registering, ${member.name}!</p>
+              <p style="margin: 10px 0 0 0; font-size: 14px; color: #2E7D32;">We're excited to have you join us for <strong>${event.name}</strong></p>
+            </td>
+          </tr>
+          
           <!-- Invoice Info Bar -->
           <tr>
-            <td style="background-color: #E8F5E9; padding: 15px 30px; border-bottom: 1px solid #C8E6C9;">
+            <td style="background-color: #FAFAFA; padding: 15px 30px; border-bottom: 1px solid #E0E0E0;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="font-size: 13px; color: #1B5E20;"><strong>Invoice #:</strong> ${invoiceNumber}</td>
-                  <td align="right" style="font-size: 13px; color: #1B5E20;"><strong>Date:</strong> ${invoiceDate}</td>
+                  <td style="font-size: 13px; color: #666;"><strong>Invoice #:</strong> ${invoiceNumber}</td>
+                  <td align="right" style="font-size: 13px; color: #666;"><strong>Date:</strong> ${invoiceDate}</td>
                 </tr>
               </table>
             </td>
@@ -1337,7 +1353,7 @@ function buildEmailHTMLBody(params: PlainTextEmailParams): string {
 
   if (isSponsor) {
     html += `
-              <div style="background: linear-gradient(135deg, #FF9500 0%, #FFB300 100%); color: #ffffff; padding: 12px 24px; border-radius: 25px; display: inline-block; margin-bottom: 20px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">★ SPONSOR REGISTRATION ★</div>`;
+              <div style="background: linear-gradient(135deg, #FF9500 0%, #FFB300 100%); color: #ffffff; padding: 12px 24px; border-radius: 25px; display: inline-block; margin-bottom: 20px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">SPONSOR REGISTRATION</div>`;
   }
 
   html += `
@@ -1431,48 +1447,65 @@ function buildEmailHTMLBody(params: PlainTextEmailParams): string {
   if (!isPaid && (orgInfo?.zellePhone || orgInfo?.paypalClientId)) {
     html += `
               
-              <!-- Payment Instructions -->
-              <div style="margin-top: 25px; background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%); padding: 25px; border-radius: 10px; border: 2px solid #1976D2;">
-                <h3 style="color: #1565C0; margin: 0 0 15px 0; font-size: 16px; text-align: center;">💰 Payment Options</h3>`;
+              <!-- Payment Instructions Section -->
+              <div style="margin-top: 25px; background: #ffffff; border: 2px solid #1B5E20; border-radius: 12px; overflow: hidden;">
+                <div style="background: #1B5E20; padding: 15px; text-align: center;">
+                  <h3 style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 700;">💳 Payment Instructions</h3>
+                </div>
+                <div style="padding: 25px;">
+                  <p style="margin: 0 0 20px 0; font-size: 14px; color: #333; text-align: center;">Please complete your payment using one of the following methods:</p>`;
     
     if (orgInfo?.zellePhone) {
       html += `
-                <div style="background: #ffffff; border-radius: 8px; padding: 15px; margin-bottom: ${orgInfo?.paypalClientId ? '15px' : '0'};">
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td width="40" valign="top">
-                        <div style="background: #6D28D9; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700;">Z</div>
-                      </td>
-                      <td valign="top">
-                        <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: 700; color: #6D28D9;">Pay with Zelle</p>
-                        <p style="margin: 0; font-size: 13px; color: #666;">Send <strong>${total.toFixed(2)}</strong> to: <strong style="color: #333;">${formatPhoneNumber(orgInfo.zellePhone)}</strong></p>
-                        <p style="margin: 5px 0 0 0; font-size: 11px; color: #888;">✓ No transaction fees</p>
-                      </td>
-                    </tr>
-                  </table>
-                </div>`;
+                  <!-- Zelle Option -->
+                  <div style="background: linear-gradient(135deg, #F3E8FF 0%, #EDE9FE 100%); border: 2px solid #6D28D9; border-radius: 10px; padding: 20px; margin-bottom: ${orgInfo?.paypalClientId ? '20px' : '0'};">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="50" valign="top">
+                          <div style="background: #6D28D9; color: #ffffff; width: 40px; height: 40px; border-radius: 50%; text-align: center; line-height: 40px; font-weight: 700; font-size: 18px;">Z</div>
+                        </td>
+                        <td valign="top">
+                          <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #6D28D9;">Option 1: Pay with Zelle</p>
+                          <p style="margin: 0 0 5px 0; font-size: 14px; color: #333;">Send <strong style="color: #6D28D9; font-size: 16px;">${total.toFixed(2)}</strong> to:</p>
+                          <p style="margin: 0; background: #ffffff; padding: 12px 18px; border-radius: 8px; display: inline-block;">
+                            <strong style="color: #6D28D9; font-size: 18px; letter-spacing: 1px;">${formatPhoneNumber(orgInfo.zellePhone)}</strong>
+                          </p>
+                          <p style="margin: 10px 0 0 0; font-size: 12px; color: #7C3AED;">✓ No transaction fees • Instant transfer</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>`;
     }
     
     if (orgInfo?.paypalClientId) {
       const paypalLink = `https://www.paypal.com/paypalme/cgamembers/${total.toFixed(2)}`;
       html += `
-                <div style="background: #ffffff; border-radius: 8px; padding: 15px;">
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td width="40" valign="top">
-                        <div style="background: #003087; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700;">P</div>
-                      </td>
-                      <td valign="top">
-                        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #003087;">Pay with PayPal</p>
-                        <a href="${paypalLink}" style="display: inline-block; background: linear-gradient(135deg, #003087 0%, #009CDE 100%); color: #ffffff; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-size: 14px; font-weight: 700;">Pay ${total.toFixed(2)} with PayPal →</a>
-                        <p style="margin: 8px 0 0 0; font-size: 11px; color: #888;">Secure payment via PayPal</p>
-                      </td>
-                    </tr>
-                  </table>
-                </div>`;
+                  <!-- PayPal Option -->
+                  <div style="background: linear-gradient(135deg, #E8F4FC 0%, #DBEAFE 100%); border: 2px solid #0070BA; border-radius: 10px; padding: 20px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="50" valign="top">
+                          <div style="background: #0070BA; color: #ffffff; width: 40px; height: 40px; border-radius: 50%; text-align: center; line-height: 40px; font-weight: 700; font-size: 18px;">P</div>
+                        </td>
+                        <td valign="top">
+                          <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #0070BA;">Option 2: Pay with PayPal</p>
+                          <p style="margin: 0 0 12px 0; font-size: 14px; color: #333;">Click the button below to pay securely via PayPal:</p>
+                          <a href="${paypalLink}" style="display: inline-block; background: linear-gradient(135deg, #0070BA 0%, #003087 100%); color: #ffffff; padding: 14px 35px; border-radius: 25px; text-decoration: none; font-size: 16px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,112,186,0.3);">Pay ${total.toFixed(2)} with PayPal →</a>
+                          <p style="margin: 10px 0 0 0; font-size: 12px; color: #0070BA;">🔒 Secure payment via PayPal</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>`;
     }
     
     html += `
+                  
+                  <!-- Payment Deadline Notice -->
+                  <div style="margin-top: 20px; background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 15px; text-align: center;">
+                    <p style="margin: 0; font-size: 13px; color: #92400E;">⏰ <strong>Payment Deadline:</strong> ${getPaymentDeadline()}</p>
+                    <p style="margin: 8px 0 0 0; font-size: 12px; color: #B45309;">Your registration will be confirmed once payment is received.</p>
+                  </div>
+                </div>
               </div>`;
   }
 
