@@ -6,6 +6,12 @@ interface AlertButton {
   style?: 'default' | 'cancel' | 'destructive';
 }
 
+let customAlertHandler: ((title: string, message?: string, buttons?: AlertButton[]) => void) | null = null;
+
+export function setCustomAlertHandler(handler: (title: string, message?: string, buttons?: AlertButton[]) => void) {
+  customAlertHandler = handler;
+}
+
 export const Alert = {
   alert: (
     title: string,
@@ -36,7 +42,9 @@ export const Alert = {
         }
       }
     } else {
-      RNAlert.alert(title, message, buttons, options);
+      if (customAlertHandler) {
+        customAlertHandler(title, message, buttons);
+      }
     }
   },
 
