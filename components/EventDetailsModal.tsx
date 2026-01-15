@@ -7,8 +7,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  SafeAreaView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Event } from '@/types';
 import { useRouter } from 'expo-router';
@@ -32,6 +32,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   registeredPlayerIds = [],
 }) => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   
   if (!event) return null;
 
@@ -173,8 +174,8 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <TouchableOpacity 
             style={styles.closeButton} 
             onPress={onClose}
@@ -372,7 +373,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           <View style={styles.spacer} />
           </ScrollView>
 
-          <View style={styles.buttonFooter}>
+          <View style={[styles.buttonFooter, { paddingBottom: insets.bottom + 12 }]}>
             <TouchableOpacity 
               style={[styles.registerButton, isAlreadyRegistered && styles.registeredButton]}
               onPress={() => {
@@ -396,7 +397,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 };
@@ -412,9 +413,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingTop: 20,
     paddingBottom: 16,
-    minHeight: 70,
   },
   headerTitle: {
     fontSize: 16,
