@@ -342,13 +342,6 @@ export default function EventRegistrationScreen() {
             setUseCourseHandicap(prev => {
               if (prev !== boolValue) {
                 console.log('[registration] 🔄 Course handicap setting changed:', boolValue);
-                console.log('[registration] 📊 Current event slope ratings:', {
-                  day1SlopeRating: event?.day1SlopeRating,
-                  day2SlopeRating: event?.day2SlopeRating,
-                  day3SlopeRating: event?.day3SlopeRating,
-                  eventId: event?.id,
-                  eventName: event?.name,
-                });
                 return boolValue;
               }
               return prev;
@@ -360,10 +353,7 @@ export default function EventRegistrationScreen() {
       }
     };
     loadCourseHandicapSetting();
-    
-    const interval = setInterval(loadCourseHandicapSetting, 500);
-    return () => clearInterval(interval);
-  }, [eventId, event]);
+  }, [eventId]);
 
   const autoRegisterProcessedRef = React.useRef(false);
 
@@ -2295,7 +2285,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 14,
     position: 'relative',
   },
   headerTitle: {
