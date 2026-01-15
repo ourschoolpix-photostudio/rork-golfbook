@@ -14,6 +14,7 @@ import {
   Platform,
   Clipboard,
 } from 'react-native';
+import * as MailComposer from 'expo-mail-composer';
 
 import { Alert } from '@/utils/alertPolyfill';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -948,6 +949,84 @@ export default function EventRegistrationScreen() {
     Alert.alert('Copied', 'Player list copied to clipboard');
     setTextResultModalVisible(false);
     setTextResultContent('');
+  };
+
+  const handleEmailTextList = async () => {
+    const isAvailable = await MailComposer.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert('Email Not Available', 'Please configure an email account on your device.');
+      return;
+    }
+    
+    const eventName = event?.name || 'Event';
+    const subject = `${eventName} - Player List`;
+    
+    try {
+      await MailComposer.composeAsync({
+        subject,
+        body: textResultContent,
+      });
+      setTextResultModalVisible(false);
+      setTextResultContent('');
+    } catch (error) {
+      console.error('[registration] Error sending email:', error);
+      Alert.alert('Error', 'Failed to open email composer');
+    }
+  };
+
+  const handleEmailHtmlList = async () => {
+    const isAvailable = await MailComposer.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert('Email Not Available', 'Please configure an email account on your device.');
+      return;
+    }
+    
+    const eventName = event?.name || 'Event';
+    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
+    const subject = `${eventName} - ${htmlViewerTitle}`;
+    
+    let data: any = {};
+    try {
+      data = JSON.parse(htmlViewerContent);
+    } catch (e) {
+      console.error('Failed to parse HTML content:', e);
+    }
+    
+    let emailBody = `${eventName}\n${eventDate}\n${'─'.repeat(30)}\n\n`;
+    
+    if (data.type === 'checkin') {
+      emailBody += `PAID (${data.paid?.length || 0})\n`;
+      data.paid?.forEach((player: any) => {
+        const handicapText = data.includeHandicaps ? ` (${player.handicap})` : '';
+        emailBody += `${player.index}. ${player.name}${handicapText}\n`;
+      });
+      
+      emailBody += `\nUNPAID (${data.unpaid?.length || 0})\n`;
+      data.unpaid?.forEach((player: any) => {
+        const handicapText = data.includeHandicaps ? ` (${player.handicap})` : '';
+        emailBody += `${player.index}. ${player.name}${handicapText}\n`;
+      });
+      
+      emailBody += `\n${'─'.repeat(30)}\nTotal: ${(data.paid?.length || 0) + (data.unpaid?.length || 0)} players`;
+    } else if (data.type === 'weelist') {
+      data.players?.forEach((player: any) => {
+        const handicapText = data.includeHandicaps ? ` (${player.handicap})` : '';
+        emailBody += `${player.index}. ${player.name}${handicapText}\n`;
+      });
+      emailBody += `\n${'─'.repeat(30)}\nTotal: ${data.players?.length || 0} players`;
+    }
+    
+    try {
+      await MailComposer.composeAsync({
+        subject,
+        body: emailBody,
+      });
+      setHtmlViewerVisible(false);
+      setHtmlViewerContent('');
+    } catch (error) {
+      console.error('[registration] Error sending email:', error);
+      Alert.alert('Error', 'Failed to open email composer');
+    }
   };
 
   const generateCheckInHtml = (paidPlayers: Member[], unpaidPlayers: Member[], includeHandicaps: boolean): string => {
@@ -2185,13 +2264,22 @@ export default function EventRegistrationScreen() {
             </ScrollView>
 
             <View style={styles.textResultFooter}>
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={handleCopyTextToClipboard}
-              >
-                <Ionicons name="copy-outline" size={20} color="#fff" />
-                <Text style={styles.copyButtonText}>Copy to Clipboard</Text>
-              </TouchableOpacity>
+              <View style={styles.footerButtonsRow}>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={handleCopyTextToClipboard}
+                >
+                  <Ionicons name="copy-outline" size={20} color="#fff" />
+                  <Text style={styles.copyButtonText}>Copy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.emailButton}
+                  onPress={handleEmailTextList}
+                >
+                  <Ionicons name="mail-outline" size={20} color="#fff" />
+                  <Text style={styles.emailButtonText}>Save & Email</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -2294,6 +2382,16 @@ export default function EventRegistrationScreen() {
                   </>
                 )}
               </ScrollView>
+              
+              <View style={styles.htmlViewerFooter}>
+                <TouchableOpacity
+                  style={styles.emailButton}
+                  onPress={handleEmailHtmlList}
+                >
+                  <Ionicons name="mail-outline" size={20} color="#fff" />
+                  <Text style={styles.emailButtonText}>Save & Email</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         );
@@ -3438,12 +3536,13 @@ const styles = StyleSheet.create({
     borderTopColor: '#f0f0f0',
   },
   copyButton: {
+    flex: 1,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'center',
     backgroundColor: '#1B5E20',
     paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     borderRadius: 12,
     gap: 8,
   },
@@ -3596,5 +3695,31 @@ const styles = StyleSheet.create({
   htmlWeeListText: {
     fontSize: 12,
     color: '#333',
+  },
+  footerButtonsRow: {
+    flexDirection: 'row' as const,
+    gap: 12,
+  },
+  emailButton: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center',
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  emailButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  htmlViewerFooter: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
 });
