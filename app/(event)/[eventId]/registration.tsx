@@ -26,8 +26,6 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { formatDateForDisplay } from '@/utils/dateUtils';
 
 import { registrationCache } from '@/utils/registrationCache';
-import { generateRegistrationPDF, generateRegistrationText, generateCheckInPDF, generateInvoicePDF } from '@/utils/pdfGenerator';
-import * as Clipboard from 'expo-clipboard';
 import { Member, Event } from '@/types';
 import { EventPlayerModal } from '@/components/EventPlayerModal';
 import { ZelleInvoiceModal } from '@/components/ZelleInvoiceModal';
@@ -83,12 +81,6 @@ export default function EventRegistrationScreen() {
   const [zelleInvoiceModalVisible, setZelleInvoiceModalVisible] = useState(false);
   const [paypalInvoiceModalVisible, setPaypalInvoiceModalVisible] = useState(false);
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [outputFormatModalVisible, setOutputFormatModalVisible] = useState(false);
-  const [textPreviewModalVisible, setTextPreviewModalVisible] = useState(false);
-  const [generatedTextContent, setGeneratedTextContent] = useState<string>('');
-  const [includeHandicapForPDF, setIncludeHandicapForPDF] = useState<boolean>(false);
-  const [generatingInvoiceForPlayer, setGeneratingInvoiceForPlayer] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [membershipRenewalModalVisible, setMembershipRenewalModalVisible] = useState(false);
   const [memberForRenewal, setMemberForRenewal] = useState<Member | null>(null);
@@ -931,236 +923,6 @@ export default function EventRegistrationScreen() {
     }
   };
 
-  const handleGeneratePDF = async () => {
-    if (!event || !currentUser?.isAdmin) {
-      return;
-    }
-
-    if (event.type === 'tournament') {
-      Alert.alert(
-        'Include Handicap?',
-        'Would you like to include handicap in the list?',
-        [
-          {
-            text: 'No',
-            onPress: () => {
-              setIncludeHandicapForPDF(false);
-              setOutputFormatModalVisible(true);
-            },
-          },
-          {
-            text: 'Yes',
-            onPress: () => {
-              setIncludeHandicapForPDF(true);
-              setOutputFormatModalVisible(true);
-            },
-          },
-        ],
-        { cancelable: true }
-      );
-    } else {
-      setIncludeHandicapForPDF(false);
-      setOutputFormatModalVisible(true);
-    }
-  };
-
-  const handleOutputFormatSelected = async (format: 'pdf' | 'text' | 'checkin') => {
-    console.log('[registration] 🎯 handleOutputFormatSelected called with format:', format);
-    setOutputFormatModalVisible(false);
-    const regs = registrationsQuery.data || [];
-    console.log('[registration] 📊 Registrations count:', regs.length);
-    console.log('[registration] 👥 Members count:', allMembers.length);
-
-    if (format === 'checkin') {
-      setIsGeneratingPDF(true);
-      try {
-        console.log('[registration] 🚀 Starting check-in PDF generation...');
-        if (event) {
-          await generateCheckInPDF({
-            registrations: regs,
-            members: allMembers,
-            event,
-          }, orgInfo.logoUrl);
-          console.log('[registration] ✅ Check-in PDF generated successfully');
-        } else {
-          console.log('[registration] ❌ No event found');
-          Alert.alert('Error', 'Event not found');
-        }
-      } catch (error) {
-        console.error('[registration] ❌ Check-in PDF generation error:', error);
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        Alert.alert('Error', `Failed to generate check-in PDF: ${errorMsg}`);
-      } finally {
-        setIsGeneratingPDF(false);
-      }
-    } else if (format === 'pdf') {
-      setIsGeneratingPDF(true);
-      try {
-        console.log('[registration] 🚀 Starting registration PDF generation...');
-        if (event) {
-          await generateRegistrationPDF(
-            {
-              registrations: regs,
-              members: allMembers,
-              event,
-            },
-            includeHandicapForPDF
-          );
-          console.log('[registration] ✅ Registration PDF generated successfully');
-        } else {
-          console.log('[registration] ❌ No event found');
-          Alert.alert('Error', 'Event not found');
-        }
-      } catch (error) {
-        console.error('[registration] ❌ PDF generation error:', error);
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        Alert.alert('Error', `Failed to generate PDF: ${errorMsg}`);
-      } finally {
-        setIsGeneratingPDF(false);
-      }
-    } else {
-      setIsGeneratingPDF(true);
-      try {
-        console.log('[registration] 🚀 Starting text generation...');
-        if (event) {
-          const textContent = await generateRegistrationText(
-            {
-              registrations: regs,
-              members: allMembers,
-              event,
-            },
-            includeHandicapForPDF
-          );
-          setGeneratedTextContent(textContent);
-          console.log('[registration] ✅ Text generated successfully');
-        } else {
-          console.log('[registration] ❌ No event found');
-          Alert.alert('Error', 'Event not found');
-        }
-        setTextPreviewModalVisible(true);
-      } catch (error) {
-        console.error('[registration] ❌ Text generation error:', error);
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        Alert.alert('Error', `Failed to generate text: ${errorMsg}`);
-      } finally {
-        setIsGeneratingPDF(false);
-      }
-    }
-  };
-
-  const handleCopyText = async () => {
-    try {
-      await Clipboard.setStringAsync(generatedTextContent);
-      Alert.alert('Success', 'Text copied to clipboard!');
-      setTextPreviewModalVisible(false);
-    } catch (error) {
-      console.error('[registration] ❌ Copy error:', error);
-      Alert.alert('Error', 'Failed to copy text to clipboard.');
-    }
-  };
-
-  const handleEmailInvoice = async (player: Member, playerReg: any) => {
-    if (!currentUser?.isAdmin) {
-      console.log('[registration] ❌ User is not admin, cannot send invoice');
-      return;
-    }
-    
-    console.log('[registration] 📧 ===== STARTING INVOICE GENERATION =====');
-    console.log('[registration] 📧 Player:', player.name);
-    console.log('[registration] 📧 Player ID:', player.id);
-    console.log('[registration] 📧 Player Email:', player.email || 'NO EMAIL');
-    console.log('[registration] 📧 Registration ID:', playerReg?.id || 'NO REG ID');
-    
-    setGeneratingInvoiceForPlayer(player.id);
-    
-    if (!event) {
-      console.error('[registration] ❌ No event found');
-      Alert.alert('Error', 'Event not found');
-      setGeneratingInvoiceForPlayer(null);
-      return;
-    }
-
-    console.log('[registration] 📧 Event:', event.name);
-    console.log('[registration] 📧 Event ID:', event.id);
-    console.log('[registration] 📧 Entry Fee:', event.entryFee);
-
-    const shouldOpenEmail = !!player.email;
-    
-    console.log('[registration] 📧 Should open email composer:', shouldOpenEmail);
-    
-    if (!shouldOpenEmail) {
-      Alert.alert(
-        'No Email Address', 
-        `${player.name} does not have an email address on file. The invoice will be created as a PDF that you can share manually.`,
-        [{ text: 'OK' }]
-      );
-    }
-
-    try {
-      console.log('[registration] 📧 Calling generateInvoicePDF with orgInfo:', {
-        hasName: !!orgInfo?.name,
-        hasLogo: !!orgInfo?.logoUrl,
-        hasZelle: !!orgInfo?.zellePhone,
-        hasPayPal: !!orgInfo?.paypalClientId,
-      });
-      
-      const result = await generateInvoicePDF(
-        {
-          registration: playerReg,
-          member: player,
-          event,
-          orgInfo,
-        },
-        shouldOpenEmail
-      );
-      
-      console.log('[registration] 📧 generateInvoicePDF result:', JSON.stringify(result));
-      
-      if (result.status === 'failed') {
-        console.error('[registration] ❌ Invoice generation failed:', result.error);
-        Alert.alert('Invoice Error', result.error || 'Failed to generate or send invoice. Please try again.');
-        setGeneratingInvoiceForPlayer(null);
-        return;
-      }
-      
-      if (result.status === 'cancelled') {
-        console.log('[registration] ⚠️ Email was cancelled by user');
-        setGeneratingInvoiceForPlayer(null);
-        return;
-      }
-      
-      if ((result.status === 'sent' || result.status === 'saved' || result.status === 'pdf_shared') && playerReg?.id) {
-        console.log('[registration] 📧 Updating emailSent flag for registration:', playerReg.id);
-        try {
-          await updateRegistrationMutation.mutateAsync({
-            registrationId: playerReg.id,
-            updates: { emailSent: true },
-          });
-          console.log('[registration] ✅ emailSent flag updated successfully');
-          
-          if (result.status === 'sent') {
-            Alert.alert('Success', 'Invoice email composed successfully!');
-          } else if (result.status === 'saved') {
-            Alert.alert('Saved', 'Invoice email saved as draft.');
-          } else if (result.status === 'pdf_shared') {
-            Alert.alert('Shared', 'Invoice PDF shared successfully.');
-          }
-        } catch (updateError) {
-          console.error('[registration] ⚠️ Failed to update emailSent flag:', updateError);
-        }
-      }
-
-      console.log('[registration] ✅ ===== INVOICE GENERATION COMPLETE =====');
-    } catch (error) {
-      console.error('[registration] ❌ Email invoice error:', error);
-      console.error('[registration] ❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      Alert.alert('Invoice Error', `Failed to generate invoice: ${errorMsg}`);
-    } finally {
-      setGeneratingInvoiceForPlayer(null);
-    }
-  };
-
   const getPlayersFlights = useMemo((): Record<string, Member[]> => {
     const flights: Record<string, Member[]> = { A: [], B: [], C: [], L: [] };
 
@@ -1396,22 +1158,7 @@ export default function EventRegistrationScreen() {
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>REGISTRATION</Text>
         </View>
-        {currentUser?.isAdmin && event && selectedPlayers.length > 0 ? (
-          <TouchableOpacity
-            style={styles.pdfButton}
-            onPress={handleGeneratePDF}
-            disabled={isGeneratingPDF}
-          >
-            <Ionicons 
-              name={isGeneratingPDF ? "hourglass-outline" : "document-text-outline"} 
-              size={16} 
-              color="#fff" 
-            />
-            <Text style={styles.pdfButtonText}>PDF</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.pdfButton} />
-        )}
+        <View style={styles.pdfButton} />
       </View>
 
       {event && event.photoUrl && (
@@ -1794,30 +1541,7 @@ export default function EventRegistrationScreen() {
                           )}
                         </View>
                         
-                        {currentUser?.isAdmin && playerReg && (
-                          <View style={styles.emailButtonContainer}>
-                            <View style={[
-                              styles.emailNotificationDot,
-                              playerReg.emailSent && styles.emailSentDot,
-                            ]} />
-                            <TouchableOpacity
-                              style={styles.emailInvoiceButton}
-                              onPress={() => handleEmailInvoice(player, playerReg)}
-                              disabled={generatingInvoiceForPlayer === player.id}
-                              activeOpacity={0.7}
-                            >
-                              {generatingInvoiceForPlayer === player.id ? (
-                                <ActivityIndicator size="small" color="#007AFF" />
-                              ) : (
-                                <Ionicons 
-                                  name="mail-outline" 
-                                  size={18} 
-                                  color="#007AFF" 
-                                />
-                              )}
-                            </TouchableOpacity>
-                          </View>
-                        )}
+
                       </View>
 
                       {canViewRegistration(currentUser) && (
@@ -2174,81 +1898,6 @@ export default function EventRegistrationScreen() {
         onClose={() => setPaypalInvoiceModalVisible(false)}
         onRegister={handleZelleRegistration}
       />
-
-      {outputFormatModalVisible && (
-        <View style={styles.paymentModalOverlay}>
-          <View style={styles.paymentModal}>
-            <View style={styles.paymentModalHeader}>
-              <Text style={styles.paymentModalTitle}>Select Output Format</Text>
-              <TouchableOpacity onPress={() => setOutputFormatModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#1a1a1a" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.paymentModalContent}>
-              <TouchableOpacity
-                style={[styles.paymentMethodButton, { backgroundColor: '#FF9500' }]}
-                onPress={() => handleOutputFormatSelected('checkin')}
-              >
-                <Ionicons name="checkbox-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.paymentMethodButtonText}>Check-In PDF</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.paymentMethodButton}
-                onPress={() => handleOutputFormatSelected('pdf')}
-              >
-                <Ionicons name="document-text-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.paymentMethodButtonText}>Registration PDF</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.paymentMethodButton, { backgroundColor: '#2196F3' }]}
-                onPress={() => handleOutputFormatSelected('text')}
-              >
-                <Ionicons name="text-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.paymentMethodButtonText}>Text</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {isGeneratingPDF && (
-        <View style={styles.pdfLoadingOverlay}>
-          <View style={styles.pdfLoadingBox}>
-            <ActivityIndicator size="large" color="#1B5E20" />
-            <Text style={styles.pdfLoadingText}>Generating PDF...</Text>
-          </View>
-        </View>
-      )}
-
-      {textPreviewModalVisible && (
-        <View style={styles.htmlModalOverlay}>
-          <View style={styles.htmlModal}>
-            <View style={styles.htmlModalHeader}>
-              <Text style={styles.htmlModalTitle}>Text Preview</Text>
-              <TouchableOpacity onPress={() => setTextPreviewModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#1a1a1a" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.htmlModalContent}>
-              <Text style={styles.htmlCode}>{generatedTextContent}</Text>
-            </ScrollView>
-
-            <View style={styles.htmlModalFooter}>
-              <TouchableOpacity
-                style={styles.copyButton}
-                onPress={handleCopyText}
-              >
-                <Ionicons name="copy-outline" size={20} color="#fff" />
-                <Text style={styles.copyButtonText}>Copy to Clipboard</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
 
       {paymentMethodModalVisible && (
         <View style={styles.paymentModalOverlay}>
@@ -2713,21 +2362,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     flex: 1,
   },
-  emailInvoiceButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E3F2FD',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 5,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    marginRight: 32,
-  },
+
   badgesColumn: {
     gap: 4,
     alignItems: 'flex-end',
@@ -3256,75 +2891,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
-  htmlModalOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  htmlModal: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    width: '90%',
-    maxWidth: 600,
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  },
-  htmlModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  htmlModalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
-  },
-  htmlModalContent: {
-    padding: 16,
-    maxHeight: 400,
-  },
-  htmlCode: {
-    fontFamily: 'monospace' as const,
-    fontSize: 11,
-    color: '#1a1a1a',
-    lineHeight: 16,
-  },
-  htmlModalFooter: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  copyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2196F3',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  copyButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-  },
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -3367,46 +2934,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
-  emailButtonContainer: {
-    position: 'relative' as const,
-  },
-  emailNotificationDot: {
-    position: 'absolute' as const,
-    top: -4,
-    right: 24,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#FF3B30',
-    borderWidth: 2,
-    borderColor: '#fff',
-    zIndex: 10,
-  },
-  emailSentDot: {
-    backgroundColor: '#34C759',
-  },
-  pdfLoadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10000,
-  },
-  pdfLoadingBox: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 10,
-  },
-  pdfLoadingText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1B5E20',
-    marginTop: 16,
-  },
+
 });

@@ -22,7 +22,6 @@ import GroupCard from '@/components/GroupCard';
 import { DaySelector } from '@/components/DaySelector';
 import { type LabelOverride } from '@/utils/groupingsHelper';
 import { generateGroupLabel } from '@/utils/groupLabelHelper';
-import { generateGroupingsPDF } from '@/utils/pdfGenerator';
 import { EventFooter } from '@/components/EventFooter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
@@ -632,29 +631,6 @@ export default function GroupingsScreen() {
     console.log(`[groupings] Switched groups ${groupIdx1} and ${groupIdx2}`);
   };
 
-  const handleGeneratePDF = async () => {
-    try {
-      console.log('[groupings] Generating PDF...');
-      if (!event) return;
-      const groupingsForPDF: Grouping[] = groups.map(group => ({
-        day: activeDay,
-        hole: group.hole,
-        slots: group.slots.map(slot => slot?.id || null),
-      }));
-      await generateGroupingsPDF({
-        groups: groupingsForPDF,
-        event,
-        activeDay,
-        eventName: event.eventName || event.name || 'Event',
-        labelOverride,
-        members,
-      });
-      console.log('[groupings] ✅ PDF generated successfully');
-    } catch (error) {
-      console.error('[groupings] Error generating PDF:', error);
-    }
-  };
-
   const handleAddCheckedPlayerToGroup = (groupIdx: number, slotIdx: number) => {
     if (checkedPlayers.length === 0) return;
 
@@ -763,15 +739,7 @@ export default function GroupingsScreen() {
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.titleText}>GROUPINGS</Text>
-        {canManageGroupings(currentMember) && (
-          <TouchableOpacity 
-            style={styles.pdfBtn}
-            onPress={handleGeneratePDF}
-          >
-            <Ionicons name="document-text" size={14} color="#fff" />
-            <Text style={styles.pdfBtnText}>PDF</Text>
-          </TouchableOpacity>
-        )}
+
       </View>
 
       {event && event.photoUrl && (
