@@ -277,33 +277,25 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setIsLoading(true);
       
       const loadPromise = AsyncStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-      const logoutFlagPromise = AsyncStorage.getItem(STORAGE_KEYS.EXPLICIT_LOGOUT);
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('AsyncStorage timeout')), 2000)
       );
 
-      const [currentUserData, explicitLogout] = await Promise.race([
-        Promise.all([loadPromise, logoutFlagPromise]),
+      const currentUserData = await Promise.race([
+        loadPromise,
         timeoutPromise
-      ]) as [string | null, string | null];
+      ]) as string | null;
 
       if (currentUserData) {
         const user = JSON.parse(currentUserData);
         console.log('AuthContext - Found current user:', user.name);
         setCurrentUser(user);
-      } else if (explicitLogout !== 'true') {
-        // DEV MODE: Auto-login as Bruce Pham (admin) if not explicitly logged out
-        console.log('AuthContext - DEV MODE: Auto-logging in as Bruce Pham (admin)');
-        setCurrentUser(DEFAULT_MEMBER);
-        await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(DEFAULT_MEMBER));
       } else {
-        console.log('AuthContext - User explicitly logged out, showing login screen');
+        console.log('AuthContext - No saved user, showing login screen');
       }
     } catch (error) {
       console.error('Error loading current user:', error);
-      // Fallback: auto-login as admin on error
-      console.log('AuthContext - DEV MODE: Error loading, falling back to Bruce Pham');
-      setCurrentUser(DEFAULT_MEMBER);
+      console.log('AuthContext - Error loading user data, showing login screen');
     } finally {
       setIsLoading(false);
     }
