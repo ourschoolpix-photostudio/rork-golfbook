@@ -1338,8 +1338,10 @@ export default function EventRegistrationScreen() {
           />
           <Text style={styles.refreshButtonText}>Refresh</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>REGISTRATION</Text>
-        {currentUser?.isAdmin && event && selectedPlayers.length > 0 && (
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>REGISTRATION</Text>
+        </View>
+        {currentUser?.isAdmin && event && selectedPlayers.length > 0 ? (
           <TouchableOpacity
             style={styles.pdfButton}
             onPress={handleGeneratePDF}
@@ -1352,6 +1354,8 @@ export default function EventRegistrationScreen() {
             />
             <Text style={styles.pdfButtonText}>PDF</Text>
           </TouchableOpacity>
+        ) : (
+          <View style={styles.pdfButton} />
         )}
       </View>
 
@@ -2318,6 +2322,14 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingTop: 58,
     position: 'relative',
+  },
+  headerTitleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
   },
   headerTitle: {
     fontSize: 18,
