@@ -1061,10 +1061,16 @@ export default function EventRegistrationScreen() {
 
   const handleEmailInvoice = async (player: Member, playerReg: any) => {
     if (!currentUser?.isAdmin) {
+      console.log('[registration] ❌ User is not admin, cannot send invoice');
       return;
     }
     
-    console.log('[registration] 📧 Starting invoice generation for:', player.name);
+    console.log('[registration] 📧 ===== STARTING INVOICE GENERATION =====');
+    console.log('[registration] 📧 Player:', player.name);
+    console.log('[registration] 📧 Player ID:', player.id);
+    console.log('[registration] 📧 Player Email:', player.email || 'NO EMAIL');
+    console.log('[registration] 📧 Registration ID:', playerReg?.id || 'NO REG ID');
+    
     setGeneratingInvoiceForPlayer(player.id);
     
     if (!event) {
@@ -1074,21 +1080,30 @@ export default function EventRegistrationScreen() {
       return;
     }
 
+    console.log('[registration] 📧 Event:', event.name);
+    console.log('[registration] 📧 Event ID:', event.id);
+    console.log('[registration] 📧 Entry Fee:', event.entryFee);
+
     const shouldOpenEmail = !!player.email;
     
-    console.log('[registration] 📧 Player email:', player.email);
-    console.log('[registration] 📧 Should open email:', shouldOpenEmail);
+    console.log('[registration] 📧 Should open email composer:', shouldOpenEmail);
     
     if (!shouldOpenEmail) {
       Alert.alert(
         'No Email Address', 
-        `${player.name} does not have an email address on file. The invoice PDF will be created and you can share it manually.`,
+        `${player.name} does not have an email address on file. The invoice will be created as a PDF that you can share manually.`,
         [{ text: 'OK' }]
       );
     }
 
     try {
-      console.log('[registration] 📧 Calling generateInvoicePDF...');
+      console.log('[registration] 📧 Calling generateInvoicePDF with orgInfo:', {
+        hasName: !!orgInfo?.name,
+        hasLogo: !!orgInfo?.logoUrl,
+        hasZelle: !!orgInfo?.zellePhone,
+        hasPayPal: !!orgInfo?.paypalClientId,
+      });
+      
       const result = await generateInvoicePDF(
         {
           registration: playerReg,
@@ -1098,11 +1113,12 @@ export default function EventRegistrationScreen() {
         },
         shouldOpenEmail
       );
-      console.log('[registration] ✅ generateInvoicePDF completed, result:', result);
+      
+      console.log('[registration] 📧 generateInvoicePDF result:', JSON.stringify(result));
       
       if (result.status === 'failed') {
         console.error('[registration] ❌ Invoice generation failed:', result.error);
-        Alert.alert('Error', result.error || 'Failed to open email');
+        Alert.alert('Invoice Error', result.error || 'Failed to generate or send invoice. Please try again.');
         setGeneratingInvoiceForPlayer(null);
         return;
       }
@@ -1121,16 +1137,25 @@ export default function EventRegistrationScreen() {
             updates: { emailSent: true },
           });
           console.log('[registration] ✅ emailSent flag updated successfully');
+          
+          if (result.status === 'sent') {
+            Alert.alert('Success', 'Invoice email composed successfully!');
+          } else if (result.status === 'saved') {
+            Alert.alert('Saved', 'Invoice email saved as draft.');
+          } else if (result.status === 'pdf_shared') {
+            Alert.alert('Shared', 'Invoice PDF shared successfully.');
+          }
         } catch (updateError) {
           console.error('[registration] ⚠️ Failed to update emailSent flag:', updateError);
         }
       }
 
-      console.log('[registration] ✅ Invoice generation process completed successfully');
+      console.log('[registration] ✅ ===== INVOICE GENERATION COMPLETE =====');
     } catch (error) {
       console.error('[registration] ❌ Email invoice error:', error);
+      console.error('[registration] ❌ Error stack:', error instanceof Error ? error.stack : 'No stack');
       const errorMsg = error instanceof Error ? error.message : String(error);
-      Alert.alert('Error', `Failed to generate invoice: ${errorMsg}`);
+      Alert.alert('Invoice Error', `Failed to generate invoice: ${errorMsg}`);
     } finally {
       setGeneratingInvoiceForPlayer(null);
     }

@@ -1084,9 +1084,13 @@ export async function generateInvoicePDF(
 ): Promise<{ status: 'sent' | 'saved' | 'cancelled' | 'failed' | 'pdf_shared'; error?: string }> {
   const { registration, member, event, orgInfo } = options;
   
-  console.log('[pdfGenerator] 📧 Starting invoice generation...');
-  console.log('[pdfGenerator] openEmail:', openEmail, 'member.email:', member.email);
-  console.log('[pdfGenerator] Platform.OS:', Platform.OS);
+  console.log('[pdfGenerator] 📧 ===== GENERATE INVOICE PDF STARTED =====');
+  console.log('[pdfGenerator] 📧 openEmail:', openEmail);
+  console.log('[pdfGenerator] 📧 member.email:', member.email || 'NO EMAIL');
+  console.log('[pdfGenerator] 📧 member.name:', member.name);
+  console.log('[pdfGenerator] 📧 event.name:', event.name);
+  console.log('[pdfGenerator] 📧 Platform.OS:', Platform.OS);
+  console.log('[pdfGenerator] 📧 registration.id:', registration?.id || 'NO REG ID');
 
   const entryFee = Number(event.entryFee) || 0;
   const numberOfGuests = registration?.numberOfGuests || 0;
