@@ -1051,8 +1051,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 7,
-    paddingTop: 14,
+    paddingVertical: 16,
+    paddingTop: 58,
     position: 'relative',
   },
   titleText: {

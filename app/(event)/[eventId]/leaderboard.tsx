@@ -513,8 +513,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center' as const,
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 12,
+    paddingVertical: 16,
+    paddingTop: 58,
     gap: 8,
   },
   headerTitle: {
