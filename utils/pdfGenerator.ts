@@ -1072,57 +1072,128 @@ interface PlainTextEmailParams {
 }
 
 function buildPlainTextEmailBody(params: PlainTextEmailParams): string {
-  const { member, event, orgInfo, isPaid, total, isSponsor, dateRange, tournamentFlight } = params;
+  const { member, event, registration, orgInfo, isPaid, total, isSponsor, dateRange, tournamentFlight } = params;
+  
+  const entryFee = Number(event.entryFee) || 0;
+  const numberOfGuests = registration?.numberOfGuests || 0;
+  const invoiceNumber = registration?.id?.substring(0, 8).toUpperCase() || 'N/A';
+  const invoiceDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  
+  const getPaymentDeadline = () => {
+    if (!event.date) return 'N/A';
+    const eventDate = new Date(event.date);
+    const deadlineDate = new Date(eventDate);
+    deadlineDate.setDate(deadlineDate.getDate() - 10);
+    return deadlineDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
   
   let body = '';
   
-  body += isPaid ? 'PAYMENT CONFIRMATION' : 'REGISTRATION INVOICE';
-  body += '\n\n';
+  // Header
+  body += '═══════════════════════════════════════════════════════════\n';
+  if (orgInfo?.name) {
+    body += `${orgInfo.name.toUpperCase()}\n`;
+  }
+  body += isPaid ? '✓ PAYMENT CONFIRMATION' : 'REGISTRATION INVOICE';
+  body += '\n';
+  body += '═══════════════════════════════════════════════════════════\n\n';
+  
+  // Thank you message
+  body += `Dear ${member.name},\n\n`;
+  body += `Thank you for registering for ${event.name}!\n`;
+  body += `We're excited to have you join us.\n\n`;
+  
+  // Invoice details
+  body += `Invoice #: ${invoiceNumber}\n`;
+  body += `Date: ${invoiceDate}\n\n`;
   
   if (isSponsor) {
-    body += '** SPONSOR REGISTRATION **\n\n';
+    body += '★★★ SPONSOR REGISTRATION ★★★\n\n';
   }
   
-  body += '--- Member Information ---\n';
+  // Member Information
+  body += '───────────────────────────────────────────────────────────\n';
+  body += 'MEMBER DETAILS\n';
+  body += '───────────────────────────────────────────────────────────\n';
   body += `Name: ${member.name}\n`;
   if (member.email) body += `Email: ${member.email}\n`;
   if (member.phone) body += `Phone: ${formatPhoneNumber(member.phone)}\n`;
   if (tournamentFlight) body += `Flight: ${tournamentFlight}\n`;
   body += '\n';
   
-  body += `--- ${event.type === 'tournament' ? 'Tournament' : 'Event'} Information ---\n`;
+  // Event Information
+  body += '───────────────────────────────────────────────────────────\n';
+  body += 'EVENT DETAILS\n';
+  body += '───────────────────────────────────────────────────────────\n';
   body += `Event: ${event.name}\n`;
   body += `Date: ${dateRange}\n`;
   if (event.location) body += `Location: ${event.location}\n`;
-  if (event.numberOfDays) body += `Number of Days: ${event.numberOfDays}\n`;
-  if (!isSponsor) body += `Entry Fee: ${(Number(event.entryFee) || 0).toFixed(2)}\n`;
+  if (event.numberOfDays && event.numberOfDays > 1) body += `Duration: ${event.numberOfDays} Days\n`;
   body += '\n';
   
-  body += '--- Payment Summary ---\n';
-  body += `Total Amount: ${total.toFixed(2)}\n`;
-  body += `Status: ${isPaid ? 'PAID IN FULL' : `AMOUNT DUE: ${total.toFixed(2)}`}\n`;
-  body += '\n';
+  // Invoice Items
+  body += '───────────────────────────────────────────────────────────\n';
+  body += 'INVOICE ITEMS\n';
+  body += '───────────────────────────────────────────────────────────\n';
+  if (!isSponsor) {
+    body += `${event.name} - Entry Fee                    ${entryFee.toFixed(2)}\n`;
+    if (numberOfGuests > 0) {
+      body += `Additional Guest(s) x ${numberOfGuests}                      ${(entryFee * numberOfGuests).toFixed(2)}\n`;
+    }
+  } else {
+    body += `${event.name} - Sponsor Registration         $0.00\n`;
+  }
+  body += '                                              ───────────\n';
+  body += `TOTAL DUE:                                    ${total.toFixed(2)}\n\n`;
   
+  // Payment Status
+  body += '═══════════════════════════════════════════════════════════\n';
+  if (isPaid) {
+    body += '✓ PAID IN FULL - Thank You!\n';
+  } else {
+    body += `💳 AMOUNT DUE: ${total.toFixed(2)}\n`;
+  }
+  body += '═══════════════════════════════════════════════════════════\n\n';
+  
+  // Payment Instructions (only if unpaid)
   if (!isPaid && (orgInfo?.zellePhone || orgInfo?.paypalClientId)) {
-    body += '--- Payment Instructions ---\n';
+    body += '───────────────────────────────────────────────────────────\n';
+    body += '💳 PAYMENT INSTRUCTIONS\n';
+    body += '───────────────────────────────────────────────────────────\n';
     body += 'Please complete your payment using one of the following methods:\n\n';
     
     if (orgInfo?.zellePhone) {
-      body += `Option 1: Zelle\n`;
-      body += `Send ${total.toFixed(2)} to: ${formatPhoneNumber(orgInfo.zellePhone)}\n`;
-      body += '(No fees for Zelle payments)\n\n';
+      body += '★ OPTION 1: ZELLE (Recommended - No Fees)\n';
+      body += `  Send ${total.toFixed(2)} to: ${formatPhoneNumber(orgInfo.zellePhone)}\n`;
+      body += '  ✓ No transaction fees\n';
+      body += '  ✓ Instant transfer\n\n';
     }
     
     if (orgInfo?.paypalClientId) {
-      body += `Option 2: PayPal\n`;
-      body += 'Contact the event organizer for PayPal payment link.\n\n';
+      body += '★ OPTION 2: PAYPAL\n';
+      body += `  Click this link to pay securely via PayPal:\n`;
+      body += `  https://www.paypal.com/paypalme/cgamembers/${total.toFixed(2)}\n`;
+      body += '  (Note: PayPal may charge a small transaction fee)\n\n';
     }
+    
+    body += `⏰ PAYMENT DEADLINE: ${getPaymentDeadline()}\n`;
+    body += 'Your registration will be confirmed once payment is received.\n\n';
   }
   
-  body += '---\n';
+  // Guest Names (if applicable)
+  if (registration?.guestNames) {
+    body += '───────────────────────────────────────────────────────────\n';
+    body += 'GUEST NAMES\n';
+    body += '───────────────────────────────────────────────────────────\n';
+    body += `${registration.guestNames}\n\n`;
+  }
+  
+  // Footer
+  body += '═══════════════════════════════════════════════════════════\n';
   body += 'Thank you for your registration!\n';
   body += 'If you have any questions, please contact the event organizer.\n';
   if (orgInfo?.name) body += `\n${orgInfo.name}\n`;
+  body += '═══════════════════════════════════════════════════════════\n';
   
   return body;
 }
