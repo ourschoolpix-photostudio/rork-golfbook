@@ -1065,14 +1065,19 @@ export default function EventRegistrationScreen() {
     }
     
     try {
+      console.log('[registration] 📧 Starting invoice generation for:', player.name);
       setGeneratingInvoiceForPlayer(player.id);
       
       if (!event) {
+        console.error('[registration] ❌ No event found');
         Alert.alert('Error', 'Event not found');
         return;
       }
 
       const shouldOpenEmail = !!player.email;
+      
+      console.log('[registration] 📧 Player email:', player.email);
+      console.log('[registration] 📧 Should open email:', shouldOpenEmail);
       
       if (!shouldOpenEmail) {
         Alert.alert(
@@ -1082,7 +1087,8 @@ export default function EventRegistrationScreen() {
         );
       }
 
-      await generateInvoicePDF(
+      console.log('[registration] 📧 Calling generateInvoicePDF...');
+      const result = await generateInvoicePDF(
         {
           registration: playerReg,
           member: player,
@@ -1091,13 +1097,20 @@ export default function EventRegistrationScreen() {
         },
         shouldOpenEmail
       );
+      console.log('[registration] ✅ generateInvoicePDF completed, result:', result);
       
       if (playerReg?.id) {
+        console.log('[registration] 📧 Updating emailSent flag for registration:', playerReg.id);
         await updateRegistrationMutation.mutateAsync({
           registrationId: playerReg.id,
           updates: { emailSent: true },
         });
+        console.log('[registration] ✅ emailSent flag updated successfully');
+      } else {
+        console.warn('[registration] ⚠️ No playerReg.id found, skipping emailSent update');
       }
+
+      console.log('[registration] ✅ Invoice generation process completed successfully');
     } catch (error) {
       console.error('[registration] ❌ Invoice generation error:', error);
       let errorMessage = 'Unknown error occurred';
@@ -1123,6 +1136,7 @@ export default function EventRegistrationScreen() {
       
       Alert.alert('Error', `Failed to generate invoice: ${errorMessage}`);
     } finally {
+      console.log('[registration] 🏁 Cleaning up - setting generatingInvoiceForPlayer to null');
       setGeneratingInvoiceForPlayer(null);
     }
   };

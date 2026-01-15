@@ -1067,8 +1067,9 @@ export async function generateInvoicePDF(
   openEmail: boolean = false
 ): Promise<string | void> {
   try {
-    console.log('[pdfGenerator] Starting invoice generation...');
     const { registration, member, event, orgInfo } = options;
+    console.log('[pdfGenerator] 📧 Starting invoice generation...');
+    console.log('[pdfGenerator] openEmail:', openEmail, 'member.email:', member.email);
 
     if (openEmail && member.email && await MailComposer.isAvailableAsync()) {
       const entryFee = Number(event.entryFee) || 0;
@@ -1387,10 +1388,20 @@ export async function generateInvoicePDF(
       
       console.log('[pdfGenerator] ✅ Email composer opened successfully');
     } else {
-      console.log('[pdfGenerator] ⚠️  No email to open or email not available');
+      console.log('[pdfGenerator] 📄 Generating PDF for sharing (no email or openEmail=false)...');
+      
+      const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
+      
+      if (Platform.OS === 'web') {
+        console.log('[pdfGenerator] 🌐 Using web PDF generation...');
+        return generateWebPDF(htmlContent, event.name, 'Invoice');
+      }
+      
+      console.log('[pdfGenerator] 📱 Using native PDF generation...');
+      return generateNativePDF(htmlContent, event.name, 'Invoice');
     }
   } catch (error) {
-    console.error('[pdfGenerator] Invoice generation error:', error);
+    console.error('[pdfGenerator] ❌ Invoice generation error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error generating invoice';
     console.error('[pdfGenerator] Error details:', errorMessage);
     if (error instanceof Error && error.stack) {
