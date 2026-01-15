@@ -1097,14 +1097,14 @@ export default function EventRegistrationScreen() {
       `;
     } else if (data.type === 'weelist') {
       playersHtml += `
-        <div style="display: flex; flex-wrap: wrap;">
+        <div style="display: flex; flex-direction: column;">
           ${data.players?.map((player: any) => `
-            <div style="width: 50%; padding: 4px; box-sizing: border-box;">
-              <span style="font-size: 12px;">${player.index}. ${player.name}${data.includeHandicaps ? ` (${player.handicap})` : ''}</span>
+            <div style="padding: 6px 0; border-bottom: 1px solid #eee;">
+              <span style="font-size: 16px; color: #1a1a1a;">${player.index}. ${player.name}${data.includeHandicaps ? ` <span style="color: #1976D2; font-weight: 600;">(${player.handicap})</span>` : ''}</span>
             </div>
           `).join('') || ''}
         </div>
-        <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
+        <div style="margin-top: 16px; padding-top: 8px; border-top: 2px solid #1B5E20; text-align: center; color: #666; font-size: 14px; font-weight: 600;">
           Total: ${data.players?.length || 0} players
         </div>
       `;
@@ -1212,14 +1212,14 @@ export default function EventRegistrationScreen() {
       `;
     } else if (data.type === 'weelist') {
       playersHtml += `
-        <div style="display: flex; flex-wrap: wrap;">
+        <div style="display: flex; flex-direction: column;">
           ${data.players?.map((player: any) => `
-            <div style="width: 50%; padding: 4px; box-sizing: border-box;">
-              <span style="font-size: 12px;">${player.index}. ${player.name}${data.includeHandicaps ? ` (${player.handicap})` : ''}</span>
+            <div style="padding: 6px 0; border-bottom: 1px solid #eee;">
+              <span style="font-size: 16px; color: #1a1a1a;">${player.index}. ${player.name}${data.includeHandicaps ? ` <span style="color: #1976D2; font-weight: 600;">(${player.handicap})</span>` : ''}</span>
             </div>
           `).join('') || ''}
         </div>
-        <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
+        <div style="margin-top: 16px; padding-top: 8px; border-top: 2px solid #1B5E20; text-align: center; color: #666; font-size: 14px; font-weight: 600;">
           Total: ${data.players?.length || 0} players
         </div>
       `;
@@ -1335,21 +1335,27 @@ export default function EventRegistrationScreen() {
         const playerReg = registrations[player.name];
         const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
         return `
-          <div style="width: 50%; padding: 4px; box-sizing: border-box;">
-            <span style="font-size: 12px;">${index + 1}. ${player.name}${includeHandicaps ? ` (${handicap})` : ''}</span>
+          <div style="padding: 6px 0; border-bottom: 1px solid #eee;">
+            <span style="font-size: 16px; color: #1a1a1a;">${index + 1}. ${player.name}${includeHandicaps ? ` <span style="color: #1976D2; font-weight: 600;">(${handicap})</span>` : ''}</span>
           </div>
         `;
       }).join('');
       
       playersHtml = `
-        <div style="display: flex; flex-wrap: wrap;">
+        <div style="display: flex; flex-direction: column;">
           ${playerItems}
         </div>
-        <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #ccc; text-align: center; color: #666;">
+        <div style="margin-top: 16px; padding-top: 8px; border-top: 2px solid #1B5E20; text-align: center; color: #666; font-size: 14px; font-weight: 600;">
           Total: ${allPlayers.length} players
         </div>
       `;
     }
+    
+    const pageWidth = type === 'weelist' ? '2.5in' : '8.5in';
+    const pageHeight = type === 'weelist' ? 'auto' : '11in';
+    const pagePadding = type === 'weelist' ? '16px 12px' : '40px';
+    const titleSize = type === 'weelist' ? '18px' : '24px';
+    const dateSize = type === 'weelist' ? '12px' : '14px';
     
     const htmlContent = `
       <!DOCTYPE html>
@@ -1357,10 +1363,17 @@ export default function EventRegistrationScreen() {
         <head>
           <meta charset="utf-8">
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; }
-            h1 { color: #1B5E20; font-size: 24px; margin-bottom: 4px; text-align: center; }
-            .date { color: #666; font-size: 14px; margin-bottom: 20px; text-align: center; }
-            .divider { border-top: 1px solid #ccc; margin: 16px 0; }
+            @page { size: ${pageWidth} ${pageHeight}; margin: 0; }
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+              padding: ${pagePadding};
+              margin: 0;
+              width: ${pageWidth};
+              box-sizing: border-box;
+            }
+            h1 { color: #1B5E20; font-size: ${titleSize}; margin-bottom: 4px; text-align: center; font-weight: 700; }
+            .date { color: #666; font-size: ${dateSize}; margin-bottom: 16px; text-align: center; }
+            .divider { border-top: 2px solid #1B5E20; margin: 12px 0; }
           </style>
         </head>
         <body>
@@ -1372,7 +1385,7 @@ export default function EventRegistrationScreen() {
       </html>
     `;
     
-    const listTitle = type === 'checkin' ? 'Check In List' : 'Wee List';
+    const listTitle = type === 'checkin' ? 'Check In List' : 'Web List';
     
     try {
       if (Platform.OS === 'web') {
@@ -2854,8 +2867,8 @@ export default function EventRegistrationScreen() {
               >
                 <Ionicons name="list-outline" size={24} color="#1976D2" />
                 <View style={styles.pdfOptionTextContainer}>
-                  <Text style={styles.pdfOptionButtonText}>Wee List</Text>
-                  <Text style={styles.pdfOptionDescription}>Compact 2-inch PDF listing</Text>
+                  <Text style={styles.pdfOptionButtonText}>Web List</Text>
+                  <Text style={styles.pdfOptionDescription}>2.5&quot; wide single column for website</Text>
                 </View>
               </TouchableOpacity>
 
