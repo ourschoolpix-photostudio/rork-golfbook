@@ -2180,6 +2180,15 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
+      {isGeneratingPDF && (
+        <View style={styles.pdfLoadingOverlay}>
+          <View style={styles.pdfLoadingBox}>
+            <ActivityIndicator size="large" color="#1B5E20" />
+            <Text style={styles.pdfLoadingText}>Generating PDF...</Text>
+          </View>
+        </View>
+      )}
+
       {textPreviewModalVisible && (
         <View style={styles.htmlModalOverlay}>
           <View style={styles.htmlModal}>
@@ -3341,5 +3350,29 @@ const styles = StyleSheet.create({
   },
   emailSentDot: {
     backgroundColor: '#34C759',
+  },
+  pdfLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10000,
+  },
+  pdfLoadingBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 10,
+  },
+  pdfLoadingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1B5E20',
+    marginTop: 16,
   },
 });
