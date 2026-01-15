@@ -1087,46 +1087,53 @@ export default function EventRegistrationScreen() {
       );
     }
 
-    console.log('[registration] 📧 Calling generateInvoicePDF...');
-    const result = await generateInvoicePDF(
-      {
-        registration: playerReg,
-        member: player,
-        event,
-        orgInfo,
-      },
-      shouldOpenEmail
-    );
-    console.log('[registration] ✅ generateInvoicePDF completed, result:', result);
-    
-    if (result.status === 'failed') {
-      console.error('[registration] ❌ Invoice generation failed:', result.error);
-      Alert.alert('Error', result.error || 'Failed to open email');
-      setGeneratingInvoiceForPlayer(null);
-      return;
-    }
-    
-    if (result.status === 'cancelled') {
-      console.log('[registration] ⚠️ Email was cancelled by user');
-      setGeneratingInvoiceForPlayer(null);
-      return;
-    }
-    
-    if ((result.status === 'sent' || result.status === 'saved' || result.status === 'pdf_shared') && playerReg?.id) {
-      console.log('[registration] 📧 Updating emailSent flag for registration:', playerReg.id);
-      try {
-        await updateRegistrationMutation.mutateAsync({
-          registrationId: playerReg.id,
-          updates: { emailSent: true },
-        });
-        console.log('[registration] ✅ emailSent flag updated successfully');
-      } catch (updateError) {
-        console.error('[registration] ⚠️ Failed to update emailSent flag:', updateError);
+    try {
+      console.log('[registration] 📧 Calling generateInvoicePDF...');
+      const result = await generateInvoicePDF(
+        {
+          registration: playerReg,
+          member: player,
+          event,
+          orgInfo,
+        },
+        shouldOpenEmail
+      );
+      console.log('[registration] ✅ generateInvoicePDF completed, result:', result);
+      
+      if (result.status === 'failed') {
+        console.error('[registration] ❌ Invoice generation failed:', result.error);
+        Alert.alert('Error', result.error || 'Failed to open email');
+        setGeneratingInvoiceForPlayer(null);
+        return;
       }
-    }
+      
+      if (result.status === 'cancelled') {
+        console.log('[registration] ⚠️ Email was cancelled by user');
+        setGeneratingInvoiceForPlayer(null);
+        return;
+      }
+      
+      if ((result.status === 'sent' || result.status === 'saved' || result.status === 'pdf_shared') && playerReg?.id) {
+        console.log('[registration] 📧 Updating emailSent flag for registration:', playerReg.id);
+        try {
+          await updateRegistrationMutation.mutateAsync({
+            registrationId: playerReg.id,
+            updates: { emailSent: true },
+          });
+          console.log('[registration] ✅ emailSent flag updated successfully');
+        } catch (updateError) {
+          console.error('[registration] ⚠️ Failed to update emailSent flag:', updateError);
+        }
+      }
 
-    console.log('[registration] ✅ Invoice generation process completed successfully');
-    setGeneratingInvoiceForPlayer(null);
+      console.log('[registration] ✅ Invoice generation process completed successfully');
+    } catch (error) {
+      console.error('[registration] ❌ Email invoice error:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      Alert.alert('Error', `Failed to generate invoice: ${errorMsg}`);
+    } finally {
+      setGeneratingInvoiceForPlayer(null);
+    }
   };
 
   const getPlayersFlights = useMemo((): Record<string, Member[]> => {
