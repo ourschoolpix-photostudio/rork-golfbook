@@ -31,7 +31,6 @@ export function EventFooter({
       
       const event = await supabaseService.events.get(eventId);
       const scores = await supabaseService.scores.getAll(eventId);
-      const registrations = await supabaseService.registrations.getAll(eventId);
       
       if (!event || !scores || scores.length === 0) {
         console.log('[EventFooter] No event or scores found, skipping handicap calculation');
@@ -168,9 +167,9 @@ export function EventFooter({
 
   const navigateTo = (route: string) => {
     if (route === 'home') {
-      router.push('/(tabs)/dashboard');
+      router.replace('/(tabs)/dashboard');
     } else {
-      router.push(`/(event)/${eventId}/${route}` as any);
+      router.replace(`/(event)/${eventId}/${route}` as any);
     }
   };
 
