@@ -1326,18 +1326,6 @@ export default function EventRegistrationScreen() {
     <>
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.refreshButton}
-          onPress={handleManualRefresh}
-          disabled={isRefreshing}
-        >
-          <Ionicons 
-            name={isRefreshing ? "hourglass-outline" : "refresh-outline"} 
-            size={16} 
-            color="#fff" 
-          />
-          <Text style={styles.refreshButtonText}>Refresh Data</Text>
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>REGISTRATION</Text>
         {currentUser?.isAdmin && event && selectedPlayers.length > 0 && (
           <TouchableOpacity
@@ -1354,6 +1342,19 @@ export default function EventRegistrationScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      <TouchableOpacity
+        style={styles.refreshButton}
+        onPress={handleManualRefresh}
+        disabled={isRefreshing}
+      >
+        <Ionicons 
+          name={isRefreshing ? "hourglass-outline" : "refresh-outline"} 
+          size={16} 
+          color="#fff" 
+        />
+        <Text style={styles.refreshButtonText}>Refresh Data</Text>
+      </TouchableOpacity>
 
       {event && event.photoUrl && (
         <View style={styles.eventPhotoContainer}>
@@ -2328,15 +2329,20 @@ const styles = StyleSheet.create({
   refreshButton: {
     position: 'absolute' as const,
     left: 12,
-    top: '50%' as const,
-    transform: [{ translateY: -12 }],
+    top: 130,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(27, 94, 32, 0.9)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
     gap: 4,
+    zIndex: 100,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
   },
   refreshButtonText: {
     fontSize: 11,
