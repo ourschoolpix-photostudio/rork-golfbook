@@ -965,28 +965,38 @@ export default function EventRegistrationScreen() {
   };
 
   const handleOutputFormatSelected = async (format: 'pdf' | 'text' | 'checkin') => {
+    console.log('[registration] 🎯 handleOutputFormatSelected called with format:', format);
     setOutputFormatModalVisible(false);
     const regs = registrationsQuery.data || [];
+    console.log('[registration] 📊 Registrations count:', regs.length);
+    console.log('[registration] 👥 Members count:', allMembers.length);
 
     if (format === 'checkin') {
       setIsGeneratingPDF(true);
       try {
+        console.log('[registration] 🚀 Starting check-in PDF generation...');
         if (event) {
           await generateCheckInPDF({
             registrations: regs,
             members: allMembers,
             event,
           }, orgInfo.logoUrl);
+          console.log('[registration] ✅ Check-in PDF generated successfully');
+        } else {
+          console.log('[registration] ❌ No event found');
+          Alert.alert('Error', 'Event not found');
         }
       } catch (error) {
         console.error('[registration] ❌ Check-in PDF generation error:', error);
-        Alert.alert('Error', 'Failed to generate check-in PDF. Please try again.');
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        Alert.alert('Error', `Failed to generate check-in PDF: ${errorMsg}`);
       } finally {
         setIsGeneratingPDF(false);
       }
     } else if (format === 'pdf') {
       setIsGeneratingPDF(true);
       try {
+        console.log('[registration] 🚀 Starting registration PDF generation...');
         if (event) {
           await generateRegistrationPDF(
             {
@@ -996,16 +1006,22 @@ export default function EventRegistrationScreen() {
             },
             includeHandicapForPDF
           );
+          console.log('[registration] ✅ Registration PDF generated successfully');
+        } else {
+          console.log('[registration] ❌ No event found');
+          Alert.alert('Error', 'Event not found');
         }
       } catch (error) {
         console.error('[registration] ❌ PDF generation error:', error);
-        Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        Alert.alert('Error', `Failed to generate PDF: ${errorMsg}`);
       } finally {
         setIsGeneratingPDF(false);
       }
     } else {
       setIsGeneratingPDF(true);
       try {
+        console.log('[registration] 🚀 Starting text generation...');
         if (event) {
           const textContent = await generateRegistrationText(
             {
@@ -1016,11 +1032,16 @@ export default function EventRegistrationScreen() {
             includeHandicapForPDF
           );
           setGeneratedTextContent(textContent);
+          console.log('[registration] ✅ Text generated successfully');
+        } else {
+          console.log('[registration] ❌ No event found');
+          Alert.alert('Error', 'Event not found');
         }
         setTextPreviewModalVisible(true);
       } catch (error) {
         console.error('[registration] ❌ Text generation error:', error);
-        Alert.alert('Error', 'Failed to generate text. Please try again.');
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        Alert.alert('Error', `Failed to generate text: ${errorMsg}`);
       } finally {
         setIsGeneratingPDF(false);
       }
