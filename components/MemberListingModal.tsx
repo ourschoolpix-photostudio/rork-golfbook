@@ -324,29 +324,136 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
         return;
       }
       
-      const maxDigits = String(filteredMembers.length).length;
       let rowsHTML = '';
       
       filteredMembers.forEach((member, index) => {
-        const paddedNum = String(index + 1).padStart(maxDigits, '0');
-        const parts: string[] = [];
-        
+        const num = index + 1;
         const nameField = selectedFields.find(f => f.key === 'name');
-        if (nameField) {
-          parts.push(`<b>${getFieldValue(member, 'name')}</b>`);
-        }
+        const memberName = nameField ? getFieldValue(member, 'name') : `Member ${num}`;
         
+        const otherFields: string[] = [];
         selectedFields.forEach(f => {
           if (f.key !== 'name') {
             const value = getFieldValue(member, f.key);
-            parts.push(`<span style="color:#666">${f.label}: ${value}</span>`);
+            otherFields.push(`<span style="color: #666666; font-size: 13px;">${f.label}: <strong style="color: #333333;">${value}</strong></span>`);
           }
         });
         
-        rowsHTML += `<tr><td style="padding:8px 4px;width:35px;color:#999;font-size:13px">${paddedNum}.</td><td style="padding:8px 4px;font-size:14px">${parts.join(' | ')}</td></tr>`;
+        const isEven = num % 2 === 0;
+        const rowBg = isEven ? '#F8F9FA' : '#FFFFFF';
+        
+        rowsHTML += `
+          <tr style="background-color: ${rowBg};">
+            <td style="padding: 14px 12px; width: 45px; color: #1B5E20; font-size: 14px; font-weight: 600; vertical-align: top; border-bottom: 1px solid #E8E8E8;">
+              ${num}.
+            </td>
+            <td style="padding: 14px 12px; border-bottom: 1px solid #E8E8E8;">
+              <div style="font-size: 15px; font-weight: 600; color: #1A1A1A; margin-bottom: ${otherFields.length > 0 ? '6px' : '0'};">
+                ${memberName}
+              </div>
+              ${otherFields.length > 0 ? `<div style="display: flex; flex-wrap: wrap; gap: 12px;">${otherFields.join(' &nbsp;|&nbsp; ')}</div>` : ''}
+            </td>
+          </tr>
+        `;
       });
       
-      const htmlBody = `<html><head><meta charset="UTF-8"></head><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9f9f9"><div style="background:#fff;border-radius:12px;padding:24px"><div style="text-align:center;border-bottom:2px solid #1B5E20;padding-bottom:16px;margin-bottom:20px"><h2 style="color:#1B5E20;margin:0 0 4px 0;font-size:22px">${categoryLabels[activeTab]}</h2><p style="color:#666;margin:0;font-size:14px">${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}</p></div><table style="width:100%;border-collapse:collapse">${rowsHTML}</table><div style="margin-top:20px;padding-top:16px;border-top:2px solid #1B5E20;text-align:center"><p style="color:#1B5E20;font-weight:700;margin:0;font-size:15px">Total: ${filteredMembers.length} member${filteredMembers.length !== 1 ? 's' : ''}</p></div></div></body></html>`;
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #F0F2F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td style="padding: 30px 20px;">
+        <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%); padding: 32px 24px; text-align: center;">
+              <table role="presentation" style="width: 100%;">
+                <tr>
+                  <td style="text-align: center;">
+                    <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.15); border-radius: 50%; width: 56px; height: 56px; line-height: 56px; margin-bottom: 12px;">
+                      <span style="font-size: 28px;">📋</span>
+                    </div>
+                    <h1 style="margin: 0 0 8px 0; font-size: 26px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.5px;">
+                      ${categoryLabels[activeTab]}
+                    </h1>
+                    <p style="margin: 0; font-size: 15px; color: rgba(255, 255, 255, 0.85);">
+                      Generated on ${currentDate}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Summary Card -->
+          <tr>
+            <td style="padding: 24px;">
+              <table role="presentation" style="width: 100%; background-color: #F8F9FA; border-radius: 12px; border: 1px solid #E0E0E0;">
+                <tr>
+                  <td style="padding: 20px; text-align: center;">
+                    <div style="font-size: 42px; font-weight: 700; color: #1B5E20; line-height: 1;">
+                      ${filteredMembers.length}
+                    </div>
+                    <div style="font-size: 14px; color: #666666; margin-top: 6px; text-transform: uppercase; letter-spacing: 1px;">
+                      Total Member${filteredMembers.length !== 1 ? 's' : ''}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Member List -->
+          <tr>
+            <td style="padding: 0 24px 24px 24px;">
+              <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E0E0E0; overflow: hidden;">
+                <tr>
+                  <td colspan="2" style="background-color: #1B5E20; padding: 14px 16px;">
+                    <span style="font-size: 15px; font-weight: 600; color: #FFFFFF;">Member Details</span>
+                  </td>
+                </tr>
+                ${rowsHTML}
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #F8F9FA; padding: 20px 24px; border-top: 1px solid #E0E0E0;">
+              <table role="presentation" style="width: 100%;">
+                <tr>
+                  <td style="text-align: center;">
+                    <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #1B5E20;">
+                      Total: ${filteredMembers.length} Member${filteredMembers.length !== 1 ? 's' : ''}
+                    </p>
+                    <p style="margin: 0; font-size: 12px; color: #999999;">
+                      This list was generated from the VGA Golf App
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `;
       
       console.log('[MemberListingModal] Composing email with HTML body, length:', htmlBody.length);
       
