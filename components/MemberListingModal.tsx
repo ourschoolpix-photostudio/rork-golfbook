@@ -8,11 +8,13 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Linking,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
+
 import { Member } from '@/types';
 
 interface MemberListingModalProps {
@@ -33,7 +35,7 @@ const LOCAL_STATES = ['', 'MD', 'VA', 'PA', 'NJ', 'DE'];
 
 export function MemberListingModal({ visible, onClose, members }: MemberListingModalProps) {
   const [activeTab, setActiveTab] = useState<MemberCategory>('all');
-  const [outputTab, setOutputTab] = useState<'text' | 'email' | 'pdf'>('text');
+  const [outputTab, setOutputTab] = useState<'text' | 'email'>('text');
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [fields, setFields] = useState<FieldOption[]>([
@@ -290,13 +292,10 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
         
         console.log('[MemberListingModal] PDF created at:', uri);
         
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'application/pdf',
-            dialogTitle: 'Share Member Listing PDF',
-            UTI: 'com.adobe.pdf',
-          });
-        }
+        await Share.share({
+          url: uri,
+          title: `${categoryLabels[activeTab]} PDF`,
+        });
       }
     } catch (error) {
       console.error('[MemberListingModal] PDF generation error:', error);
@@ -304,6 +303,28 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
       setGenerating(false);
     }
   }, [filteredMembers, selectedFields, activeTab, getFieldValue, categoryLabels]);
+
+  const openEmailClient = useCallback(async () => {
+    if (selectedFields.length === 0) return;
+    
+    console.log('[MemberListingModal] Opening email client...');
+    
+    try {
+      const subject = encodeURIComponent(categoryLabels[activeTab]);
+      const body = encodeURIComponent(emailOutput);
+      const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+      
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
+      if (canOpen) {
+        await Linking.openURL(mailtoUrl);
+        console.log('[MemberListingModal] Email client opened');
+      } else {
+        console.error('[MemberListingModal] Cannot open email client');
+      }
+    } catch (error) {
+      console.error('[MemberListingModal] Email client error:', error);
+    }
+  }, [emailOutput, activeTab, categoryLabels, selectedFields]);
 
   const handleCopy = useCallback(async () => {
     const content = outputTab === 'text' ? textOutput : emailOutput;
@@ -409,55 +430,58 @@ export function MemberListingModal({ visible, onClose, members }: MemberListingM
               Email
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.outputTab, outputTab === 'pdf' && styles.outputTabActive]}
-            onPress={() => setOutputTab('pdf')}
-          >
-            <Ionicons name="document-outline" size={18} color={outputTab === 'pdf' ? '#fff' : '#666'} />
-            <Text style={[styles.outputTabText, outputTab === 'pdf' && styles.outputTabTextActive]}>
-              PDF
-            </Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.outputContainer}>
           <ScrollView style={styles.outputScroll} showsVerticalScrollIndicator={true}>
             <Text style={styles.outputText} selectable>
-              {outputTab === 'text' ? textOutput : emailOutput}
+              {textOutput}
             </Text>
           </ScrollView>
         </View>
 
         <View style={styles.footer}>
-          {outputTab === 'pdf' ? (
-            <TouchableOpacity
-              style={[styles.copyButton, generating && styles.copyButtonDisabled]}
-              onPress={generatePDF}
-              disabled={generating || selectedFields.length === 0}
-            >
-              {generating ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Ionicons name="download-outline" size={20} color="#fff" />
-              )}
-              <Text style={styles.copyButtonText}>
-                {generating ? 'Generating...' : 'Generate PDF'}
-              </Text>
-            </TouchableOpacity>
+          {outputTab === 'text' ? (
+            <View style={styles.footerButtons}>
+              <TouchableOpacity
+                style={[styles.footerButton, copied && styles.copyButtonSuccess]}
+                onPress={handleCopy}
+              >
+                <Ionicons
+                  name={copied ? 'checkmark-circle' : 'copy-outline'}
+                  size={20}
+                  color="#fff"
+                />
+                <Text style={styles.copyButtonText}>
+                  {copied ? 'Copied!' : 'Copy'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           ) : (
-            <TouchableOpacity
-              style={[styles.copyButton, copied && styles.copyButtonSuccess]}
-              onPress={handleCopy}
-            >
-              <Ionicons
-                name={copied ? 'checkmark-circle' : 'copy-outline'}
-                size={20}
-                color="#fff"
-              />
-              <Text style={styles.copyButtonText}>
-                {copied ? 'Copied!' : `Copy ${outputTab === 'text' ? 'Text' : 'Email Body'}`}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.footerButtons}>
+              <TouchableOpacity
+                style={[styles.footerButton, styles.saveButton, generating && styles.copyButtonDisabled]}
+                onPress={generatePDF}
+                disabled={generating || selectedFields.length === 0}
+              >
+                {generating ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="save-outline" size={20} color="#fff" />
+                )}
+                <Text style={styles.copyButtonText}>
+                  {generating ? 'Saving...' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.footerButton, styles.emailButton]}
+                onPress={openEmailClient}
+                disabled={selectedFields.length === 0}
+              >
+                <Ionicons name="mail-outline" size={20} color="#fff" />
+                <Text style={styles.copyButtonText}>Email</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </View>
@@ -633,5 +657,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  footerButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  footerButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    borderRadius: 10,
+    gap: 8,
+  },
+  saveButton: {
+    backgroundColor: '#34C759',
+  },
+  emailButton: {
+    backgroundColor: '#007AFF',
   },
 });
