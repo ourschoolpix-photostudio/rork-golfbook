@@ -11,7 +11,11 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
+  Platform,
+  Share,
 } from 'react-native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { Alert } from '@/utils/alertPolyfill';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -84,6 +88,9 @@ export default function EventRegistrationScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [membershipRenewalModalVisible, setMembershipRenewalModalVisible] = useState(false);
   const [memberForRenewal, setMemberForRenewal] = useState<Member | null>(null);
+  const [pdfOptionsModalVisible, setPdfOptionsModalVisible] = useState(false);
+  const [handicapConfirmModalVisible, setHandicapConfirmModalVisible] = useState(false);
+  const [selectedPdfOption, setSelectedPdfOption] = useState<'checkin' | 'weelist' | 'text' | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -852,6 +859,198 @@ export default function EventRegistrationScreen() {
       setPaypalInvoiceModalVisible(true);
     }
   };
+
+  const handleGenerateList = async (includeHandicaps: boolean) => {
+    setHandicapConfirmModalVisible(false);
+    
+    if (!event || selectedPlayers.length === 0) {
+      Alert.alert('Error', 'No players to generate list for');
+      setSelectedPdfOption(null);
+      return;
+    }
+
+    const sortedPlayers = [...selectedPlayers].sort((a, b) => a.name.localeCompare(b.name));
+    const paidPlayers = sortedPlayers.filter(p => registrations[p.name]?.paymentStatus === 'paid');
+    const unpaidPlayers = sortedPlayers.filter(p => registrations[p.name]?.paymentStatus !== 'paid');
+
+    try {
+      if (selectedPdfOption === 'checkin') {
+        const checkInHtml = generateCheckInPdf(paidPlayers, unpaidPlayers, includeHandicaps);
+        const { uri } = await Print.printToFileAsync({ html: checkInHtml });
+        
+        if (Platform.OS === 'web') {
+          await Print.printAsync({ html: checkInHtml });
+        } else {
+          const isAvailable = await Sharing.isAvailableAsync();
+          if (isAvailable) {
+            await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Check In List' });
+          } else {
+            Alert.alert('Success', 'PDF generated successfully');
+          }
+        }
+      } else if (selectedPdfOption === 'weelist') {
+        const weeListHtml = generateWeeListPdf(sortedPlayers, includeHandicaps);
+        const { uri } = await Print.printToFileAsync({ html: weeListHtml });
+        
+        if (Platform.OS === 'web') {
+          await Print.printAsync({ html: weeListHtml });
+        } else {
+          const isAvailable = await Sharing.isAvailableAsync();
+          if (isAvailable) {
+            await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Wee List' });
+          } else {
+            Alert.alert('Success', 'PDF generated successfully');
+          }
+        }
+      } else if (selectedPdfOption === 'text') {
+        const textContent = generateTextList(sortedPlayers, includeHandicaps);
+        
+        if (Platform.OS === 'web') {
+          Alert.alert('Player List', textContent);
+        } else {
+          await Share.share({
+            message: textContent,
+            title: `${event.name} - Player List`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('[registration] Error generating list:', error);
+      Alert.alert('Error', 'Failed to generate list. Please try again.');
+    }
+    
+    setSelectedPdfOption(null);
+  };
+
+  const generateCheckInPdf = (paidPlayers: Member[], unpaidPlayers: Member[], includeHandicaps: boolean): string => {
+    const eventName = event?.name || 'Event';
+    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
+    
+    const generatePlayerRow = (player: Member, index: number) => {
+      const playerReg = registrations[player.name];
+      const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
+      return `
+        <tr>
+          <td style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0; width: 30px;">${index + 1}</td>
+          <td style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0;">${player.name}</td>
+          ${includeHandicaps ? `<td style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0; text-align: center;">${handicap}</td>` : ''}
+          <td style="padding: 8px 12px; border-bottom: 1px solid #e0e0e0; width: 60px;">☐</td>
+        </tr>
+      `;
+    };
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #1B5E20; font-size: 24px; margin-bottom: 4px; }
+          h2 { color: #666; font-size: 14px; margin-top: 0; font-weight: normal; }
+          h3 { color: #333; font-size: 16px; margin-top: 24px; margin-bottom: 8px; padding: 8px; background: #f0f0f0; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th { text-align: left; padding: 8px 12px; background: #1B5E20; color: white; }
+          .paid-section h3 { background: #E8F5E9; color: #1B5E20; }
+          .unpaid-section h3 { background: #FFEBEE; color: #C62828; }
+        </style>
+      </head>
+      <body>
+        <h1>${eventName}</h1>
+        <h2>${eventDate} - Check In List</h2>
+        
+        <div class="paid-section">
+          <h3>PAID (${paidPlayers.length})</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                ${includeHandicaps ? '<th style="text-align: center;">Hcp</th>' : ''}
+                <th>✓</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${paidPlayers.map((p, i) => generatePlayerRow(p, i)).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="unpaid-section">
+          <h3>UNPAID (${unpaidPlayers.length})</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                ${includeHandicaps ? '<th style="text-align: center;">Hcp</th>' : ''}
+                <th>✓</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${unpaidPlayers.map((p, i) => generatePlayerRow(p, i)).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <p style="margin-top: 20px; font-size: 10px; color: #999;">Total: ${paidPlayers.length + unpaidPlayers.length} players</p>
+      </body>
+      </html>
+    `;
+  };
+
+  const generateWeeListPdf = (players: Member[], includeHandicaps: boolean): string => {
+    const eventName = event?.name || 'Event';
+    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
+    
+    const playerItems = players.map((player, index) => {
+      const playerReg = registrations[player.name];
+      const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
+      const handicapText = includeHandicaps ? ` (${handicap})` : '';
+      return `<span style="display: inline-block; width: 48%; font-size: 9px; padding: 2px 0;">${index + 1}. ${player.name}${handicapText}</span>`;
+    }).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          @page { size: 8.5in 2in; margin: 0.25in; }
+          body { font-family: Arial, sans-serif; padding: 8px; font-size: 9px; }
+          h1 { font-size: 11px; margin: 0 0 4px 0; color: #1B5E20; }
+          h2 { font-size: 8px; margin: 0 0 6px 0; color: #666; font-weight: normal; }
+          .players { line-height: 1.4; }
+        </style>
+      </head>
+      <body>
+        <h1>${eventName}</h1>
+        <h2>${eventDate} - ${players.length} Players</h2>
+        <div class="players">
+          ${playerItems}
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const generateTextList = (players: Member[], includeHandicaps: boolean): string => {
+    const eventName = event?.name || 'Event';
+    const eventDate = event?.date ? formatDateForDisplay(event.date) : '';
+    
+    let text = `${eventName}\n${eventDate}\n${'─'.repeat(30)}\n\n`;
+    
+    players.forEach((player, index) => {
+      const playerReg = registrations[player.name];
+      const handicap = playerReg?.adjustedHandicap ?? player.handicap ?? 0;
+      const handicapText = includeHandicaps ? ` (${handicap})` : '';
+      text += `${index + 1}. ${player.name}${handicapText}\n`;
+    });
+    
+    text += `\n${'─'.repeat(30)}\nTotal: ${players.length} players`;
+    
+    return text;
+  };
   const isCurrentUserRegistered = () => {
     if (!currentUser) return false;
     return selectedPlayers.some((p) => p.id === currentUser.id && p.pin === currentUser.pin);
@@ -1170,7 +1369,13 @@ export default function EventRegistrationScreen() {
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>REGISTRATION</Text>
         </View>
-        <View style={styles.pdfButton} />
+        <TouchableOpacity
+          style={styles.pdfButton}
+          onPress={() => setPdfOptionsModalVisible(true)}
+        >
+          <Ionicons name="document-text-outline" size={16} color="#fff" />
+          <Text style={styles.pdfButtonText}>PDF</Text>
+        </TouchableOpacity>
       </View>
 
       {event && event.photoUrl && (
@@ -1910,6 +2115,100 @@ export default function EventRegistrationScreen() {
         onClose={() => setPaypalInvoiceModalVisible(false)}
         onRegister={handleZelleRegistration}
       />
+
+      {pdfOptionsModalVisible && (
+        <View style={styles.pdfModalOverlay}>
+          <View style={styles.pdfModal}>
+            <View style={styles.pdfModalHeader}>
+              <Text style={styles.pdfModalTitle}>Generate List</Text>
+              <TouchableOpacity onPress={() => setPdfOptionsModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.pdfModalContent}>
+              <TouchableOpacity
+                style={styles.pdfOptionButton}
+                onPress={() => {
+                  setSelectedPdfOption('checkin');
+                  setPdfOptionsModalVisible(false);
+                  setHandicapConfirmModalVisible(true);
+                }}
+              >
+                <Ionicons name="checkbox-outline" size={24} color="#1B5E20" />
+                <View style={styles.pdfOptionTextContainer}>
+                  <Text style={styles.pdfOptionButtonText}>Check In</Text>
+                  <Text style={styles.pdfOptionDescription}>Full list sorted by paid/unpaid</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.pdfOptionButton}
+                onPress={() => {
+                  setSelectedPdfOption('weelist');
+                  setPdfOptionsModalVisible(false);
+                  setHandicapConfirmModalVisible(true);
+                }}
+              >
+                <Ionicons name="list-outline" size={24} color="#1976D2" />
+                <View style={styles.pdfOptionTextContainer}>
+                  <Text style={styles.pdfOptionButtonText}>Wee List</Text>
+                  <Text style={styles.pdfOptionDescription}>Compact 2-inch PDF listing</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.pdfOptionButton}
+                onPress={() => {
+                  setSelectedPdfOption('text');
+                  setPdfOptionsModalVisible(false);
+                  setHandicapConfirmModalVisible(true);
+                }}
+              >
+                <Ionicons name="text-outline" size={24} color="#9C27B0" />
+                <View style={styles.pdfOptionTextContainer}>
+                  <Text style={styles.pdfOptionButtonText}>Text</Text>
+                  <Text style={styles.pdfOptionDescription}>Plain text listing</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {handicapConfirmModalVisible && (
+        <View style={styles.pdfModalOverlay}>
+          <View style={styles.pdfModal}>
+            <View style={styles.pdfModalHeader}>
+              <Text style={styles.pdfModalTitle}>Include Handicaps?</Text>
+              <TouchableOpacity onPress={() => {
+                setHandicapConfirmModalVisible(false);
+                setSelectedPdfOption(null);
+              }}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.pdfModalContent}>
+              <TouchableOpacity
+                style={[styles.handicapChoiceButton, { backgroundColor: '#1B5E20' }]}
+                onPress={() => handleGenerateList(true)}
+              >
+                <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                <Text style={styles.handicapChoiceButtonText}>Yes, Include Handicaps</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.handicapChoiceButton, { backgroundColor: '#666' }]}
+                onPress={() => handleGenerateList(false)}
+              >
+                <Ionicons name="close-circle" size={24} color="#fff" />
+                <Text style={styles.handicapChoiceButtonText}>No, Names Only</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
 
       {paymentMethodModalVisible && (
         <View style={styles.paymentModalOverlay}>
@@ -2946,5 +3245,78 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
-
+  pdfModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  pdfModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '85%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  pdfModalHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  pdfModalTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+  },
+  pdfModalContent: {
+    padding: 16,
+    gap: 12,
+  },
+  pdfOptionButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  pdfOptionTextContainer: {
+    flex: 1,
+  },
+  pdfOptionButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1a1a1a',
+  },
+  pdfOptionDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  handicapChoiceButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 10,
+  },
+  handicapChoiceButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
 });
