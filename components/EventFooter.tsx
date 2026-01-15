@@ -165,11 +165,20 @@ export function EventFooter({
     }
   };
 
+  const [isNavigating, setIsNavigating] = React.useState(false);
+
   const navigateTo = (route: string) => {
-    if (route === 'home') {
-      router.push('/(tabs)/dashboard');
-    } else {
-      router.push(`/(event)/${eventId}/${route}` as any);
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    try {
+      if (route === 'home') {
+        router.push('/(tabs)/dashboard');
+      } else {
+        router.push(`/(event)/${eventId}/${route}` as any);
+      }
+    } finally {
+      setTimeout(() => setIsNavigating(false), 1000);
     }
   };
 
