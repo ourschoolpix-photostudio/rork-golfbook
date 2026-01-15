@@ -167,9 +167,9 @@ export function EventFooter({
 
   const navigateTo = (route: string) => {
     if (route === 'home') {
-      router.replace('/(tabs)/dashboard');
+      router.push('/(tabs)/dashboard');
     } else {
-      router.replace(`/(event)/${eventId}/${route}` as any);
+      router.push(`/(event)/${eventId}/${route}` as any);
     }
   };
 

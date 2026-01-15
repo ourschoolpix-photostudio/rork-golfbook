@@ -235,12 +235,23 @@ export default function EventRegistrationScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      eventQuery.refetch();
+      if (isMountedRef.current && !eventQuery.isFetching) {
+        eventQuery.refetch();
+      }
     }, [eventId])
   );
 
   const isProcessingRef = useRef(false);
   const lastProcessedKeyRef = useRef<string>('');
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      isProcessingRef.current = false;
+    };
+  }, []);
 
   const processRegistrations = useCallback((regs: any[], membersData: Member[]) => {
     const registered: Member[] = [];
@@ -317,6 +328,10 @@ export default function EventRegistrationScreen() {
       return;
     }
     
+    if (!isMountedRef.current) {
+      return;
+    }
+    
     isProcessingRef.current = true;
     lastProcessedKeyRef.current = dataKey;
     
@@ -339,7 +354,9 @@ export default function EventRegistrationScreen() {
     }
     
     setTimeout(() => {
-      isProcessingRef.current = false;
+      if (isMountedRef.current) {
+        isProcessingRef.current = false;
+      }
     }, 100);
   }, [eventQuery.data, registrationsQuery.data, allMembers, processRegistrations]);
 
