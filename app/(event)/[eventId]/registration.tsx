@@ -403,6 +403,17 @@ export default function EventRegistrationScreen() {
     loadCourseHandicapSetting();
   }, [loadCourseHandicapSetting]);
 
+  // Poll for course handicap changes every 500ms to detect toggle changes from footer
+  useEffect(() => {
+    if (!eventId) return;
+    
+    const intervalId = setInterval(() => {
+      loadCourseHandicapSetting();
+    }, 500);
+    
+    return () => clearInterval(intervalId);
+  }, [eventId, loadCourseHandicapSetting]);
+
   const autoRegisterProcessedRef = React.useRef(false);
 
   useEffect(() => {
