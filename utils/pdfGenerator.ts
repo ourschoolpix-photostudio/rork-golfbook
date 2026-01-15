@@ -1160,40 +1160,33 @@ export async function generateInvoicePDF(
       }
     }
 
-    // Native iOS/Android - Generate PDF and attach to email
-    console.log('[pdfGenerator] 📧 Using MailComposer with PDF attachment for native...');
+    // Native iOS/Android - Use beautiful HTML email body
+    console.log('[pdfGenerator] 📧 Using MailComposer with HTML body for native...');
     try {
-      // First generate the PDF
-      const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
-      console.log('[pdfGenerator] 📄 Generating PDF for email attachment...');
-      
-      const { uri } = await Print.printToFileAsync({
-        html: htmlContent,
-        base64: false,
-      });
-      console.log('[pdfGenerator] ✅ PDF created at:', uri);
-
       const isMailAvailable = await MailComposer.isAvailableAsync();
       console.log('[pdfGenerator] MailComposer.isAvailableAsync():', isMailAvailable);
       
       if (isMailAvailable) {
-        // Create a simple text body with the PDF attached
-        const textBody = `Dear ${member.name},\n\nThank you for registering for ${event.name}!\n\nPlease find your invoice attached to this email.\n\n${!isPaid ? `Amount Due: ${total.toFixed(2)}\n\nPayment Options:\n${orgInfo?.zellePhone ? `• Zelle: ${orgInfo.zellePhone}\n` : ''}${orgInfo?.paypalClientId ? `• PayPal: https://www.paypal.com/paypalme/cgamembers/${total.toFixed(2)}\n` : ''}` : 'Your payment has been received. Thank you!'}\n\nIf you have any questions, please contact the event organizer.\n\nBest regards,\n${orgInfo?.name || 'Event Organizer'}`;
-
-        console.log('[pdfGenerator] 📧 Opening mail composer with PDF attachment...');
+        console.log('[pdfGenerator] 📧 Opening mail composer with HTML body...');
         
         const result = await MailComposer.composeAsync({
           recipients: [member.email],
           subject: subject,
-          body: textBody,
-          isHtml: false,
-          attachments: [uri],
+          body: htmlBody,
+          isHtml: true,
         });
 
         console.log('[pdfGenerator] ✅ MailComposer result:', result.status);
         return { status: result.status as 'sent' | 'saved' | 'cancelled' };
       } else {
-        console.log('[pdfGenerator] ⚠️ MailComposer not available, using share sheet...');
+        console.log('[pdfGenerator] ⚠️ MailComposer not available, generating PDF for sharing...');
+        
+        // Generate PDF as fallback
+        const pdfHtmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
+        const { uri } = await Print.printToFileAsync({
+          html: pdfHtmlContent,
+          base64: false,
+        });
         
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(uri, {
@@ -1212,9 +1205,9 @@ export async function generateInvoicePDF(
       // Last resort - try to share as PDF via share sheet
       console.log('[pdfGenerator] 📄 Attempting share sheet as fallback...');
       try {
-        const htmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
+        const pdfHtmlContent = buildInvoiceHTMLContent(registration, member, event, orgInfo);
         const { uri } = await Print.printToFileAsync({
-          html: htmlContent,
+          html: pdfHtmlContent,
           base64: false,
         });
         
