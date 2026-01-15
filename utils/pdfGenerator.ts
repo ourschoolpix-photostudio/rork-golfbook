@@ -1291,63 +1291,219 @@ export async function generateInvoicePDF(
 }
 
 function buildEmailHTMLBody(params: PlainTextEmailParams): string {
-  const { member, event, orgInfo, isPaid, total, isSponsor, dateRange, tournamentFlight } = params;
+  const { member, event, registration, orgInfo, isPaid, total, isSponsor, dateRange, tournamentFlight } = params;
+  
+  const entryFee = Number(event.entryFee) || 0;
+  const numberOfGuests = registration?.numberOfGuests || 0;
+  const invoiceNumber = registration?.id?.substring(0, 8).toUpperCase() || 'N/A';
+  const invoiceDate = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
   
   let html = `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background: #1B5E20; color: white; padding: 20px; text-align: center;">
-    <h1 style="margin: 0; font-size: 24px;">${isPaid ? 'PAYMENT CONFIRMATION' : 'REGISTRATION INVOICE'}</h1>
-  </div>
-  
-  <div style="padding: 20px; background: #f9f9f9;">`;
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%); padding: 30px; text-align: center;">
+              ${orgInfo?.logoUrl ? `<img src="${orgInfo.logoUrl}" alt="Logo" style="max-height: 60px; max-width: 180px; margin-bottom: 15px;" />` : ''}
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px;">${isPaid ? 'PAYMENT CONFIRMATION' : 'REGISTRATION INVOICE'}</h1>
+              ${orgInfo?.name ? `<p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">${orgInfo.name}</p>` : ''}
+            </td>
+          </tr>
+          
+          <!-- Invoice Info Bar -->
+          <tr>
+            <td style="background-color: #E8F5E9; padding: 15px 30px; border-bottom: 1px solid #C8E6C9;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="font-size: 13px; color: #1B5E20;"><strong>Invoice #:</strong> ${invoiceNumber}</td>
+                  <td align="right" style="font-size: 13px; color: #1B5E20;"><strong>Date:</strong> ${invoiceDate}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 30px;">`;
 
   if (isSponsor) {
-    html += `<div style="background: #FF9500; color: white; padding: 10px 20px; border-radius: 20px; display: inline-block; margin-bottom: 15px;">SPONSOR REGISTRATION</div>`;
-  }
-
-  html += `
-    <div style="background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
-      <h3 style="color: #1B5E20; margin-top: 0;">Member Information</h3>
-      <p><strong>Name:</strong> ${member.name}</p>
-      ${member.email ? `<p><strong>Email:</strong> ${member.email}</p>` : ''}
-      ${member.phone ? `<p><strong>Phone:</strong> ${formatPhoneNumber(member.phone)}</p>` : ''}
-      ${tournamentFlight ? `<p><strong>Flight:</strong> ${tournamentFlight}</p>` : ''}
-    </div>
-
-    <div style="background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
-      <h3 style="color: #1B5E20; margin-top: 0;">Event Information</h3>
-      <p><strong>Event:</strong> ${event.name}</p>
-      <p><strong>Date:</strong> ${dateRange}</p>
-      ${event.location ? `<p><strong>Location:</strong> ${event.location}</p>` : ''}
-      ${!isSponsor ? `<p><strong>Entry Fee:</strong> ${(Number(event.entryFee) || 0).toFixed(2)}</p>` : ''}
-    </div>
-
-    <div style="background: #E8F5E9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-      <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; color: #1B5E20;">
-        <span>Total Amount:</span>
-        <span>${total.toFixed(2)}</span>
-      </div>
-    </div>
-
-    <div style="padding: 15px; border-radius: 8px; text-align: center; font-weight: 700; ${isPaid ? 'background: #E8F5E9; color: #2E7D32; border: 2px solid #2E7D32;' : 'background: #FFF9E6; color: #F57C00; border: 2px solid #F57C00;'}">
-      ${isPaid ? '✓ PAID IN FULL' : `AMOUNT DUE: ${total.toFixed(2)}`}
-    </div>`;
-
-  if (!isPaid && orgInfo?.zellePhone) {
     html += `
-    <div style="background: #E3F2FD; padding: 15px; border-radius: 8px; border: 2px solid #1976D2; margin-top: 15px;">
-      <h3 style="color: #1976D2; margin-top: 0;">Payment Instructions</h3>
-      <p><strong>Zelle:</strong> Send ${total.toFixed(2)} to ${formatPhoneNumber(orgInfo.zellePhone)}</p>
-    </div>`;
+              <div style="background: linear-gradient(135deg, #FF9500 0%, #FFB300 100%); color: #ffffff; padding: 12px 24px; border-radius: 25px; display: inline-block; margin-bottom: 20px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">★ SPONSOR REGISTRATION ★</div>`;
   }
 
   html += `
-    <div style="text-align: center; color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
-      <p>Thank you for your registration!</p>
-      ${orgInfo?.name ? `<p><strong>${orgInfo.name}</strong></p>` : ''}
-    </div>
-  </div>
-</div>`;
+              <!-- Two Column Layout -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
+                <tr>
+                  <td width="48%" valign="top" style="padding-right: 15px;">
+                    <div style="background: #FAFAFA; border-radius: 8px; padding: 20px; border-left: 4px solid #1B5E20;">
+                      <h3 style="color: #1B5E20; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Member Details</h3>
+                      <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #333;">${member.name}</p>
+                      ${member.email ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #666;">✉ ${member.email}</p>` : ''}
+                      ${member.phone ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #666;">☎ ${formatPhoneNumber(member.phone)}</p>` : ''}
+                      ${tournamentFlight ? `<p style="margin: 8px 0 0 0; font-size: 13px;"><span style="background: #E3F2FD; color: #1976D2; padding: 4px 10px; border-radius: 12px; font-weight: 600;">Flight ${tournamentFlight}</span></p>` : ''}
+                    </div>
+                  </td>
+                  <td width="4%"></td>
+                  <td width="48%" valign="top">
+                    <div style="background: #FAFAFA; border-radius: 8px; padding: 20px; border-left: 4px solid #2196F3;">
+                      <h3 style="color: #1976D2; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Event Details</h3>
+                      <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #333;">${event.name}</p>
+                      <p style="margin: 0 0 6px 0; font-size: 13px; color: #666;">📅 ${dateRange}</p>
+                      ${event.location ? `<p style="margin: 0 0 6px 0; font-size: 13px; color: #666;">📍 ${event.location}</p>` : ''}
+                      ${event.numberOfDays ? `<p style="margin: 0 0 0 0; font-size: 13px; color: #666;">🏌️ ${event.numberOfDays} Day${event.numberOfDays > 1 ? 's' : ''}</p>` : ''}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Invoice Items Table -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px; border: 1px solid #E0E0E0; border-radius: 8px; overflow: hidden;">
+                <tr>
+                  <td style="background: #1B5E20; color: #ffffff; padding: 12px 15px; font-size: 12px; font-weight: 600; text-transform: uppercase;">Description</td>
+                  <td style="background: #1B5E20; color: #ffffff; padding: 12px 15px; font-size: 12px; font-weight: 600; text-transform: uppercase; text-align: center; width: 80px;">Qty</td>
+                  <td style="background: #1B5E20; color: #ffffff; padding: 12px 15px; font-size: 12px; font-weight: 600; text-transform: uppercase; text-align: right; width: 100px;">Amount</td>
+                </tr>`;
+
+  if (!isSponsor) {
+    html += `
+                <tr>
+                  <td style="padding: 15px; border-bottom: 1px solid #F0F0F0; font-size: 14px; color: #333;">${event.name} - Entry Fee</td>
+                  <td style="padding: 15px; border-bottom: 1px solid #F0F0F0; font-size: 14px; color: #333; text-align: center;">1</td>
+                  <td style="padding: 15px; border-bottom: 1px solid #F0F0F0; font-size: 14px; color: #333; text-align: right; font-weight: 600;">${entryFee.toFixed(2)}</td>
+                </tr>`;
+    
+    if (numberOfGuests > 0) {
+      html += `
+                <tr>
+                  <td style="padding: 15px; border-bottom: 1px solid #F0F0F0; font-size: 14px; color: #333;">Additional Guest${numberOfGuests > 1 ? 's' : ''}</td>
+                  <td style="padding: 15px; border-bottom: 1px solid #F0F0F0; font-size: 14px; color: #333; text-align: center;">${numberOfGuests}</td>
+                  <td style="padding: 15px; border-bottom: 1px solid #F0F0F0; font-size: 14px; color: #333; text-align: right; font-weight: 600;">${(entryFee * numberOfGuests).toFixed(2)}</td>
+                </tr>`;
+    }
+  } else {
+    html += `
+                <tr>
+                  <td style="padding: 15px; border-bottom: 1px solid #F0F0F0; font-size: 14px; color: #333;">${event.name} - Sponsor Registration<br/><span style="font-size: 12px; color: #888; font-style: italic;">Thank you for your generous sponsorship!</span></td>
+                  <td style="padding: 15px; border-bottom: 1px solid #F0F0F0; font-size: 14px; color: #333; text-align: center;">1</td>
+                  <td style="padding: 15px; border-bottom: 1px solid #F0F0F0; font-size: 14px; color: #333; text-align: right; font-weight: 600;">$0.00</td>
+                </tr>`;
+  }
+
+  html += `
+              </table>
+              
+              <!-- Total Section -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
+                <tr>
+                  <td width="60%"></td>
+                  <td width="40%">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border-radius: 8px; overflow: hidden;">
+                      <tr>
+                        <td style="background: #F5F5F5; padding: 12px 15px; font-size: 14px; color: #666;">Subtotal:</td>
+                        <td style="background: #F5F5F5; padding: 12px 15px; font-size: 14px; color: #333; text-align: right; font-weight: 600;">${total.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td style="background: #1B5E20; padding: 15px; font-size: 16px; color: #ffffff; font-weight: 700;">TOTAL:</td>
+                        <td style="background: #1B5E20; padding: 15px; font-size: 18px; color: #ffffff; text-align: right; font-weight: 700;">${total.toFixed(2)}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Payment Status -->
+              <div style="padding: 20px; border-radius: 8px; text-align: center; ${isPaid ? 'background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%); border: 2px solid #2E7D32;' : 'background: linear-gradient(135deg, #FFF9E6 0%, #FFF3CD 100%); border: 2px solid #FF9500;'}">
+                <p style="margin: 0; font-size: 18px; font-weight: 700; ${isPaid ? 'color: #2E7D32;' : 'color: #F57C00;'}">
+                  ${isPaid ? '✓ PAID IN FULL - Thank You!' : `💳 AMOUNT DUE: ${total.toFixed(2)}`}
+                </p>
+              </div>`;
+
+  if (!isPaid && (orgInfo?.zellePhone || orgInfo?.paypalClientId)) {
+    html += `
+              
+              <!-- Payment Instructions -->
+              <div style="margin-top: 25px; background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%); padding: 25px; border-radius: 10px; border: 2px solid #1976D2;">
+                <h3 style="color: #1565C0; margin: 0 0 15px 0; font-size: 16px; text-align: center;">💰 Payment Options</h3>`;
+    
+    if (orgInfo?.zellePhone) {
+      html += `
+                <div style="background: #ffffff; border-radius: 8px; padding: 15px; margin-bottom: ${orgInfo?.paypalClientId ? '15px' : '0'};">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td width="40" valign="top">
+                        <div style="background: #6D28D9; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700;">Z</div>
+                      </td>
+                      <td valign="top">
+                        <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: 700; color: #6D28D9;">Pay with Zelle</p>
+                        <p style="margin: 0; font-size: 13px; color: #666;">Send <strong>${total.toFixed(2)}</strong> to: <strong style="color: #333;">${formatPhoneNumber(orgInfo.zellePhone)}</strong></p>
+                        <p style="margin: 5px 0 0 0; font-size: 11px; color: #888;">✓ No transaction fees</p>
+                      </td>
+                    </tr>
+                  </table>
+                </div>`;
+    }
+    
+    if (orgInfo?.paypalClientId) {
+      const paypalLink = `https://www.paypal.com/paypalme/cgamembers/${total.toFixed(2)}`;
+      html += `
+                <div style="background: #ffffff; border-radius: 8px; padding: 15px;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td width="40" valign="top">
+                        <div style="background: #003087; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: 700;">P</div>
+                      </td>
+                      <td valign="top">
+                        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #003087;">Pay with PayPal</p>
+                        <a href="${paypalLink}" style="display: inline-block; background: linear-gradient(135deg, #003087 0%, #009CDE 100%); color: #ffffff; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-size: 14px; font-weight: 700;">Pay ${total.toFixed(2)} with PayPal →</a>
+                        <p style="margin: 8px 0 0 0; font-size: 11px; color: #888;">Secure payment via PayPal</p>
+                      </td>
+                    </tr>
+                  </table>
+                </div>`;
+    }
+    
+    html += `
+              </div>`;
+  }
+
+  if (registration?.guestNames) {
+    html += `
+              
+              <!-- Guest Names -->
+              <div style="margin-top: 20px; background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid #9C27B0;">
+                <h4 style="color: #7B1FA2; margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase;">Guest Names</h4>
+                <p style="margin: 0; font-size: 13px; color: #666; line-height: 1.6; white-space: pre-line;">${registration.guestNames}</p>
+              </div>`;
+  }
+
+  html += `
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background: #F5F5F5; padding: 25px; text-align: center; border-top: 1px solid #E0E0E0;">
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">Thank you for your registration!</p>
+              <p style="margin: 0; font-size: 12px; color: #999;">If you have any questions, please contact the event organizer.</p>
+              ${orgInfo?.name ? `<p style="margin: 15px 0 0 0; font-size: 13px; color: #1B5E20; font-weight: 600;">${orgInfo.name}</p>` : ''}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 
   return html;
 }
