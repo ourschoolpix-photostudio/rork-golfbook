@@ -863,8 +863,23 @@ export default function EventRegistrationScreen() {
   const handleGenerateList = async (includeHandicaps: boolean) => {
     setHandicapConfirmModalVisible(false);
     
-    if (!event || selectedPlayers.length === 0) {
-      Alert.alert('Error', 'No players to generate list for');
+    console.log('[registration] handleGenerateList called:', {
+      includeHandicaps,
+      selectedPdfOption,
+      eventName: event?.name,
+      selectedPlayersCount: selectedPlayers.length,
+    });
+    
+    if (!event) {
+      console.error('[registration] No event found');
+      Alert.alert('Error', 'No event data available');
+      setSelectedPdfOption(null);
+      return;
+    }
+    
+    if (selectedPlayers.length === 0) {
+      console.error('[registration] No players to generate list for');
+      Alert.alert('Error', 'No players registered for this event');
       setSelectedPdfOption(null);
       return;
     }
@@ -872,51 +887,84 @@ export default function EventRegistrationScreen() {
     const sortedPlayers = [...selectedPlayers].sort((a, b) => a.name.localeCompare(b.name));
     const paidPlayers = sortedPlayers.filter(p => registrations[p.name]?.paymentStatus === 'paid');
     const unpaidPlayers = sortedPlayers.filter(p => registrations[p.name]?.paymentStatus !== 'paid');
+    
+    console.log('[registration] Players sorted:', {
+      total: sortedPlayers.length,
+      paid: paidPlayers.length,
+      unpaid: unpaidPlayers.length,
+    });
 
     try {
       if (selectedPdfOption === 'checkin') {
+        console.log('[registration] Generating Check In PDF...');
         const checkInHtml = generateCheckInPdf(paidPlayers, unpaidPlayers, includeHandicaps);
-        const { uri } = await Print.printToFileAsync({ html: checkInHtml });
+        console.log('[registration] HTML generated, length:', checkInHtml.length);
         
         if (Platform.OS === 'web') {
+          console.log('[registration] Web platform - using printAsync');
           await Print.printAsync({ html: checkInHtml });
         } else {
+          console.log('[registration] Native platform - generating PDF file');
+          const { uri } = await Print.printToFileAsync({ html: checkInHtml });
+          console.log('[registration] PDF file created at:', uri);
+          
           const isAvailable = await Sharing.isAvailableAsync();
+          console.log('[registration] Sharing available:', isAvailable);
+          
           if (isAvailable) {
             await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Check In List' });
           } else {
-            Alert.alert('Success', 'PDF generated successfully');
+            Alert.alert('PDF Generated', 'PDF was created but sharing is not available on this device.');
           }
         }
       } else if (selectedPdfOption === 'weelist') {
+        console.log('[registration] Generating Wee List PDF...');
         const weeListHtml = generateWeeListPdf(sortedPlayers, includeHandicaps);
-        const { uri } = await Print.printToFileAsync({ html: weeListHtml });
+        console.log('[registration] HTML generated, length:', weeListHtml.length);
         
         if (Platform.OS === 'web') {
+          console.log('[registration] Web platform - using printAsync');
           await Print.printAsync({ html: weeListHtml });
         } else {
+          console.log('[registration] Native platform - generating PDF file');
+          const { uri } = await Print.printToFileAsync({ html: weeListHtml });
+          console.log('[registration] PDF file created at:', uri);
+          
           const isAvailable = await Sharing.isAvailableAsync();
+          console.log('[registration] Sharing available:', isAvailable);
+          
           if (isAvailable) {
             await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Wee List' });
           } else {
-            Alert.alert('Success', 'PDF generated successfully');
+            Alert.alert('PDF Generated', 'PDF was created but sharing is not available on this device.');
           }
         }
       } else if (selectedPdfOption === 'text') {
+        console.log('[registration] Generating Text List...');
         const textContent = generateTextList(sortedPlayers, includeHandicaps);
+        console.log('[registration] Text generated, length:', textContent.length);
+        console.log('[registration] Text content preview:', textContent.substring(0, 200));
         
         if (Platform.OS === 'web') {
           Alert.alert('Player List', textContent);
         } else {
-          await Share.share({
+          console.log('[registration] Opening share dialog for text');
+          const result = await Share.share({
             message: textContent,
             title: `${event.name} - Player List`,
           });
+          console.log('[registration] Share result:', result);
         }
+      } else {
+        console.error('[registration] Unknown PDF option:', selectedPdfOption);
+        Alert.alert('Error', 'Unknown list type selected');
       }
+      
+      console.log('[registration] List generation completed successfully');
     } catch (error) {
       console.error('[registration] Error generating list:', error);
-      Alert.alert('Error', 'Failed to generate list. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      Alert.alert('Error', `Failed to generate list: ${errorMessage}`);
     }
     
     setSelectedPdfOption(null);
