@@ -63,6 +63,7 @@ export default function EventRegistrationScreen() {
   const insets = useSafeAreaInsets();
   const { eventId, autoRegister } = useLocalSearchParams<{ eventId: string; autoRegister?: string }>();
   const { currentUser, members: allMembers, refreshMembers } = useAuth();
+  const queryClient = useQueryClient();
   const { addNotification } = useNotifications();
   const { orgInfo } = useSettings();
   const [event, setEvent] = useState<Event | null>(null);
@@ -98,12 +99,27 @@ export default function EventRegistrationScreen() {
   const [selectedPdfOption, setSelectedPdfOption] = useState<'checkin' | 'weelist' | 'text' | null>(null);
   const [textResultModalVisible, setTextResultModalVisible] = useState(false);
   const [textResultContent, setTextResultContent] = useState('');
+
+  useEffect(() => {
+    if (eventId) {
+      console.log('[registration] 🔄 Prefetching groupings data for smooth navigation...');
+      queryClient.prefetchQuery({
+        queryKey: ['groupings', eventId],
+        queryFn: () => supabaseService.groupings.getAll(eventId),
+        staleTime: 1000 * 30,
+      });
+      queryClient.prefetchQuery({
+        queryKey: ['scores', eventId],
+        queryFn: () => supabaseService.scores.getAll(eventId),
+        staleTime: 1000 * 30,
+      });
+      console.log('[registration] ✅ Prefetch initiated');
+    }
+  }, [eventId, queryClient]);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [htmlViewerVisible, setHtmlViewerVisible] = useState(false);
   const [htmlViewerContent, setHtmlViewerContent] = useState('');
   const [htmlViewerTitle, setHtmlViewerTitle] = useState('');
-
-  const queryClient = useQueryClient();
 
   useRealtimeRegistrations(eventId || '', !!eventId);
 
