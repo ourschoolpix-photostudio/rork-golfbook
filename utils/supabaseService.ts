@@ -1041,34 +1041,63 @@ export const supabaseService = {
 
     clearPoints: async (eventId: string) => {
       try {
-        const { data: eventPoints } = await supabase
+        console.log('[rolexPoints.clearPoints] Starting clear for eventId:', eventId);
+        
+        const { data: eventPoints, error: fetchError } = await supabase
           .from('event_rolex_points')
           .select('*')
           .eq('event_id', eventId);
 
+        if (fetchError) {
+          console.error('[rolexPoints.clearPoints] Error fetching event points:', fetchError);
+          throw new Error(`Failed to fetch event points: ${fetchError.message}`);
+        }
+
+        console.log('[rolexPoints.clearPoints] Found', eventPoints?.length || 0, 'point records to clear');
+
         if (eventPoints && eventPoints.length > 0) {
           for (const pointRecord of eventPoints) {
-            const { data: member } = await supabase
+            console.log('[rolexPoints.clearPoints] Processing member:', pointRecord.member_id, 'points:', pointRecord.total_points);
+            
+            const { data: member, error: memberError } = await supabase
               .from('members')
               .select('rolex_points')
               .eq('id', pointRecord.member_id)
               .single();
 
+            if (memberError) {
+              console.warn('[rolexPoints.clearPoints] Could not fetch member:', pointRecord.member_id, memberError);
+              continue;
+            }
+
             const currentPoints = member?.rolex_points || 0;
             const newPoints = Math.max(0, currentPoints - pointRecord.total_points);
-            await supabase
+            console.log('[rolexPoints.clearPoints] Member', pointRecord.member_id, 'current:', currentPoints, 'new:', newPoints);
+            
+            const { error: updateError } = await supabase
               .from('members')
               .update({ rolex_points: newPoints })
               .eq('id', pointRecord.member_id);
+
+            if (updateError) {
+              console.error('[rolexPoints.clearPoints] Error updating member:', updateError);
+            }
           }
 
-          await supabase
+          console.log('[rolexPoints.clearPoints] Deleting event_rolex_points records...');
+          const { error: deleteError } = await supabase
             .from('event_rolex_points')
             .delete()
             .eq('event_id', eventId);
+
+          if (deleteError) {
+            console.error('[rolexPoints.clearPoints] Error deleting event_rolex_points:', deleteError);
+            throw new Error(`Failed to delete event_rolex_points: ${deleteError.message}`);
+          }
         }
 
-        await supabase
+        console.log('[rolexPoints.clearPoints] Updating event flags...');
+        const { error: eventUpdateError } = await supabase
           .from('events')
           .update({
             rolex_points_distributed: false,
@@ -1076,6 +1105,11 @@ export const supabaseService = {
             rolex_points_distributed_by: null,
           })
           .eq('id', eventId);
+
+        if (eventUpdateError) {
+          console.error('[rolexPoints.clearPoints] Error updating event:', eventUpdateError);
+          throw new Error(`Failed to update event: ${eventUpdateError.message}`);
+        }
 
         console.log('✅ [rolexPoints] Points cleared successfully');
       } catch (error) {

@@ -354,21 +354,23 @@ export default function EventRolexScreen() {
           onPress: async () => {
             try {
               setIsDistributing(true);
-              console.log('[rolex] Clearing point distribution...');
+              console.log('[rolex] Clearing point distribution for event:', id);
 
               await supabaseService.rolexPoints.clearPoints(id);
 
+              console.log('[rolex] Clear completed, refetching data...');
               await refetchEvent();
               await refetchMembers();
 
               Alert.alert('Success', 'Rolex points have been cleared.');
 
               console.log('[rolex] ✅ Points cleared successfully');
-            } catch (error) {
+            } catch (error: any) {
               console.error('[rolex] Error clearing points:', error);
+              const errorMessage = error?.message || 'Unknown error';
               Alert.alert(
                 'Error',
-                'Failed to clear points. Please try again.'
+                `Failed to clear points: ${errorMessage}`
               );
             } finally {
               setIsDistributing(false);
