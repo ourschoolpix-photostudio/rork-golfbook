@@ -1043,59 +1043,122 @@ export const supabaseService = {
       try {
         console.log('[rolexPoints.clearPoints] Starting clear for eventId:', eventId);
         
-        const { data: eventPoints, error: fetchError } = await supabase
-          .from('event_rolex_points')
+        // Get event details
+        const { data: event, error: eventError } = await supabase
+          .from('events')
           .select('*')
-          .eq('event_id', eventId);
+          .eq('id', eventId)
+          .single();
 
-        if (fetchError) {
-          console.error('[rolexPoints.clearPoints] Error fetching event points:', fetchError);
-          throw new Error(`Failed to fetch event points: ${fetchError.message}`);
+        if (eventError || !event) {
+          console.error('[rolexPoints.clearPoints] Error fetching event:', eventError);
+          throw new Error(`Failed to fetch event: ${eventError?.message || 'Event not found'}`);
         }
 
-        console.log('[rolexPoints.clearPoints] Found', eventPoints?.length || 0, 'point records to clear');
+        const numberOfDays = event.number_of_days || 1;
+        console.log('[rolexPoints.clearPoints] Event has', numberOfDays, 'days');
 
-        if (eventPoints && eventPoints.length > 0) {
-          for (const pointRecord of eventPoints) {
-            console.log('[rolexPoints.clearPoints] Processing member:', pointRecord.member_id, 'points:', pointRecord.total_points);
-            
-            const { data: member, error: memberError } = await supabase
-              .from('members')
-              .select('rolex_points')
-              .eq('id', pointRecord.member_id)
-              .single();
+        // Get organization settings for point values
+        const { data: settings } = await supabase
+          .from('organization_settings')
+          .select('*')
+          .single();
 
-            if (memberError) {
-              console.warn('[rolexPoints.clearPoints] Could not fetch member:', pointRecord.member_id, memberError);
-              continue;
-            }
+        const attendancePoints = parseInt(settings?.rolex_attendance_points || '0');
+        const placementPointsArray: number[] = [];
+        try {
+          const parsed = JSON.parse(settings?.rolex_placement_points || '[]');
+          if (Array.isArray(parsed)) {
+            parsed.forEach((p: any) => placementPointsArray.push(parseInt(p) || 0));
+          }
+        } catch {
+          console.log('[rolexPoints.clearPoints] No placement points configured');
+        }
 
-            const currentPoints = member?.rolex_points || 0;
-            const newPoints = Math.max(0, currentPoints - pointRecord.total_points);
-            console.log('[rolexPoints.clearPoints] Member', pointRecord.member_id, 'current:', currentPoints, 'new:', newPoints);
-            
+        console.log('[rolexPoints.clearPoints] Settings - attendance:', attendancePoints, 'placement:', placementPointsArray);
+
+        // Get scores for this event to determine who was ranked
+        const { data: scores, error: scoresError } = await supabase
+          .from('scores')
+          .select('member_id, total_score')
+          .eq('event_id', eventId);
+
+        if (scoresError) {
+          console.error('[rolexPoints.clearPoints] Error fetching scores:', scoresError);
+          throw new Error(`Failed to fetch scores: ${scoresError.message}`);
+        }
+
+        // Get members with scores
+        const memberScores: Record<string, number> = {};
+        (scores || []).forEach((s: any) => {
+          if (s.member_id && s.total_score > 0) {
+            memberScores[s.member_id] = (memberScores[s.member_id] || 0) + s.total_score;
+          }
+        });
+
+        const scoredMemberIds = Object.keys(memberScores);
+        console.log('[rolexPoints.clearPoints] Found', scoredMemberIds.length, 'members with scores');
+
+        if (scoredMemberIds.length === 0) {
+          console.log('[rolexPoints.clearPoints] No scored members, just clearing event flags');
+        } else {
+          // Get member details to filter active members and calculate net scores
+          const { data: members, error: membersError } = await supabase
+            .from('members')
+            .select('id, rolex_points, membership_type, handicap')
+            .in('id', scoredMemberIds);
+
+          if (membersError) {
+            console.error('[rolexPoints.clearPoints] Error fetching members:', membersError);
+            throw new Error(`Failed to fetch members: ${membersError.message}`);
+          }
+
+          // Filter to active members and sort by net score (same logic as distribution)
+          const activeMembers = (members || []).filter((m: any) => m.membership_type === 'active');
+          const sortedMembers = activeMembers
+            .map((m: any) => ({
+              ...m,
+              totalScore: memberScores[m.id] || 0,
+              netScore: (memberScores[m.id] || 0) - (numberOfDays * (m.handicap || 0)),
+            }))
+            .sort((a: any, b: any) => a.netScore - b.netScore);
+
+          console.log('[rolexPoints.clearPoints] Processing', sortedMembers.length, 'active members');
+
+          // Subtract points from each member based on their rank
+          for (let i = 0; i < sortedMembers.length; i++) {
+            const member = sortedMembers[i];
+            const rank = i + 1;
+            const placementPoints = placementPointsArray[i] || 0;
+            const totalPointsToSubtract = (attendancePoints + placementPoints) * numberOfDays;
+
+            const currentPoints = member.rolex_points || 0;
+            const newPoints = Math.max(0, currentPoints - totalPointsToSubtract);
+
+            console.log(`[rolexPoints.clearPoints] Member ${member.id}: rank=${rank}, subtracting=${totalPointsToSubtract}, current=${currentPoints}, new=${newPoints}`);
+
             const { error: updateError } = await supabase
               .from('members')
               .update({ rolex_points: newPoints })
-              .eq('id', pointRecord.member_id);
+              .eq('id', member.id);
 
             if (updateError) {
-              console.error('[rolexPoints.clearPoints] Error updating member:', updateError);
+              console.error('[rolexPoints.clearPoints] Error updating member:', member.id, updateError);
             }
-          }
-
-          console.log('[rolexPoints.clearPoints] Deleting event_rolex_points records...');
-          const { error: deleteError } = await supabase
-            .from('event_rolex_points')
-            .delete()
-            .eq('event_id', eventId);
-
-          if (deleteError) {
-            console.error('[rolexPoints.clearPoints] Error deleting event_rolex_points:', deleteError);
-            throw new Error(`Failed to delete event_rolex_points: ${deleteError.message}`);
           }
         }
 
+        // Try to delete from event_rolex_points if records exist (non-critical)
+        try {
+          await supabase
+            .from('event_rolex_points')
+            .delete()
+            .eq('event_id', eventId);
+        } catch {
+          console.log('[rolexPoints.clearPoints] Could not delete from event_rolex_points (table may not exist)');
+        }
+
+        // Update event flags
         console.log('[rolexPoints.clearPoints] Updating event flags...');
         const { error: eventUpdateError } = await supabase
           .from('events')
