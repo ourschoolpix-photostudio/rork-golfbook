@@ -173,7 +173,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
 
     try {
       alertsChannel = supabase
-        .channel('alerts-realtime')
+        .channel(`alerts-realtime-${memberId}-${Date.now()}`)
         .on(
           'postgres_changes',
           {
@@ -183,7 +183,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           },
           (payload) => {
             try {
-              console.log('[Realtime] 🔔 Alert change detected:', payload.eventType);
+              console.log('[Realtime] 🔔 Alert change detected:', payload.eventType, 'on device:', memberId);
               fetchAlerts();
             } catch (error) {
               console.error('[Realtime] Error handling alert change:', error);
@@ -191,11 +191,18 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           }
         )
         .subscribe((status) => {
-          console.log('[Realtime] Alerts subscription status:', status);
+          console.log('[Realtime] Alerts subscription status:', status, 'for member:', memberId);
+          if (status === 'SUBSCRIBED') {
+            console.log('[Realtime] ✅ Successfully subscribed to alerts');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('[Realtime] ❌ Failed to subscribe to alerts - channel error');
+          } else if (status === 'TIMED_OUT') {
+            console.error('[Realtime] ❌ Failed to subscribe to alerts - timed out');
+          }
         });
 
       dismissalsChannel = supabase
-        .channel('alert-dismissals-realtime')
+        .channel(`alert-dismissals-realtime-${memberId}-${Date.now()}`)
         .on(
           'postgres_changes',
           {
@@ -206,7 +213,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           },
           (payload) => {
             try {
-              console.log('[Realtime] 🔕 Alert dismissal change detected:', payload.eventType);
+              console.log('[Realtime] 🔕 Alert dismissal change detected:', payload.eventType, 'on device:', memberId);
               fetchAlerts();
             } catch (error) {
               console.error('[Realtime] Error handling dismissal change:', error);
@@ -214,7 +221,14 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           }
         )
         .subscribe((status) => {
-          console.log('[Realtime] Alert dismissals subscription status:', status);
+          console.log('[Realtime] Alert dismissals subscription status:', status, 'for member:', memberId);
+          if (status === 'SUBSCRIBED') {
+            console.log('[Realtime] ✅ Successfully subscribed to alert dismissals');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('[Realtime] ❌ Failed to subscribe to alert dismissals - channel error');
+          } else if (status === 'TIMED_OUT') {
+            console.error('[Realtime] ❌ Failed to subscribe to alert dismissals - timed out');
+          }
         });
     } catch (error) {
       console.error('[Realtime] Error setting up alerts subscriptions:', error);
