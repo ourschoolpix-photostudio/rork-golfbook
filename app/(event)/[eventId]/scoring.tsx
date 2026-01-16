@@ -5,7 +5,7 @@ import { Alert } from '@/utils/alertPolyfill';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { Bird, Zap } from 'lucide-react-native';
+import { Star } from 'lucide-react-native';
 
 import { EventFooter } from '@/components/EventFooter';
 import { TeeHoleIndicator } from '@/components/TeeHoleIndicator';
@@ -765,12 +765,12 @@ export default function ScoringScreen() {
                     </Text>
                     {isBirdie && (
                       <View style={styles.badgeContainer}>
-                        <Bird size={20} color="#FFD700" fill="#FFD700" />
+                        <Star size={20} color="#2196F3" fill="#2196F3" />
                       </View>
                     )}
                     {isEagle && (
                       <View style={styles.badgeContainer}>
-                        <Zap size={22} color="#FF6B35" fill="#FF6B35" />
+                        <Star size={20} color="#d32f2f" fill="#d32f2f" />
                       </View>
                     )}
                   </TouchableOpacity>
