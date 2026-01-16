@@ -796,7 +796,7 @@ export default function GroupingsScreen() {
             <div class="header">
               <div class="event-name">${event.name}</div>
               <div class="event-date">${event.location}</div>
-              <div class="day-label">Day ${activeDay} Groupings</div>
+              <div class="day-label">Day ${activeDay} Groupings${(event as any)[`day${activeDay}CourseName`] ? ` • ${(event as any)[`day${activeDay}CourseName`]}` : ''}</div>
             </div>
             ${groupsHtml}
           </body>
