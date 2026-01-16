@@ -53,7 +53,8 @@ export function PaymentReminderModal({
     const zellePhone = formatPhoneNumber(orgInfo.zellePhone || '5714811006');
     const paypalEmail = orgInfo.paypalEmail || 'payment@example.com';
     const amountValue = parseFloat(amount).toFixed(2);
-    const paypalUrl = `https://www.paypal.com/paypalme/${paypalEmail.split('@')[0]}/${amountValue}`;
+    const paypalAmountWithFee = ((parseFloat(amount) + 0.30) / 0.97).toFixed(2);
+    const paypalUrl = `https://www.paypal.com/paypalme/${paypalEmail.split('@')[0]}/${paypalAmountWithFee}`;
 
     return `<!DOCTYPE html>
 <html>
@@ -146,8 +147,8 @@ export function PaymentReminderModal({
             <div class="payment-icon paypal">🅿️</div>
             <div class="payment-name">PayPal</div>
           </div>
-          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0; text-align: center;">Click the button below to pay with PayPal:</p>
-          <a href="${paypalUrl}" class="paypal-button">PAY ${amountValue} WITH PAYPAL</a>
+          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0; text-align: center;">Click the button below to pay with PayPal (includes processing fee):</p>
+          <a href="${paypalUrl}" class="paypal-button">PAY ${paypalAmountWithFee} WITH PAYPAL</a>
         </div>
       </div>
       
