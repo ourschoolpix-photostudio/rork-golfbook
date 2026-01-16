@@ -330,9 +330,13 @@ export default function LeaderboardScreen() {
 
   const clearMutation = useMutation({
     mutationFn: async () => {
-      if (!eventId || !event) throw new Error('No event found');
+      if (!eventId || !event) {
+        console.error('[Leaderboard] Clear failed: No event found', { eventId, event });
+        throw new Error('No event found');
+      }
 
-      console.log('[Leaderboard] Clearing points distribution');
+      console.log('[Leaderboard] ========== CLEARING POINTS ==========');
+      console.log('[Leaderboard] Event ID:', eventId);
 
       // Fetch from event_rolex_points table
       const { data: existingDistribution, error: fetchError } = await supabase
@@ -340,15 +344,33 @@ export default function LeaderboardScreen() {
         .select('*')
         .eq('event_id', eventId);
 
+      console.log('[Leaderboard] Fetch result:', { existingDistribution, fetchError });
+
       if (fetchError) {
         console.error('[Leaderboard] Error fetching distribution:', fetchError);
         throw fetchError;
       }
 
-      console.log('[Leaderboard] Found distribution records:', existingDistribution?.length || 0);
+      if (!existingDistribution || existingDistribution.length === 0) {
+        console.log('[Leaderboard] No distribution records found to clear');
+        // Still update the event flag even if no records found
+        await supabaseService.events.update(eventId, {
+          rolexPointsDistributed: false,
+          rolexPointsDistributedAt: null,
+          rolexPointsDistributedBy: null,
+        });
+        console.log('[Leaderboard] Event flag cleared');
+        return;
+      }
+
+      console.log('[Leaderboard] Found', existingDistribution.length, 'distribution records');
       
-      for (const entry of existingDistribution || []) {
+      for (const entry of existingDistribution) {
+        console.log('[Leaderboard] Processing entry:', entry);
+        
         const member = await supabaseService.members.get(entry.member_id);
+        console.log('[Leaderboard] Member found:', member ? member.name : 'NOT FOUND');
+        
         if (member) {
           const currentPoints = member.rolexPoints || 0;
           const pointsToRemove = entry.total_points || 0;
@@ -356,13 +378,22 @@ export default function LeaderboardScreen() {
 
           console.log(`[Leaderboard] ${member.name}: removing ${pointsToRemove} points (${currentPoints} -> ${newPoints})`);
 
-          await supabaseService.members.update(member.id, {
-            rolexPoints: newPoints,
-          });
+          try {
+            await supabaseService.members.update(member.id, {
+              rolexPoints: newPoints,
+            });
+            console.log(`[Leaderboard] ✅ Updated ${member.name} rolexPoints to ${newPoints}`);
+          } catch (updateError) {
+            console.error(`[Leaderboard] ❌ Failed to update ${member.name}:`, updateError);
+            throw updateError;
+          }
+        } else {
+          console.warn('[Leaderboard] Member not found for id:', entry.member_id);
         }
       }
 
       // Delete from event_rolex_points table
+      console.log('[Leaderboard] Deleting distribution records...');
       const { error: deleteError } = await supabase
         .from('event_rolex_points')
         .delete()
@@ -372,25 +403,33 @@ export default function LeaderboardScreen() {
         console.error('[Leaderboard] Error deleting distribution:', deleteError);
         throw deleteError;
       }
+      console.log('[Leaderboard] ✅ Distribution records deleted');
 
       // Mark event as not distributed
+      console.log('[Leaderboard] Updating event flag...');
       await supabaseService.events.update(eventId, {
         rolexPointsDistributed: false,
         rolexPointsDistributedAt: null,
         rolexPointsDistributedBy: null,
       });
 
-      console.log('[Leaderboard] ✅ Points cleared');
+      console.log('[Leaderboard] ========== POINTS CLEARED ==========');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] });
+      console.log('[Leaderboard] Clear mutation successful, invalidating queries...');
+      // Invalidate all member queries (including those with timestamps)
+      queryClient.invalidateQueries({ queryKey: ['members'], exact: false });
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
-      setLastUpdate(new Date());
+      // Force a new timestamp to trigger refetch
+      const newTimestamp = new Date();
+      setLastUpdate(newTimestamp);
+      console.log('[Leaderboard] Queries invalidated, new timestamp:', newTimestamp.toISOString());
       Alert.alert('Success', 'Rolex points have been cleared successfully!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('[Leaderboard] Clear error:', error);
-      Alert.alert('Error', 'Failed to clear points. Please try again.');
+      console.error('[Leaderboard] Error details:', JSON.stringify(error, null, 2));
+      Alert.alert('Error', `Failed to clear points: ${error?.message || 'Unknown error'}`);
     },
   });
 

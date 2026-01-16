@@ -351,6 +351,9 @@ export const supabaseService = {
       if (updates.closestToPin !== undefined) supabaseUpdates.closest_to_pin = updates.closestToPin;
       if (updates.archived !== undefined) supabaseUpdates.archived = updates.archived;
       if (updates.archivedAt !== undefined) supabaseUpdates.archived_at = updates.archivedAt;
+      if (updates.rolexPointsDistributed !== undefined) supabaseUpdates.rolex_points_distributed = updates.rolexPointsDistributed;
+      if (updates.rolexPointsDistributedAt !== undefined) supabaseUpdates.rolex_points_distributed_at = updates.rolexPointsDistributedAt;
+      if (updates.rolexPointsDistributedBy !== undefined) supabaseUpdates.rolex_points_distributed_by = updates.rolexPointsDistributedBy;
 
       console.log('[supabaseService.events.update] Updating event:', eventId);
       console.log('[supabaseService.events.update] Updates:', JSON.stringify(supabaseUpdates, null, 2));
