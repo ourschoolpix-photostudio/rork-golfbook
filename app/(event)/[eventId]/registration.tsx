@@ -2148,6 +2148,7 @@ export default function EventRegistrationScreen() {
                 size={16} 
                 color="#333" 
               />
+              <Text style={styles.headerActionButtonText}>{event.registrationOpen ? 'Close' : 'Open'}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity 
@@ -2161,6 +2162,7 @@ export default function EventRegistrationScreen() {
               color="#333" 
               style={isRefreshing ? styles.refreshing : undefined}
             />
+            <Text style={styles.headerActionButtonText}>Refresh</Text>
           </TouchableOpacity>
           {currentUser?.isAdmin && (
             <TouchableOpacity
@@ -2169,6 +2171,7 @@ export default function EventRegistrationScreen() {
               activeOpacity={0.7}
             >
               <Ionicons name="document-text-outline" size={16} color="#333" />
+              <Text style={styles.headerActionButtonText}>PDF</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -3378,6 +3381,11 @@ const styles = StyleSheet.create({
   },
   headerActionButtonClosed: {
     backgroundColor: '#FFD54F',
+  },
+  headerActionButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#333',
   },
   headerTitle: {
     fontSize: 16,
