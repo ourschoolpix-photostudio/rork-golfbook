@@ -711,17 +711,18 @@ export default function GroupingsScreen() {
         const renderPlayerBox = (player: Member | null, slotIdx: number) => {
           if (!player) {
             return `
-              <div style="background-color: #B0B0B0; border-radius: 4px; min-height: 50px; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
-                <span style="font-size: 8px; color: #666;">Empty</span>
+              <div style="background-color: #B0B0B0; border-radius: 6px; min-height: 60px; display: flex; align-items: center; justify-content: center; margin-top: 2px; padding: 8px 6px;">
+                <span style="font-size: 9px; color: #666; font-weight: 500;">Empty</span>
               </div>
             `;
           }
           const playerReg = registrations[player.name];
           const handicap = getDisplayHandicap(player, playerReg, event, useCourseHandicap, activeDay);
           return `
-            <div style="background-color: #D9D9D9; border-radius: 4px; padding: 4px 6px; margin-top: 2px; min-height: 50px;">
-              <div style="font-size: 9px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px;">${player.name}</div>
-              <div style="font-size: 7px; color: #333;">HDC: ${handicap}</div>
+            <div style="background-color: #D9D9D9; border-radius: 6px; padding: 8px 10px; margin-top: 2px; min-height: 60px;">
+              <div style="font-size: 9px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px;">${player.name}</div>
+              <div style="font-size: 7px; color: #333; margin-bottom: 2px;">HDC: ${handicap}</div>
+              <div style="font-size: 7px; color: #333;">Total: ${player.scoreTotal ?? 0}</div>
             </div>
           `;
         };
