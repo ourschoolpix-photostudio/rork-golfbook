@@ -361,6 +361,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    minHeight: 36,
   },
   courseHandicapToggleActive: {
     backgroundColor: '#2196F3',
