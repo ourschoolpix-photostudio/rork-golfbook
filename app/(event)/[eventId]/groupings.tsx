@@ -902,19 +902,21 @@ export default function GroupingsScreen() {
             />
             <Text style={styles.headerActionButtonText}>Refresh</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleGeneratePdf} 
-            style={styles.headerActionButton}
-            activeOpacity={0.7}
-            disabled={isGeneratingPdf}
-          >
-            <FileText 
-              size={16} 
-              color="#333" 
-              style={isGeneratingPdf ? styles.refreshing : undefined}
-            />
-            <Text style={styles.headerActionButtonText}>PDF</Text>
-          </TouchableOpacity>
+          {canManageGroupings(currentMember) && (
+            <TouchableOpacity 
+              onPress={handleGeneratePdf} 
+              style={styles.headerActionButton}
+              activeOpacity={0.7}
+              disabled={isGeneratingPdf}
+            >
+              <FileText 
+                size={16} 
+                color="#333" 
+                style={isGeneratingPdf ? styles.refreshing : undefined}
+              />
+              <Text style={styles.headerActionButtonText}>PDF</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <Text style={styles.titleText}>GROUPINGS</Text>
       </View>
