@@ -711,7 +711,7 @@ export default function GroupingsScreen() {
         const renderPlayerBox = (player: Member | null, slotIdx: number) => {
           if (!player) {
             return `
-              <div style="background-color: #8E8E8E; border: 1px solid #666; border-radius: 4px; height: 60px; display: flex; align-items: center; justify-content: center; padding: 8px 6px; margin-bottom: 4px;">
+              <div style="background-color: #6B6B6B; border: 1px solid #666; border-radius: 4px; height: 60px; display: flex; align-items: center; justify-content: center; padding: 8px 6px; margin-bottom: 4px;">
                 <span style="font-size: 9px; color: #000; font-weight: 500;">Empty</span>
               </div>
             `;
@@ -720,7 +720,7 @@ export default function GroupingsScreen() {
           const handicap = getDisplayHandicap(player, playerReg, event, useCourseHandicap, activeDay);
           const flight = calculateTournamentFlight(player, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, playerReg, event, useCourseHandicap, activeDay);
           return `
-            <div style="background-color: #8E8E8E; border: 1px solid #666; border-radius: 4px; padding: 8px 10px; height: 60px; margin-bottom: 4px;">
+            <div style="background-color: #6B6B6B; border: 1px solid #666; border-radius: 4px; padding: 8px 10px; height: 60px; margin-bottom: 4px;">
               <div style="font-size: 9px; font-weight: 700; color: #000; margin-bottom: 4px;">${player.name}</div>
               <div style="font-size: 7px; color: #000; margin-bottom: 2px;">HDC: ${handicap}</div>
               <div style="font-size: 7px; color: #000;">Flight: ${flight || '—'}</div>
