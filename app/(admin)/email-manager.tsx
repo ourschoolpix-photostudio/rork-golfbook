@@ -9,13 +9,14 @@ import {
   FlatList,
   Linking,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Mail, Users, FileText, Send, Plus, Trash2, Edit2 } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { Member } from '@/types';
+import { supabaseService } from '@/utils/supabaseService';
 
 interface EmailTemplate {
   id: string;
@@ -32,11 +33,6 @@ interface MemberGroup {
   createdAt: string;
 }
 
-const STORAGE_KEYS = {
-  EMAIL_TEMPLATES: '@golf_email_templates',
-  MEMBER_GROUPS: '@golf_member_groups',
-};
-
 export default function EmailManagerScreen() {
   const router = useRouter();
   const { members } = useAuth();
@@ -44,6 +40,7 @@ export default function EmailManagerScreen() {
   
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [groups, setGroups] = useState<MemberGroup[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
   
@@ -61,33 +58,90 @@ export default function EmailManagerScreen() {
 
   const loadData = async () => {
     try {
+      setLoading(true);
       const [templatesData, groupsData] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.EMAIL_TEMPLATES),
-        AsyncStorage.getItem(STORAGE_KEYS.MEMBER_GROUPS),
+        supabaseService.emailTemplates.getAll(),
+        supabaseService.emailMemberGroups.getAll(),
       ]);
 
-      if (templatesData) setTemplates(JSON.parse(templatesData));
-      if (groupsData) setGroups(JSON.parse(groupsData));
+      setTemplates(templatesData);
+      setGroups(groupsData);
     } catch (error) {
       console.error('Failed to load email data:', error);
+      Alert.alert('Error', 'Failed to load email data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveTemplates = async (newTemplates: EmailTemplate[]) => {
+  const createTemplate = async (template: EmailTemplate) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.EMAIL_TEMPLATES, JSON.stringify(newTemplates));
-      setTemplates(newTemplates);
+      await supabaseService.emailTemplates.create(template);
+      setTemplates([template, ...templates]);
     } catch (error) {
-      console.error('Failed to save templates:', error);
+      console.error('Failed to create template:', error);
+      Alert.alert('Error', 'Failed to create template');
+      throw error;
     }
   };
 
-  const saveGroups = async (newGroups: MemberGroup[]) => {
+  const updateTemplate = async (template: EmailTemplate) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.MEMBER_GROUPS, JSON.stringify(newGroups));
-      setGroups(newGroups);
+      await supabaseService.emailTemplates.update(template.id, {
+        name: template.name,
+        subject: template.subject,
+        body: template.body,
+      });
+      setTemplates(templates.map(t => t.id === template.id ? template : t));
     } catch (error) {
-      console.error('Failed to save groups:', error);
+      console.error('Failed to update template:', error);
+      Alert.alert('Error', 'Failed to update template');
+      throw error;
+    }
+  };
+
+  const deleteTemplate = async (templateId: string) => {
+    try {
+      await supabaseService.emailTemplates.delete(templateId);
+      setTemplates(templates.filter(t => t.id !== templateId));
+    } catch (error) {
+      console.error('Failed to delete template:', error);
+      Alert.alert('Error', 'Failed to delete template');
+    }
+  };
+
+  const createGroup = async (group: MemberGroup) => {
+    try {
+      await supabaseService.emailMemberGroups.create(group);
+      setGroups([group, ...groups]);
+    } catch (error) {
+      console.error('Failed to create group:', error);
+      Alert.alert('Error', 'Failed to create group');
+      throw error;
+    }
+  };
+
+  const updateGroup = async (group: MemberGroup) => {
+    try {
+      await supabaseService.emailMemberGroups.update(group.id, {
+        name: group.name,
+        memberIds: group.memberIds,
+      });
+      setGroups(groups.map(g => g.id === group.id ? group : g));
+    } catch (error) {
+      console.error('Failed to update group:', error);
+      Alert.alert('Error', 'Failed to update group');
+      throw error;
+    }
+  };
+
+  const deleteGroup = async (groupId: string) => {
+    try {
+      await supabaseService.emailMemberGroups.delete(groupId);
+      setGroups(groups.filter(g => g.id !== groupId));
+    } catch (error) {
+      console.error('Failed to delete group:', error);
+      Alert.alert('Error', 'Failed to delete group');
     }
   };
 
@@ -308,7 +362,7 @@ export default function EmailManagerScreen() {
                             text: 'Delete',
                             style: 'destructive',
                             onPress: () => {
-                              saveTemplates(templates.filter(t => t.id !== item.id));
+                              deleteTemplate(item.id);
                             },
                           },
                         ]
@@ -392,7 +446,7 @@ export default function EmailManagerScreen() {
                               text: 'Delete',
                               style: 'destructive',
                               onPress: () => {
-                                saveGroups(groups.filter(g => g.id !== item.id));
+                                deleteGroup(item.id);
                               },
                             },
                           ]
@@ -472,9 +526,18 @@ export default function EmailManagerScreen() {
         </TouchableOpacity>
       </View>
 
-      {activeTab === 'compose' && renderComposeTab()}
-      {activeTab === 'templates' && renderTemplatesTab()}
-      {activeTab === 'groups' && renderGroupsTab()}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#003366" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      ) : (
+        <>
+          {activeTab === 'compose' && renderComposeTab()}
+          {activeTab === 'templates' && renderTemplatesTab()}
+          {activeTab === 'groups' && renderGroupsTab()}
+        </>
+      )}
 
       {showTemplateModal && (
         <TemplateModal
@@ -483,14 +546,18 @@ export default function EmailManagerScreen() {
             setShowTemplateModal(false);
             setEditingTemplate(null);
           }}
-          onSave={(template) => {
-            if (editingTemplate) {
-              saveTemplates(templates.map(t => t.id === template.id ? template : t));
-            } else {
-              saveTemplates([...templates, template]);
+          onSave={async (template) => {
+            try {
+              if (editingTemplate) {
+                await updateTemplate(template);
+              } else {
+                await createTemplate(template);
+              }
+              setShowTemplateModal(false);
+              setEditingTemplate(null);
+            } catch (error) {
+              console.error('Failed to save template:', error);
             }
-            setShowTemplateModal(false);
-            setEditingTemplate(null);
           }}
         />
       )}
@@ -503,14 +570,18 @@ export default function EmailManagerScreen() {
             setShowGroupModal(false);
             setEditingGroup(null);
           }}
-          onSave={(group) => {
-            if (editingGroup) {
-              saveGroups(groups.map(g => g.id === group.id ? group : g));
-            } else {
-              saveGroups([...groups, group]);
+          onSave={async (group) => {
+            try {
+              if (editingGroup) {
+                await updateGroup(group);
+              } else {
+                await createGroup(group);
+              }
+              setShowGroupModal(false);
+              setEditingGroup(null);
+            } catch (error) {
+              console.error('Failed to save group:', error);
             }
-            setShowGroupModal(false);
-            setEditingGroup(null);
           }}
         />
       )}
@@ -521,7 +592,7 @@ export default function EmailManagerScreen() {
 interface TemplateModalProps {
   template: EmailTemplate | null;
   onClose: () => void;
-  onSave: (template: EmailTemplate) => void;
+  onSave: (template: EmailTemplate) => Promise<void>;
 }
 
 function TemplateModal({ template, onClose, onSave }: TemplateModalProps) {
@@ -529,14 +600,14 @@ function TemplateModal({ template, onClose, onSave }: TemplateModalProps) {
   const [subject, setSubject] = useState(template?.subject || '');
   const [body, setBody] = useState(template?.body || '');
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim() || !subject.trim()) {
       Alert.alert('Required Fields', 'Please enter a name and subject.');
       return;
     }
 
-    onSave({
-      id: template?.id || Date.now().toString(),
+    await onSave({
+      id: template?.id || crypto.randomUUID(),
       name: name.trim(),
       subject: subject.trim(),
       body: body.trim(),
@@ -598,7 +669,7 @@ interface GroupModalProps {
   group: MemberGroup | null;
   members: Member[];
   onClose: () => void;
-  onSave: (group: MemberGroup) => void;
+  onSave: (group: MemberGroup) => Promise<void>;
 }
 
 function GroupModal({ group, members, onClose, onSave }: GroupModalProps) {
@@ -607,7 +678,7 @@ function GroupModal({ group, members, onClose, onSave }: GroupModalProps) {
     new Set(group?.memberIds || [])
   );
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Required Field', 'Please enter a group name.');
       return;
@@ -618,8 +689,8 @@ function GroupModal({ group, members, onClose, onSave }: GroupModalProps) {
       return;
     }
 
-    onSave({
-      id: group?.id || Date.now().toString(),
+    await onSave({
+      id: group?.id || crypto.randomUUID(),
       name: name.trim(),
       memberIds: Array.from(selectedIds),
       createdAt: group?.createdAt || new Date().toISOString(),
@@ -961,6 +1032,17 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: '#999',
+    marginTop: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
     marginTop: 12,
   },
   modalOverlay: {

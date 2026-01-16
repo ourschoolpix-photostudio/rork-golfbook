@@ -1313,4 +1313,101 @@ export const supabaseService = {
       if (error) throw error;
     },
   },
+
+  emailTemplates: {
+    getAll: async () => {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return (data || []).map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        subject: t.subject,
+        body: t.body,
+        createdAt: t.created_at,
+      }));
+    },
+
+    create: async (template: any) => {
+      const { error } = await supabase.from('email_templates').insert({
+        id: template.id,
+        name: template.name,
+        subject: template.subject,
+        body: template.body,
+      });
+      if (error) throw error;
+    },
+
+    update: async (templateId: string, updates: any) => {
+      const supabaseUpdates: any = { updated_at: new Date().toISOString() };
+      if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+      if (updates.subject !== undefined) supabaseUpdates.subject = updates.subject;
+      if (updates.body !== undefined) supabaseUpdates.body = updates.body;
+
+      const { error } = await supabase
+        .from('email_templates')
+        .update(supabaseUpdates)
+        .eq('id', templateId);
+      if (error) throw error;
+    },
+
+    delete: async (templateId: string) => {
+      const { error } = await supabase
+        .from('email_templates')
+        .delete()
+        .eq('id', templateId);
+      if (error) throw error;
+    },
+  },
+
+  emailMemberGroups: {
+    getAll: async () => {
+      const { data, error } = await supabase
+        .from('email_member_groups')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return (data || []).map((g: any) => ({
+        id: g.id,
+        name: g.name,
+        memberIds: g.member_ids,
+        createdAt: g.created_at,
+      }));
+    },
+
+    create: async (group: any) => {
+      const { error } = await supabase.from('email_member_groups').insert({
+        id: group.id,
+        name: group.name,
+        member_ids: group.memberIds,
+      });
+      if (error) throw error;
+    },
+
+    update: async (groupId: string, updates: any) => {
+      const supabaseUpdates: any = { updated_at: new Date().toISOString() };
+      if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+      if (updates.memberIds !== undefined) supabaseUpdates.member_ids = updates.memberIds;
+
+      const { error } = await supabase
+        .from('email_member_groups')
+        .update(supabaseUpdates)
+        .eq('id', groupId);
+      if (error) throw error;
+    },
+
+    delete: async (groupId: string) => {
+      const { error } = await supabase
+        .from('email_member_groups')
+        .delete()
+        .eq('id', groupId);
+      if (error) throw error;
+    },
+  },
 };
