@@ -16,6 +16,8 @@ import * as MailComposer from 'expo-mail-composer';
 import { Member } from '@/types';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
+import { createPayPalOrder } from '@/utils/paypalService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentReminderModalProps {
   visible: boolean;
@@ -49,12 +51,10 @@ export function PaymentReminderModal({
            !isSending;
   };
 
-  const getPaymentReminderHTML = () => {
+  const getPaymentReminderHTML = (paypalApprovalUrl: string) => {
     const zellePhone = formatPhoneNumber(orgInfo.zellePhone || '5714811006');
-    const paypalEmail = orgInfo.paypalEmail || 'payment@example.com';
     const amountValue = parseFloat(amount).toFixed(2);
     const paypalAmountWithFee = ((parseFloat(amount) + 0.30) / 0.97).toFixed(2);
-    const paypalUrl = `https://www.paypal.com/paypalme/${paypalEmail.split('@')[0]}/${paypalAmountWithFee}`;
 
     return `<!DOCTYPE html>
 <html>
@@ -148,7 +148,7 @@ export function PaymentReminderModal({
             <div class="payment-name">PayPal</div>
           </div>
           <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0; text-align: center;">Click the button below to pay with PayPal (includes processing fee):</p>
-          <a href="${paypalUrl}" class="paypal-button">PAY ${paypalAmountWithFee} WITH PAYPAL</a>
+          <a href="${paypalApprovalUrl}" class="paypal-button">PAY ${paypalAmountWithFee} WITH PAYPAL</a>
         </div>
       </div>
       
@@ -188,12 +188,48 @@ export function PaymentReminderModal({
     setIsSending(true);
 
     try {
+      console.log('[PaymentReminder] Fetching PayPal configuration...');
+      const { data: paypalConfig, error: configError } = await supabase
+        .from('organization_settings')
+        .select('paypal_client_id, paypal_client_secret, paypal_mode, paypal_processing_fee, paypal_transaction_fee')
+        .eq('id', '00000000-0000-0000-0000-000000000001')
+        .single();
+
+      if (configError || !paypalConfig) {
+        console.error('[PaymentReminder] Failed to fetch PayPal config:', configError);
+        Alert.alert('Error', 'Failed to load PayPal configuration. Please try again.');
+        setIsSending(false);
+        return;
+      }
+
+      const processingFee = paypalConfig.paypal_processing_fee || 0.03;
+      const transactionFee = paypalConfig.paypal_transaction_fee || 0.30;
+      const baseAmount = parseFloat(amount);
+      const paypalAmountWithFee = ((baseAmount + transactionFee) / (1 - processingFee));
+
+      console.log('[PaymentReminder] Creating PayPal order for payment reminder...');
+      console.log('[PaymentReminder] Base amount:', baseAmount);
+      console.log('[PaymentReminder] Amount with fee:', paypalAmountWithFee.toFixed(2));
+      
+      const paypalOrderResponse = await createPayPalOrder({
+        amount: paypalAmountWithFee,
+        eventName: itemDescription,
+        eventId: 'payment-reminder',
+        playerEmail: recipientEmails[0],
+        paypalClientId: paypalConfig.paypal_client_id || '',
+        paypalClientSecret: paypalConfig.paypal_client_secret || '',
+        paypalMode: (paypalConfig.paypal_mode || 'sandbox') as 'sandbox' | 'live',
+      });
+
+      console.log('[PaymentReminder] PayPal order created:', paypalOrderResponse.orderId);
+      console.log('[PaymentReminder] Approval URL:', paypalOrderResponse.approvalUrl);
+
       const isAvailable = await MailComposer.isAvailableAsync();
       
       if (!isAvailable) {
         const bccEmails = recipientEmails.join(',');
         const subject = encodeURIComponent('Payment Reminder: Your Outstanding Balance');
-        const body = encodeURIComponent(`Payment Reminder\n\nAmount Due: $${parseFloat(amount).toFixed(2)}\nDue Date: ${dueDate}\nFor: ${itemDescription}\n\nPlease send payment via:\n- Zelle: ${formatPhoneNumber(orgInfo.zellePhone || '5714811006')}\n- PayPal: ${orgInfo.paypalEmail || 'payment@example.com'}`);
+        const body = encodeURIComponent(`Payment Reminder\n\nAmount Due: ${baseAmount.toFixed(2)}\nDue Date: ${dueDate}\nFor: ${itemDescription}\n\nPlease send payment via:\n- Zelle: ${formatPhoneNumber(orgInfo.zellePhone || '5714811006')}\n- PayPal: ${paypalOrderResponse.approvalUrl}`);
         
         const mailtoUrl = `mailto:?bcc=${bccEmails}&subject=${subject}&body=${body}`;
         
@@ -213,7 +249,7 @@ export function PaymentReminderModal({
           recipients: [],
           bccRecipients: recipientEmails,
           subject: 'Payment Reminder: Your Outstanding Balance',
-          body: getPaymentReminderHTML(),
+          body: getPaymentReminderHTML(paypalOrderResponse.approvalUrl),
           isHtml: true,
         });
 
@@ -225,7 +261,8 @@ export function PaymentReminderModal({
       }
     } catch (error) {
       console.error('Error sending payment reminder:', error);
-      Alert.alert('Error', 'Failed to send payment reminder. Please try again.');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to send payment reminder. Please try again.';
+      Alert.alert('Error', errorMsg);
     } finally {
       setIsSending(false);
     }
@@ -320,7 +357,7 @@ export function PaymentReminderModal({
               <View style={styles.paymentInfoRow}>
                 <Text style={styles.paymentInfoLabel}>PayPal:</Text>
                 <Text style={styles.paymentInfoValue}>
-                  {orgInfo.paypalEmail || 'payment@example.com'}
+                  Secure checkout via PayPal API
                 </Text>
               </View>
             </View>
