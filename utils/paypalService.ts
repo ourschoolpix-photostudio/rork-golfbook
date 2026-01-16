@@ -222,6 +222,9 @@ export async function createPayPalOrder(
 
     console.log('[PayPalService] Creating order with data:', JSON.stringify(orderData, null, 2));
 
+    console.log('[PayPalService] Sending order creation request to:', `${baseUrl}/v2/checkout/orders`);
+    console.log('[PayPalService] Order payload:', JSON.stringify(orderData, null, 2));
+    
     const response = await fetch(`${baseUrl}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
@@ -231,10 +234,27 @@ export async function createPayPalOrder(
       body: JSON.stringify(orderData),
     });
 
+    console.log('[PayPalService] Order creation response status:', response.status);
+    console.log('[PayPalService] Order creation response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[PayPalService] Failed to create order:', errorText);
-      throw new Error(`Failed to create PayPal order: ${response.statusText}`);
+      console.error('[PayPalService] ❌ Failed to create order. Status:', response.status);
+      console.error('[PayPalService] ❌ Error response body:', errorText);
+      
+      let parsedError;
+      try {
+        parsedError = JSON.parse(errorText);
+        console.error('[PayPalService] ❌ Parsed error details:', JSON.stringify(parsedError, null, 2));
+      } catch {
+        console.error('[PayPalService] ❌ Could not parse error as JSON');
+      }
+      
+      const detailedError = parsedError ? 
+        `${parsedError.message || response.statusText}${parsedError.details ? '\n' + JSON.stringify(parsedError.details, null, 2) : ''}` : 
+        errorText;
+      
+      throw new Error(`Failed to create PayPal order (${response.status}): ${detailedError}`);
     }
 
     const order = await response.json();
