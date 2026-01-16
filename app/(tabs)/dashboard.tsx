@@ -587,6 +587,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
+    borderWidth: 2,
+    borderColor: '#4a4a4a',
   },
   eventCardHeader: {
     flexDirection: 'row',
