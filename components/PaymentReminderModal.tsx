@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   scrollContentContainer: {
-    paddingBottom: 40,
+    paddingBottom: 400,
   },
   description: {
     fontSize: 14,
