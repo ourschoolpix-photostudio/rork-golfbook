@@ -75,7 +75,7 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
       console.log('📥 [SettingsContext] Fetching settings from Supabase...');
       
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Settings fetch timeout')), 2000)
+        setTimeout(() => reject(new Error('Settings fetch timeout')), 10000)
       );
       
       const fetchPromise = supabase.from('organization_settings').select('*').single();
