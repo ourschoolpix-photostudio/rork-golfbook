@@ -61,6 +61,14 @@ export default function AdminLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="email-manager"
+        options={{
+          title: 'Email Manager',
+          headerTitleAlign: 'center',
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

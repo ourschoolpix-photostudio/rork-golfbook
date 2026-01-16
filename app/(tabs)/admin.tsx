@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@/utils/auth';
 import { storageService } from '@/utils/storage';
-import { User, Member } from '@/types';
+import { User } from '@/types';
 import {
   canAccessPlayerManagement,
   canAccessEventManagement,
@@ -99,6 +99,13 @@ export default function AdminScreen() {
       description: 'Configure app branding and preferences',
       icon: 'settings',
       href: '/(admin)/settings' as const,
+    },
+    {
+      id: 'email-manager',
+      title: 'Email Manager',
+      description: 'Send emails to members with templates',
+      icon: 'mail',
+      href: '/(admin)/email-manager' as const,
     },
   ];
 
