@@ -32,6 +32,7 @@ import notificationsCrud from "@/backend/trpc/routes/notifications/crud/route";
 import preferencesCrud from "@/backend/trpc/routes/preferences/crud/route";
 import offlineCrud from "@/backend/trpc/routes/offline/crud/route";
 import coursesCrud from "@/backend/trpc/routes/courses/crud/route";
+import alertsCrud from "@/backend/trpc/routes/alerts/crud/route";
 
 console.log('🏗️ [tRPC] Building app router...');
 
@@ -89,6 +90,7 @@ export const appRouter = createTRPCRouter({
   preferences: preferencesCrud,
   offline: offlineCrud,
   courses: coursesCrud,
+  alerts: alertsCrud,
 });
 
 console.log('✅ [tRPC] App router built successfully');

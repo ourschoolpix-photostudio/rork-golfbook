@@ -16,12 +16,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Bell } from 'lucide-react-native';
 
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { Member, Event } from '@/types';
 import { formatDateForDisplay } from '@/utils/dateUtils';
+import { useAlerts } from '@/contexts/AlertsContext';
+import { AlertsModal } from '@/components/AlertsModal';
 
 
 
@@ -37,6 +39,9 @@ export default function DashboardScreen() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventRegistrations, setEventRegistrations] = useState<Record<string, any[]>>({});
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
+  const [criticalAlertShown, setCriticalAlertShown] = useState<boolean>(false);
+  const { undismissedCount, getCriticalUndismissedAlerts } = useAlerts();
 
   const registrationsQuery = useQuery({
     queryKey: ['all-event-registrations', contextEvents],
@@ -68,7 +73,15 @@ export default function DashboardScreen() {
         refetchRegistrations();
       }
       loadExpandedEventId();
-    }, [refreshEvents, refetchRegistrations])
+      
+      const criticalAlerts = getCriticalUndismissedAlerts();
+      if (criticalAlerts.length > 0 && !criticalAlertShown) {
+        setCriticalAlertShown(true);
+        setTimeout(() => {
+          setAlertsModalVisible(true);
+        }, 500);
+      }
+    }, [refreshEvents, refetchRegistrations, getCriticalUndismissedAlerts, criticalAlertShown])
   );
 
   const loadExpandedEventId = async () => {
@@ -292,6 +305,18 @@ export default function DashboardScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity
+          style={styles.bellIcon}
+          onPress={() => setAlertsModalVisible(true)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Bell size={24} color="#ffffff" />
+          {undismissedCount > 0 && (
+            <View style={styles.bellBadge}>
+              <Text style={styles.bellBadgeText}>{undismissedCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
         <View style={styles.userInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.userName}>{userProfile?.name || currentUser?.name || 'User'}</Text>
@@ -357,6 +382,14 @@ export default function DashboardScreen() {
           registeredPlayerIds={selectedEvent?.registeredPlayers || []}
         />
       )}
+
+      <AlertsModal
+        visible={alertsModalVisible}
+        onClose={() => {
+          setAlertsModalVisible(false);
+          setCriticalAlertShown(false);
+        }}
+      />
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Upcoming Events</Text>
@@ -485,10 +518,36 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    position: 'relative' as const,
+  },
+  bellIcon: {
+    position: 'absolute' as const,
+    top: 12,
+    left: 16,
+    padding: 8,
+    zIndex: 10,
+  },
+  bellBadge: {
+    position: 'absolute' as const,
+    top: 4,
+    right: 4,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  bellBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700' as const,
   },
   userInfo: {
     flex: 1,
     paddingTop: 0,
+    paddingLeft: 40,
   },
   nameRow: {
     flexDirection: 'row',

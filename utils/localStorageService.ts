@@ -1,11 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Member, Event, PersonalGame, RegistrationNotification } from '@/types';
+import { Member, Event, PersonalGame, RegistrationNotification, Alert, AlertTemplate, AlertDismissal } from '@/types';
 
 const STORAGE_KEYS = {
   MEMBERS: '@golf_local_members',
   EVENTS: '@golf_local_events',
   GAMES: '@golf_local_games',
   NOTIFICATIONS: '@golf_local_notifications',
+  ALERTS: '@golf_local_alerts',
+  ALERT_TEMPLATES: '@golf_local_alert_templates',
+  ALERT_DISMISSALS: '@golf_local_alert_dismissals',
 } as const;
 
 export const localStorageService = {
@@ -317,6 +320,202 @@ export const localStorageService = {
         console.log('✅ [LocalStorage] Notifications cleared');
       } catch (error) {
         console.error('❌ [LocalStorage] Failed to clear notifications:', error);
+        throw error;
+      }
+    },
+  },
+
+  alerts: {
+    async getAll(): Promise<Alert[]> {
+      try {
+        const data = await AsyncStorage.getItem(STORAGE_KEYS.ALERTS);
+        if (!data) return [];
+        
+        try {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          console.error('❌ [LocalStorage] Alerts data is not an array, resetting');
+          await AsyncStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify([]));
+          return [];
+        } catch (parseError) {
+          console.error('❌ [LocalStorage] Failed to parse alerts JSON:', parseError);
+          await AsyncStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify([]));
+          return [];
+        }
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to get alerts:', error);
+        return [];
+      }
+    },
+
+    async create(alert: Alert): Promise<void> {
+      try {
+        const alerts = await this.getAll();
+        alerts.push(alert);
+        await AsyncStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify(alerts));
+        console.log('✅ [LocalStorage] Alert created');
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to create alert:', error);
+        throw error;
+      }
+    },
+
+    async delete(alertId: string): Promise<void> {
+      try {
+        const alerts = await this.getAll();
+        const filtered = alerts.filter(a => a.id !== alertId);
+        await AsyncStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify(filtered));
+        console.log('✅ [LocalStorage] Alert deleted');
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to delete alert:', error);
+        throw error;
+      }
+    },
+  },
+
+  alertTemplates: {
+    async getAll(): Promise<AlertTemplate[]> {
+      try {
+        const data = await AsyncStorage.getItem(STORAGE_KEYS.ALERT_TEMPLATES);
+        if (!data) {
+          const defaultTemplates: AlertTemplate[] = [
+            {
+              id: 'template-1',
+              name: 'Rule Change',
+              title: 'Important Rule Change',
+              message: 'Please note the following rule change for this tournament: [INSERT RULE CHANGE]',
+              priority: 'critical',
+              createdAt: new Date().toISOString(),
+            },
+            {
+              id: 'template-2',
+              name: 'Schedule Update',
+              title: 'Schedule Update',
+              message: 'The tournament schedule has been updated. Please review the new times.',
+              priority: 'normal',
+              createdAt: new Date().toISOString(),
+            },
+            {
+              id: 'template-3',
+              name: 'Weather Alert',
+              title: 'Weather Alert',
+              message: 'Weather conditions may affect play. Please check with tournament officials.',
+              priority: 'critical',
+              createdAt: new Date().toISOString(),
+            },
+            {
+              id: 'template-4',
+              name: 'Payment Reminder',
+              title: 'Payment Due',
+              message: 'Reminder: Payment is due for this event. Please settle your balance.',
+              priority: 'normal',
+              createdAt: new Date().toISOString(),
+            },
+            {
+              id: 'template-5',
+              name: 'General Announcement',
+              title: 'Announcement',
+              message: '[INSERT ANNOUNCEMENT MESSAGE]',
+              priority: 'normal',
+              createdAt: new Date().toISOString(),
+            },
+          ];
+          await AsyncStorage.setItem(STORAGE_KEYS.ALERT_TEMPLATES, JSON.stringify(defaultTemplates));
+          return defaultTemplates;
+        }
+        
+        try {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          console.error('❌ [LocalStorage] Alert templates data is not an array, resetting');
+          await AsyncStorage.setItem(STORAGE_KEYS.ALERT_TEMPLATES, JSON.stringify([]));
+          return [];
+        } catch (parseError) {
+          console.error('❌ [LocalStorage] Failed to parse alert templates JSON:', parseError);
+          await AsyncStorage.setItem(STORAGE_KEYS.ALERT_TEMPLATES, JSON.stringify([]));
+          return [];
+        }
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to get alert templates:', error);
+        return [];
+      }
+    },
+
+    async create(template: AlertTemplate): Promise<void> {
+      try {
+        const templates = await this.getAll();
+        templates.push(template);
+        await AsyncStorage.setItem(STORAGE_KEYS.ALERT_TEMPLATES, JSON.stringify(templates));
+        console.log('✅ [LocalStorage] Alert template created');
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to create alert template:', error);
+        throw error;
+      }
+    },
+
+    async delete(templateId: string): Promise<void> {
+      try {
+        const templates = await this.getAll();
+        const filtered = templates.filter(t => t.id !== templateId);
+        await AsyncStorage.setItem(STORAGE_KEYS.ALERT_TEMPLATES, JSON.stringify(filtered));
+        console.log('✅ [LocalStorage] Alert template deleted');
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to delete alert template:', error);
+        throw error;
+      }
+    },
+  },
+
+  alertDismissals: {
+    async getAll(): Promise<AlertDismissal[]> {
+      try {
+        const data = await AsyncStorage.getItem(STORAGE_KEYS.ALERT_DISMISSALS);
+        if (!data) return [];
+        
+        try {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          console.error('❌ [LocalStorage] Alert dismissals data is not an array, resetting');
+          await AsyncStorage.setItem(STORAGE_KEYS.ALERT_DISMISSALS, JSON.stringify([]));
+          return [];
+        } catch (parseError) {
+          console.error('❌ [LocalStorage] Failed to parse alert dismissals JSON:', parseError);
+          await AsyncStorage.setItem(STORAGE_KEYS.ALERT_DISMISSALS, JSON.stringify([]));
+          return [];
+        }
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to get alert dismissals:', error);
+        return [];
+      }
+    },
+
+    async getByMember(memberId: string): Promise<AlertDismissal[]> {
+      try {
+        const dismissals = await this.getAll();
+        return dismissals.filter(d => d.memberId === memberId);
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to get alert dismissals by member:', error);
+        return [];
+      }
+    },
+
+    async create(dismissal: AlertDismissal): Promise<void> {
+      try {
+        const dismissals = await this.getAll();
+        const exists = dismissals.find(d => d.alertId === dismissal.alertId && d.memberId === dismissal.memberId);
+        if (!exists) {
+          dismissals.push(dismissal);
+          await AsyncStorage.setItem(STORAGE_KEYS.ALERT_DISMISSALS, JSON.stringify(dismissals));
+          console.log('✅ [LocalStorage] Alert dismissal created');
+        }
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to create alert dismissal:', error);
         throw error;
       }
     },

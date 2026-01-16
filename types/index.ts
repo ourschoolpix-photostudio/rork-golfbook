@@ -279,6 +279,34 @@ export interface Guest {
   memberId?: string;
 }
 
+export interface Alert {
+  id: string;
+  title: string;
+  message: string;
+  type: 'organizational' | 'event';
+  priority: 'normal' | 'critical';
+  eventId?: string;
+  createdBy: string;
+  createdAt: string;
+  isDismissed?: boolean;
+}
+
+export interface AlertTemplate {
+  id: string;
+  name: string;
+  title: string;
+  message: string;
+  priority: 'normal' | 'critical';
+  createdAt: string;
+}
+
+export interface AlertDismissal {
+  id: string;
+  alertId: string;
+  memberId: string;
+  dismissedAt: string;
+}
+
 export interface TableAssignment {
   id: string;
   eventId: string;

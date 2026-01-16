@@ -10,6 +10,7 @@ import { EventsProvider } from "@/contexts/EventsContext";
 import { GamesProvider } from "@/contexts/GamesContext";
 import { OfflineModeProvider } from "@/contexts/OfflineModeContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
+import { AlertsProvider } from "@/contexts/AlertsContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import * as Linking from 'expo-linking';
@@ -328,13 +329,15 @@ export default function RootLayout() {
             <OfflineModeProvider>
               <SettingsProvider>
                 <AuthProvider>
-                  <NotificationsProvider>
-                    <EventsProvider>
-                      <GamesProvider>
-                        <RootLayoutNav />
-                      </GamesProvider>
-                    </EventsProvider>
-                  </NotificationsProvider>
+                  <AlertsProvider>
+                    <NotificationsProvider>
+                      <EventsProvider>
+                        <GamesProvider>
+                          <RootLayoutNav />
+                        </GamesProvider>
+                      </EventsProvider>
+                    </NotificationsProvider>
+                  </AlertsProvider>
                 </AuthProvider>
               </SettingsProvider>
             </OfflineModeProvider>

@@ -26,12 +26,14 @@ import {
   canAccessBackupRestore,
 } from '@/utils/rolePermissions';
 import { useAuth } from '@/contexts/AuthContext';
+import { CreateAlertModal } from '@/components/CreateAlertModal';
 
 
 export default function AdminScreen() {
   const router = useRouter();
   const { currentUser } = useAuth();
   const [user, setUser] = useState<User | null>(null);
+  const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -107,10 +109,21 @@ export default function AdminScreen() {
       icon: 'mail',
       href: '/(admin)/email-manager' as const,
     },
+    {
+      id: 'alerts',
+      title: 'Alerts Management',
+      description: 'Create and manage player alerts',
+      icon: 'notifications',
+      action: 'openAlerts',
+    },
   ];
 
-  const handleAdminOption = (href: string) => {
-    router.push(href as any);
+  const handleAdminOption = (href: string, action?: string) => {
+    if (action === 'openAlerts') {
+      setAlertsModalVisible(true);
+    } else {
+      router.push(href as any);
+    }
   };
 
   const handleBackupData = async () => {
@@ -389,6 +402,7 @@ export default function AdminScreen() {
             else if (option.id === 'bulk-update') hasAccess = canAccessBulkUpdate(currentUser);
             else if (option.id === 'settings') hasAccess = canAccessSettings(currentUser);
             else if (option.id === 'email-manager') hasAccess = canAccessSettings(currentUser);
+            else if (option.id === 'alerts') hasAccess = canAccessSettings(currentUser);
             
             if (!hasAccess) return null;
             
@@ -396,7 +410,7 @@ export default function AdminScreen() {
               <TouchableOpacity
                 key={option.id}
                 style={styles.optionCard}
-                onPress={() => handleAdminOption(option.href)}
+                onPress={() => handleAdminOption((option as any).href, (option as any).action)}
               >
                 <View style={styles.optionIcon}>
                   <Ionicons name={option.icon as any} size={28} color="#007AFF" />
@@ -443,6 +457,11 @@ export default function AdminScreen() {
           )}
         </View>
       </ScrollView>
+
+      <CreateAlertModal
+        visible={alertsModalVisible}
+        onClose={() => setAlertsModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
