@@ -305,18 +305,6 @@ export default function DashboardScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity
-          style={[styles.bellIcon, { top: insets.top + 12 }]}
-          onPress={() => setAlertsModalVisible(true)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Bell size={24} color="#ffffff" />
-          {undismissedCount > 0 && (
-            <View style={styles.bellBadge}>
-              <Text style={styles.bellBadgeText}>{undismissedCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
         <View style={styles.userInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.userName}>{userProfile?.name || currentUser?.name || 'User'}</Text>
@@ -343,6 +331,18 @@ export default function DashboardScreen() {
             <Text style={styles.userDetailValue}>{userProfile?.handicap ?? '--'}</Text>
           </View>
         </View>
+        <TouchableOpacity
+          style={styles.bellIconCentered}
+          onPress={() => setAlertsModalVisible(true)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Bell size={24} color="#ffffff" />
+          {undismissedCount > 0 && (
+            <View style={styles.bellBadge}>
+              <Text style={styles.bellBadgeText}>{undismissedCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
             <Text style={styles.logoutText}>Log Out</Text>
@@ -520,12 +520,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     position: 'relative' as const,
   },
-  bellIcon: {
-    position: 'absolute' as const,
-    top: 12,
-    left: 16,
+  bellIconCentered: {
     padding: 8,
-    zIndex: 10,
+    alignSelf: 'flex-start',
+    position: 'relative' as const,
   },
   bellBadge: {
     position: 'absolute' as const,
@@ -547,7 +545,6 @@ const styles = StyleSheet.create({
   userInfo: {
     flex: 1,
     paddingTop: 0,
-    paddingLeft: 40,
   },
   nameRow: {
     flexDirection: 'row',
