@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -94,24 +94,28 @@ export default function GroupingsScreen() {
     queryKey: ['events', id],
     queryFn: () => supabaseService.events.get(id),
     enabled: !!id,
+    staleTime: 30000,
   });
   
   const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings } = useQuery({
     queryKey: ['groupings', id],
     queryFn: () => supabaseService.groupings.getAll(id),
-    enabled: !!id,
+    enabled: !!id && !!eventData,
+    staleTime: 30000,
   });
   
   const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores } = useQuery({
     queryKey: ['scores', id],
     queryFn: () => supabaseService.scores.getAll(id),
-    enabled: !!id,
+    enabled: !!id && !!eventData,
+    staleTime: 30000,
   });
   
   const { data: backendRegistrations = [], refetch: refetchRegistrations } = useQuery({
     queryKey: ['registrations', id],
     queryFn: () => supabaseService.registrations.getAll(id),
-    enabled: !!id,
+    enabled: !!id && !!eventData,
+    staleTime: 30000,
   });
   
   const syncGroupingsMutation = useMutation({
@@ -233,15 +237,18 @@ export default function GroupingsScreen() {
   useFocusEffect(
     useCallback(() => {
       console.log('[groupings] 🔄 Screen focused - refreshing all data');
-      if (id) {
-        refetchGroupings();
-        refetchScores();
-        refetchRegistrations();
-        if (event) {
-          triggerGroupRefresh();
-        }
+      if (id && isInitialized) {
+        const timer = setTimeout(() => {
+          refetchGroupings();
+          refetchScores();
+          refetchRegistrations();
+          if (event) {
+            triggerGroupRefresh();
+          }
+        }, 100);
+        return () => clearTimeout(timer);
       }
-    }, [id, event, refetchGroupings, refetchScores, refetchRegistrations])
+    }, [id, event, isInitialized, refetchGroupings, refetchScores, refetchRegistrations])
   );
 
   const enrichSlotsWithScores = useCallback((slots: (Member | null)[]) => {
