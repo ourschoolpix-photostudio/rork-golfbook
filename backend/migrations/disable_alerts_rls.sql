@@ -9,21 +9,21 @@ ALTER TABLE IF EXISTS alerts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS alert_dismissals DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS alert_templates DISABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS email_templates DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS email_groups DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS email_member_groups DISABLE ROW LEVEL SECURITY;
 
 -- Grant full access to anon role (used by Supabase client)
 GRANT ALL ON alerts TO anon;
 GRANT ALL ON alert_dismissals TO anon;
 GRANT ALL ON alert_templates TO anon;
 GRANT ALL ON email_templates TO anon;
-GRANT ALL ON email_groups TO anon;
+GRANT ALL ON email_member_groups TO anon;
 
 -- Grant full access to authenticated role
 GRANT ALL ON alerts TO authenticated;
 GRANT ALL ON alert_dismissals TO authenticated;
 GRANT ALL ON alert_templates TO authenticated;
 GRANT ALL ON email_templates TO authenticated;
-GRANT ALL ON email_groups TO authenticated;
+GRANT ALL ON email_member_groups TO authenticated;
 
 -- Verify and report status
 DO $$
@@ -36,7 +36,7 @@ BEGIN
         SELECT tablename 
         FROM pg_tables 
         WHERE schemaname = 'public'
-        AND tablename IN ('alerts', 'alert_dismissals', 'alert_templates', 'email_templates', 'email_groups')
+        AND tablename IN ('alerts', 'alert_dismissals', 'alert_templates', 'email_templates', 'email_member_groups')
         ORDER BY tablename
     LOOP
         SELECT relrowsecurity INTO rls_enabled
