@@ -407,6 +407,9 @@ export const supabaseService = {
     },
     
     unregister: async (eventId: string, memberId: string) => {
+      console.log('[supabaseService.unregister] Unregistering member:', memberId, 'from event:', eventId);
+      
+      // Delete from event_registrations
       const { error } = await supabase
         .from('event_registrations')
         .delete()
@@ -414,6 +417,35 @@ export const supabaseService = {
         .eq('member_id', memberId);
       
       if (error) throw error;
+      
+      // Also delete from event_rolex_points if exists
+      // This ensures players removed from registration don't appear on rolex leaderboard
+      const { error: rolexError } = await supabase
+        .from('event_rolex_points')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('member_id', memberId);
+      
+      if (rolexError) {
+        console.log('[supabaseService.unregister] Note: Could not delete from event_rolex_points:', rolexError.message);
+      } else {
+        console.log('[supabaseService.unregister] Deleted event_rolex_points record if existed');
+      }
+      
+      // Also delete scores for this player in this event
+      const { error: scoresError } = await supabase
+        .from('scores')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('member_id', memberId);
+      
+      if (scoresError) {
+        console.log('[supabaseService.unregister] Note: Could not delete scores:', scoresError.message);
+      } else {
+        console.log('[supabaseService.unregister] Deleted scores for member');
+      }
+      
+      console.log('[supabaseService.unregister] ✅ Unregistration complete');
     },
   },
   
