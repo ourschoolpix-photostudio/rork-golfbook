@@ -16,8 +16,7 @@ import * as MailComposer from 'expo-mail-composer';
 import { Member } from '@/types';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
-import { createPayPalOrder } from '@/utils/paypalService';
-import { supabase } from '@/integrations/supabase/client';
+import { createPayPalPaymentLink, generatePaymentReminderHTML } from '@/utils/paymentEmailService';
 
 interface PaymentReminderModalProps {
   visible: boolean;
@@ -51,127 +50,7 @@ export function PaymentReminderModal({
            !isSending;
   };
 
-  const getPaymentReminderHTML = (paypalApprovalUrl: string) => {
-    const zellePhone = formatPhoneNumber(orgInfo.zellePhone || '5714811006');
-    const amountValue = parseFloat(amount).toFixed(2);
-    const paypalAmountWithFee = ((parseFloat(amount) + 0.30) / 0.97).toFixed(2);
 
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-    .header { background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%); padding: 40px 20px; text-align: center; }
-    .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 2px; }
-    .header-icon { width: 64px; height: 64px; background-color: rgba(255,255,255,0.2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 32px; }
-    .content { padding: 40px 20px; }
-    .greeting { font-size: 16px; color: #333333; margin-bottom: 24px; line-height: 1.6; }
-    .invoice-card { background-color: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 12px; padding: 24px; margin: 24px 0; }
-    .invoice-header { text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #D0D0D0; }
-    .invoice-title { font-size: 24px; font-weight: 700; color: #1B5E20; letter-spacing: 2px; }
-    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
-    .detail-label { font-size: 14px; color: #666666; font-weight: 600; }
-    .detail-value { font-size: 14px; color: #1a1a1a; font-weight: 600; text-align: right; }
-    .amount-box { background-color: #ffffff; border: 2px solid #1B5E20; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0; }
-    .amount-label { font-size: 16px; color: #666666; margin-bottom: 8px; }
-    .amount-value { font-size: 36px; font-weight: 700; color: #1B5E20; }
-    .payment-methods { margin: 32px 0; }
-    .section-title { font-size: 20px; font-weight: 700; color: #333333; margin-bottom: 20px; text-align: center; }
-    .payment-option { background-color: #ffffff; border: 2px solid #E0E0E0; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .payment-option-header { display: flex; align-items: center; margin-bottom: 16px; justify-content: center; }
-    .payment-icon { width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; color: #ffffff; font-size: 24px; }
-    .payment-icon.zelle { background-color: #6B21A8; }
-    .payment-icon.paypal { background-color: #0070BA; }
-    .payment-name { font-size: 20px; font-weight: 700; color: #333333; }
-    .payment-info { font-size: 20px; font-weight: 700; text-align: center; padding: 16px; background-color: #F8F9FA; border-radius: 8px; margin-top: 12px; letter-spacing: 1px; }
-    .payment-info.zelle { color: #6B21A8; }
-    .paypal-button { display: inline-block; background-color: #0070BA; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 700; margin-top: 12px; text-align: center; width: 100%; box-sizing: border-box; transition: background-color 0.2s; }
-    .paypal-button:hover { background-color: #005A9C; }
-    .deadline-box { background-color: #FEE2E2; border-left: 4px solid #DC2626; padding: 16px; border-radius: 8px; margin: 24px 0; }
-    .deadline-text { color: #DC2626; font-size: 14px; font-weight: 600; margin: 0; }
-    .footer { background-color: #f8f9fa; padding: 24px 20px; text-align: center; border-top: 1px solid #e0e0e0; }
-    .footer-text { font-size: 14px; color: #333333; margin: 12px 0; font-weight: 600; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="header-icon">💳</div>
-      <h1>PAYMENT REMINDER</h1>
-    </div>
-    
-    <div class="content">
-      <p class="greeting">
-        Hi there,<br><br>
-        This is a friendly reminder for you to make a payment for something you registered for. See details below.
-      </p>
-      
-      <div class="invoice-card">
-        <div class="invoice-header">
-          <div class="invoice-title">INVOICE DETAILS</div>
-        </div>
-        
-        <div class="detail-row">
-          <span class="detail-label">Invoice For:</span>
-          <span class="detail-value">${itemDescription}</span>
-        </div>
-        
-        <div class="detail-row">
-          <span class="detail-label">Due Date:</span>
-          <span class="detail-value">${dueDate}</span>
-        </div>
-      </div>
-      
-      <div class="amount-box">
-        <div class="amount-label">Amount Due</div>
-        <div class="amount-value">${amountValue}</div>
-      </div>
-      
-      <div class="payment-methods">
-        <h2 class="section-title">Payment Options</h2>
-        
-        <div class="payment-option">
-          <div class="payment-option-header">
-            <div class="payment-icon zelle">💸</div>
-            <div class="payment-name">Zelle</div>
-          </div>
-          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0; text-align: center;">Send payment via Zelle to:</p>
-          <div class="payment-info zelle">${zellePhone}</div>
-        </div>
-        
-        <div class="payment-option">
-          <div class="payment-option-header">
-            <div class="payment-icon paypal">🅿️</div>
-            <div class="payment-name">PayPal</div>
-          </div>
-          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0; text-align: center;">Click the button below to pay with PayPal (includes processing fee):</p>
-          <a href="${paypalApprovalUrl}" class="paypal-button">PAY ${paypalAmountWithFee} WITH PAYPAL</a>
-        </div>
-      </div>
-      
-      <div class="deadline-box">
-        <p class="deadline-text">⏰ Payment must be received by ${dueDate}.</p>
-      </div>
-      
-      <p style="font-size: 14px; color: #666666; line-height: 1.6; font-style: italic; text-align: center;">
-        If you have already submitted your payment, please disregard this reminder.
-      </p>
-      
-      <p class="footer-text" style="margin-top: 32px;">
-        Thank you again for your support of DMVVGA.
-      </p>
-    </div>
-    
-    <div class="footer">
-      <p style="font-size: 12px; color: #666666; margin: 4px 0;">This is an automated payment reminder</p>
-    </div>
-  </div>
-</body>
-</html>`;
-  };
 
   const handleSend = async () => {
     if (!canSend()) return;
@@ -188,48 +67,41 @@ export function PaymentReminderModal({
     setIsSending(true);
 
     try {
-      console.log('[PaymentReminder] Fetching PayPal configuration...');
-      const { data: paypalConfig, error: configError } = await supabase
-        .from('organization_settings')
-        .select('paypal_client_id, paypal_client_secret, paypal_mode, paypal_processing_fee, paypal_transaction_fee')
-        .eq('id', '00000000-0000-0000-0000-000000000001')
-        .single();
-
-      if (configError || !paypalConfig) {
-        console.error('[PaymentReminder] Failed to fetch PayPal config:', configError);
-        Alert.alert('Error', 'Failed to load PayPal configuration. Please try again.');
-        setIsSending(false);
-        return;
-      }
-
-      const processingFee = paypalConfig.paypal_processing_fee || 0.03;
-      const transactionFee = paypalConfig.paypal_transaction_fee || 0.30;
+      console.log('[PaymentReminder] Creating PayPal payment link...');
       const baseAmount = parseFloat(amount);
-      const paypalAmountWithFee = ((baseAmount + transactionFee) / (1 - processingFee));
-
-      console.log('[PaymentReminder] Creating PayPal order for payment reminder...');
-      console.log('[PaymentReminder] Base amount:', baseAmount);
-      console.log('[PaymentReminder] Amount with fee:', paypalAmountWithFee.toFixed(2));
       
-      const paypalOrderResponse = await createPayPalOrder({
-        amount: paypalAmountWithFee,
+      const paypalLink = await createPayPalPaymentLink({
+        amount: baseAmount,
         eventName: itemDescription,
         eventId: 'payment-reminder',
         playerEmail: recipientEmails[0],
-        paypalClientId: paypalConfig.paypal_client_id || '',
-        paypalClientSecret: paypalConfig.paypal_client_secret || '',
-        paypalMode: (paypalConfig.paypal_mode || 'sandbox') as 'sandbox' | 'live',
+        itemDescription,
+        dueDate,
+        includeProcessingFee: true,
       });
 
-      console.log('[PaymentReminder] PayPal order created:', paypalOrderResponse.orderId);
-      console.log('[PaymentReminder] Approval URL:', paypalOrderResponse.approvalUrl);
+      console.log('[PaymentReminder] PayPal link created successfully');
+      console.log('[PaymentReminder] Order ID:', paypalLink.orderId);
+      console.log('[PaymentReminder] Approval URL:', paypalLink.approvalUrl);
+
+      const htmlContent = generatePaymentReminderHTML({
+        playerName: recipients.length === 1 ? recipients[0].name : 'there',
+        eventName: itemDescription,
+        amount: baseAmount,
+        dueDate,
+        itemDescription,
+        zellePhone: orgInfo.zellePhone || '5714811006',
+        paypalApprovalUrl: paypalLink.approvalUrl,
+        paypalAmountWithFee: paypalLink.amountWithFee,
+        organizationName: orgInfo.name || 'DMVVGA',
+      });
 
       const isAvailable = await MailComposer.isAvailableAsync();
       
       if (!isAvailable) {
         const bccEmails = recipientEmails.join(',');
         const subject = encodeURIComponent('Payment Reminder: Your Outstanding Balance');
-        const body = encodeURIComponent(`Payment Reminder\n\nAmount Due: ${baseAmount.toFixed(2)}\nDue Date: ${dueDate}\nFor: ${itemDescription}\n\nPlease send payment via:\n- Zelle: ${formatPhoneNumber(orgInfo.zellePhone || '5714811006')}\n- PayPal: ${paypalOrderResponse.approvalUrl}`);
+        const body = encodeURIComponent(`Payment Reminder\n\nAmount Due: ${baseAmount.toFixed(2)}\nDue Date: ${dueDate}\nFor: ${itemDescription}\n\nPlease send payment via:\n- Zelle: ${formatPhoneNumber(orgInfo.zellePhone || '5714811006')}\n- PayPal: ${paypalLink.approvalUrl}`);
         
         const mailtoUrl = `mailto:?bcc=${bccEmails}&subject=${subject}&body=${body}`;
         
@@ -249,7 +121,7 @@ export function PaymentReminderModal({
           recipients: [],
           bccRecipients: recipientEmails,
           subject: 'Payment Reminder: Your Outstanding Balance',
-          body: getPaymentReminderHTML(paypalOrderResponse.approvalUrl),
+          body: htmlContent,
           isHtml: true,
         });
 

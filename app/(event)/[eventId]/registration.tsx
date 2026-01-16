@@ -33,6 +33,7 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatDateForDisplay, formatDateAsFullDay } from '@/utils/dateUtils';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
+import { createPayPalPaymentLink } from '@/utils/paymentEmailService';
 
 import { registrationCache } from '@/utils/registrationCache';
 import { Member, Event } from '@/types';
@@ -1448,7 +1449,19 @@ export default function EventRegistrationScreen() {
     return selectedPlayers.some((p) => p.id === currentUser.id && p.pin === currentUser.pin);
   };
 
-  const generatePlayerInvoiceHtml = (player: Member, playerReg: any): string => {
+  const getPaymentDeadline = (eventDate: string) => {
+    if (!eventDate) return 'N/A';
+    const date = new Date(eventDate);
+    const deadlineDate = new Date(date);
+    deadlineDate.setDate(deadlineDate.getDate() - 10);
+    return deadlineDate.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const generatePlayerInvoiceHtml = (player: Member, playerReg: any, paypalApprovalUrl: string, paypalAmountWithFee: number): string => {
     if (!event || !orgInfo) return '';
     
     const entryFee = Number(event.entryFee) || 0;
@@ -1456,26 +1469,7 @@ export default function EventRegistrationScreen() {
     const totalPeople = 1 + guestCount;
     const totalAmount = entryFee * totalPeople;
     
-    const paypalFee = (totalAmount * 0.03) + 0.30;
-    const paypalTotal = totalAmount + paypalFee;
-    
     const zellePhone = formatPhoneNumber(orgInfo.zellePhone || '5714811006');
-    
-    const getPaymentDeadline = () => {
-      if (!event.date) return 'N/A';
-      const eventDate = new Date(event.date);
-      const deadlineDate = new Date(eventDate);
-      deadlineDate.setDate(deadlineDate.getDate() - 10);
-      return deadlineDate.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      });
-    };
-
-    const paypalLink = orgInfo.paypalClientId 
-      ? `https://www.paypal.com/paypalme/${orgInfo.paypalClientId}/${paypalTotal.toFixed(2)}` 
-      : '';
     
     return `
 <!DOCTYPE html>
@@ -1711,14 +1705,14 @@ export default function EventRegistrationScreen() {
         
         <div class="paypal-box">
           <p class="paypal-label">PAY VIA PAYPAL</p>
-          <p class="paypal-amount">${paypalTotal.toFixed(2)}</p>
-          <p class="paypal-note">(Includes 3% + $0.30 processing fee)</p>
-          ${paypalLink ? `<a href="${paypalLink}" class="paypal-button">Pay with PayPal</a>` : '<p style="color:#666;">Contact organizer for PayPal details</p>'}
+          <p class="paypal-amount">${paypalAmountWithFee.toFixed(2)}</p>
+          <p class="paypal-note">(Includes processing fee)</p>
+          <a href="${paypalApprovalUrl}" class="paypal-button">PAY WITH PAYPAL</a>
         </div>
       </div>
       
       <div class="deadline-box">
-        <p>⏰ Payment must be received by <strong>${getPaymentDeadline()}</strong></p>
+        <p>⏰ Payment must be received by <strong>${getPaymentDeadline(event.date)}</strong></p>
         <p style="margin-top: 8px; font-weight: normal;">Your registration will be removed if payment is not received by the deadline.</p>
       </div>
     </div>
@@ -1739,16 +1733,41 @@ export default function EventRegistrationScreen() {
       return;
     }
 
+    if (!event) {
+      Alert.alert('Error', 'Event information not available.');
+      return;
+    }
+
     const isAvailable = await MailComposer.isAvailableAsync();
     if (!isAvailable) {
       Alert.alert('Email Not Available', 'Please configure an email account on your device.');
       return;
     }
 
-    const htmlContent = generatePlayerInvoiceHtml(player, playerReg);
-    const subject = `Registration Invoice - ${event?.name || 'Event'}`;
-
     try {
+      console.log('[registration] Creating PayPal payment link for player invoice...');
+      
+      const guestCount = playerReg?.numberOfGuests || 0;
+      const totalPeople = 1 + guestCount;
+      const entryFee = Number(event.entryFee);
+      const totalAmount = entryFee * totalPeople;
+
+      const paypalLink = await createPayPalPaymentLink({
+        amount: totalAmount,
+        eventName: event.name,
+        eventId: event.id,
+        playerEmail: player.email,
+        itemDescription: `${event.name} Registration`,
+        dueDate: getPaymentDeadline(event.date),
+        includeProcessingFee: true,
+      });
+
+      console.log('[registration] PayPal link created successfully');
+      console.log('[registration] Approval URL:', paypalLink.approvalUrl);
+
+      const htmlContent = generatePlayerInvoiceHtml(player, playerReg, paypalLink.approvalUrl, paypalLink.amountWithFee);
+      const subject = `Registration Invoice - ${event.name}`;
+
       const result = await MailComposer.composeAsync({
         recipients: [player.email],
         subject,
@@ -1768,7 +1787,8 @@ export default function EventRegistrationScreen() {
       }
     } catch (error) {
       console.error('[registration] Error sending invoice email:', error);
-      Alert.alert('Error', 'Failed to send email. Please try again.');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to send email. Please try again.';
+      Alert.alert('Error', errorMsg);
     }
   };
 
