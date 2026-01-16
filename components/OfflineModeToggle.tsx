@@ -331,6 +331,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 8,
+    minHeight: 36,
   },
   footerStatusText: {
     color: '#fff',
