@@ -40,7 +40,12 @@ const getAllAlertsProcedure = publicProcedure
 
         const dismissedIds = new Set((dismissalsData || []).map(d => d.alert_id));
         
-        const alerts = alertsData.map(alert => ({
+        const now = new Date().toISOString();
+        const activeAlertsData = alertsData.filter(alert => 
+          !alert.expires_at || alert.expires_at > now
+        );
+        
+        const alerts = activeAlertsData.map(alert => ({
           id: alert.id,
           title: alert.title,
           message: alert.message,
@@ -49,13 +54,19 @@ const getAllAlertsProcedure = publicProcedure
           eventId: alert.event_id,
           createdBy: alert.created_by,
           createdAt: alert.created_at,
+          expiresAt: alert.expires_at,
           isDismissed: dismissedIds.has(alert.id),
         }));
 
         console.log('[Alerts tRPC] Fetched alerts with dismissal status:', alerts.length);
         return alerts;
       } else {
-        const alerts = alertsData.map(alert => ({
+        const now = new Date().toISOString();
+        const activeAlertsData = alertsData.filter(alert => 
+          !alert.expires_at || alert.expires_at > now
+        );
+        
+        const alerts = activeAlertsData.map(alert => ({
           id: alert.id,
           title: alert.title,
           message: alert.message,
@@ -64,6 +75,7 @@ const getAllAlertsProcedure = publicProcedure
           eventId: alert.event_id,
           createdBy: alert.created_by,
           createdAt: alert.created_at,
+          expiresAt: alert.expires_at,
         }));
 
         console.log('[Alerts tRPC] Fetched alerts:', alerts.length);
@@ -83,6 +95,7 @@ const createAlertProcedure = publicProcedure
     priority: z.enum(['normal', 'critical']),
     eventId: z.string().optional(),
     createdBy: z.string(),
+    expiresAt: z.string().optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
@@ -98,6 +111,7 @@ const createAlertProcedure = publicProcedure
           priority: input.priority,
           event_id: input.eventId,
           created_by: input.createdBy,
+          expires_at: input.expiresAt,
         })
         .select()
         .single();
@@ -117,6 +131,7 @@ const createAlertProcedure = publicProcedure
         eventId: data.event_id,
         createdBy: data.created_by,
         createdAt: data.created_at,
+        expiresAt: data.expires_at,
       };
     } catch (error) {
       console.error('[Alerts tRPC] Error in createAlert:', error);

@@ -124,21 +124,6 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
                       </Text>
                     </View>
                     <Text style={styles.alertMessage}>{alert.message}</Text>
-                    <View style={styles.alertBadges}>
-                      <View style={[
-                        styles.typeBadge,
-                        alert.type === 'organizational' ? styles.orgBadge : styles.eventBadge
-                      ]}>
-                        <Text style={styles.badgeText}>
-                          {alert.type === 'organizational' ? 'Organization' : 'Event'}
-                        </Text>
-                      </View>
-                      {alert.priority === 'critical' && (
-                        <View style={styles.priorityBadge}>
-                          <Text style={styles.priorityText}>Critical</Text>
-                        </View>
-                      )}
-                    </View>
                   </View>
                   <TouchableOpacity
                     onPress={() => handleDismiss(alert.id)}

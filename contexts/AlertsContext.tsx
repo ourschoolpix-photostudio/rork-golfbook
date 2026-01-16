@@ -32,7 +32,12 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         const storedAlerts = await localStorageService.alerts.getAll();
         const storedDismissals = await localStorageService.alertDismissals.getByMember(memberId);
         
-        const alertsWithDismissal = storedAlerts.map(alert => ({
+        const now = new Date().toISOString();
+        const activeAlerts = storedAlerts.filter(alert => 
+          !alert.expiresAt || alert.expiresAt > now
+        );
+        
+        const alertsWithDismissal = activeAlerts.map(alert => ({
           ...alert,
           isDismissed: storedDismissals.some(d => d.alertId === alert.id)
         }));
@@ -51,7 +56,12 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         if (alertsResult.error) throw alertsResult.error;
         if (dismissalsResult.error) throw dismissalsResult.error;
         
-        const fetchedAlerts = (alertsResult.data || []).map((a: any) => ({
+        const now = new Date().toISOString();
+        const activeAlertsData = (alertsResult.data || []).filter((a: any) => 
+          !a.expires_at || a.expires_at > now
+        );
+        
+        const fetchedAlerts = activeAlertsData.map((a: any) => ({
           id: a.id,
           title: a.title,
           message: a.message,
@@ -60,6 +70,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           eventId: a.event_id,
           createdBy: a.created_by,
           createdAt: a.created_at,
+          expiresAt: a.expires_at,
           isDismissed: (dismissalsResult.data || []).some((d: any) => d.alert_id === a.id)
         }));
         
@@ -82,7 +93,12 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         const fallbackAlerts = await localStorageService.alerts.getAll();
         const fallbackDismissals = await localStorageService.alertDismissals.getByMember(memberId);
         
-        const alertsWithDismissal = fallbackAlerts.map(alert => ({
+        const now = new Date().toISOString();
+        const activeAlerts = fallbackAlerts.filter(alert => 
+          !alert.expiresAt || alert.expiresAt > now
+        );
+        
+        const alertsWithDismissal = activeAlerts.map(alert => ({
           ...alert,
           isDismissed: fallbackDismissals.some(d => d.alertId === alert.id)
         }));
@@ -167,6 +183,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
             priority: alert.priority,
             event_id: alert.eventId,
             created_by: alert.createdBy,
+            expires_at: alert.expiresAt,
           });
           
           if (error) throw error;

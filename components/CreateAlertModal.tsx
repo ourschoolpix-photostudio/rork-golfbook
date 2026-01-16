@@ -37,6 +37,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
   const [priority, setPriority] = useState<'normal' | 'critical'>('normal');
   const [selectedEventId, setSelectedEventId] = useState<string | undefined>(preSelectedEventId);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [expiresIn, setExpiresIn] = useState<number>(24);
   const [isCreating, setIsCreating] = useState<boolean>(false);
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
       setPriority('normal');
       setSelectedEventId(preSelectedEventId);
       setSelectedTemplate(null);
+      setExpiresIn(24);
     }
   }, [visible, preSelectedEventId]);
 
@@ -83,6 +85,10 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
 
     try {
       setIsCreating(true);
+      const expiresAt = priority === 'normal' ? 
+        new Date(Date.now() + expiresIn * 60 * 60 * 1000).toISOString() : 
+        undefined;
+
       await createAlert({
         title: title.trim(),
         message: message.trim(),
@@ -90,6 +96,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
         priority,
         eventId: type === 'event' ? selectedEventId : undefined,
         createdBy: currentUser.id,
+        expiresAt,
       });
 
       Alert.alert('Success', 'Alert created successfully');
@@ -257,6 +264,31 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                 placeholderTextColor="#9ca3af"
               />
             </View>
+
+            {priority === 'normal' && (
+              <View style={styles.section}>
+                <Text style={styles.label}>Expires In</Text>
+                <View style={styles.expiresButtons}>
+                  {[6, 12, 24, 48, 72].map((hours) => (
+                    <TouchableOpacity
+                      key={hours}
+                      style={[
+                        styles.expiresButton,
+                        expiresIn === hours && styles.expiresButtonActive
+                      ]}
+                      onPress={() => setExpiresIn(hours)}
+                    >
+                      <Text style={[
+                        styles.expiresButtonText,
+                        expiresIn === hours && styles.expiresButtonTextActive
+                      ]}>
+                        {hours}h
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
 
             <View style={styles.section}>
               <Text style={styles.label}>Message</Text>
@@ -463,5 +495,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#ffffff',
+  },
+  expiresButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  expiresButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  expiresButtonActive: {
+    backgroundColor: '#dbeafe',
+    borderColor: '#3b82f6',
+  },
+  expiresButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#6b7280',
+  },
+  expiresButtonTextActive: {
+    color: '#1e40af',
   },
 });

@@ -288,6 +288,7 @@ export interface Alert {
   eventId?: string;
   createdBy: string;
   createdAt: string;
+  expiresAt?: string;
   isDismissed?: boolean;
 }
 
