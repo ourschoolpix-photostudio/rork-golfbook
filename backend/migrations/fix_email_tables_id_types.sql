@@ -1,11 +1,15 @@
 -- ============================================================================
--- EMAIL TEMPLATES AND MEMBER GROUPS
--- Store email templates and member groups for the email manager
+-- FIX EMAIL TABLES ID TYPES
+-- Change UUID columns to TEXT to support custom ID format
 -- Created: 2025-01-16
 -- ============================================================================
 
+-- Drop existing tables and recreate with correct types
+DROP TABLE IF EXISTS email_member_groups;
+DROP TABLE IF EXISTS email_templates;
+
 -- Email Templates Table
-CREATE TABLE IF NOT EXISTS email_templates (
+CREATE TABLE email_templates (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   subject TEXT NOT NULL,
@@ -15,7 +19,7 @@ CREATE TABLE IF NOT EXISTS email_templates (
 );
 
 -- Email Member Groups Table
-CREATE TABLE IF NOT EXISTS email_member_groups (
+CREATE TABLE email_member_groups (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   member_ids TEXT[] NOT NULL,
@@ -24,5 +28,5 @@ CREATE TABLE IF NOT EXISTS email_member_groups (
 );
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_email_templates_created_at ON email_templates(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_email_member_groups_created_at ON email_member_groups(created_at DESC);
+CREATE INDEX idx_email_templates_created_at ON email_templates(created_at DESC);
+CREATE INDEX idx_email_member_groups_created_at ON email_member_groups(created_at DESC);
