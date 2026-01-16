@@ -467,18 +467,20 @@ export default function LeaderboardScreen() {
     <>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>TOURNAMENT LEADERBOARD</Text>
           <TouchableOpacity 
             onPress={handleRefresh} 
             style={styles.refreshButton}
             disabled={isRefetching}
+            activeOpacity={0.7}
           >
             <RefreshCw 
-              size={18} 
-              color="#fff" 
+              size={16} 
+              color="#333" 
               style={isRefetching ? styles.refreshing : undefined}
             />
+            <Text style={styles.refreshButtonText}>Refresh</Text>
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>TOURNAMENT LEADERBOARD</Text>
         </View>
 
         {eventQuery.data?.photoUrl && (
@@ -742,14 +744,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 58,
-    gap: 8,
+    paddingVertical: 12,
+    paddingTop: 54,
+    gap: 10,
   },
   headerTitle: {
     fontSize: 16,
@@ -758,9 +759,19 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   refreshButton: {
-    padding: 4,
-    position: 'absolute' as const,
-    right: 16,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: '#FFD54F',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  refreshButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#333',
   },
   refreshing: {
     opacity: 0.5,
