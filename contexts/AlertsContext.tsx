@@ -169,14 +169,15 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
   useEffect(() => {
     if (useLocalStorage || !memberId) return;
 
-    console.log('[Realtime] 🔔 Setting up alerts real-time subscriptions');
+    console.log('[Realtime] 🔔 Setting up alerts real-time subscriptions for member:', memberId);
 
     let alertsChannel: RealtimeChannel | null = null;
     let dismissalsChannel: RealtimeChannel | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
 
     try {
       alertsChannel = supabase
-        .channel(`alerts-realtime-${memberId}-${Date.now()}`)
+        .channel(`alerts-realtime-${Date.now()}`)
         .on(
           'postgres_changes',
           {
@@ -186,26 +187,36 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           },
           (payload) => {
             try {
-              console.log('[Realtime] 🔔 Alert change detected:', payload.eventType, 'on device:', memberId);
+              console.log('[Realtime] 🔔 ALERT CHANGE DETECTED!');
+              console.log('[Realtime] Event type:', payload.eventType);
+              console.log('[Realtime] New data:', payload.new);
+              console.log('[Realtime] Receiving device member ID:', memberId);
               fetchAlerts();
             } catch (error) {
               console.error('[Realtime] Error handling alert change:', error);
             }
           }
         )
-        .subscribe((status) => {
+        .subscribe((status, err) => {
           console.log('[Realtime] Alerts subscription status:', status, 'for member:', memberId);
+          if (err) {
+            console.error('[Realtime] Subscription error:', err);
+          }
           if (status === 'SUBSCRIBED') {
-            console.log('[Realtime] ✅ Successfully subscribed to alerts');
+            console.log('[Realtime] ✅ Successfully subscribed to alerts channel');
+            console.log('[Realtime] Channel name:', alertsChannel?.topic);
           } else if (status === 'CHANNEL_ERROR') {
             console.error('[Realtime] ❌ Failed to subscribe to alerts - channel error');
+            console.error('[Realtime] Make sure Realtime is enabled for the alerts table in Supabase dashboard');
           } else if (status === 'TIMED_OUT') {
             console.error('[Realtime] ❌ Failed to subscribe to alerts - timed out');
+          } else if (status === 'CLOSED') {
+            console.log('[Realtime] Channel closed');
           }
         });
 
       dismissalsChannel = supabase
-        .channel(`alert-dismissals-realtime-${memberId}-${Date.now()}`)
+        .channel(`alert-dismissals-realtime-${Date.now()}`)
         .on(
           'postgres_changes',
           {
@@ -223,8 +234,11 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
             }
           }
         )
-        .subscribe((status) => {
+        .subscribe((status, err) => {
           console.log('[Realtime] Alert dismissals subscription status:', status, 'for member:', memberId);
+          if (err) {
+            console.error('[Realtime] Dismissals subscription error:', err);
+          }
           if (status === 'SUBSCRIBED') {
             console.log('[Realtime] ✅ Successfully subscribed to alert dismissals');
           } else if (status === 'CHANNEL_ERROR') {
@@ -233,12 +247,21 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
             console.error('[Realtime] ❌ Failed to subscribe to alert dismissals - timed out');
           }
         });
+
+      pollInterval = setInterval(() => {
+        console.log('[Realtime] Polling for new alerts (fallback mechanism)...');
+        fetchAlerts();
+      }, 10000);
+
     } catch (error) {
       console.error('[Realtime] Error setting up alerts subscriptions:', error);
     }
 
     return () => {
       try {
+        if (pollInterval) {
+          clearInterval(pollInterval);
+        }
         if (alertsChannel) {
           console.log('[Realtime] 🔴 Unsubscribing from alerts');
           supabase.removeChannel(alertsChannel);

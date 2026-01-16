@@ -40,7 +40,7 @@ function createSupabaseClient(): SupabaseClient {
       },
       realtime: {
         params: {
-          eventsPerSecond: 2,
+          eventsPerSecond: 10,
         },
       },
     });
