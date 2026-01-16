@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS event_rolex_points (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  event_id TEXT NOT NULL,
   member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
   rank INTEGER NOT NULL,
   attendance_points INTEGER DEFAULT 0,
