@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS alerts (
   priority TEXT NOT NULL CHECK (priority IN ('normal', 'critical')),
   event_id TEXT,
   created_by TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
   FOREIGN KEY (created_by) REFERENCES members(id) ON DELETE CASCADE
 );
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS alert_dismissals (
   id TEXT PRIMARY KEY,
   alert_id TEXT NOT NULL,
   member_id TEXT NOT NULL,
-  dismissed_at TEXT NOT NULL DEFAULT (datetime('now')),
+  dismissed_at TIMESTAMP NOT NULL DEFAULT now(),
   FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE,
   FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
   UNIQUE(alert_id, member_id)
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS alert_templates (
   title TEXT NOT NULL,
   message TEXT NOT NULL,
   priority TEXT NOT NULL CHECK (priority IN ('normal', 'critical')),
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TIMESTAMP NOT NULL DEFAULT now()
 );
 
 -- Create indexes for better performance
@@ -41,9 +41,10 @@ CREATE INDEX IF NOT EXISTS idx_alert_dismissals_alert_id ON alert_dismissals(ale
 CREATE INDEX IF NOT EXISTS idx_alert_dismissals_member_id ON alert_dismissals(member_id);
 
 -- Insert some default alert templates
-INSERT OR IGNORE INTO alert_templates (id, name, title, message, priority) VALUES
+INSERT INTO alert_templates (id, name, title, message, priority) VALUES
   ('template-1', 'Rule Change', 'Important Rule Change', 'Please note the following rule change for this tournament: [INSERT RULE CHANGE]', 'critical'),
   ('template-2', 'Schedule Update', 'Schedule Update', 'The tournament schedule has been updated. Please review the new times.', 'normal'),
   ('template-3', 'Weather Alert', 'Weather Alert', 'Weather conditions may affect play. Please check with tournament officials.', 'critical'),
   ('template-4', 'Payment Reminder', 'Payment Due', 'Reminder: Payment is due for this event. Please settle your balance.', 'normal'),
-  ('template-5', 'General Announcement', 'Announcement', '[INSERT ANNOUNCEMENT MESSAGE]', 'normal');
+  ('template-5', 'General Announcement', 'Announcement', '[INSERT ANNOUNCEMENT MESSAGE]', 'normal')
+ON CONFLICT (id) DO NOTHING;
