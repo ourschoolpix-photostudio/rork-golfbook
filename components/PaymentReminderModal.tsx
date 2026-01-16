@@ -17,6 +17,7 @@ import { Member } from '@/types';
 import { useSettings } from '@/contexts/SettingsContext';
 import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { createPayPalPaymentLink, generatePaymentReminderHTML } from '@/utils/paymentEmailService';
+import { supabaseService } from '@/utils/supabaseService';
 
 interface PaymentReminderModalProps {
   visible: boolean;
@@ -34,14 +35,28 @@ export function PaymentReminderModal({
   const [dueDate, setDueDate] = useState('');
   const [itemDescription, setItemDescription] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [templateSubject, setTemplateSubject] = useState('DMVVGA Payment Reminder');
 
   useEffect(() => {
     if (visible) {
       setAmount('');
       setDueDate('');
       setItemDescription('');
+      loadTemplateSubject();
     }
   }, [visible]);
+
+  const loadTemplateSubject = async () => {
+    try {
+      const templates = await supabaseService.emailTemplates.getAll();
+      const paymentReminderTemplate = templates.find(t => t.name === 'Payment Reminder');
+      if (paymentReminderTemplate && paymentReminderTemplate.subject) {
+        setTemplateSubject(paymentReminderTemplate.subject);
+      }
+    } catch (error) {
+      console.error('Failed to load template subject:', error);
+    }
+  };
 
   const canSend = () => {
     return amount.trim().length > 0 && 
@@ -100,7 +115,7 @@ export function PaymentReminderModal({
       
       if (!isAvailable) {
         const bccEmails = recipientEmails.join(',');
-        const subject = encodeURIComponent('DMVVGA Payment Reminder');
+        const subject = encodeURIComponent(templateSubject);
         const body = encodeURIComponent(`Payment Reminder\n\nAmount Due: ${baseAmount.toFixed(2)}\nDue Date: ${dueDate}\nFor: ${itemDescription}\n\nPlease send payment via:\n- Zelle: ${formatPhoneNumber(orgInfo.zellePhone || '5714811006')}\n- PayPal: ${paypalLink.approvalUrl}`);
         
         const mailtoUrl = `mailto:?bcc=${bccEmails}&subject=${subject}&body=${body}`;
@@ -120,7 +135,7 @@ export function PaymentReminderModal({
         await MailComposer.composeAsync({
           recipients: [],
           bccRecipients: recipientEmails,
-          subject: 'DMVVGA Payment Reminder',
+          subject: templateSubject,
           body: htmlContent,
           isHtml: true,
         });
