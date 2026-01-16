@@ -10,12 +10,15 @@ import {
   Alert,
   Modal,
   TextInput,
+  Platform,
 } from 'react-native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearScoresForEvent } from '@/utils/scorePeristence';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { RefreshCw } from 'lucide-react-native';
+import { RefreshCw, FileText } from 'lucide-react-native';
 import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
 import { calculateTournamentFlight, getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
@@ -87,6 +90,7 @@ export default function GroupingsScreen() {
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const [showPinModal, setShowPinModal] = useState<boolean>(false);
   const [pinInput, setPinInput] = useState<string>('');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const [registrations, setRegistrations] = useState<Record<string, any>>({});
   
   const queryClient = useQueryClient();
@@ -690,6 +694,133 @@ export default function GroupingsScreen() {
     setCheckedPlayers([]);
   };
 
+  const handleGeneratePdf = async () => {
+    if (!event || groups.length === 0) {
+      Alert.alert('No Data', 'No groupings to generate PDF.');
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+    console.log('[groupings] 📄 Generating groupings PDF...');
+
+    try {
+      const groupsHtml = groups.map((group, idx) => {
+        const label = generateGroupLabel(idx, event, activeDay, labelOverride, doubleMode);
+        const playerCount = group.slots.filter(s => s).length;
+
+        const renderPlayerBox = (player: Member | null, slotIdx: number) => {
+          if (!player) {
+            return `
+              <div style="background-color: #B0B0B0; border-radius: 4px; min-height: 50px; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
+                <span style="font-size: 8px; color: #666;">Empty</span>
+              </div>
+            `;
+          }
+          const playerReg = registrations[player.name];
+          const handicap = getDisplayHandicap(player, playerReg, event, useCourseHandicap, activeDay);
+          return `
+            <div style="background-color: #D9D9D9; border-radius: 4px; padding: 4px 6px; margin-top: 2px; min-height: 50px;">
+              <div style="font-size: 9px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px;">${player.name}</div>
+              <div style="font-size: 7px; color: #333;">HDC: ${handicap}</div>
+            </div>
+          `;
+        };
+
+        return `
+          <div style="border: 1px solid #999; margin-bottom: 8px; padding: 8px; background: #fff;">
+            <div style="font-size: 9px; font-weight: 600; color: #1B5E20; margin-bottom: 6px;">${label} • ${playerCount} players</div>
+            <div style="display: flex; gap: 4px;">
+              <div style="flex: 1;">
+                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px;">
+                  <span style="font-size: 8px; font-weight: 700; color: #fff;">CART 1</span>
+                </div>
+                ${renderPlayerBox(group.slots[0], 0)}
+                ${renderPlayerBox(group.slots[1], 1)}
+              </div>
+              <div style="flex: 1;">
+                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px;">
+                  <span style="font-size: 8px; font-weight: 700; color: #fff;">CART 2</span>
+                </div>
+                ${renderPlayerBox(group.slots[2], 2)}
+                ${renderPlayerBox(group.slots[3], 3)}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              @page {
+                size: 2.5in auto;
+                margin: 0.1in;
+              }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                margin: 0;
+                padding: 4px;
+                width: 2.3in;
+                background: #f5f5f5;
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 8px;
+                padding-bottom: 6px;
+                border-bottom: 1px solid #1B5E20;
+              }
+              .event-name {
+                font-size: 11px;
+                font-weight: 700;
+                color: #1B5E20;
+                margin-bottom: 2px;
+              }
+              .event-date {
+                font-size: 8px;
+                color: #666;
+              }
+              .day-label {
+                font-size: 9px;
+                font-weight: 600;
+                color: #333;
+                margin-top: 4px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div class="event-name">${event.name}</div>
+              <div class="event-date">${event.location}</div>
+              <div class="day-label">Day ${activeDay} Groupings</div>
+            </div>
+            ${groupsHtml}
+          </body>
+        </html>
+      `;
+
+      if (Platform.OS === 'web') {
+        console.log('[groupings] Opening print dialog for web...');
+        await Print.printAsync({ html });
+      } else {
+        const { uri } = await Print.printToFileAsync({ html });
+        console.log('[groupings] PDF generated at:', uri);
+        await Sharing.shareAsync(uri, {
+          UTI: '.pdf',
+          mimeType: 'application/pdf',
+        });
+      }
+      console.log('[groupings] ✅ PDF generated successfully');
+    } catch (error) {
+      console.error('[groupings] ❌ Error generating PDF:', error);
+      Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const handleResetScores = async () => {
     if (!event || !user) return;
     
@@ -759,17 +890,32 @@ export default function GroupingsScreen() {
     <>
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={handleRefresh} 
-          style={styles.refreshButton}
-          activeOpacity={0.7}
-        >
-          <RefreshCw 
-            size={16} 
-            color="#333" 
-          />
-          <Text style={styles.refreshButtonText}>Refresh</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtonsRow}>
+          <TouchableOpacity 
+            onPress={handleRefresh} 
+            style={styles.headerActionButton}
+            activeOpacity={0.7}
+          >
+            <RefreshCw 
+              size={16} 
+              color="#333" 
+            />
+            <Text style={styles.headerActionButtonText}>Refresh</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={handleGeneratePdf} 
+            style={styles.headerActionButton}
+            activeOpacity={0.7}
+            disabled={isGeneratingPdf}
+          >
+            <FileText 
+              size={16} 
+              color="#333" 
+              style={isGeneratingPdf ? styles.refreshing : undefined}
+            />
+            <Text style={styles.headerActionButtonText}>PDF</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.titleText}>GROUPINGS</Text>
       </View>
 
@@ -1059,7 +1205,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: 0.5,
   },
-  refreshButton: {
+  headerButtonsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+  },
+  headerActionButton: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -1068,11 +1220,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     gap: 6,
+    minWidth: 95,
   },
-  refreshButtonText: {
-    fontSize: 14,
+  headerActionButtonText: {
+    fontSize: 13,
     fontWeight: '600' as const,
     color: '#333',
+  },
+  refreshing: {
+    opacity: 0.5,
   },
   backBtn: {
     position: 'absolute',
