@@ -293,18 +293,25 @@ export default function LeaderboardScreen() {
         await supabaseService.members.update(entry.member.id, {
           rolexPoints: newRolexPoints,
         });
+
+        // Store in event_rolex_points table for historical records
+        const placementPoints = Number(orgInfo?.rolexPlacementPoints?.[entry.position - 1] || 0);
+        await supabase.from('event_rolex_points').upsert({
+          event_id: eventId,
+          member_id: entry.member.id,
+          rank: entry.position,
+          attendance_points: attendancePoints * numberOfDays,
+          placement_points: placementPoints * numberOfDays,
+          total_points: pointsToAdd,
+          distributed_by: currentUser?.id,
+        }, { onConflict: 'event_id,member_id' });
       }
 
-      const eventRolexPoints = rolexEntries.map(entry => ({
-        memberId: entry.member.id,
-        memberName: entry.member.name,
-        rank: entry.position,
-        points: pointsByRank[entry.position] || 0,
-        netScore: entry.netScore,
-      }));
-
+      // Mark event as distributed
       await supabaseService.events.update(eventId, {
-        rolexPointsDistributed: eventRolexPoints,
+        rolexPointsDistributed: true,
+        rolexPointsDistributedAt: new Date().toISOString(),
+        rolexPointsDistributedBy: currentUser?.id,
       });
 
       console.log('[Leaderboard] ✅ Points distribution complete');
@@ -327,13 +334,24 @@ export default function LeaderboardScreen() {
 
       console.log('[Leaderboard] Clearing points distribution');
 
-      const existingDistribution = event.rolexPointsDistributed || [];
+      // Fetch from event_rolex_points table
+      const { data: existingDistribution, error: fetchError } = await supabase
+        .from('event_rolex_points')
+        .select('*')
+        .eq('event_id', eventId);
+
+      if (fetchError) {
+        console.error('[Leaderboard] Error fetching distribution:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('[Leaderboard] Found distribution records:', existingDistribution?.length || 0);
       
-      for (const entry of existingDistribution) {
-        const member = await supabaseService.members.get(entry.memberId);
+      for (const entry of existingDistribution || []) {
+        const member = await supabaseService.members.get(entry.member_id);
         if (member) {
           const currentPoints = member.rolexPoints || 0;
-          const pointsToRemove = entry.points || 0;
+          const pointsToRemove = entry.total_points || 0;
           const newPoints = Math.max(0, currentPoints - pointsToRemove);
 
           console.log(`[Leaderboard] ${member.name}: removing ${pointsToRemove} points (${currentPoints} -> ${newPoints})`);
@@ -344,8 +362,22 @@ export default function LeaderboardScreen() {
         }
       }
 
+      // Delete from event_rolex_points table
+      const { error: deleteError } = await supabase
+        .from('event_rolex_points')
+        .delete()
+        .eq('event_id', eventId);
+
+      if (deleteError) {
+        console.error('[Leaderboard] Error deleting distribution:', deleteError);
+        throw deleteError;
+      }
+
+      // Mark event as not distributed
       await supabaseService.events.update(eventId, {
-        rolexPointsDistributed: [],
+        rolexPointsDistributed: false,
+        rolexPointsDistributedAt: null,
+        rolexPointsDistributedBy: null,
       });
 
       console.log('[Leaderboard] ✅ Points cleared');
