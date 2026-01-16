@@ -1,13 +1,15 @@
 import { useLocalSearchParams } from 'expo-router';
 import { Award, RefreshCw } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { EventFooter } from '@/components/EventFooter';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
 import { getDisplayHandicap, calculateTournamentFlight } from '@/utils/handicapHelper';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Member, Event } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
 
 const formatScore = (score: number): string => {
   const rounded = Math.round(score * 10) / 10;
@@ -28,6 +30,9 @@ export default function LeaderboardScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const [selectedDay, setSelectedDay] = useState<number | 'all' | 'rolex'>('all');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const { currentUser } = useAuth();
+  const { orgInfo } = useSettings();
+  const queryClient = useQueryClient();
 
   const eventQuery = useQuery({
     queryKey: ['event', eventId],
@@ -247,6 +252,144 @@ export default function LeaderboardScreen() {
   const handleDaySelect = useCallback((day: number | 'all' | 'rolex') => {
     setSelectedDay(day);
   }, []);
+
+  const distributeMutation = useMutation({
+    mutationFn: async () => {
+      if (!eventId || !event) throw new Error('No event found');
+
+      console.log('[Leaderboard] Starting points distribution');
+      console.log('[Leaderboard] Settings:', orgInfo);
+
+      const attendancePoints = Number(orgInfo?.rolexAttendancePoints || 10);
+      const numberOfDays = event.numberOfDays || 1;
+
+      const pointsByRank: { [rank: number]: number } = {};
+      if (orgInfo?.rolexPlacementPoints) {
+        try {
+          orgInfo.rolexPlacementPoints.forEach((points, index) => {
+            const rank = index + 1;
+            const placementPoints = Number(points) || 0;
+            pointsByRank[rank] = (attendancePoints + placementPoints) * numberOfDays;
+          });
+        } catch (error) {
+          console.error('[Leaderboard] Error parsing points distribution:', error);
+        }
+      }
+
+      console.log('[Leaderboard] Points by rank:', pointsByRank);
+      console.log('[Leaderboard] Attendance points:', attendancePoints);
+      console.log('[Leaderboard] Number of days:', numberOfDays);
+
+      const rolexEntries = leaderboard.rolex;
+      
+      for (const entry of rolexEntries) {
+        const pointsToAdd = pointsByRank[entry.position] || 0;
+        const currentRolexPoints = entry.member.rolexPoints || 0;
+        const newRolexPoints = currentRolexPoints + pointsToAdd;
+
+        console.log(`[Leaderboard] ${entry.member.name}: rank ${entry.position}, adding ${pointsToAdd} points (${currentRolexPoints} -> ${newRolexPoints})`);
+
+        await supabaseService.members.update(entry.member.id, {
+          rolexPoints: newRolexPoints,
+        });
+      }
+
+      const eventRolexPoints = rolexEntries.map(entry => ({
+        memberId: entry.member.id,
+        memberName: entry.member.name,
+        rank: entry.position,
+        points: pointsByRank[entry.position] || 0,
+        netScore: entry.netScore,
+      }));
+
+      await supabaseService.events.update(eventId, {
+        rolexPointsDistributed: eventRolexPoints,
+      });
+
+      console.log('[Leaderboard] ✅ Points distribution complete');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      setLastUpdate(new Date());
+      Alert.alert('Success', 'Rolex points have been distributed successfully!');
+    },
+    onError: (error) => {
+      console.error('[Leaderboard] Distribution error:', error);
+      Alert.alert('Error', 'Failed to distribute points. Please try again.');
+    },
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: async () => {
+      if (!eventId || !event) throw new Error('No event found');
+
+      console.log('[Leaderboard] Clearing points distribution');
+
+      const existingDistribution = event.rolexPointsDistributed || [];
+      
+      for (const entry of existingDistribution) {
+        const member = await supabaseService.members.get(entry.memberId);
+        if (member) {
+          const currentPoints = member.rolexPoints || 0;
+          const pointsToRemove = entry.points || 0;
+          const newPoints = Math.max(0, currentPoints - pointsToRemove);
+
+          console.log(`[Leaderboard] ${member.name}: removing ${pointsToRemove} points (${currentPoints} -> ${newPoints})`);
+
+          await supabaseService.members.update(member.id, {
+            rolexPoints: newPoints,
+          });
+        }
+      }
+
+      await supabaseService.events.update(eventId, {
+        rolexPointsDistributed: [],
+      });
+
+      console.log('[Leaderboard] ✅ Points cleared');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      setLastUpdate(new Date());
+      Alert.alert('Success', 'Rolex points have been cleared successfully!');
+    },
+    onError: (error) => {
+      console.error('[Leaderboard] Clear error:', error);
+      Alert.alert('Error', 'Failed to clear points. Please try again.');
+    },
+  });
+
+  const handleDistributePoints = () => {
+    Alert.alert(
+      'Distribute Points',
+      'Are you sure you want to distribute Rolex points based on current rankings? This will add points to each player\'s total.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Distribute', 
+          onPress: () => distributeMutation.mutate(),
+          style: 'destructive'
+        },
+      ]
+    );
+  };
+
+  const handleClearPoints = () => {
+    Alert.alert(
+      'Clear Points',
+      'Are you sure you want to clear the distributed points for this event? This will subtract the previously awarded points.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Clear', 
+          onPress: () => clearMutation.mutate(),
+          style: 'destructive'
+        },
+      ]
+    );
+  };
 
   return (
     <>
@@ -509,7 +652,13 @@ export default function LeaderboardScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
-      <EventFooter />
+      <EventFooter 
+        showRolexButtons={selectedDay === 'rolex' && currentUser?.isAdmin}
+        onDistributePoints={handleDistributePoints}
+        onClearPoints={handleClearPoints}
+        isDistributing={distributeMutation.isPending}
+        isClearing={clearMutation.isPending}
+      />
     </>
   );
 }

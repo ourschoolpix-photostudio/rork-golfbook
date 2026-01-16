@@ -17,6 +17,11 @@ type EventFooterProps = {
   eventStatus?: EventStatus;
   onStatusChange?: (newStatus: EventStatus) => void | Promise<void>;
   isAdmin?: boolean;
+  showRolexButtons?: boolean;
+  onDistributePoints?: () => void | Promise<void>;
+  onClearPoints?: () => void | Promise<void>;
+  isDistributing?: boolean;
+  isClearing?: boolean;
 };
 
 export function EventFooter({
@@ -24,6 +29,11 @@ export function EventFooter({
   eventStatus = 'upcoming',
   onStatusChange,
   isAdmin = false,
+  showRolexButtons = false,
+  onDistributePoints,
+  onClearPoints,
+  isDistributing = false,
+  isClearing = false,
 }: EventFooterProps = {}) {
   const calculateAndStoreTournamentHandicaps = async (eventId: string) => {
     try {
@@ -235,34 +245,67 @@ export function EventFooter({
     <View style={styles.footerContainer}>
       {currentUser?.isAdmin && (
         <View style={styles.topRow}>
-          <View style={styles.toggleButtonWrapper}>
-            <OfflineModeToggle eventId={eventId} position="footer" />
-          </View>
-          {showStartButton && onStatusChange && (
-            <View style={styles.startButtonWrapper}>
-              <EventStatusButton
-                status={eventStatus!}
-                onStatusChange={async (newStatus) => {
-                  await onStatusChange(newStatus);
-                  if (newStatus === 'complete' && eventId) {
-                    await calculateAndStoreTournamentHandicaps(eventId);
-                  }
-                }}
-                isAdmin={isAdmin}
-              />
-            </View>
+          {showRolexButtons ? (
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.rolexButton,
+                  styles.distributeButton,
+                  isDistributing && styles.rolexButtonDisabled,
+                ]}
+                onPress={onDistributePoints}
+                disabled={isDistributing || isClearing}
+              >
+                <Text style={styles.rolexButtonText}>
+                  {isDistributing ? 'Distributing...' : 'Distribute Points'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.rolexButton,
+                  styles.clearButton,
+                  isClearing && styles.rolexButtonDisabled,
+                ]}
+                onPress={onClearPoints}
+                disabled={isDistributing || isClearing}
+              >
+                <Text style={styles.rolexButtonText}>
+                  {isClearing ? 'Clearing...' : 'Clear Points'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <View style={styles.toggleButtonWrapper}>
+                <OfflineModeToggle eventId={eventId} position="footer" />
+              </View>
+              {showStartButton && onStatusChange && (
+                <View style={styles.startButtonWrapper}>
+                  <EventStatusButton
+                    status={eventStatus!}
+                    onStatusChange={async (newStatus) => {
+                      await onStatusChange(newStatus);
+                      if (newStatus === 'complete' && eventId) {
+                        await calculateAndStoreTournamentHandicaps(eventId);
+                      }
+                    }}
+                    isAdmin={isAdmin}
+                  />
+                </View>
+              )}
+              <TouchableOpacity
+                style={[
+                  styles.courseHandicapToggle,
+                  useCourseHandicap && styles.courseHandicapToggleActive,
+                ]}
+                onPress={toggleCourseHandicap}
+              >
+                <Text style={styles.courseHandicapToggleText}>
+                  {useCourseHandicap ? 'Play Course HDC' : 'Play GHIN HDC'}
+                </Text>
+              </TouchableOpacity>
+            </>
           )}
-          <TouchableOpacity
-            style={[
-              styles.courseHandicapToggle,
-              useCourseHandicap && styles.courseHandicapToggleActive,
-            ]}
-            onPress={toggleCourseHandicap}
-          >
-            <Text style={styles.courseHandicapToggleText}>
-              {useCourseHandicap ? 'Play Course HDC' : 'Play GHIN HDC'}
-            </Text>
-          </TouchableOpacity>
         </View>
       )}
       <View style={[styles.footer, { paddingBottom: insets.bottom }]}>
@@ -324,6 +367,31 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: '700',
+  },
+  rolexButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginHorizontal: 4,
+  },
+  distributeButton: {
+    backgroundColor: '#FFB300',
+  },
+  clearButton: {
+    backgroundColor: '#D32F2F',
+  },
+  rolexButtonDisabled: {
+    opacity: 0.5,
+  },
+  rolexButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   footer: {
     flexDirection: 'row',
