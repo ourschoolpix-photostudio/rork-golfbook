@@ -37,6 +37,21 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   if (!event) return null;
 
   const isAlreadyRegistered = currentUserId && registeredPlayerIds.includes(currentUserId);
+  const isRegistrationClosed = !event.registrationOpen;
+  
+  const getRegistrationMessage = () => {
+    if (isAlreadyRegistered) return 'ALREADY REGISTERED';
+    if (isRegistrationClosed) {
+      const eventDate = new Date(event.date);
+      const now = new Date();
+      if (eventDate > now) {
+        return 'REGISTRATION NOT OPEN YET';
+      } else {
+        return 'REGISTRATION CLOSED';
+      }
+    }
+    return 'REGISTER NOW!';
+  };
 
   const getPrizePoolItems = () => {
     const items: { label: string; value: string }[] = [];
@@ -375,9 +390,9 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
           <View style={[styles.buttonFooter, { paddingBottom: insets.bottom + 12 }]}>
             <TouchableOpacity 
-              style={[styles.registerButton, isAlreadyRegistered && styles.registeredButton]}
+              style={[styles.registerButton, (isAlreadyRegistered || isRegistrationClosed) && styles.registeredButton]}
               onPress={() => {
-                if (!isAlreadyRegistered && event) {
+                if (!isAlreadyRegistered && !isRegistrationClosed && event) {
                   if (onRegister) {
                     onRegister();
                   } else {
@@ -389,10 +404,10 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                   }
                 }
               }}
-              disabled={!!isAlreadyRegistered}
+              disabled={isAlreadyRegistered || isRegistrationClosed}
             >
               <Text style={styles.registerButtonText}>
-                {isAlreadyRegistered ? 'ALREADY REGISTERED' : 'REGISTER NOW!'}
+                {getRegistrationMessage()}
               </Text>
             </TouchableOpacity>
           </View>
