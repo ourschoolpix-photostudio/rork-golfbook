@@ -52,6 +52,8 @@ export function PaymentReminderModal({
   const getPaymentReminderHTML = () => {
     const zellePhone = formatPhoneNumber(orgInfo.zellePhone || '5714811006');
     const paypalEmail = orgInfo.paypalEmail || 'payment@example.com';
+    const amountValue = parseFloat(amount).toFixed(2);
+    const paypalUrl = `https://www.paypal.com/paypalme/${paypalEmail.split('@')[0]}/${amountValue}`;
 
     return `<!DOCTYPE html>
 <html>
@@ -65,7 +67,7 @@ export function PaymentReminderModal({
     .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 2px; }
     .header-icon { width: 64px; height: 64px; background-color: rgba(255,255,255,0.2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 32px; }
     .content { padding: 40px 20px; }
-    .greeting { font-size: 18px; color: #333333; margin-bottom: 24px; }
+    .greeting { font-size: 16px; color: #333333; margin-bottom: 24px; line-height: 1.6; }
     .invoice-card { background-color: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 12px; padding: 24px; margin: 24px 0; }
     .invoice-header { text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #D0D0D0; }
     .invoice-title { font-size: 24px; font-weight: 700; color: #1B5E20; letter-spacing: 2px; }
@@ -76,20 +78,21 @@ export function PaymentReminderModal({
     .amount-label { font-size: 16px; color: #666666; margin-bottom: 8px; }
     .amount-value { font-size: 36px; font-weight: 700; color: #1B5E20; }
     .payment-methods { margin: 32px 0; }
-    .section-title { font-size: 18px; font-weight: 700; color: #333333; margin-bottom: 16px; }
-    .payment-option { background-color: #F8F9FA; border: 2px solid #E0E0E0; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-    .payment-option-header { display: flex; align-items: center; margin-bottom: 12px; }
-    .payment-icon { width: 40px; height: 40px; background-color: #1B5E20; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; color: #ffffff; font-size: 20px; }
+    .section-title { font-size: 20px; font-weight: 700; color: #333333; margin-bottom: 20px; text-align: center; }
+    .payment-option { background-color: #ffffff; border: 2px solid #E0E0E0; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .payment-option-header { display: flex; align-items: center; margin-bottom: 16px; justify-content: center; }
+    .payment-icon { width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; color: #ffffff; font-size: 24px; }
     .payment-icon.zelle { background-color: #6B21A8; }
     .payment-icon.paypal { background-color: #0070BA; }
-    .payment-name { font-size: 16px; font-weight: 700; color: #333333; }
-    .payment-info { font-size: 20px; font-weight: 700; color: #1B5E20; text-align: center; padding: 16px; background-color: #ffffff; border-radius: 8px; margin-top: 12px; letter-spacing: 1px; }
+    .payment-name { font-size: 20px; font-weight: 700; color: #333333; }
+    .payment-info { font-size: 20px; font-weight: 700; text-align: center; padding: 16px; background-color: #F8F9FA; border-radius: 8px; margin-top: 12px; letter-spacing: 1px; }
     .payment-info.zelle { color: #6B21A8; }
-    .payment-info.paypal { color: #0070BA; }
+    .paypal-button { display: inline-block; background-color: #0070BA; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 700; margin-top: 12px; text-align: center; width: 100%; box-sizing: border-box; transition: background-color 0.2s; }
+    .paypal-button:hover { background-color: #005A9C; }
     .deadline-box { background-color: #FEE2E2; border-left: 4px solid #DC2626; padding: 16px; border-radius: 8px; margin: 24px 0; }
     .deadline-text { color: #DC2626; font-size: 14px; font-weight: 600; margin: 0; }
     .footer { background-color: #f8f9fa; padding: 24px 20px; text-align: center; border-top: 1px solid #e0e0e0; }
-    .footer-text { font-size: 12px; color: #666666; margin: 4px 0; }
+    .footer-text { font-size: 14px; color: #333333; margin: 12px 0; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -100,10 +103,9 @@ export function PaymentReminderModal({
     </div>
     
     <div class="content">
-      <p class="greeting">Dear Member,</p>
-      
-      <p style="font-size: 15px; color: #333333; line-height: 1.6;">
-        This is a friendly reminder that you have an outstanding balance. Please review the details below and submit your payment at your earliest convenience.
+      <p class="greeting">
+        Hi there,<br><br>
+        This is a friendly reminder for you to make a payment for something you registered for. See details below.
       </p>
       
       <div class="invoice-card">
@@ -124,7 +126,7 @@ export function PaymentReminderModal({
       
       <div class="amount-box">
         <div class="amount-label">Amount Due</div>
-        <div class="amount-value">$${parseFloat(amount).toFixed(2)}</div>
+        <div class="amount-value">${amountValue}</div>
       </div>
       
       <div class="payment-methods">
@@ -135,7 +137,7 @@ export function PaymentReminderModal({
             <div class="payment-icon zelle">💸</div>
             <div class="payment-name">Zelle</div>
           </div>
-          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0;">Send payment via Zelle to:</p>
+          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0; text-align: center;">Send payment via Zelle to:</p>
           <div class="payment-info zelle">${zellePhone}</div>
         </div>
         
@@ -144,28 +146,26 @@ export function PaymentReminderModal({
             <div class="payment-icon paypal">🅿️</div>
             <div class="payment-name">PayPal</div>
           </div>
-          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0;">Send payment via PayPal to:</p>
-          <div class="payment-info paypal">${paypalEmail}</div>
+          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0; text-align: center;">Click the button below to pay with PayPal:</p>
+          <a href="${paypalUrl}" class="paypal-button">PAY ${amountValue} WITH PAYPAL</a>
         </div>
       </div>
       
       <div class="deadline-box">
-        <p class="deadline-text">⏰ Payment must be received by ${dueDate} to avoid any late fees or removal from the participant list.</p>
+        <p class="deadline-text">⏰ Payment must be received by ${dueDate}.</p>
       </div>
       
-      <p style="font-size: 14px; color: #666666; line-height: 1.6; font-style: italic;">
-        If you have already submitted your payment, please disregard this reminder. If you have any questions or concerns, please don't hesitate to reach out.
+      <p style="font-size: 14px; color: #666666; line-height: 1.6; font-style: italic; text-align: center;">
+        If you have already submitted your payment, please disregard this reminder.
       </p>
       
-      <p style="font-size: 14px; color: #333333; margin-top: 32px;">
-        Thank you,<br>
-        <strong>The Management Team</strong>
+      <p class="footer-text" style="margin-top: 32px;">
+        Thank you again for your support of DMVVGA.
       </p>
     </div>
     
     <div class="footer">
-      <p class="footer-text">This is an automated payment reminder</p>
-      <p class="footer-text">Please do not reply directly to this email</p>
+      <p style="font-size: 12px; color: #666666; margin: 4px 0;">This is an automated payment reminder</p>
     </div>
   </div>
 </body>
