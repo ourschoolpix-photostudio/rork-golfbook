@@ -99,6 +99,9 @@ const mapEventFromDB = (e: any) => ({
   closestToPin: e.closest_to_pin,
   archived: e.archived || false,
   archivedAt: e.archived_at,
+  rolexPointsDistributed: e.rolex_points_distributed || false,
+  rolexPointsDistributedAt: e.rolex_points_distributed_at,
+  rolexPointsDistributedBy: e.rolex_points_distributed_by,
 });
 
 export const supabaseService = {
@@ -981,6 +984,123 @@ export const supabaseService = {
         .delete()
         .eq('id', gameId);
       if (error) throw error;
+    },
+  },
+
+  rolexPoints: {
+    distributePoints: async (eventId: string, distributedBy: string, pointsData: {
+      memberId: string;
+      rank: number;
+      attendancePoints: number;
+      placementPoints: number;
+      totalPoints: number;
+    }[]) => {
+      try {
+        for (const data of pointsData) {
+          await supabase.from('event_rolex_points').upsert({
+            event_id: eventId,
+            member_id: data.memberId,
+            rank: data.rank,
+            attendance_points: data.attendancePoints,
+            placement_points: data.placementPoints,
+            total_points: data.totalPoints,
+            distributed_by: distributedBy,
+          });
+
+          const { data: member } = await supabase
+            .from('members')
+            .select('rolex_points')
+            .eq('id', data.memberId)
+            .single();
+
+          const currentPoints = member?.rolex_points || 0;
+          await supabase
+            .from('members')
+            .update({ rolex_points: currentPoints + data.totalPoints })
+            .eq('id', data.memberId);
+        }
+
+        await supabase
+          .from('events')
+          .update({
+            rolex_points_distributed: true,
+            rolex_points_distributed_at: new Date().toISOString(),
+            rolex_points_distributed_by: distributedBy,
+          })
+          .eq('id', eventId);
+
+        console.log('✅ [rolexPoints] Points distributed successfully');
+      } catch (error) {
+        console.error('❌ [rolexPoints] Error distributing points:', error);
+        throw error;
+      }
+    },
+
+    clearPoints: async (eventId: string) => {
+      try {
+        const { data: eventPoints } = await supabase
+          .from('event_rolex_points')
+          .select('*')
+          .eq('event_id', eventId);
+
+        if (eventPoints && eventPoints.length > 0) {
+          for (const pointRecord of eventPoints) {
+            const { data: member } = await supabase
+              .from('members')
+              .select('rolex_points')
+              .eq('id', pointRecord.member_id)
+              .single();
+
+            const currentPoints = member?.rolex_points || 0;
+            const newPoints = Math.max(0, currentPoints - pointRecord.total_points);
+            await supabase
+              .from('members')
+              .update({ rolex_points: newPoints })
+              .eq('id', pointRecord.member_id);
+          }
+
+          await supabase
+            .from('event_rolex_points')
+            .delete()
+            .eq('event_id', eventId);
+        }
+
+        await supabase
+          .from('events')
+          .update({
+            rolex_points_distributed: false,
+            rolex_points_distributed_at: null,
+            rolex_points_distributed_by: null,
+          })
+          .eq('id', eventId);
+
+        console.log('✅ [rolexPoints] Points cleared successfully');
+      } catch (error) {
+        console.error('❌ [rolexPoints] Error clearing points:', error);
+        throw error;
+      }
+    },
+
+    getEventPoints: async (eventId: string) => {
+      const { data, error } = await supabase
+        .from('event_rolex_points')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('rank', { ascending: true });
+      
+      if (error) throw error;
+      
+      return (data || []).map((p: any) => ({
+        id: p.id,
+        eventId: p.event_id,
+        memberId: p.member_id,
+        rank: p.rank,
+        attendancePoints: p.attendance_points,
+        placementPoints: p.placement_points,
+        totalPoints: p.total_points,
+        distributedAt: p.distributed_at,
+        distributedBy: p.distributed_by,
+      }));
     },
   },
 

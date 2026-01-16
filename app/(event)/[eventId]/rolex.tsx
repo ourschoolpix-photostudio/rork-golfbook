@@ -7,17 +7,20 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { authService } from '@/utils/auth';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
 import { EventFooter } from '@/components/EventFooter';
-import { Trophy } from 'lucide-react-native';
+import { Trophy, Award, X } from 'lucide-react-native';
 import { Member, User, Event } from '@/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
+import { useSettings } from '@/contexts/SettingsContext';
 import {
   getDisplayHandicap,
   calculateTournamentFlight,
@@ -34,6 +37,8 @@ export default function EventRolexScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'tournament' | 'rolex'>('tournament');
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
+  const [isDistributing, setIsDistributing] = useState(false);
+  const { orgInfo } = useSettings();
 
   const queryClient = useQueryClient();
   
@@ -240,6 +245,140 @@ export default function EventRolexScreen() {
     }
   };
 
+  const handleDistributePoints = async () => {
+    if (!event || !currentUser) return;
+
+    if (!currentUser.isAdmin) {
+      Alert.alert('Permission Denied', 'Only admins can distribute rolex points.');
+      return;
+    }
+
+    if (eventData?.rolexPointsDistributed) {
+      Alert.alert(
+        'Already Distributed',
+        'Rolex points have already been distributed for this event. Clear them first if you need to redistribute.',
+      );
+      return;
+    }
+
+    const numberOfDays = event.numberOfDays || 1;
+    const attendancePoints = parseInt(orgInfo.rolexAttendancePoints || '0');
+    const rolexPlacementPoints = orgInfo.rolexPlacementPoints || [];
+
+    const scoredMembers = members.filter(m => m.scoreTotal && m.scoreTotal > 0 && m.membershipType === 'active');
+
+    if (scoredMembers.length === 0) {
+      Alert.alert('No Scores', 'No players have completed scores yet.');
+      return;
+    }
+
+    Alert.alert(
+      'Distribute Rolex Points',
+      `This will distribute rolex points to ${scoredMembers.length} players based on their net scores. Points will be added to their global rolex points and saved as historical records. Continue?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Distribute',
+          onPress: async () => {
+            try {
+              setIsDistributing(true);
+              console.log('[rolex] Starting point distribution...');
+
+              const pointsData = scoredMembers.map((member, index) => {
+                const rank = index + 1;
+                const placementPoints = parseInt(rolexPlacementPoints[rank - 1] || '0');
+                const totalPoints = (attendancePoints + placementPoints) * numberOfDays;
+
+                console.log(`[rolex] ${member.name}: rank=${rank}, attendance=${attendancePoints}, placement=${placementPoints}, days=${numberOfDays}, total=${totalPoints}`);
+
+                return {
+                  memberId: member.id,
+                  rank,
+                  attendancePoints,
+                  placementPoints,
+                  totalPoints,
+                };
+              });
+
+              await supabaseService.rolexPoints.distributePoints(
+                id,
+                currentUser.id,
+                pointsData
+              );
+
+              await refetchEvent();
+              await refetchMembers();
+
+              Alert.alert(
+                'Success',
+                `Rolex points have been distributed to ${scoredMembers.length} players.`
+              );
+
+              console.log('[rolex] ✅ Points distributed successfully');
+            } catch (error) {
+              console.error('[rolex] Error distributing points:', error);
+              Alert.alert(
+                'Error',
+                'Failed to distribute points. Please try again.'
+              );
+            } finally {
+              setIsDistributing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearPoints = async () => {
+    if (!event || !currentUser) return;
+
+    if (!currentUser.isAdmin) {
+      Alert.alert('Permission Denied', 'Only admins can clear rolex points.');
+      return;
+    }
+
+    if (!eventData?.rolexPointsDistributed) {
+      Alert.alert('No Points', 'No rolex points have been distributed for this event yet.');
+      return;
+    }
+
+    Alert.alert(
+      'Clear Rolex Points',
+      'This will remove all rolex points that were distributed for this event. The points will be subtracted from players\' global rolex points. This action should only be used to fix mistakes. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDistributing(true);
+              console.log('[rolex] Clearing point distribution...');
+
+              await supabaseService.rolexPoints.clearPoints(id);
+
+              await refetchEvent();
+              await refetchMembers();
+
+              Alert.alert('Success', 'Rolex points have been cleared.');
+
+              console.log('[rolex] ✅ Points cleared successfully');
+            } catch (error) {
+              console.error('[rolex] Error clearing points:', error);
+              Alert.alert(
+                'Error',
+                'Failed to clear points. Please try again.'
+              );
+            } finally {
+              setIsDistributing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <>
       <SafeAreaView style={styles.container}>
@@ -258,6 +397,46 @@ export default function EventRolexScreen() {
                 {event.endDate && event.endDate !== event.date && event.endDate !== '' ? ` - ${event.endDate}` : ''}
               </Text>
             </View>
+          </View>
+        )}
+
+        {currentUser && currentUser.isAdmin && (
+          <View style={styles.adminButtonsContainer}>
+            {eventData?.rolexPointsDistributed ? (
+              <View style={styles.distributedBanner}>
+                <Award size={20} color="#4CAF50" />
+                <Text style={styles.distributedText}>Points Distributed</Text>
+                <TouchableOpacity
+                  style={styles.clearButton}
+                  onPress={handleClearPoints}
+                  disabled={isDistributing}
+                >
+                  {isDistributing ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <X size={16} color="#fff" />
+                      <Text style={styles.clearButtonText}>Clear</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.distributeButton}
+                onPress={handleDistributePoints}
+                disabled={isDistributing}
+              >
+                {isDistributing ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Award size={20} color="#fff" />
+                    <Text style={styles.distributeButtonText}>Distribute Rolex Points</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -782,5 +961,57 @@ const styles = StyleSheet.create({
   toggleButtonTextActive: {
     color: '#fff',
     fontWeight: '700',
+  },
+  adminButtonsContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  distributeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    gap: 8,
+  },
+  distributeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  distributedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  distributedText: {
+    flex: 1,
+    marginLeft: 8,
+    color: '#2E7D32',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF5722',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    gap: 4,
+  },
+  clearButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
