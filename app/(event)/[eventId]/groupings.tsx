@@ -711,18 +711,18 @@ export default function GroupingsScreen() {
         const renderPlayerBox = (player: Member | null, slotIdx: number) => {
           if (!player) {
             return `
-              <div style="background-color: #B0B0B0; border-radius: 6px; min-height: 60px; display: flex; align-items: center; justify-content: center; margin-top: 2px; padding: 8px 6px;">
-                <span style="font-size: 9px; color: #666; font-weight: 500;">Empty</span>
+              <div style="background-color: #8E8E8E; border: 1px solid #666; border-radius: 4px; height: 60px; display: flex; align-items: center; justify-content: center; padding: 8px 6px; margin-bottom: 4px;">
+                <span style="font-size: 9px; color: #fff; font-weight: 500;">Empty</span>
               </div>
             `;
           }
           const playerReg = registrations[player.name];
           const handicap = getDisplayHandicap(player, playerReg, event, useCourseHandicap, activeDay);
           return `
-            <div style="background-color: #D9D9D9; border-radius: 6px; padding: 8px 10px; margin-top: 2px; min-height: 60px;">
-              <div style="font-size: 9px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px;">${player.name}</div>
-              <div style="font-size: 7px; color: #333; margin-bottom: 2px;">HDC: ${handicap}</div>
-              <div style="font-size: 7px; color: #333;">Total: ${player.scoreTotal ?? 0}</div>
+            <div style="background-color: #8E8E8E; border: 1px solid #666; border-radius: 4px; padding: 8px 10px; height: 60px; margin-bottom: 4px;">
+              <div style="font-size: 9px; font-weight: 700; color: #fff; margin-bottom: 4px;">${player.name}</div>
+              <div style="font-size: 7px; color: #fff; margin-bottom: 2px;">HDC: ${handicap}</div>
+              <div style="font-size: 7px; color: #fff;">Total: ${player.scoreTotal ?? 0}</div>
             </div>
           `;
         };
@@ -730,16 +730,16 @@ export default function GroupingsScreen() {
         return `
           <div style="border: 1px solid #999; margin-bottom: 8px; padding: 8px; background: #fff;">
             <div style="font-size: 9px; font-weight: 600; color: #1B5E20; margin-bottom: 6px;">${label} • ${playerCount} players</div>
-            <div style="display: flex; gap: 4px;">
-              <div style="flex: 1;">
-                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px;">
+            <div style="display: flex; gap: 6px;">
+              <div style="flex: 1; display: flex; flex-direction: column;">
+                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px;">
                   <span style="font-size: 8px; font-weight: 700; color: #fff;">CART 1</span>
                 </div>
                 ${renderPlayerBox(group.slots[0], 0)}
                 ${renderPlayerBox(group.slots[1], 1)}
               </div>
-              <div style="flex: 1;">
-                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px;">
+              <div style="flex: 1; display: flex; flex-direction: column;">
+                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px;">
                   <span style="font-size: 8px; font-weight: 700; color: #fff;">CART 2</span>
                 </div>
                 ${renderPlayerBox(group.slots[2], 2)}
