@@ -18,6 +18,8 @@ export interface OrganizationInfo {
   paypalClientId: string;
   paypalClientSecret: string;
   paypalMode: 'sandbox' | 'live';
+  paypalProcessingFee: string;
+  paypalTransactionFee: string;
   rolexPlacementPoints: string[];
   rolexAttendancePoints: string;
   rolexBonusPoints: string;
@@ -41,6 +43,8 @@ const DEFAULT_ORG_INFO: OrganizationInfo = {
   paypalClientId: '',
   paypalClientSecret: '',
   paypalMode: 'sandbox',
+  paypalProcessingFee: '3',
+  paypalTransactionFee: '0.30',
   rolexPlacementPoints: Array(30).fill(''),
   rolexAttendancePoints: '',
   rolexBonusPoints: '',
@@ -100,6 +104,8 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         paypalClientId: (data.paypal_client_id || '').trim(),
         paypalClientSecret: (data.paypal_client_secret || '').trim(),
         paypalMode: data.paypal_mode || 'sandbox',
+        paypalProcessingFee: data.paypal_processing_fee || '3',
+        paypalTransactionFee: data.paypal_transaction_fee || '0.30',
         rolexPlacementPoints: data.rolex_placement_points,
         rolexAttendancePoints: data.rolex_attendance_points,
         rolexBonusPoints: data.rolex_bonus_points,
@@ -178,6 +184,8 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         if (updates.paypalClientId !== undefined) supabaseUpdates.paypal_client_id = updates.paypalClientId;
         if (updates.paypalClientSecret !== undefined) supabaseUpdates.paypal_client_secret = updates.paypalClientSecret;
         if (updates.paypalMode !== undefined) supabaseUpdates.paypal_mode = updates.paypalMode;
+        if (updates.paypalProcessingFee !== undefined) supabaseUpdates.paypal_processing_fee = updates.paypalProcessingFee;
+        if (updates.paypalTransactionFee !== undefined) supabaseUpdates.paypal_transaction_fee = updates.paypalTransactionFee;
         if (updates.rolexPlacementPoints !== undefined) supabaseUpdates.rolex_placement_points = updates.rolexPlacementPoints;
         if (updates.rolexAttendancePoints !== undefined) supabaseUpdates.rolex_attendance_points = updates.rolexAttendancePoints;
         if (updates.rolexBonusPoints !== undefined) supabaseUpdates.rolex_bonus_points = updates.rolexBonusPoints;

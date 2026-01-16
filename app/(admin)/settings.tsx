@@ -35,6 +35,8 @@ interface OrganizationInfo {
   paypalClientId: string;
   paypalClientSecret: string;
   paypalMode: 'sandbox' | 'live';
+  paypalProcessingFee: string;
+  paypalTransactionFee: string;
   rolexPlacementPoints: string[];
   rolexAttendancePoints: string;
   rolexBonusPoints: string;
@@ -83,6 +85,8 @@ export default function SettingsScreen() {
     paypalClientId: '',
     paypalClientSecret: '',
     paypalMode: 'sandbox',
+    paypalProcessingFee: '3',
+    paypalTransactionFee: '0.30',
     rolexPlacementPoints: Array(30).fill(''),
     rolexAttendancePoints: '',
     rolexBonusPoints: '',
@@ -610,6 +614,61 @@ export default function SettingsScreen() {
                   </View>
                 </View>
               )}
+
+              <View style={styles.subsectionDivider} />
+
+              <View style={styles.subsectionContainer}>
+                <View style={styles.subsectionHeader}>
+                  <Ionicons name="calculator-outline" size={20} color="#007AFF" />
+                  <Text style={styles.subsectionTitle}>PayPal Processing Fees</Text>
+                </View>
+                <Text style={styles.subsectionDescription}>
+                  Configure PayPal processing fees for automatic payment calculations. These fees will be added to payment amounts.
+                </Text>
+
+                <Text style={styles.fieldLabel}>Processing Fee (%)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={orgInfo.paypalProcessingFee}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^0-9.]/g, '');
+                    const parts = filtered.split('.');
+                    const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filtered;
+                    setOrgInfo({ ...orgInfo, paypalProcessingFee: formatted });
+                  }}
+                  placeholder="3.0"
+                  keyboardType="decimal-pad"
+                />
+                <Text style={styles.feeHelperText}>Example: 3.0 for 3%</Text>
+
+                <Text style={styles.fieldLabel}>Transaction Fee ($)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={orgInfo.paypalTransactionFee}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^0-9.]/g, '');
+                    const parts = filtered.split('.');
+                    const formatted = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filtered;
+                    setOrgInfo({ ...orgInfo, paypalTransactionFee: formatted });
+                  }}
+                  placeholder="0.30"
+                  keyboardType="decimal-pad"
+                />
+                <Text style={styles.feeHelperText}>Example: 0.30 for $0.30</Text>
+
+                <View style={styles.feePreviewBox}>
+                  <Ionicons name="information-circle" size={20} color="#007AFF" />
+                  <View style={styles.feePreviewTextContainer}>
+                    <Text style={styles.feePreviewTitle}>Example Calculation</Text>
+                    <Text style={styles.feePreviewText}>
+                      For a $100 payment:{"\n"}
+                      Processing fee ({orgInfo.paypalProcessingFee || '0'}%): ${((100 * parseFloat(orgInfo.paypalProcessingFee || '0')) / 100).toFixed(2)}{"\n"}
+                      Transaction fee: ${orgInfo.paypalTransactionFee || '0.00'}{"\n"}
+                      Total to collect: ${(100 + (100 * parseFloat(orgInfo.paypalProcessingFee || '0')) / 100 + parseFloat(orgInfo.paypalTransactionFee || '0')).toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
 
               <TouchableOpacity
                 style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
@@ -1448,5 +1507,38 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 100,
     paddingTop: 10,
+  },
+  feeHelperText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    marginBottom: 8,
+    fontStyle: 'italic' as const,
+  },
+  feePreviewBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+  },
+  feePreviewTextContainer: {
+    flex: 1,
+  },
+  feePreviewTitle: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#1976D2',
+    marginBottom: 6,
+  },
+  feePreviewText: {
+    fontSize: 12,
+    color: '#1565C0',
+    lineHeight: 18,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
 });
