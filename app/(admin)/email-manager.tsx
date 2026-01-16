@@ -37,7 +37,7 @@ interface MemberGroup {
 function getPaymentReminderTemplate(): EmailTemplate {
   return {
     id: crypto.randomUUID(),
-    name: 'Payment Reminder - Professional',
+    name: 'Payment Reminder',
     subject: 'Payment Reminder: Your Outstanding Balance',
     isHtml: true,
     createdAt: new Date().toISOString(),
@@ -363,31 +363,6 @@ export default function EmailManagerScreen() {
             <TouchableOpacity
               style={styles.quickButton}
               onPress={() => {
-                Alert.alert(
-                  'Load Pre-Designed Template',
-                  'Load a payment reminder template?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Load',
-                      onPress: () => {
-                        const paymentTemplate = getPaymentReminderTemplate();
-                        setEditingTemplate(null);
-                        createTemplate(paymentTemplate);
-                        Alert.alert('Success', 'Payment reminder template added!');
-                      },
-                    },
-                  ]
-                );
-              }}
-            >
-              <FileText size={18} color="#1B5E20" />
-              <Text style={[styles.quickButtonText, { color: '#1B5E20' }]}>Add Payment Template</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickButton}
-              onPress={() => {
                 const allIds = new Set(membersWithEmail.map(m => m.id));
                 setSelectedMembers(allIds);
               }}
@@ -484,16 +459,42 @@ export default function EmailManagerScreen() {
   const renderTemplatesTab = () => {
     return (
       <View style={styles.tabContent}>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => {
-            setEditingTemplate(null);
-            setShowTemplateModal(true);
-          }}
-        >
-          <Plus size={20} color="#fff" />
-          <Text style={styles.addButtonText}>New Template</Text>
-        </TouchableOpacity>
+        <View style={styles.templateButtonsRow}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => {
+              setEditingTemplate(null);
+              setShowTemplateModal(true);
+            }}
+          >
+            <Plus size={20} color="#fff" />
+            <Text style={styles.addButtonText}>New Template</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.addButton, styles.paymentButton]}
+            onPress={() => {
+              Alert.alert(
+                'Add Payment Reminder',
+                'Add a pre-designed payment reminder template?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Add',
+                    onPress: async () => {
+                      const paymentTemplate = getPaymentReminderTemplate();
+                      await createTemplate(paymentTemplate);
+                      Alert.alert('Success', 'Payment reminder template added!');
+                    },
+                  },
+                ]
+              );
+            }}
+          >
+            <FileText size={20} color="#fff" />
+            <Text style={styles.addButtonText}>Payment Reminder</Text>
+          </TouchableOpacity>
+        </View>
 
         <FlatList
           data={templates}
@@ -1081,7 +1082,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  templateButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    margin: 16,
+  },
   addButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1089,7 +1096,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#003366',
     paddingVertical: 12,
     borderRadius: 8,
-    margin: 16,
+  },
+  paymentButton: {
+    backgroundColor: '#1B5E20',
   },
   addButtonText: {
     color: '#fff',
