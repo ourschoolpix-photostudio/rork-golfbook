@@ -35,7 +35,8 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         
         const now = new Date().toISOString();
         const activeAlerts = storedAlerts.filter(alert => 
-          !alert.expiresAt || alert.expiresAt > now
+          (!alert.expiresAt || alert.expiresAt > now) &&
+          alert.createdBy !== memberId
         );
         
         const alertsWithDismissal = activeAlerts.map(alert => ({
@@ -59,7 +60,8 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         
         const now = new Date().toISOString();
         const activeAlertsData = (alertsResult.data || []).filter((a: any) => 
-          !a.expires_at || a.expires_at > now
+          (!a.expires_at || a.expires_at > now) &&
+          a.created_by !== memberId
         );
         
         const fetchedAlerts = activeAlertsData.map((a: any) => ({
@@ -96,7 +98,8 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         
         const now = new Date().toISOString();
         const activeAlerts = fallbackAlerts.filter(alert => 
-          !alert.expiresAt || alert.expiresAt > now
+          (!alert.expiresAt || alert.expiresAt > now) &&
+          alert.createdBy !== memberId
         );
         
         const alertsWithDismissal = activeAlerts.map(alert => ({
