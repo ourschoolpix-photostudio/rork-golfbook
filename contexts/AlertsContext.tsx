@@ -173,7 +173,6 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
 
     let alertsChannel: RealtimeChannel | null = null;
     let dismissalsChannel: RealtimeChannel | null = null;
-    let pollInterval: ReturnType<typeof setInterval> | null = null;
 
     try {
       alertsChannel = supabase
@@ -248,20 +247,12 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           }
         });
 
-      pollInterval = setInterval(() => {
-        console.log('[Realtime] Polling for new alerts (fallback mechanism)...');
-        fetchAlerts();
-      }, 10000);
-
     } catch (error) {
       console.error('[Realtime] Error setting up alerts subscriptions:', error);
     }
 
     return () => {
       try {
-        if (pollInterval) {
-          clearInterval(pollInterval);
-        }
         if (alertsChannel) {
           console.log('[Realtime] 🔴 Unsubscribing from alerts');
           supabase.removeChannel(alertsChannel);
