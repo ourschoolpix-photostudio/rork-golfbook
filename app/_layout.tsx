@@ -31,7 +31,13 @@ console.warn = (...args: any[]) => {
 };
 
 if (Platform.OS !== 'web') {
-  SplashScreen.preventAutoHideAsync();
+  SplashScreen.preventAutoHideAsync()
+    .then(() => {
+      console.log('[App] Splash screen prevented from auto-hiding');
+    })
+    .catch((error) => {
+      console.log('[App] SplashScreen.preventAutoHideAsync error (continuing without splash):', error.message);
+    });
 }
 
 const queryClient = new QueryClient({
@@ -256,15 +262,18 @@ function RootLayoutNav() {
 
   useEffect(() => {
     if (!authLoading && Platform.OS !== 'web' && isHydrated && !splashHidden) {
-      SplashScreen.hideAsync()
-        .then(() => {
+      const hideSplash = async () => {
+        try {
+          await SplashScreen.hideAsync();
           setSplashHidden(true);
           console.log('[RootLayoutNav] Splash screen hidden successfully');
-        })
-        .catch((error) => {
+        } catch (error: any) {
           setSplashHidden(true);
-          console.log('[RootLayoutNav] SplashScreen.hideAsync error (safe to ignore):', error.message);
-        });
+          console.log('[RootLayoutNav] SplashScreen.hideAsync error (safe to ignore):', error?.message || 'Unknown error');
+        }
+      };
+      
+      hideSplash();
     }
   }, [authLoading, isHydrated, splashHidden]);
 
