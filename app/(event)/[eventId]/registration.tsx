@@ -3371,6 +3371,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     gap: 6,
+    minWidth: 95,
   },
   headerActionButtonOpen: {
     backgroundColor: '#FFD54F',
