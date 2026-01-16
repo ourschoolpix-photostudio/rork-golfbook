@@ -59,7 +59,7 @@ function GroupCard({
 }: GroupCardProps) {
   const anyChecked = checkedPlayers.length > 0;
   const hasEmptySlot = slots.some(slot => slot === null);
-  const showAddButton = hasEmptySlot && !anyChecked;
+  const showAddButton = isAdmin && hasEmptySlot && !anyChecked;
 
   const isSlotChecked = (slotIdx: number) => {
     return checkedPlayers.some(cp => cp.groupIdx === groupIdx && cp.slotIdx === slotIdx);
