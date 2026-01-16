@@ -112,11 +112,15 @@ export default function EmailManagerScreen() {
 
   const createGroup = async (group: MemberGroup) => {
     try {
+      console.log('Creating group:', group);
       await supabaseService.emailMemberGroups.create(group);
+      console.log('Group created successfully');
       setGroups([group, ...groups]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create group:', error);
-      Alert.alert('Error', 'Failed to create group');
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      const errorMessage = error?.message || error?.error?.message || 'Failed to create group. Please check if the database tables are set up.';
+      Alert.alert('Error', errorMessage);
       throw error;
     }
   };
