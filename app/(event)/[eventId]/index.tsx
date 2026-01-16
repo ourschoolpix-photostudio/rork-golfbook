@@ -1,19 +1,41 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Calendar, MapPin, FileText, Users as UsersIcon } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { storageService } from '@/utils/storage';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { EventFooter } from '@/components/EventFooter';
 import { SyncStatusIndicator } from '@/components/SyncButton';
+import { EventHeader } from '@/components/EventHeader';
+import { AlertsModal } from '@/components/AlertsModal';
+import { useAlerts } from '@/contexts/AlertsContext';
 
 export default function EventDetailsScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const [event, setEvent] = useState<any>(null);
+  const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
+  const [criticalAlertShown, setCriticalAlertShown] = useState<boolean>(false);
+  const { getCriticalUndismissedAlerts } = useAlerts();
 
   useEffect(() => {
     loadEvent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const criticalAlerts = getCriticalUndismissedAlerts();
+      const eventSpecificCriticalAlerts = eventId ? criticalAlerts.filter(a => 
+        (a.type === 'event' && a.eventId === eventId) || a.type === 'organizational'
+      ) : [];
+      
+      if (eventSpecificCriticalAlerts.length > 0 && !criticalAlertShown) {
+        setCriticalAlertShown(true);
+        setTimeout(() => {
+          setAlertsModalVisible(true);
+        }, 500);
+      }
+    }, [eventId, getCriticalUndismissedAlerts, criticalAlertShown])
+  );
 
   const loadEvent = async () => {
     const events = await storageService.getEvents();
@@ -31,6 +53,18 @@ export default function EventDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <EventHeader 
+        onBellPress={() => setAlertsModalVisible(true)} 
+        eventId={eventId as string}
+      />
+      <AlertsModal
+        visible={alertsModalVisible}
+        onClose={() => {
+          setAlertsModalVisible(false);
+          setCriticalAlertShown(false);
+        }}
+        eventId={eventId as string}
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

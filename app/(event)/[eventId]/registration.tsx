@@ -45,6 +45,10 @@ import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { EventStatus } from '@/components/EventStatusButton';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import { EventFooter } from '@/components/EventFooter';
+import { EventHeader } from '@/components/EventHeader';
+import { AlertsModal } from '@/components/AlertsModal';
+import { useAlerts } from '@/contexts/AlertsContext';
+import { useFocusEffect } from 'expo-router';
 import {
   getDisplayHandicap,
   hasAdjustedHandicap,
@@ -121,6 +125,25 @@ export default function EventRegistrationScreen() {
   const [htmlViewerVisible, setHtmlViewerVisible] = useState(false);
   const [htmlViewerContent, setHtmlViewerContent] = useState('');
   const [htmlViewerTitle, setHtmlViewerTitle] = useState('');
+  const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
+  const [criticalAlertShown, setCriticalAlertShown] = useState<boolean>(false);
+  const { getCriticalUndismissedAlerts } = useAlerts();
+
+  useFocusEffect(
+    useCallback(() => {
+      const criticalAlerts = getCriticalUndismissedAlerts();
+      const eventSpecificCriticalAlerts = eventId ? criticalAlerts.filter(a => 
+        (a.type === 'event' && a.eventId === eventId) || a.type === 'organizational'
+      ) : [];
+      
+      if (eventSpecificCriticalAlerts.length > 0 && !criticalAlertShown) {
+        setCriticalAlertShown(true);
+        setTimeout(() => {
+          setAlertsModalVisible(true);
+        }, 500);
+      }
+    }, [eventId, getCriticalUndismissedAlerts, criticalAlertShown])
+  );
 
   useRealtimeRegistrations(eventId || '', !!eventId);
 
@@ -2089,6 +2112,18 @@ export default function EventRegistrationScreen() {
   return (
     <>
       <SafeAreaView style={styles.container}>
+      <EventHeader 
+        onBellPress={() => setAlertsModalVisible(true)} 
+        eventId={eventId as string}
+      />
+      <AlertsModal
+        visible={alertsModalVisible}
+        onClose={() => {
+          setAlertsModalVisible(false);
+          setCriticalAlertShown(false);
+        }}
+        eventId={eventId as string}
+      />
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.refreshButton}
