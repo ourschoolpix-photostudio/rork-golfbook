@@ -12,13 +12,6 @@ ALTER TABLE events DROP CONSTRAINT IF EXISTS events_status_check;
 ALTER TABLE events ADD CONSTRAINT events_status_check 
 CHECK (status IN ('draft', 'active', 'completed', 'upcoming', 'complete', 'locked'));
 
--- Verification
-DO $$
-BEGIN
-    RAISE NOTICE '============================================================';
-    RAISE NOTICE 'LOCKED STATUS MIGRATION COMPLETE';
-    RAISE NOTICE '============================================================';
-    RAISE NOTICE 'Event status now supports: draft, active, locked, complete';
-    RAISE NOTICE 'Status workflow: start -> active -> locked -> complete';
-    RAISE NOTICE '============================================================';
-END $$;
+-- Migration complete
+-- Event status now supports: draft, active, locked, complete
+-- Status workflow: start -> active -> locked -> complete
