@@ -60,7 +60,7 @@ export interface Event {
   venue: string;
   location?: string;
   course?: string;
-  status: 'draft' | 'active' | 'completed' | 'upcoming' | 'complete';
+  status: 'draft' | 'active' | 'completed' | 'upcoming' | 'complete' | 'locked';
   description?: string;
   memo?: string;
   registrationDeadline?: string;

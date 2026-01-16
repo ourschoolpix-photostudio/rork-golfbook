@@ -1,7 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { Alert } from '@/utils/alertPolyfill';
 
-export type EventStatus = 'upcoming' | 'active' | 'complete';
+export type EventStatus = 'upcoming' | 'active' | 'locked' | 'complete';
 
 interface EventStatusButtonProps {
   status: EventStatus;
@@ -11,19 +12,22 @@ interface EventStatusButtonProps {
 
 const statusCycle: Record<EventStatus, EventStatus> = {
   upcoming: 'active',
-  active: 'complete',
+  active: 'locked',
+  locked: 'complete',
   complete: 'upcoming',
 };
 
 const statusColors: Record<EventStatus, { bg: string; text: string }> = {
   upcoming: { bg: '#FF9500', text: '#fff' },
   active: { bg: '#34C759', text: '#fff' },
+  locked: { bg: '#FFA500', text: '#fff' },
   complete: { bg: '#007AFF', text: '#fff' },
 };
 
 const statusLabels: Record<EventStatus, string> = {
   upcoming: 'Start',
   active: 'Active',
+  locked: 'Locked',
   complete: 'Complete',
 };
 
@@ -31,7 +35,23 @@ export function EventStatusButton({ status, onStatusChange, isAdmin }: EventStat
   const handlePress = () => {
     if (!isAdmin) return;
     const nextStatus = statusCycle[status];
-    onStatusChange(nextStatus);
+    
+    if (status === 'complete' && nextStatus === 'upcoming') {
+      Alert.prompt(
+        'Admin Verification Required',
+        'Enter admin code to change status from Complete to Start:',
+        (code?: string) => {
+          if (code === '8650') {
+            onStatusChange(nextStatus);
+          } else if (code !== undefined) {
+            Alert.alert('Error', 'Invalid admin code. Status change denied.');
+          }
+        },
+        'secure-text'
+      );
+    } else {
+      onStatusChange(nextStatus);
+    }
   };
 
   const colors = statusColors[status];

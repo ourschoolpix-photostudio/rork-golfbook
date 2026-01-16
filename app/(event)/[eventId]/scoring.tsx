@@ -562,6 +562,13 @@ export default function ScoringScreen() {
     );
   }
 
+  const eventStatus = (event?.status === 'complete' || event?.status === 'completed') ? 'complete' : 
+                      event?.status === 'locked' ? 'locked' : 
+                      event?.status === 'active' ? 'active' : 'upcoming';
+
+  const isAdmin = currentUser?.isAdmin ?? false;
+  const canModifyScores = eventStatus === 'active' || (isAdmin && eventStatus !== 'complete');
+
   if (myGroup.length === 0) {
     return (
       <>
@@ -592,6 +599,48 @@ export default function ScoringScreen() {
             </Text>
             <Text style={styles.emptyStateText}>
               Please contact an admin to be assigned to a group.
+            </Text>
+          </View>
+        </SafeAreaView>
+        <EventFooter />
+      </>
+    );
+  }
+
+  if (!canModifyScores) {
+    return (
+      <>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>SCORING</Text>
+          </View>
+
+          {event && event.photoUrl && (
+            <View style={styles.eventPhotoContainer}>
+              <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
+              <Text style={styles.eventNameOverlay}>{event.name}</Text>
+              <View style={styles.bottomInfoOverlay}>
+                <Text style={styles.eventLocationOverlay}>{event.location}</Text>
+                <Text style={styles.eventDateOverlay}>
+                  {event.date}
+                  {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.emptyStateContainer}>
+            <Ionicons name="lock-closed" size={64} color="#999" />
+            <Text style={styles.emptyStateTitle}>
+              {eventStatus === 'upcoming' ? 'Scoring Not Started' : 
+               eventStatus === 'locked' ? 'Scoring Locked' : 'Event Complete'}
+            </Text>
+            <Text style={styles.emptyStateText}>
+              {eventStatus === 'upcoming' 
+                ? 'Scoring is locked until the event starts. An admin must change the status to Active.'
+                : eventStatus === 'locked'
+                ? 'Scoring is temporarily locked by an admin. Check back soon.'
+                : 'This event is complete and scores are finalized. No modifications allowed.'}
             </Text>
           </View>
         </SafeAreaView>

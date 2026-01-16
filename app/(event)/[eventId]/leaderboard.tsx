@@ -238,6 +238,12 @@ export default function LeaderboardScreen() {
   const isLoading = eventQuery.isLoading || membersQuery.isLoading || registrationsQuery.isLoading || scoresQuery.isLoading;
   const isRefetching = scoresQuery.isFetching && !scoresQuery.isLoading;
 
+  const event = eventQuery.data;
+  const eventStatus = (event?.status === 'complete' || event?.status === 'completed') ? 'complete' : 
+                      event?.status === 'locked' ? 'locked' : 
+                      event?.status === 'active' ? 'active' : 'upcoming';
+  const isLeaderboardLocked = eventStatus === 'locked';
+
   const handleDaySelect = useCallback((day: number | 'all' | 'rolex') => {
     setSelectedDay(day);
   }, []);
@@ -316,6 +322,12 @@ export default function LeaderboardScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
+          </View>
+        )}
+
+        {isLeaderboardLocked && (
+          <View style={styles.lockedBanner}>
+            <Text style={styles.lockedBannerText}>⚠️ Leaderboard is temporarily locked by an admin</Text>
           </View>
         )}
 
@@ -817,5 +829,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center' as const,
     letterSpacing: 1,
+  },
+  lockedBanner: {
+    backgroundColor: '#FFA500',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignItems: 'center' as const,
+  },
+  lockedBannerText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#fff',
+    textAlign: 'center' as const,
   },
 });
