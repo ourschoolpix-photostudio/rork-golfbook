@@ -151,6 +151,7 @@ export interface Event {
   closestToPin?: string;
   archived?: boolean;
   archivedAt?: string;
+  registrationOpen?: boolean;
 }
 
 export interface EventRegistration {

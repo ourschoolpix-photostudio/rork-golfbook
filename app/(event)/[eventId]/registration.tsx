@@ -2096,6 +2096,54 @@ export default function EventRegistrationScreen() {
         )}
       </View>
 
+      {event && currentUser?.isAdmin && (
+        <View style={styles.registrationToggleContainer}>
+          <Text style={styles.registrationToggleLabel}>Registration</Text>
+          <TouchableOpacity
+            style={[
+              styles.registrationToggleButton,
+              event.registrationOpen ? styles.registrationToggleOpen : styles.registrationToggleClosed,
+            ]}
+            onPress={async () => {
+              const newValue = !event.registrationOpen;
+              await updateEventMutation.mutateAsync({
+                eventId: event.id,
+                updates: { registrationOpen: newValue },
+              });
+              setEvent({ ...event, registrationOpen: newValue });
+            }}
+          >
+            <Ionicons 
+              name={event.registrationOpen ? "lock-open" : "lock-closed"} 
+              size={14} 
+              color="#fff" 
+            />
+            <Text style={styles.registrationToggleText}>
+              {event.registrationOpen ? 'Open' : 'Closed'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {event && !event.registrationOpen && (
+        <View style={styles.registrationClosedBanner}>
+          <Ionicons name="information-circle" size={20} color="#C62828" />
+          <Text style={styles.registrationClosedText}>
+            {(() => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const eventDate = new Date(event.date);
+              eventDate.setHours(0, 0, 0, 0);
+              if (today < eventDate) {
+                return 'Registration is not open yet';
+              } else {
+                return 'This event is closed';
+              }
+            })()}
+          </Text>
+        </View>
+      )}
+
       {event && event.photoUrl && (
         <View style={styles.eventPhotoContainer}>
           <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
@@ -3150,16 +3198,20 @@ export default function EventRegistrationScreen() {
       <TouchableOpacity
         style={[
           styles.registerButton,
-          isCurrentUserRegistered() && styles.registerButtonInactive,
+          (isCurrentUserRegistered() || !event?.registrationOpen) && styles.registerButtonInactive,
         ]}
         onPress={handleRegisterCurrentUser}
-        disabled={isCurrentUserRegistered()}
+        disabled={isCurrentUserRegistered() || !event?.registrationOpen}
       >
         <Text style={[
           styles.registerButtonText,
-          isCurrentUserRegistered() && styles.registerButtonTextInactive,
+          (isCurrentUserRegistered() || !event?.registrationOpen) && styles.registerButtonTextInactive,
         ]}>
-          {isCurrentUserRegistered() ? "You're Registered For This Event" : 'Register For This Event'}
+          {isCurrentUserRegistered() 
+            ? "You're Registered For This Event" 
+            : !event?.registrationOpen
+              ? 'Registration Closed'
+              : 'Register For This Event'}
         </Text>
       </TouchableOpacity>
       </SafeAreaView>
@@ -3296,6 +3348,57 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600' as const,
     color: '#fff',
+  },
+  registrationToggleContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    gap: 10,
+  },
+  registrationToggleLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#333',
+  },
+  registrationToggleButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  registrationToggleOpen: {
+    backgroundColor: '#2E7D32',
+  },
+  registrationToggleClosed: {
+    backgroundColor: '#C62828',
+  },
+  registrationToggleText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  registrationClosedBanner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: '#FFEBEE',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFCDD2',
+  },
+  registrationClosedText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#C62828',
   },
   backBtn: {
     position: 'absolute',

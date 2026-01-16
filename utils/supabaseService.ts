@@ -102,6 +102,7 @@ const mapEventFromDB = (e: any) => ({
   rolexPointsDistributed: e.rolex_points_distributed || false,
   rolexPointsDistributedAt: e.rolex_points_distributed_at,
   rolexPointsDistributedBy: e.rolex_points_distributed_by,
+  registrationOpen: e.registration_open ?? false,
 });
 
 export const supabaseService = {
@@ -354,6 +355,7 @@ export const supabaseService = {
       if (updates.rolexPointsDistributed !== undefined) supabaseUpdates.rolex_points_distributed = updates.rolexPointsDistributed;
       if (updates.rolexPointsDistributedAt !== undefined) supabaseUpdates.rolex_points_distributed_at = updates.rolexPointsDistributedAt;
       if (updates.rolexPointsDistributedBy !== undefined) supabaseUpdates.rolex_points_distributed_by = updates.rolexPointsDistributedBy;
+      if (updates.registrationOpen !== undefined) supabaseUpdates.registration_open = updates.registrationOpen;
 
       console.log('[supabaseService.events.update] Updating event:', eventId);
       console.log('[supabaseService.events.update] Updates:', JSON.stringify(supabaseUpdates, null, 2));
