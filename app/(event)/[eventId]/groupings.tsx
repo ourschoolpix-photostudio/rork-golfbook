@@ -327,9 +327,11 @@ export default function GroupingsScreen() {
         console.log('[groupings] 🧹 No registered players - clearing all groups');
         newGroups = [];
       } else {
-        // Check if we need more groups for all registered players
+        // Calculate how many groups we actually need
         const requiredGroups = Math.ceil(registeredPlayerIds.size / 4);
+        
         if (newGroups.length < requiredGroups) {
+          // Need MORE groups
           const additionalGroupsNeeded = requiredGroups - newGroups.length;
           console.log(`[groupings] 📝 Need ${additionalGroupsNeeded} more groups for ${registeredPlayerIds.size} players`);
           for (let i = 0; i < additionalGroupsNeeded; i++) {
@@ -339,6 +341,11 @@ export default function GroupingsScreen() {
             });
           }
           console.log(`[groupings] ✅ Added ${additionalGroupsNeeded} additional groups. Total: ${newGroups.length}`);
+        } else if (newGroups.length > requiredGroups) {
+          // Need FEWER groups - trim excess empty groups from the end
+          console.log(`[groupings] ✂️ Have ${newGroups.length} groups but only need ${requiredGroups} for ${registeredPlayerIds.size} players`);
+          newGroups = newGroups.slice(0, requiredGroups);
+          console.log(`[groupings] ✅ Trimmed to ${newGroups.length} groups`);
         }
       }
     } else {
