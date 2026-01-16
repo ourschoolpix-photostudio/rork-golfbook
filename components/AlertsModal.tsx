@@ -25,6 +25,7 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
 }) => {
   const { getAlertsForEvent, getUndismissedAlerts, dismissAlert } = useAlerts();
   const [displayAlerts, setDisplayAlerts] = useState<Alert[]>([]);
+  const hasCriticalAlerts = displayAlerts.some(a => a.priority === 'critical');
 
   useEffect(() => {
     if (visible) {
@@ -80,15 +81,25 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
           <View style={styles.header}>
             <Text style={styles.title}>Alerts</Text>
             <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeButton}
+              onPress={hasCriticalAlerts ? undefined : onClose}
+              style={[styles.closeButton, hasCriticalAlerts && styles.disabledButton]}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              disabled={hasCriticalAlerts}
             >
-              <View style={styles.closeIconContainer}>
+              <View style={[styles.closeIconContainer, hasCriticalAlerts && styles.disabledIcon]}>
                 <X size={20} color="#ffffff" strokeWidth={2.5} />
               </View>
             </TouchableOpacity>
           </View>
+
+          {hasCriticalAlerts && (
+            <View style={styles.criticalNotice}>
+              <AlertCircle size={18} color="#dc2626" strokeWidth={2.5} />
+              <Text style={styles.criticalNoticeText}>
+                Critical alerts must be dismissed individually before closing this panel.
+              </Text>
+            </View>
+          )}
 
           <ScrollView style={styles.scrollView}>
             {displayAlerts.length === 0 ? (
@@ -124,6 +135,13 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
                       </Text>
                     </View>
                     <Text style={styles.alertMessage}>{alert.message}</Text>
+                    {alert.priority === 'critical' && (
+                      <View style={styles.criticalInstruction}>
+                        <Text style={styles.criticalInstructionText}>
+                          ⚠️ You must dismiss this critical alert to continue
+                        </Text>
+                      </View>
+                    )}
                   </View>
                   <TouchableOpacity
                     onPress={() => handleDismiss(alert.id)}
@@ -291,5 +309,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: '#ffffff',
+  },
+  disabledButton: {
+    opacity: 0.4,
+  },
+  disabledIcon: {
+    backgroundColor: '#9ca3af',
+  },
+  criticalNotice: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  criticalNoticeText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#dc2626',
+    lineHeight: 18,
+  },
+  criticalInstruction: {
+    marginTop: 8,
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  criticalInstructionText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#dc2626',
+    textAlign: 'center',
   },
 });
