@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearScoresForEvent } from '@/utils/scorePeristence';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { RefreshCw } from 'lucide-react-native';
 import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
 import { calculateTournamentFlight, getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
@@ -47,6 +48,16 @@ export default function GroupingsScreen() {
   const [activeDay, setActiveDay] = useState<number>(1);
   const [doubleMode, setDoubleMode] = useState<boolean>(false);
   const [initialGroups, setInitialGroups] = useState<Group[]>([]);
+
+  const handleRefresh = () => {
+    console.log('[groupings] 🔄 Manual refresh triggered');
+    refetchGroupings();
+    refetchScores();
+    refetchRegistrations();
+    if (event && isInitialized) {
+      triggerGroupRefresh();
+    }
+  };
 
   const handleDoubleModeToggle = async (enabled: boolean) => {
     console.log('[groupings] 🔄 handleDoubleModeToggle called with:', enabled);
@@ -748,8 +759,18 @@ export default function GroupingsScreen() {
     <>
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={handleRefresh} 
+          style={styles.refreshButton}
+          activeOpacity={0.7}
+        >
+          <RefreshCw 
+            size={16} 
+            color="#333" 
+          />
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </TouchableOpacity>
         <Text style={styles.titleText}>GROUPINGS</Text>
-
       </View>
 
       {event && event.photoUrl && (
@@ -1024,20 +1045,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 58,
-    position: 'relative',
+    paddingVertical: 12,
+    paddingTop: 27,
+    gap: 10,
   },
   titleText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700' as const,
     color: '#fff',
-    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  refreshButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: '#FFD54F',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  refreshButtonText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#333',
   },
   backBtn: {
     position: 'absolute',

@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { RefreshCw } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseService } from '@/utils/supabaseService';
@@ -2125,21 +2126,20 @@ export default function EventRegistrationScreen() {
         eventId={eventId as string}
       />
       <View style={styles.header}>
-        <TouchableOpacity
+        <TouchableOpacity 
+          onPress={handleManualRefresh} 
           style={styles.refreshButton}
-          onPress={handleManualRefresh}
           disabled={isRefreshing}
+          activeOpacity={0.7}
         >
-          <Ionicons 
-            name={isRefreshing ? "hourglass-outline" : "refresh-outline"} 
+          <RefreshCw 
             size={16} 
-            color="#fff" 
+            color="#333" 
+            style={isRefreshing ? styles.refreshing : undefined}
           />
           <Text style={styles.refreshButtonText}>Refresh</Text>
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>REGISTRATION</Text>
-        </View>
+        <Text style={styles.headerTitle}>REGISTRATION</Text>
         {currentUser?.isAdmin && (
           <TouchableOpacity
             style={styles.pdfButton}
@@ -3353,42 +3353,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 58,
-    position: 'relative',
-  },
-  headerTitleContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    pointerEvents: 'none',
+    paddingVertical: 12,
+    paddingTop: 27,
+    gap: 10,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700' as const,
     color: '#fff',
-    textAlign: 'center',
+    letterSpacing: 0.5,
   },
   refreshButton: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
+    justifyContent: 'center' as const,
+    backgroundColor: '#FFD54F',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
   },
   refreshButtonText: {
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: '600' as const,
-    color: '#fff',
+    color: '#333',
+  },
+  refreshing: {
+    opacity: 0.5,
   },
   pdfButton: {
     flexDirection: 'row' as const,
