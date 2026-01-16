@@ -1212,6 +1212,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerActionButton: {
+    flex: 1,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -1220,7 +1221,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     gap: 6,
-    minWidth: 95,
   },
   headerActionButtonText: {
     fontSize: 13,
