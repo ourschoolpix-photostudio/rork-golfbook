@@ -52,7 +52,7 @@ CREATE TABLE events (
   venue TEXT NOT NULL,
   location TEXT,
   course TEXT,
-  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'completed', 'upcoming', 'complete')),
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'completed', 'upcoming', 'complete', 'locked')),
   description TEXT,
   memo TEXT,
   registration_deadline TIMESTAMPTZ,
