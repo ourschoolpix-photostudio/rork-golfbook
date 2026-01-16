@@ -40,8 +40,8 @@ export async function createPayPalPaymentLink(
     throw new Error('PayPal credentials not configured');
   }
 
-  const processingFee = paypalConfig.paypal_processing_fee || 0.03;
-  const transactionFee = paypalConfig.paypal_transaction_fee || 0.30;
+  const processingFee = Number(paypalConfig.paypal_processing_fee) || 0.03;
+  const transactionFee = Number(paypalConfig.paypal_transaction_fee) || 0.30;
   
   const baseAmount = config.amount;
   const amountWithFee = config.includeProcessingFee 
