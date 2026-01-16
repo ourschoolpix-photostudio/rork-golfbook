@@ -1328,6 +1328,7 @@ export const supabaseService = {
         name: t.name,
         subject: t.subject,
         body: t.body,
+        isHtml: t.is_html || false,
         createdAt: t.created_at,
       }));
     },
@@ -1338,6 +1339,7 @@ export const supabaseService = {
         name: template.name,
         subject: template.subject,
         body: template.body,
+        is_html: template.isHtml || false,
       });
       if (error) throw error;
     },
@@ -1347,6 +1349,7 @@ export const supabaseService = {
       if (updates.name !== undefined) supabaseUpdates.name = updates.name;
       if (updates.subject !== undefined) supabaseUpdates.subject = updates.subject;
       if (updates.body !== undefined) supabaseUpdates.body = updates.body;
+      if (updates.isHtml !== undefined) supabaseUpdates.is_html = updates.isHtml;
 
       const { error } = await supabase
         .from('email_templates')
