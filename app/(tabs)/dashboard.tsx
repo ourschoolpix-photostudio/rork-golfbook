@@ -306,7 +306,7 @@ export default function DashboardScreen() {
       <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
-          style={styles.bellIcon}
+          style={[styles.bellIcon, { top: insets.top + 12 }]}
           onPress={() => setAlertsModalVisible(true)}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
