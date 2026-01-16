@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 12,
     fontWeight: '400' as const,
-    color: '#DAA520',
+    color: '#ffffff',
     marginTop: 2,
   },
   content: {
