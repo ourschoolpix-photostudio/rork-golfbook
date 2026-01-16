@@ -730,6 +730,7 @@ export default function LeaderboardScreen() {
         onClearPoints={handleClearPoints}
         isDistributing={distributeMutation.isPending}
         isClearing={clearMutation.isPending}
+        pointsDistributed={!!event?.rolexPointsDistributed}
       />
     </>
   );

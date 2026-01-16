@@ -22,6 +22,7 @@ type EventFooterProps = {
   onClearPoints?: () => void | Promise<void>;
   isDistributing?: boolean;
   isClearing?: boolean;
+  pointsDistributed?: boolean;
 };
 
 export function EventFooter({
@@ -34,6 +35,7 @@ export function EventFooter({
   onClearPoints,
   isDistributing = false,
   isClearing = false,
+  pointsDistributed = false,
 }: EventFooterProps = {}) {
   const calculateAndStoreTournamentHandicaps = async (eventId: string) => {
     try {
@@ -251,23 +253,23 @@ export function EventFooter({
                 style={[
                   styles.rolexButton,
                   styles.distributeButton,
-                  isDistributing && styles.rolexButtonDisabled,
+                  (isDistributing || pointsDistributed) && styles.rolexButtonDisabled,
                 ]}
                 onPress={onDistributePoints}
-                disabled={isDistributing || isClearing}
+                disabled={isDistributing || isClearing || pointsDistributed}
               >
                 <Text style={styles.rolexButtonText}>
-                  {isDistributing ? 'Distributing...' : 'Distribute Points'}
+                  {isDistributing ? 'Distributing...' : pointsDistributed ? 'Points Distributed' : 'Distribute Points'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.rolexButton,
                   styles.clearButton,
-                  isClearing && styles.rolexButtonDisabled,
+                  (isClearing || !pointsDistributed) && styles.rolexButtonDisabled,
                 ]}
                 onPress={onClearPoints}
-                disabled={isDistributing || isClearing}
+                disabled={isDistributing || isClearing || !pointsDistributed}
               >
                 <Text style={styles.rolexButtonText}>
                   {isClearing ? 'Clearing...' : 'Clear Points'}
