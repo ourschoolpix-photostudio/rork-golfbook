@@ -102,24 +102,24 @@ export default function GroupingsScreen() {
     queryKey: ['groupings', id],
     queryFn: () => supabaseService.groupings.getAll(id),
     enabled: !!id && !!eventData,
-    staleTime: 0,
-    refetchOnMount: true,
+    staleTime: 1000 * 30,
+    refetchOnMount: false,
   });
   
   const { data: eventScores = [], isLoading: scoresLoading, refetch: refetchScores } = useQuery({
     queryKey: ['scores', id],
     queryFn: () => supabaseService.scores.getAll(id),
     enabled: !!id && !!eventData,
-    staleTime: 0,
-    refetchOnMount: true,
+    staleTime: 1000 * 30,
+    refetchOnMount: false,
   });
   
   const { data: backendRegistrations = [], refetch: refetchRegistrations } = useQuery({
     queryKey: ['registrations', id],
     queryFn: () => supabaseService.registrations.getAll(id),
     enabled: !!id && !!eventData,
-    staleTime: 0,
-    refetchOnMount: true,
+    staleTime: 1000 * 30,
+    refetchOnMount: false,
   });
   
   const syncGroupingsMutation = useMutation({
@@ -234,7 +234,7 @@ export default function GroupingsScreen() {
     };
     loadCourseHandicapSetting();
     
-    const interval = setInterval(loadCourseHandicapSetting, 500);
+    const interval = setInterval(loadCourseHandicapSetting, 2000);
     return () => clearInterval(interval);
   }, [event, activeDay]);
 
@@ -709,7 +709,9 @@ export default function GroupingsScreen() {
     }
   };
 
-  if (eventLoading || membersLoading || groupingsLoading || scoresLoading || !event) {
+  const isLoadingData = eventLoading || membersLoading || groupingsLoading || scoresLoading || !event || !isInitialized;
+  
+  if (isLoadingData) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
