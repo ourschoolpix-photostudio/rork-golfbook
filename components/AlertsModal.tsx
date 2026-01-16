@@ -33,8 +33,8 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
         const eventAlerts = getAlertsForEvent(eventId);
         setDisplayAlerts(eventAlerts.filter(a => !a.isDismissed));
       } else {
-        const orgAlerts = getUndismissedAlerts().filter(a => a.type === 'organizational');
-        setDisplayAlerts(orgAlerts);
+        const allAlerts = getUndismissedAlerts();
+        setDisplayAlerts(allAlerts);
       }
     }
   }, [visible, eventId, getAlertsForEvent, getUndismissedAlerts]);
