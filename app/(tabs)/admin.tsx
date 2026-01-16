@@ -388,6 +388,7 @@ export default function AdminScreen() {
             else if (option.id === 'financial') hasAccess = canAccessFinancialSummary(currentUser);
             else if (option.id === 'bulk-update') hasAccess = canAccessBulkUpdate(currentUser);
             else if (option.id === 'settings') hasAccess = canAccessSettings(currentUser);
+            else if (option.id === 'email-manager') hasAccess = canAccessSettings(currentUser);
             
             if (!hasAccess) return null;
             
