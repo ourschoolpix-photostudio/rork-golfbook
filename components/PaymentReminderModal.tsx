@@ -100,7 +100,7 @@ export function PaymentReminderModal({
       
       if (!isAvailable) {
         const bccEmails = recipientEmails.join(',');
-        const subject = encodeURIComponent('Payment Reminder: Your Outstanding Balance');
+        const subject = encodeURIComponent('DMVVGA Payment Reminder');
         const body = encodeURIComponent(`Payment Reminder\n\nAmount Due: ${baseAmount.toFixed(2)}\nDue Date: ${dueDate}\nFor: ${itemDescription}\n\nPlease send payment via:\n- Zelle: ${formatPhoneNumber(orgInfo.zellePhone || '5714811006')}\n- PayPal: ${paypalLink.approvalUrl}`);
         
         const mailtoUrl = `mailto:?bcc=${bccEmails}&subject=${subject}&body=${body}`;
@@ -120,7 +120,7 @@ export function PaymentReminderModal({
         await MailComposer.composeAsync({
           recipients: [],
           bccRecipients: recipientEmails,
-          subject: 'Payment Reminder: Your Outstanding Balance',
+          subject: 'DMVVGA Payment Reminder',
           body: htmlContent,
           isHtml: true,
         });
