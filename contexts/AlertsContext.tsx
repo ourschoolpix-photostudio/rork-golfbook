@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { localStorageService } from '@/utils/localStorageService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/integrations/supabase/client';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 export const [AlertsProvider, useAlerts] = createContextHook(() => {
   const { currentUser } = useAuth();
@@ -161,6 +162,79 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
     fetchAlerts();
     fetchTemplates();
   }, [fetchAlerts, fetchTemplates]);
+
+  useEffect(() => {
+    if (useLocalStorage || !memberId) return;
+
+    console.log('[Realtime] 🔔 Setting up alerts real-time subscriptions');
+
+    let alertsChannel: RealtimeChannel | null = null;
+    let dismissalsChannel: RealtimeChannel | null = null;
+
+    try {
+      alertsChannel = supabase
+        .channel('alerts-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'alerts',
+          },
+          (payload) => {
+            try {
+              console.log('[Realtime] 🔔 Alert change detected:', payload.eventType);
+              fetchAlerts();
+            } catch (error) {
+              console.error('[Realtime] Error handling alert change:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] Alerts subscription status:', status);
+        });
+
+      dismissalsChannel = supabase
+        .channel('alert-dismissals-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'alert_dismissals',
+            filter: `member_id=eq.${memberId}`,
+          },
+          (payload) => {
+            try {
+              console.log('[Realtime] 🔕 Alert dismissal change detected:', payload.eventType);
+              fetchAlerts();
+            } catch (error) {
+              console.error('[Realtime] Error handling dismissal change:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] Alert dismissals subscription status:', status);
+        });
+    } catch (error) {
+      console.error('[Realtime] Error setting up alerts subscriptions:', error);
+    }
+
+    return () => {
+      try {
+        if (alertsChannel) {
+          console.log('[Realtime] 🔴 Unsubscribing from alerts');
+          supabase.removeChannel(alertsChannel);
+        }
+        if (dismissalsChannel) {
+          console.log('[Realtime] 🔴 Unsubscribing from alert dismissals');
+          supabase.removeChannel(dismissalsChannel);
+        }
+      } catch (error) {
+        console.error('[Realtime] Error unsubscribing from alerts:', error);
+      }
+    };
+  }, [useLocalStorage, memberId, fetchAlerts]);
 
   const createAlert = useCallback(
     async (alert: Omit<Alert, 'id' | 'createdAt'>) => {
