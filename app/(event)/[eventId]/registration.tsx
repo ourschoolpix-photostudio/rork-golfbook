@@ -2126,59 +2126,54 @@ export default function EventRegistrationScreen() {
         eventId={eventId as string}
       />
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={handleManualRefresh} 
-          style={styles.refreshButton}
-          disabled={isRefreshing}
-          activeOpacity={0.7}
-        >
-          <RefreshCw 
-            size={16} 
-            color="#333" 
-            style={isRefreshing ? styles.refreshing : undefined}
-          />
-          <Text style={styles.refreshButtonText}>Refresh</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>REGISTRATION</Text>
-        {currentUser?.isAdmin && (
-          <TouchableOpacity
-            style={styles.pdfButton}
-            onPress={() => setPdfOptionsModalVisible(true)}
+        <View style={styles.headerButtonsRow}>
+          {event && currentUser?.isAdmin && (
+            <TouchableOpacity
+              style={[
+                styles.headerActionButton,
+                event.registrationOpen ? styles.headerActionButtonOpen : styles.headerActionButtonClosed,
+              ]}
+              onPress={async () => {
+                const newValue = !event.registrationOpen;
+                await updateEventMutation.mutateAsync({
+                  eventId: event.id,
+                  updates: { registrationOpen: newValue },
+                });
+                setEvent({ ...event, registrationOpen: newValue });
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name={event.registrationOpen ? "lock-open" : "lock-closed"} 
+                size={16} 
+                color="#333" 
+              />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity 
+            onPress={handleManualRefresh} 
+            style={styles.headerActionButton}
+            disabled={isRefreshing}
+            activeOpacity={0.7}
           >
-            <Ionicons name="document-text-outline" size={16} color="#fff" />
-            <Text style={styles.pdfButtonText}>PDF</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {event && currentUser?.isAdmin && (
-        <View style={styles.registrationToggleContainer}>
-          <Text style={styles.registrationToggleLabel}>Registration</Text>
-          <TouchableOpacity
-            style={[
-              styles.registrationToggleButton,
-              event.registrationOpen ? styles.registrationToggleOpen : styles.registrationToggleClosed,
-            ]}
-            onPress={async () => {
-              const newValue = !event.registrationOpen;
-              await updateEventMutation.mutateAsync({
-                eventId: event.id,
-                updates: { registrationOpen: newValue },
-              });
-              setEvent({ ...event, registrationOpen: newValue });
-            }}
-          >
-            <Ionicons 
-              name={event.registrationOpen ? "lock-open" : "lock-closed"} 
-              size={14} 
-              color="#fff" 
+            <RefreshCw 
+              size={16} 
+              color="#333" 
+              style={isRefreshing ? styles.refreshing : undefined}
             />
-            <Text style={styles.registrationToggleText}>
-              {event.registrationOpen ? 'Open' : 'Closed'}
-            </Text>
           </TouchableOpacity>
+          {currentUser?.isAdmin && (
+            <TouchableOpacity
+              style={styles.headerActionButton}
+              onPress={() => setPdfOptionsModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="document-text-outline" size={16} color="#333" />
+            </TouchableOpacity>
+          )}
         </View>
-      )}
+        <Text style={styles.headerTitle}>REGISTRATION</Text>
+      </View>
 
       {event && !event.registrationOpen && (
         <View style={styles.registrationClosedBanner}>
@@ -3358,8 +3353,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingTop: 27,
+    paddingTop: 13.5,
     gap: 10,
+  },
+  headerButtonsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 12,
+  },
+  headerActionButton: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: '#FFD54F',
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+  },
+  headerActionButtonOpen: {
+    backgroundColor: '#FFD54F',
+  },
+  headerActionButtonClosed: {
+    backgroundColor: '#FFD54F',
   },
   headerTitle: {
     fontSize: 16,
@@ -3367,37 +3382,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: 0.5,
   },
-  refreshButton: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: '#FFD54F',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 6,
-  },
-  refreshButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#333',
-  },
   refreshing: {
     opacity: 0.5,
-  },
-  pdfButton: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
-  },
-  pdfButtonText: {
-    fontSize: 10,
-    fontWeight: '600' as const,
-    color: '#fff',
   },
   registrationToggleContainer: {
     flexDirection: 'row' as const,
