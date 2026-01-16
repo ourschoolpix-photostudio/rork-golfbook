@@ -17,6 +17,7 @@ import { ChevronLeft, Mail, Users, FileText, Send, Plus, Trash2, Edit2 } from 'l
 import { useAuth } from '@/contexts/AuthContext';
 import { Member } from '@/types';
 import { supabaseService } from '@/utils/supabaseService';
+import { PaymentReminderModal } from '@/components/PaymentReminderModal';
 
 interface EmailTemplate {
   id: string;
@@ -32,133 +33,6 @@ interface MemberGroup {
   name: string;
   memberIds: string[];
   createdAt: string;
-}
-
-function getPaymentReminderTemplate(): EmailTemplate {
-  return {
-    id: crypto.randomUUID(),
-    name: 'Payment Reminder',
-    subject: 'Payment Reminder: Your Outstanding Balance',
-    isHtml: true,
-    createdAt: new Date().toISOString(),
-    body: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-    .header { background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%); padding: 40px 20px; text-align: center; }
-    .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 2px; }
-    .header-icon { width: 64px; height: 64px; background-color: rgba(255,255,255,0.2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 32px; }
-    .content { padding: 40px 20px; }
-    .greeting { font-size: 18px; color: #333333; margin-bottom: 24px; }
-    .invoice-card { background-color: #F8F9FA; border: 1px solid #E0E0E0; border-radius: 12px; padding: 24px; margin: 24px 0; }
-    .invoice-header { text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #D0D0D0; }
-    .invoice-title { font-size: 24px; font-weight: 700; color: #1B5E20; letter-spacing: 2px; }
-    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
-    .detail-label { font-size: 14px; color: #666666; font-weight: 600; }
-    .detail-value { font-size: 14px; color: #1a1a1a; font-weight: 600; text-align: right; }
-    .amount-box { background-color: #ffffff; border: 2px solid #1B5E20; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0; }
-    .amount-label { font-size: 16px; color: #666666; margin-bottom: 8px; }
-    .amount-value { font-size: 36px; font-weight: 700; color: #1B5E20; }
-    .payment-methods { margin: 32px 0; }
-    .section-title { font-size: 18px; font-weight: 700; color: #333333; margin-bottom: 16px; }
-    .payment-option { background-color: #F8F9FA; border: 2px solid #E0E0E0; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-    .payment-option-header { display: flex; align-items: center; margin-bottom: 12px; }
-    .payment-icon { width: 40px; height: 40px; background-color: #1B5E20; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; color: #ffffff; font-size: 20px; }
-    .payment-icon.zelle { background-color: #6B21A8; }
-    .payment-icon.paypal { background-color: #0070BA; }
-    .payment-name { font-size: 16px; font-weight: 700; color: #333333; }
-    .payment-info { font-size: 20px; font-weight: 700; color: #1B5E20; text-align: center; padding: 16px; background-color: #ffffff; border-radius: 8px; margin-top: 12px; letter-spacing: 1px; }
-    .payment-info.zelle { color: #6B21A8; }
-    .payment-info.paypal { color: #0070BA; }
-    .deadline-box { background-color: #FEE2E2; border-left: 4px solid #DC2626; padding: 16px; border-radius: 8px; margin: 24px 0; }
-    .deadline-text { color: #DC2626; font-size: 14px; font-weight: 600; margin: 0; }
-    .footer { background-color: #f8f9fa; padding: 24px 20px; text-align: center; border-top: 1px solid #e0e0e0; }
-    .footer-text { font-size: 12px; color: #666666; margin: 4px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="header-icon">💳</div>
-      <h1>PAYMENT REMINDER</h1>
-    </div>
-    
-    <div class="content">
-      <p class="greeting">Dear Member,</p>
-      
-      <p style="font-size: 15px; color: #333333; line-height: 1.6;">
-        This is a friendly reminder that you have an outstanding balance. Please review the details below and submit your payment at your earliest convenience.
-      </p>
-      
-      <div class="invoice-card">
-        <div class="invoice-header">
-          <div class="invoice-title">INVOICE DETAILS</div>
-        </div>
-        
-        <div class="detail-row">
-          <span class="detail-label">Invoice For:</span>
-          <span class="detail-value">{{ITEM_DESCRIPTION}}</span>
-        </div>
-        
-        <div class="detail-row">
-          <span class="detail-label">Due Date:</span>
-          <span class="detail-value">{{DUE_DATE}}</span>
-        </div>
-      </div>
-      
-      <div class="amount-box">
-        <div class="amount-label">Amount Due</div>
-        <div class="amount-value">$‌{{AMOUNT}}</div>
-      </div>
-      
-      <div class="payment-methods">
-        <h2 class="section-title">Payment Options</h2>
-        
-        <div class="payment-option">
-          <div class="payment-option-header">
-            <div class="payment-icon zelle">💸</div>
-            <div class="payment-name">Zelle</div>
-          </div>
-          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0;">Send payment via Zelle to:</p>
-          <div class="payment-info zelle">{{ZELLE_PHONE}}</div>
-        </div>
-        
-        <div class="payment-option">
-          <div class="payment-option-header">
-            <div class="payment-icon paypal">🅿️</div>
-            <div class="payment-name">PayPal</div>
-          </div>
-          <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0;">Send payment via PayPal to:</p>
-          <div class="payment-info paypal">{{PAYPAL_EMAIL}}</div>
-        </div>
-      </div>
-      
-      <div class="deadline-box">
-        <p class="deadline-text">⏰ Payment must be received by {{DUE_DATE}} to avoid any late fees or removal from the participant list.</p>
-      </div>
-      
-      <p style="font-size: 14px; color: #666666; line-height: 1.6; font-style: italic;">
-        If you have already submitted your payment, please disregard this reminder. If you have any questions or concerns, please don't hesitate to reach out.
-      </p>
-      
-      <p style="font-size: 14px; color: #333333; margin-top: 32px;">
-        Thank you,<br>
-        <strong>The Management Team</strong>
-      </p>
-    </div>
-    
-    <div class="footer">
-      <p class="footer-text">This is an automated payment reminder</p>
-      <p class="footer-text">Please do not reply directly to this email</p>
-    </div>
-  </div>
-</body>
-</html>`
-  };
 }
 
 export default function EmailManagerScreen() {
@@ -179,6 +53,7 @@ export default function EmailManagerScreen() {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [editingGroup, setEditingGroup] = useState<MemberGroup | null>(null);
+  const [paymentReminderModalVisible, setPaymentReminderModalVisible] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -474,21 +349,11 @@ export default function EmailManagerScreen() {
           <TouchableOpacity
             style={[styles.addButton, styles.paymentButton]}
             onPress={() => {
-              Alert.alert(
-                'Add Payment Reminder',
-                'Add a pre-designed payment reminder template?',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Add',
-                    onPress: async () => {
-                      const paymentTemplate = getPaymentReminderTemplate();
-                      await createTemplate(paymentTemplate);
-                      Alert.alert('Success', 'Payment reminder template added!');
-                    },
-                  },
-                ]
-              );
+              if (selectedMembers.size === 0) {
+                Alert.alert('No Recipients', 'Please select recipients from the Compose tab first.');
+                return;
+              }
+              setPaymentReminderModalVisible(true);
             }}
           >
             <FileText size={20} color="#fff" />
@@ -750,6 +615,14 @@ export default function EmailManagerScreen() {
           }}
         />
       )}
+
+      <PaymentReminderModal
+        visible={paymentReminderModalVisible}
+        recipients={Array.from(selectedMembers)
+          .map(id => members.find(m => m.id === id))
+          .filter((m): m is Member => !!m)}
+        onClose={() => setPaymentReminderModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }

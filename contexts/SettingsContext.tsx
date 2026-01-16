@@ -13,6 +13,7 @@ export interface OrganizationInfo {
   zipCode: string;
   phone: string;
   zellePhone: string;
+  paypalEmail: string;
   logoUrl: string;
   paypalClientId: string;
   paypalClientSecret: string;
@@ -35,6 +36,7 @@ const DEFAULT_ORG_INFO: OrganizationInfo = {
   zipCode: '',
   phone: '',
   zellePhone: '',
+  paypalEmail: '',
   logoUrl: '',
   paypalClientId: '',
   paypalClientSecret: '',
@@ -93,6 +95,7 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         zipCode: data.zip_code,
         phone: data.phone,
         zellePhone: data.zelle_phone,
+        paypalEmail: data.paypal_email || '',
         logoUrl: data.logo_url,
         paypalClientId: (data.paypal_client_id || '').trim(),
         paypalClientSecret: (data.paypal_client_secret || '').trim(),
@@ -170,6 +173,7 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         if (updates.zipCode !== undefined) supabaseUpdates.zip_code = updates.zipCode;
         if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
         if (updates.zellePhone !== undefined) supabaseUpdates.zelle_phone = updates.zellePhone;
+        if (updates.paypalEmail !== undefined) supabaseUpdates.paypal_email = updates.paypalEmail;
         if (updates.logoUrl !== undefined) supabaseUpdates.logo_url = updates.logoUrl;
         if (updates.paypalClientId !== undefined) supabaseUpdates.paypal_client_id = updates.paypalClientId;
         if (updates.paypalClientSecret !== undefined) supabaseUpdates.paypal_client_secret = updates.paypalClientSecret;
