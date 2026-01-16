@@ -169,10 +169,9 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
   useEffect(() => {
     if (useLocalStorage || !memberId) return;
 
-    console.log('[Realtime] 🔔 Setting up alerts real-time subscriptions for member:', memberId);
+    console.log('[Realtime] 🔔 Setting up alerts real-time subscription for member:', memberId);
 
     let alertsChannel: RealtimeChannel | null = null;
-    let dismissalsChannel: RealtimeChannel | null = null;
 
     try {
       alertsChannel = supabase
@@ -186,83 +185,32 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           },
           (payload) => {
             try {
-              console.log('[Realtime] 🔔 ALERT CHANGE DETECTED!');
-              console.log('[Realtime] Event type:', payload.eventType);
-              console.log('[Realtime] New data:', payload.new);
-              console.log('[Realtime] Receiving device member ID:', memberId);
+              console.log('[Realtime] 🔔 Alert change detected:', payload.eventType);
               fetchAlerts();
             } catch (error) {
-              console.error('[Realtime] Error handling alert change:', error);
+              console.log('[Realtime] Error handling alert change:', error);
             }
           }
         )
-        .subscribe((status, err) => {
-          console.log('[Realtime] Alerts subscription status:', status, 'for member:', memberId);
-          if (err) {
-            console.error('[Realtime] Subscription error:', err);
-          }
+        .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log('[Realtime] ✅ Successfully subscribed to alerts channel');
-            console.log('[Realtime] Channel name:', alertsChannel?.topic);
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('[Realtime] ❌ Failed to subscribe to alerts - channel error');
-            console.error('[Realtime] Make sure Realtime is enabled for the alerts table in Supabase dashboard');
-          } else if (status === 'TIMED_OUT') {
-            console.error('[Realtime] ❌ Failed to subscribe to alerts - timed out');
-          } else if (status === 'CLOSED') {
-            console.log('[Realtime] Channel closed');
+            console.log('[Realtime] ✅ Subscribed to alerts channel');
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.log('[Realtime] Alerts realtime not available - using manual refresh');
           }
         });
 
-      dismissalsChannel = supabase
-        .channel(`alert-dismissals-realtime-${Date.now()}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'alert_dismissals',
-            filter: `member_id=eq.${memberId}`,
-          },
-          (payload) => {
-            try {
-              console.log('[Realtime] 🔕 Alert dismissal change detected:', payload.eventType, 'on device:', memberId);
-              fetchAlerts();
-            } catch (error) {
-              console.error('[Realtime] Error handling dismissal change:', error);
-            }
-          }
-        )
-        .subscribe((status, err) => {
-          console.log('[Realtime] Alert dismissals subscription status:', status, 'for member:', memberId);
-          if (err) {
-            console.error('[Realtime] Dismissals subscription error:', err);
-          }
-          if (status === 'SUBSCRIBED') {
-            console.log('[Realtime] ✅ Successfully subscribed to alert dismissals');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('[Realtime] ❌ Failed to subscribe to alert dismissals - channel error');
-          } else if (status === 'TIMED_OUT') {
-            console.error('[Realtime] ❌ Failed to subscribe to alert dismissals - timed out');
-          }
-        });
-
-    } catch (error) {
-      console.error('[Realtime] Error setting up alerts subscriptions:', error);
+    } catch {
+      console.log('[Realtime] Alerts subscription not available');
     }
 
     return () => {
       try {
         if (alertsChannel) {
-          console.log('[Realtime] 🔴 Unsubscribing from alerts');
           supabase.removeChannel(alertsChannel);
         }
-        if (dismissalsChannel) {
-          console.log('[Realtime] 🔴 Unsubscribing from alert dismissals');
-          supabase.removeChannel(dismissalsChannel);
-        }
-      } catch (error) {
-        console.error('[Realtime] Error unsubscribing from alerts:', error);
+      } catch {
+        // Silently handle cleanup errors
       }
     };
   }, [useLocalStorage, memberId, fetchAlerts]);
