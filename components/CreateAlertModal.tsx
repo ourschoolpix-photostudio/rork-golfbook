@@ -85,9 +85,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
 
     try {
       setIsCreating(true);
-      const expiresAt = priority === 'normal' ? 
-        new Date(Date.now() + expiresIn * 60 * 60 * 1000).toISOString() : 
-        undefined;
+      const expiresAt = new Date(Date.now() + expiresIn * 60 * 60 * 1000).toISOString();
 
       await createAlert({
         title: title.trim(),
@@ -265,30 +263,28 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
               />
             </View>
 
-            {priority === 'normal' && (
-              <View style={styles.section}>
-                <Text style={styles.label}>Expires In</Text>
-                <View style={styles.expiresButtons}>
-                  {[6, 12, 24, 48, 72].map((hours) => (
-                    <TouchableOpacity
-                      key={hours}
-                      style={[
-                        styles.expiresButton,
-                        expiresIn === hours && styles.expiresButtonActive
-                      ]}
-                      onPress={() => setExpiresIn(hours)}
-                    >
-                      <Text style={[
-                        styles.expiresButtonText,
-                        expiresIn === hours && styles.expiresButtonTextActive
-                      ]}>
-                        {hours}h
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+            <View style={styles.section}>
+              <Text style={styles.label}>Expires In</Text>
+              <View style={styles.expiresButtons}>
+                {[6, 12, 24, 48, 72].map((hours) => (
+                  <TouchableOpacity
+                    key={hours}
+                    style={[
+                      styles.expiresButton,
+                      expiresIn === hours && styles.expiresButtonActive
+                    ]}
+                    onPress={() => setExpiresIn(hours)}
+                  >
+                    <Text style={[
+                      styles.expiresButtonText,
+                      expiresIn === hours && styles.expiresButtonTextActive
+                    ]}>
+                      {hours}h
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            )}
+            </View>
 
             <View style={styles.section}>
               <Text style={styles.label}>Message</Text>
