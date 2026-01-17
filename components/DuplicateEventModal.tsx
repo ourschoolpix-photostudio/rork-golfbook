@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Event } from '@/types';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 interface DuplicateEventModalProps {
   visible: boolean;
@@ -60,7 +62,7 @@ export const DuplicateEventModal: React.FC<DuplicateEventModalProps> = ({
     try {
       setIsSubmitting(true);
       
-      const newEventId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const newEventId = uuidv4();
       
       const duplicatedEvent: Event = {
         ...event,

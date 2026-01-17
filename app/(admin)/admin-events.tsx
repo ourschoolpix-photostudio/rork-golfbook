@@ -21,6 +21,8 @@ import { Event } from '@/types';
 import { supabaseService } from '@/utils/supabaseService';
 import { formatDateForDisplay, convertToISODate } from '@/utils/dateUtils';
 import { useQuery } from '@tanstack/react-query';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 type EventFormType = {
   status: 'upcoming' | 'active' | 'complete';
@@ -458,7 +460,7 @@ export default function AdminEventsScreen() {
         });
       } else {
         const newEvent = {
-          id: Date.now().toString(),
+          id: uuidv4(),
           name: form.eventName,
           venue: form.course,
           location: form.course,
