@@ -168,6 +168,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
     fetchAlerts();
     fetchTemplates();
     soundService.loadBellSound();
+    soundService.loadEmergencySound();
   }, [fetchAlerts, fetchTemplates]);
 
   useEffect(() => {

@@ -3,10 +3,12 @@ import { Platform } from 'react-native';
 
 class SoundService {
   private bellSound: Audio.Sound | null = null;
-  private isLoaded = false;
+  private emergencySound: Audio.Sound | null = null;
+  private isBellLoaded = false;
+  private isEmergencyLoaded = false;
 
   async loadBellSound() {
-    if (this.isLoaded) return;
+    if (this.isBellLoaded) return;
 
     try {
       console.log('[SoundService] Loading bell notification sound...');
@@ -15,10 +17,27 @@ class SoundService {
         { shouldPlay: false }
       );
       this.bellSound = sound;
-      this.isLoaded = true;
+      this.isBellLoaded = true;
       console.log('[SoundService] Bell sound loaded successfully');
     } catch (error) {
       console.error('[SoundService] Failed to load bell sound:', error);
+    }
+  }
+
+  async loadEmergencySound() {
+    if (this.isEmergencyLoaded) return;
+
+    try {
+      console.log('[SoundService] Loading emergency sound...');
+      const { sound } = await Audio.Sound.createAsync(
+        require('@/assets/sounds/Emergency.mp3'),
+        { shouldPlay: false }
+      );
+      this.emergencySound = sound;
+      this.isEmergencyLoaded = true;
+      console.log('[SoundService] Emergency sound loaded successfully');
+    } catch (error) {
+      console.error('[SoundService] Failed to load emergency sound:', error);
     }
   }
 
@@ -35,7 +54,7 @@ class SoundService {
         });
       }
 
-      if (!this.isLoaded) {
+      if (!this.isBellLoaded) {
         await this.loadBellSound();
       }
 
@@ -48,12 +67,44 @@ class SoundService {
     }
   }
 
+  async playEmergencySound() {
+    try {
+      if (Platform.OS === 'web') {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: false,
+        });
+      } else {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+        });
+      }
+
+      if (!this.isEmergencyLoaded) {
+        await this.loadEmergencySound();
+      }
+
+      if (this.emergencySound) {
+        console.log('[SoundService] Playing emergency sound...');
+        await this.emergencySound.replayAsync();
+      }
+    } catch (error) {
+      console.error('[SoundService] Failed to play emergency sound:', error);
+    }
+  }
+
   async unloadSound() {
     if (this.bellSound) {
       console.log('[SoundService] Unloading bell sound...');
       await this.bellSound.unloadAsync();
       this.bellSound = null;
-      this.isLoaded = false;
+      this.isBellLoaded = false;
+    }
+    if (this.emergencySound) {
+      console.log('[SoundService] Unloading emergency sound...');
+      await this.emergencySound.unloadAsync();
+      this.emergencySound = null;
+      this.isEmergencyLoaded = false;
     }
   }
 }

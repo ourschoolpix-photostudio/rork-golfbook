@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Modal,
   View,
@@ -11,6 +11,7 @@ import {
 import { X, AlertCircle, Info } from 'lucide-react-native';
 import { useAlerts } from '@/contexts/AlertsContext';
 import { Alert } from '@/types';
+import { soundService } from '@/utils/soundService';
 
 interface AlertsModalProps {
   visible: boolean;
@@ -26,6 +27,7 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
   const { getAlertsForEvent, getUndismissedAlerts, dismissAlert } = useAlerts();
   const [displayAlerts, setDisplayAlerts] = useState<Alert[]>([]);
   const hasCriticalAlerts = displayAlerts.some(a => a.priority === 'critical');
+  const hasPlayedEmergencySound = useRef(false);
 
   useEffect(() => {
     if (visible) {
@@ -36,8 +38,18 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
         const allAlerts = getUndismissedAlerts();
         setDisplayAlerts(allAlerts);
       }
+    } else {
+      hasPlayedEmergencySound.current = false;
     }
   }, [visible, eventId, getAlertsForEvent, getUndismissedAlerts]);
+
+  useEffect(() => {
+    if (visible && hasCriticalAlerts && !hasPlayedEmergencySound.current) {
+      console.log('[AlertsModal] Critical alert detected, playing emergency sound');
+      soundService.playEmergencySound();
+      hasPlayedEmergencySound.current = true;
+    }
+  }, [visible, hasCriticalAlerts]);
 
   const handleDismiss = async (alertId: string) => {
     try {
