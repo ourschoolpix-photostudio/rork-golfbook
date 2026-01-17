@@ -143,6 +143,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         closestToPin: e.closest_to_pin,
         archived: e.archived || false,
         archivedAt: e.archived_at,
+        registrationOpen: e.registration_open ?? true,
         registeredPlayers: registrationsByEvent.get(e.id) || [],
       }));
       
@@ -424,6 +425,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         if (updates.closestToPin !== undefined) supabaseUpdates.closest_to_pin = updates.closestToPin;
         if (updates.archived !== undefined) supabaseUpdates.archived = updates.archived;
         if (updates.archivedAt !== undefined) supabaseUpdates.archived_at = updates.archivedAt;
+        if (updates.registrationOpen !== undefined) supabaseUpdates.registration_open = updates.registrationOpen;
         
         const { error } = await supabase
           .from('events')
