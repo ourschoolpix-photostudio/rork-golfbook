@@ -246,7 +246,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                     styles.priorityButtonText,
                     priority === 'critical' && styles.priorityButtonTextActive
                   ]}>
-                    Critical (Auto-Opens)
+                    Critical
                   </Text>
                 </TouchableOpacity>
               </View>
