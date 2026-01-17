@@ -54,7 +54,12 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
   const handleDismiss = async (alertId: string) => {
     try {
       await dismissAlert(alertId);
-      setDisplayAlerts(prev => prev.filter(a => a.id !== alertId));
+      const updatedAlerts = displayAlerts.filter(a => a.id !== alertId);
+      setDisplayAlerts(updatedAlerts);
+      
+      if (updatedAlerts.length === 0) {
+        onClose();
+      }
     } catch (error) {
       console.error('Failed to dismiss alert:', error);
     }
