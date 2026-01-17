@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Camera } from 'lucide-react-native';
 import ScoringModal from '@/components/ScoringModal';
+import ScorecardVerificationModal from '@/components/ScorecardVerificationModal';
 import { calculateTournamentFlight, getDisplayHandicap, hasAdjustedHandicap, isUsingCourseHandicap } from '@/utils/handicapHelper';
 import type { Event } from '@/types';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
@@ -66,6 +68,7 @@ function GroupCard({
   };
 
   const [scoringModalVisible, setScoringModalVisible] = useState(false);
+  const [verificationModalVisible, setVerificationModalVisible] = useState(false);
 
   const handleOpenHandicapEdit = (player: any) => {
     console.log('Open handicap edit for', player.name);
@@ -114,6 +117,15 @@ function GroupCard({
         <TouchableOpacity onPress={handleOpenScoringModal}>
           <Text style={styles.holeLabel}>{label} • {playerCount} players</Text>
         </TouchableOpacity>
+        {isAdmin && (
+          <TouchableOpacity 
+            style={styles.verifyButton} 
+            onPress={() => setVerificationModalVisible(true)}
+          >
+            <Camera size={14} color="#fff" />
+            <Text style={styles.verifyButtonText}>VERIFY</Text>
+          </TouchableOpacity>
+        )}
         {showAddButton && (
           <TouchableOpacity style={styles.addButton} onPress={onAddPlayers}>
             <Text style={styles.addButtonText}>ADD</Text>
@@ -423,6 +435,17 @@ function GroupCard({
       numberOfDays={numberOfDays}
       registrations={registrations}
     />
+
+    <ScorecardVerificationModal
+      visible={verificationModalVisible}
+      onClose={() => setVerificationModalVisible(false)}
+      players={slots.filter(s => s !== null && s.name !== 'F9' && s.name !== 'B9').map(s => ({
+        id: s.id,
+        name: s.name,
+        scoreTotal: s.scoreTotal ?? 0,
+      }))}
+      groupLabel={label}
+    />
     </>
   );
 }
@@ -458,6 +481,22 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  verifyButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginLeft: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  verifyButtonText: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#fff',
   },
