@@ -102,7 +102,7 @@ const mapEventFromDB = (e: any) => ({
   rolexPointsDistributed: e.rolex_points_distributed || false,
   rolexPointsDistributedAt: e.rolex_points_distributed_at,
   rolexPointsDistributedBy: e.rolex_points_distributed_by,
-  registrationOpen: e.registration_open ?? false,
+  registrationOpen: e.registration_open ?? true,
 });
 
 export const supabaseService = {
