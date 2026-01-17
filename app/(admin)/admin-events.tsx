@@ -23,6 +23,23 @@ import { formatDateForDisplay, convertToISODate } from '@/utils/dateUtils';
 import { useQuery } from '@tanstack/react-query';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
+import * as Crypto from 'expo-crypto';
+
+const generateUUID = (): string => {
+  try {
+    const uuid = uuidv4();
+    if (uuid && typeof uuid === 'string' && uuid.length === 36) {
+      console.log('[AdminEvents] Generated UUID via uuidv4:', uuid);
+      return uuid;
+    }
+    throw new Error('Invalid UUID from uuidv4');
+  } catch (error) {
+    console.warn('[AdminEvents] uuidv4 failed, using fallback:', error);
+    const uuid = Crypto.randomUUID();
+    console.log('[AdminEvents] Generated UUID via Crypto.randomUUID:', uuid);
+    return uuid;
+  }
+};
 
 type EventFormType = {
   status: 'upcoming' | 'active' | 'complete';
@@ -459,8 +476,10 @@ export default function AdminEventsScreen() {
             closestToPin: form.closestToPin,
         });
       } else {
+        const eventId = generateUUID();
+        console.log('[AdminEvents] Creating event with ID:', eventId);
         const newEvent = {
-          id: uuidv4(),
+          id: eventId,
           name: form.eventName,
           venue: form.course,
           location: form.course,
