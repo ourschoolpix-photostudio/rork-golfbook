@@ -14,6 +14,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const fetchEventsRef = useRef<(() => Promise<void>) | null>(null);
+  const hasSetupRealtimeRef = useRef(false);
 
   const fetchEventsInternal = useCallback(async () => {
     try {
@@ -173,6 +174,51 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
   useEffect(() => {
     fetchEventsInternal();
   }, [fetchEventsInternal]);
+
+  useEffect(() => {
+    if (useLocalStorage || hasSetupRealtimeRef.current) return;
+
+    console.log('[EventsContext] 🔴 Setting up realtime subscription to events table');
+    hasSetupRealtimeRef.current = true;
+
+    try {
+      const channel = supabase
+        .channel('events-all')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'events',
+          },
+          (payload) => {
+            try {
+              console.log('[EventsContext] 🎯 Event change detected:', payload.eventType, (payload.new as any)?.name || (payload.old as any)?.name);
+              if (fetchEventsRef.current) {
+                fetchEventsRef.current();
+              }
+            } catch (error) {
+              console.error('[EventsContext] Error handling event change:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[EventsContext] Realtime subscription status:', status);
+        });
+
+      return () => {
+        try {
+          console.log('[EventsContext] 🔴 Unsubscribing from events');
+          supabase.removeChannel(channel);
+          hasSetupRealtimeRef.current = false;
+        } catch (error) {
+          console.error('[EventsContext] Error unsubscribing from events:', error);
+        }
+      };
+    } catch (error) {
+      console.error('[EventsContext] Error setting up realtime subscription:', error);
+    }
+  }, [useLocalStorage]);
 
   const addEvent = useCallback(async (event: Event) => {
     try {
