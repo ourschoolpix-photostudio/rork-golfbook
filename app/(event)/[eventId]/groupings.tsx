@@ -1355,8 +1355,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#4A4A4A',
-    backgroundColor: '#4A4A4A',
+    borderColor: '#9E9E9E',
+    backgroundColor: '#9E9E9E',
   },
   playerCardSelected: {
     backgroundColor: '#1B5E20',
