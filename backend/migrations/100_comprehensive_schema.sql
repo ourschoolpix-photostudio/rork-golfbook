@@ -657,7 +657,86 @@ DROP POLICY IF EXISTS "Users can manage own preferences" ON user_preferences;
 CREATE POLICY "Users can manage own preferences" ON user_preferences FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================================================
--- 13. OFFLINE_OPERATIONS TABLE
+-- 13. ALERTS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS alerts (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('organizational', 'event')),
+  priority TEXT NOT NULL CHECK (priority IN ('normal', 'critical')),
+  event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+  created_by UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_alerts_type ON alerts(type);
+CREATE INDEX IF NOT EXISTS idx_alerts_event_id ON alerts(event_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON alerts(created_at);
+CREATE INDEX IF NOT EXISTS idx_alerts_expires_at ON alerts(expires_at);
+
+-- Disable RLS for custom auth
+ALTER TABLE alerts DISABLE ROW LEVEL SECURITY;
+
+-- Grant access to anon and authenticated roles
+GRANT ALL ON alerts TO anon;
+GRANT ALL ON alerts TO authenticated;
+
+-- ============================================================================
+-- 14. ALERT_DISMISSALS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS alert_dismissals (
+  id TEXT PRIMARY KEY,
+  alert_id TEXT NOT NULL REFERENCES alerts(id) ON DELETE CASCADE,
+  member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  dismissed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(alert_id, member_id)
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_alert_dismissals_alert_id ON alert_dismissals(alert_id);
+CREATE INDEX IF NOT EXISTS idx_alert_dismissals_member_id ON alert_dismissals(member_id);
+
+-- Disable RLS for custom auth
+ALTER TABLE alert_dismissals DISABLE ROW LEVEL SECURITY;
+
+-- Grant access to anon and authenticated roles
+GRANT ALL ON alert_dismissals TO anon;
+GRANT ALL ON alert_dismissals TO authenticated;
+
+-- ============================================================================
+-- 15. ALERT_TEMPLATES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS alert_templates (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  priority TEXT NOT NULL CHECK (priority IN ('normal', 'critical')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Disable RLS for custom auth
+ALTER TABLE alert_templates DISABLE ROW LEVEL SECURITY;
+
+-- Grant access to anon and authenticated roles
+GRANT ALL ON alert_templates TO anon;
+GRANT ALL ON alert_templates TO authenticated;
+
+-- Insert default alert templates
+INSERT INTO alert_templates (id, name, title, message, priority) VALUES
+  ('template-1', 'Rule Change', 'Important Rule Change', 'Please note the following rule change for this tournament: [INSERT RULE CHANGE]', 'critical'),
+  ('template-2', 'Schedule Update', 'Schedule Update', 'The tournament schedule has been updated. Please review the new times.', 'normal'),
+  ('template-3', 'Weather Alert', 'Weather Alert', 'Weather conditions may affect play. Please check with tournament officials.', 'critical'),
+  ('template-4', 'Payment Reminder', 'Payment Due', 'Reminder: Payment is due for this event. Please settle your balance.', 'normal'),
+  ('template-5', 'General Announcement', 'Announcement', '[INSERT ANNOUNCEMENT MESSAGE]', 'normal'),
+  ('template-6', 'Lift, Clean & Place', 'Lift, Clean & Place', 'Due to course conditions, lift, clean, and place is in effect for today''s round. Please place your ball within one club length of the original spot, no closer to the hole.', 'normal')
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================================
+-- 16. OFFLINE_OPERATIONS TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS offline_operations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -701,7 +780,8 @@ BEGIN
     AND table_name IN (
         'members', 'events', 'event_registrations', 'groupings', 'scores',
         'financial_records', 'sync_status', 'organization_settings', 'courses',
-        'personal_games', 'notifications', 'user_preferences', 'offline_operations'
+        'personal_games', 'notifications', 'user_preferences', 'alerts',
+        'alert_dismissals', 'alert_templates', 'offline_operations'
     );
     
     -- Count total columns
@@ -711,7 +791,8 @@ BEGIN
     AND table_name IN (
         'members', 'events', 'event_registrations', 'groupings', 'scores',
         'financial_records', 'sync_status', 'organization_settings', 'courses',
-        'personal_games', 'notifications', 'user_preferences', 'offline_operations'
+        'personal_games', 'notifications', 'user_preferences', 'alerts',
+        'alert_dismissals', 'alert_templates', 'offline_operations'
     );
     
     RAISE NOTICE '============================================================';
