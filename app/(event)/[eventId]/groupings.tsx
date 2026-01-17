@@ -1355,8 +1355,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#f9f9f9',
+    borderColor: '#4A4A4A',
+    backgroundColor: '#4A4A4A',
   },
   playerCardSelected: {
     backgroundColor: '#1B5E20',
@@ -1365,16 +1365,16 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: '#333',
+    color: '#fff',
   },
   playerHdc: {
     fontSize: 11,
-    color: '#333',
+    color: '#fff',
     marginTop: 2,
   },
   playerFlight: {
     fontSize: 10,
-    color: '#666',
+    color: '#fff',
     marginTop: 4,
     fontWeight: '600' as const,
   },

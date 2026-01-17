@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   playerCard: {
-    backgroundColor: '#D9D9D9',
+    backgroundColor: '#4A4A4A',
     borderRadius: 6,
     marginTop: 1,
     justifyContent: 'flex-start',
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#fff',
     flex: 1,
   },
   scoresRow: {
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
   scoreItem: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#333',
+    color: '#fff',
   },
   flightRow: {
     marginTop: 4,
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   flightText: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#333',
+    color: '#fff',
   },
   cartsContainer: {
     flexDirection: 'row',
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   emptyCard: {
-    backgroundColor: '#B0B0B0',
+    backgroundColor: '#4A4A4A',
     borderRadius: 6,
     marginTop: 1,
     alignItems: 'center',
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
   emptyCardText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#666',
+    color: '#ccc',
   },
 });
 
