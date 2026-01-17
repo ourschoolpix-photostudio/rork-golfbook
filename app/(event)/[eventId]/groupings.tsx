@@ -1262,7 +1262,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterBtnActive: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFD54F',
     borderColor: '#800020',
   },
   filterBtnText: {
@@ -1271,7 +1271,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   filterBtnTextActive: {
-    color: '#800020',
+    color: '#333',
   },
   netScoreBtn: {
     flex: 1,
