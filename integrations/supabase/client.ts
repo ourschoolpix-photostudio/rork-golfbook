@@ -4,6 +4,10 @@ import { Platform } from 'react-native';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://becvczcatdwhvrrizort.supabase.co';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlY3ZjemNhdGR3aHZycml6b3J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4MjE0NDUsImV4cCI6MjA3NjM5NzQ0NX0.vHJWldnsyYTSLr9thaOpMYM9lnkohlSyBajKV7Jf0K4';
 
+const customFetch: typeof fetch = (input, init) => {
+  return fetch(input, init);
+};
+
 let supabaseClient: SupabaseClient | null = null;
 
 function createSupabaseClient(): SupabaseClient {
@@ -33,7 +37,7 @@ function createSupabaseClient(): SupabaseClient {
         autoRefreshToken: false,
       },
       global: {
-        fetch: (...args) => fetch(...args),
+        fetch: customFetch,
         headers: {
           'x-my-custom-header': 'golf-app',
         },
