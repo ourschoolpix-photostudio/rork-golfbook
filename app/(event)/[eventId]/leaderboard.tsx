@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center' as const,
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 6.75,
     paddingTop: 13.5,
     gap: 10,
   },
@@ -759,6 +759,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   refreshButton: {
+    flex: 1,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
