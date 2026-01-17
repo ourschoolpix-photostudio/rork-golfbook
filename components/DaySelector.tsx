@@ -70,25 +70,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: '#1B5E20',
-    backgroundColor: '#fff',
+    borderColor: '#800020',
+    backgroundColor: '#800020',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayButtonActive: {
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#a6335c',
+    borderColor: '#a6335c',
   },
   dayButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#1B5E20',
+    color: '#fff',
   },
   dayButtonTextActive: {
     color: '#fff',
   },
   doubleButtonActive: {
-    backgroundColor: '#FF6B00',
-    borderColor: '#FF6B00',
+    backgroundColor: '#a6335c',
+    borderColor: '#a6335c',
   },
   doubleButtonTextActive: {
     color: '#fff',
