@@ -81,8 +81,12 @@ class SoundService {
         console.log('[SoundService] Playing bell notification...');
         await this.bellSound.replayAsync();
       }
-    } catch (error) {
-      console.error('[SoundService] Failed to play bell notification:', error);
+    } catch (error: any) {
+      if (Platform.OS === 'web' && error?.message?.includes('user didn\'t interact')) {
+        console.log('[SoundService] Audio autoplay blocked by browser - user interaction required');
+      } else {
+        console.error('[SoundService] Failed to play bell notification:', error);
+      }
     }
   }
 
@@ -107,8 +111,12 @@ class SoundService {
         console.log('[SoundService] Playing emergency sound...');
         await this.emergencySound.replayAsync();
       }
-    } catch (error) {
-      console.error('[SoundService] Failed to play emergency sound:', error);
+    } catch (error: any) {
+      if (Platform.OS === 'web' && error?.message?.includes('user didn\'t interact')) {
+        console.log('[SoundService] Audio autoplay blocked by browser - user interaction required');
+      } else {
+        console.error('[SoundService] Failed to play emergency sound:', error);
+      }
     }
   }
 
@@ -133,8 +141,12 @@ class SoundService {
         console.log('[SoundService] Playing golf swing sound...');
         await this.golfSwingSound.replayAsync();
       }
-    } catch (error) {
-      console.error('[SoundService] Failed to play golf swing sound:', error);
+    } catch (error: any) {
+      if (Platform.OS === 'web' && error?.message?.includes('user didn\'t interact')) {
+        console.log('[SoundService] Audio autoplay blocked by browser - user interaction required');
+      } else {
+        console.error('[SoundService] Failed to play golf swing sound:', error);
+      }
     }
   }
 
