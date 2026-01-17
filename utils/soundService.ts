@@ -91,13 +91,26 @@ class SoundService {
     } catch (error: any) {
       this.golfSwingLoadFailed = true;
       const errorMessage = error?.message || String(error);
-      const errorName = error?.name || 'Unknown';
-      console.warn('[SoundService] Failed to load golf swing sound:');
-      console.warn('[SoundService]   - Error name:', errorName);
-      console.warn('[SoundService]   - Error message:', errorMessage);
-      console.warn('[SoundService]   - Full error:', JSON.stringify(error, null, 2));
+      
+      if (this.isMediaCorruptedError(errorMessage)) {
+        console.log('[SoundService] Golf swing sound file appears corrupted or unsupported - sound will be disabled');
+      } else {
+        console.log('[SoundService] Failed to load golf swing sound:', errorMessage);
+      }
       return false;
     }
+  }
+
+  private isMediaCorruptedError(errorMessage: string): boolean {
+    return (
+      errorMessage.includes('media may be damaged') ||
+      errorMessage.includes('-11849') ||
+      errorMessage.includes('-11850') ||
+      errorMessage.includes('AVFoundationErrorDomain') ||
+      errorMessage.includes('could not be decoded') ||
+      errorMessage.includes('format not recognized') ||
+      errorMessage.includes('unsupported format')
+    );
   }
 
   async playBellNotification(): Promise<boolean> {
@@ -151,37 +164,28 @@ class SoundService {
   }
 
   async playGolfSwingSound(): Promise<boolean> {
+    if (this.golfSwingLoadFailed) {
+      return false;
+    }
+
     try {
-      console.log('[SoundService] Attempting to play golf swing sound...');
-      console.log('[SoundService] Platform:', Platform.OS);
-      console.log('[SoundService] Golf swing loaded:', this.isGolfSwingLoaded);
-      console.log('[SoundService] Golf swing load failed:', this.golfSwingLoadFailed);
-      
       const audioInitialized = await this.initAudioMode();
       if (!audioInitialized) {
-        console.warn('[SoundService] Audio mode initialization failed, skipping golf swing sound');
         return false;
       }
 
-      if (!this.isGolfSwingLoaded && !this.golfSwingLoadFailed) {
-        console.log('[SoundService] Golf swing sound not loaded, attempting to load...');
+      if (!this.isGolfSwingLoaded) {
         const loaded = await this.loadGolfSwingSound();
         if (!loaded) {
-          console.log('[SoundService] Golf swing sound not available, skipping playback');
           return false;
         }
       }
 
       if (this.golfSwingSound) {
-        console.log('[SoundService] Playing golf swing sound...');
-        const status = await this.golfSwingSound.getStatusAsync();
-        console.log('[SoundService] Sound status before play:', JSON.stringify(status));
         await this.golfSwingSound.setPositionAsync(0);
         await this.golfSwingSound.playAsync();
-        console.log('[SoundService] Golf swing sound playback initiated');
         return true;
       }
-      console.warn('[SoundService] Golf swing sound object is null');
       return false;
     } catch (error: any) {
       this.handlePlaybackError('golf swing sound', error);
