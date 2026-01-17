@@ -37,7 +37,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   if (!event) return null;
 
   const isAlreadyRegistered = currentUserId && registeredPlayerIds.includes(currentUserId);
-  const isRegistrationClosed = !event.registrationOpen;
+  const isRegistrationClosed = event.registrationOpen === false;
   
   const getRegistrationMessage = () => {
     if (isAlreadyRegistered) return 'ALREADY REGISTERED';
