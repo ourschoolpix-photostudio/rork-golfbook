@@ -469,6 +469,8 @@ export default function GroupingsScreen() {
   const handleSave = async () => {
     if (!event || !user) return;
     try {
+      console.log('[groupings] 💾 Saving groupings - this will trigger real-time updates on other devices...');
+      
       const groupingsToSave = groups.map(group => ({
         day: activeDay,
         hole: group.hole,
@@ -480,11 +482,13 @@ export default function GroupingsScreen() {
         groupings: groupingsToSave,
       });
       
+      console.log('[groupings] ✅ Groupings saved to backend');
+      console.log('[groupings] 🔄 Refetching groupings to ensure local state is updated...');
       await refetchGroupings();
       
       setInitialGroups(JSON.parse(JSON.stringify(groups)));
 
-      console.log('[groupings] ✅ Groupings saved for day', activeDay, 'to backend');
+      console.log('[groupings] ✅ Groupings saved for day', activeDay, '- other devices will update automatically via realtime subscription');
     } catch (error) {
       console.error('[groupings] Error saving:', error);
       Alert.alert('Error', 'Failed to save groupings. Please try again.');
