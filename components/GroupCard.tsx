@@ -117,7 +117,7 @@ function GroupCard({
         <TouchableOpacity onPress={handleOpenScoringModal}>
           <Text style={styles.holeLabel}>{label} • {playerCount} players</Text>
         </TouchableOpacity>
-        {isAdmin && (
+        {isAdmin && playerCount > 0 && (
           <TouchableOpacity 
             style={styles.verifyButton} 
             onPress={() => setVerificationModalVisible(true)}
