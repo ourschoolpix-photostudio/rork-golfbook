@@ -7,6 +7,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { soundService } from '@/utils/soundService';
+import { AppState, AppStateStatus } from 'react-native';
 
 export const [AlertsProvider, useAlerts] = createContextHook(() => {
   const { currentUser } = useAuth();
@@ -20,6 +21,8 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const previousUndismissedCount = useRef<number>(0);
   const isInitialLoad = useRef<boolean>(true);
+  const notificationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasPlayedOnAppOpen = useRef<boolean>(false);
 
   const fetchAlerts = useCallback(async () => {
     if (!memberId) {
@@ -170,6 +173,53 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
     soundService.loadBellSound();
     soundService.loadEmergencySound();
   }, [fetchAlerts, fetchTemplates]);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        const nonCriticalUnread = alerts.filter(a => !a.isDismissed && a.priority !== 'critical').length;
+        if (nonCriticalUnread > 0 && !hasPlayedOnAppOpen.current) {
+          console.log('[AlertsContext] 🔔 App opened with unread alerts, playing bell notification');
+          soundService.playBellNotification();
+          hasPlayedOnAppOpen.current = true;
+          setTimeout(() => {
+            hasPlayedOnAppOpen.current = false;
+          }, 5000);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [alerts]);
+
+  useEffect(() => {
+    if (notificationIntervalRef.current) {
+      clearInterval(notificationIntervalRef.current);
+    }
+
+    const nonCriticalUnread = alerts.filter(a => !a.isDismissed && a.priority !== 'critical').length;
+    
+    if (nonCriticalUnread > 0) {
+      console.log('[AlertsContext] ⏰ Setting up 30-minute notification interval');
+      notificationIntervalRef.current = setInterval(() => {
+        const currentNonCriticalUnread = alerts.filter(a => !a.isDismissed && a.priority !== 'critical').length;
+        if (currentNonCriticalUnread > 0) {
+          console.log('[AlertsContext] 🔔 30-minute interval: Playing bell notification');
+          soundService.playBellNotification();
+        }
+      }, 30 * 60 * 1000);
+    }
+
+    return () => {
+      if (notificationIntervalRef.current) {
+        clearInterval(notificationIntervalRef.current);
+      }
+    };
+  }, [alerts]);
 
   useEffect(() => {
     if (useLocalStorage || !memberId) return;

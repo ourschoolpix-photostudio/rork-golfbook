@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/contexts/EventsContext';
 import { useRouter, useFocusEffect, Stack } from 'expo-router';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -42,6 +43,7 @@ export default function DashboardScreen() {
   const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
   const [criticalAlertShown, setCriticalAlertShown] = useState<boolean>(false);
   const { undismissedCount, getCriticalUndismissedAlerts } = useAlerts();
+  const bellShake = useRef(new Animated.Value(0)).current;
 
   const registrationsQuery = useQuery({
     queryKey: ['all-event-registrations', contextEvents],
@@ -64,6 +66,46 @@ export default function DashboardScreen() {
   });
 
   const { refetch: refetchRegistrations } = registrationsQuery;
+
+  useEffect(() => {
+    if (undismissedCount > 0) {
+      const shakeAnimation = Animated.sequence([
+        Animated.timing(bellShake, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bellShake, {
+          toValue: -10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bellShake, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bellShake, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]);
+
+      const loopAnimation = Animated.loop(shakeAnimation, {
+        iterations: -1,
+      });
+
+      loopAnimation.start();
+
+      return () => {
+        loopAnimation.stop();
+        bellShake.setValue(0);
+      };
+    } else {
+      bellShake.setValue(0);
+    }
+  }, [undismissedCount, bellShake]);
 
   useFocusEffect(
     useCallback(() => {
@@ -336,7 +378,16 @@ export default function DashboardScreen() {
           onPress={() => setAlertsModalVisible(true)}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Bell size={24} color="#ffffff" />
+          <Animated.View
+            style={{
+              transform: [{ rotate: bellShake.interpolate({
+                inputRange: [-10, 10],
+                outputRange: ['-10deg', '10deg'],
+              }) }],
+            }}
+          >
+            <Bell size={24} color="#ffffff" />
+          </Animated.View>
           {undismissedCount > 0 && (
             <View style={styles.bellBadge}>
               <Text style={styles.bellBadgeText}>{undismissedCount}</Text>
