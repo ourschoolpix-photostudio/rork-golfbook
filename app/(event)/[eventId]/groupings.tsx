@@ -1200,7 +1200,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingTop: 13.5,
+    paddingTop: 6.75,
     gap: 10,
   },
   titleText: {
