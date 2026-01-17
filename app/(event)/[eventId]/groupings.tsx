@@ -1449,7 +1449,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 6,
     borderRadius: 8,
-    backgroundColor: '#d32f2f',
+    backgroundColor: '#800020',
     gap: 8,
   },
   unassignAllBtnText: {
@@ -1480,7 +1480,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 6,
     borderRadius: 8,
-    backgroundColor: '#E91E63',
+    backgroundColor: '#800020',
     gap: 8,
   },
   resetScoresBtnText: {
