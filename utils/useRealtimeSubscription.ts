@@ -162,8 +162,8 @@ export function useRealtimeEvents(eventId: string, enabled: boolean = true) {
           (payload) => {
             try {
               console.log('[Realtime] 🎯 Event change detected:', payload);
-              queryClient.invalidateQueries({ queryKey: ['events', eventId] });
-              queryClient.invalidateQueries({ queryKey: ['events'] });
+              queryClient.refetchQueries({ queryKey: ['events', eventId] });
+              queryClient.refetchQueries({ queryKey: ['events'] });
             } catch (error) {
               console.error('[Realtime] Error handling event change:', error);
             }

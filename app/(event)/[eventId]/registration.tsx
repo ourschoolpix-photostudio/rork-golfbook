@@ -172,6 +172,8 @@ export default function EventRegistrationScreen() {
     },
     enabled: !!eventId,
     retry: 2,
+    staleTime: 0,
+    refetchOnMount: 'always' as const,
   });
 
   const registrationsQuery = useQuery({
