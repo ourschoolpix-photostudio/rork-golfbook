@@ -1257,20 +1257,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#ccc',
+    backgroundColor: '#800020',
+    borderColor: '#800020',
     alignItems: 'center',
   },
   filterBtnActive: {
-    backgroundColor: '#1B5E20',
-    borderColor: '#1B5E20',
+    backgroundColor: '#fff',
+    borderColor: '#800020',
   },
   filterBtnText: {
     fontSize: 9,
     fontWeight: '600' as const,
-    color: '#666',
+    color: '#fff',
   },
   filterBtnTextActive: {
-    color: '#fff',
+    color: '#800020',
   },
   netScoreBtn: {
     flex: 1,
@@ -1278,8 +1279,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     borderRadius: 8,
     borderWidth: 1.5,
-    backgroundColor: '#7C3AED',
-    borderColor: '#7C3AED',
+    backgroundColor: '#800020',
+    borderColor: '#800020',
     alignItems: 'center',
   },
   netScoreBtnText: {
