@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
     marginLeft: 'auto',
-    marginRight: 8,
+    marginRight: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
