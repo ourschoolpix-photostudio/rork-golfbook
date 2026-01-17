@@ -78,6 +78,8 @@ class SoundService {
 
     try {
       console.log('[SoundService] Loading golf swing sound...');
+      console.log('[SoundService] Platform:', Platform.OS);
+      
       const { sound } = await Audio.Sound.createAsync(
         require('@/assets/sounds/golfSwing.mp3'),
         { shouldPlay: false }
@@ -88,7 +90,12 @@ class SoundService {
       return true;
     } catch (error: any) {
       this.golfSwingLoadFailed = true;
-      console.warn('[SoundService] Failed to load golf swing sound:', error?.message || error);
+      const errorMessage = error?.message || String(error);
+      const errorName = error?.name || 'Unknown';
+      console.warn('[SoundService] Failed to load golf swing sound:');
+      console.warn('[SoundService]   - Error name:', errorName);
+      console.warn('[SoundService]   - Error message:', errorMessage);
+      console.warn('[SoundService]   - Full error:', JSON.stringify(error, null, 2));
       return false;
     }
   }
@@ -145,9 +152,19 @@ class SoundService {
 
   async playGolfSwingSound(): Promise<boolean> {
     try {
-      await this.initAudioMode();
+      console.log('[SoundService] Attempting to play golf swing sound...');
+      console.log('[SoundService] Platform:', Platform.OS);
+      console.log('[SoundService] Golf swing loaded:', this.isGolfSwingLoaded);
+      console.log('[SoundService] Golf swing load failed:', this.golfSwingLoadFailed);
+      
+      const audioInitialized = await this.initAudioMode();
+      if (!audioInitialized) {
+        console.warn('[SoundService] Audio mode initialization failed, skipping golf swing sound');
+        return false;
+      }
 
       if (!this.isGolfSwingLoaded && !this.golfSwingLoadFailed) {
+        console.log('[SoundService] Golf swing sound not loaded, attempting to load...');
         const loaded = await this.loadGolfSwingSound();
         if (!loaded) {
           console.log('[SoundService] Golf swing sound not available, skipping playback');
@@ -157,10 +174,14 @@ class SoundService {
 
       if (this.golfSwingSound) {
         console.log('[SoundService] Playing golf swing sound...');
+        const status = await this.golfSwingSound.getStatusAsync();
+        console.log('[SoundService] Sound status before play:', JSON.stringify(status));
         await this.golfSwingSound.setPositionAsync(0);
         await this.golfSwingSound.playAsync();
+        console.log('[SoundService] Golf swing sound playback initiated');
         return true;
       }
+      console.warn('[SoundService] Golf swing sound object is null');
       return false;
     } catch (error: any) {
       this.handlePlaybackError('golf swing sound', error);
@@ -170,20 +191,39 @@ class SoundService {
 
   private handlePlaybackError(soundName: string, error: any): void {
     const errorMessage = error?.message || String(error);
+    const errorName = error?.name || 'Unknown';
+    const errorCode = error?.code || 'N/A';
+    
+    console.log(`[SoundService] Error details for ${soundName}:`);
+    console.log(`[SoundService]   - Name: ${errorName}`);
+    console.log(`[SoundService]   - Code: ${errorCode}`);
+    console.log(`[SoundService]   - Message: ${errorMessage}`);
+    console.log(`[SoundService]   - Platform: ${Platform.OS}`);
     
     if (Platform.OS === 'web') {
       if (errorMessage.includes('user didn\'t interact') || 
           errorMessage.includes('play() request was interrupted') ||
-          errorMessage.includes('NotAllowedError')) {
-        console.log(`[SoundService] Audio autoplay blocked for ${soundName} - user interaction required`);
+          errorMessage.includes('NotAllowedError') ||
+          errorMessage.includes('not allowed by the user agent') ||
+          errorMessage.includes('play() failed because') ||
+          errorName === 'NotAllowedError') {
+        console.log(`[SoundService] Audio autoplay blocked for ${soundName} - user interaction required (this is normal on web)`);
         return;
       }
     }
     
     if (errorMessage.includes('ENOENT') || 
         errorMessage.includes('not found') ||
-        errorMessage.includes('Unable to resolve')) {
+        errorMessage.includes('Unable to resolve') ||
+        errorMessage.includes('Cannot find module')) {
       console.warn(`[SoundService] Sound file not found for ${soundName}`);
+      return;
+    }
+    
+    if (errorMessage.includes('Player does not exist') ||
+        errorMessage.includes('AV not available') ||
+        errorMessage.includes('Audio not available')) {
+      console.warn(`[SoundService] Audio system not available for ${soundName}`);
       return;
     }
     

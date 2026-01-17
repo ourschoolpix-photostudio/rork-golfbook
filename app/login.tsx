@@ -40,7 +40,22 @@ export default function LoginScreen() {
   useEffect(() => {
     ensureAdminExists();
     checkBiometricAvailability();
-    soundService.playGolfSwingSound();
+    
+    const playLoginSound = async () => {
+      try {
+        console.log('[Login] Attempting to play golf swing sound on mount...');
+        const success = await soundService.playGolfSwingSound();
+        if (success) {
+          console.log('[Login] Golf swing sound played successfully');
+        } else {
+          console.log('[Login] Golf swing sound did not play (this is normal on web or if sound file is missing)');
+        }
+      } catch (error) {
+        console.warn('[Login] Error playing login sound:', error);
+      }
+    };
+    
+    playLoginSound();
   }, []);
 
   const ensureAdminExists = async () => {
