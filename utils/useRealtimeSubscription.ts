@@ -140,6 +140,53 @@ export function useRealtimeRegistrations(eventId: string, enabled: boolean = tru
   }, [eventId, enabled, queryClient]);
 }
 
+export function useRealtimeEvents(eventId: string, enabled: boolean = true) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!enabled || !eventId) return;
+
+    console.log('[Realtime] 🔴 Subscribing to event:', eventId);
+
+    try {
+      const channel = supabase
+        .channel(`event-${eventId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'events',
+            filter: `id=eq.${eventId}`,
+          },
+          (payload) => {
+            try {
+              console.log('[Realtime] 🎯 Event change detected:', payload);
+              queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+              queryClient.invalidateQueries({ queryKey: ['events'] });
+            } catch (error) {
+              console.error('[Realtime] Error handling event change:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Realtime] Event subscription status:', status);
+        });
+
+      return () => {
+        try {
+          console.log('[Realtime] 🔴 Unsubscribing from event');
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.error('[Realtime] Error unsubscribing from event:', error);
+        }
+      };
+    } catch (error) {
+      console.error('[Realtime] Error setting up event subscription:', error);
+    }
+  }, [eventId, enabled, queryClient]);
+}
+
 export function useRealtimeMembers(onMemberChange: () => void, enabled: boolean = true) {
   useEffect(() => {
     if (!enabled) return;

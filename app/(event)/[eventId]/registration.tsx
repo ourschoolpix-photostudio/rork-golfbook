@@ -28,7 +28,7 @@ import { RefreshCw } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseService } from '@/utils/supabaseService';
-import { useRealtimeRegistrations } from '@/utils/useRealtimeSubscription';
+import { useRealtimeRegistrations, useRealtimeEvents } from '@/utils/useRealtimeSubscription';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -146,6 +146,7 @@ export default function EventRegistrationScreen() {
   );
 
   useRealtimeRegistrations(eventId || '', !!eventId);
+  useRealtimeEvents(eventId || '', !!eventId);
 
   const scoresQuery = useQuery({
     queryKey: ['event-scores', eventId],
