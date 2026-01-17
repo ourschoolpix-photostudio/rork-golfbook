@@ -25,7 +25,7 @@ class SoundService {
       console.log('[SoundService] Audio mode initialized');
       return true;
     } catch (error) {
-      console.warn('[SoundService] Failed to initialize audio mode:', error);
+      console.log('[SoundService] Failed to initialize audio mode (non-critical):', error);
       return false;
     }
   }
@@ -46,7 +46,7 @@ class SoundService {
       return true;
     } catch (error: any) {
       this.bellLoadFailed = true;
-      console.warn('[SoundService] Failed to load bell sound:', error?.message || error);
+      console.log('[SoundService] Failed to load bell sound (non-critical):', error?.message || error);
       return false;
     }
   }
@@ -67,7 +67,7 @@ class SoundService {
       return true;
     } catch (error: any) {
       this.emergencyLoadFailed = true;
-      console.warn('[SoundService] Failed to load emergency sound:', error?.message || error);
+      console.log('[SoundService] Failed to load emergency sound (non-critical):', error?.message || error);
       return false;
     }
   }
@@ -220,18 +220,18 @@ class SoundService {
         errorMessage.includes('not found') ||
         errorMessage.includes('Unable to resolve') ||
         errorMessage.includes('Cannot find module')) {
-      console.warn(`[SoundService] Sound file not found for ${soundName}`);
+      console.log(`[SoundService] Sound file not found for ${soundName} (non-critical)`);
       return;
     }
     
     if (errorMessage.includes('Player does not exist') ||
         errorMessage.includes('AV not available') ||
         errorMessage.includes('Audio not available')) {
-      console.warn(`[SoundService] Audio system not available for ${soundName}`);
+      console.log(`[SoundService] Audio system not available for ${soundName} (non-critical)`);
       return;
     }
     
-    console.warn(`[SoundService] Failed to play ${soundName}:`, errorMessage);
+    console.log(`[SoundService] Failed to play ${soundName} (non-critical):`, errorMessage);
   }
 
   async unloadSound(): Promise<void> {
@@ -243,7 +243,7 @@ class SoundService {
         this.isBellLoaded = false;
       }
     } catch (error) {
-      console.warn('[SoundService] Error unloading bell sound:', error);
+      console.log('[SoundService] Error unloading bell sound (non-critical):', error);
     }
     
     try {
@@ -254,7 +254,7 @@ class SoundService {
         this.isEmergencyLoaded = false;
       }
     } catch (error) {
-      console.warn('[SoundService] Error unloading emergency sound:', error);
+      console.log('[SoundService] Error unloading emergency sound (non-critical):', error);
     }
     
     try {
@@ -265,7 +265,7 @@ class SoundService {
         this.isGolfSwingLoaded = false;
       }
     } catch (error) {
-      console.warn('[SoundService] Error unloading golf swing sound:', error);
+      console.log('[SoundService] Error unloading golf swing sound (non-critical):', error);
     }
   }
 
