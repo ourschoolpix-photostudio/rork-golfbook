@@ -421,6 +421,14 @@ export const localStorageService = {
               priority: 'normal',
               createdAt: new Date().toISOString(),
             },
+            {
+              id: 'template-6',
+              name: 'Lift Clean and Place',
+              title: 'Lift, Clean and Place in Effect',
+              message: 'Due to weather conditions, we are playing Lift, Clean and Place in the fairway. You may lift your ball, clean it, and place it within one club-length of its original position, no closer to the hole.',
+              priority: 'critical',
+              createdAt: new Date().toISOString(),
+            },
           ];
           await AsyncStorage.setItem(STORAGE_KEYS.ALERT_TEMPLATES, JSON.stringify(defaultTemplates));
           return defaultTemplates;
