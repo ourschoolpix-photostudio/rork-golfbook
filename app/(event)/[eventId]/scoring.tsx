@@ -861,14 +861,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 58,
-    position: 'relative',
+    paddingVertical: 12,
+    paddingTop: 13.5,
   },
   headerTitle: {
     fontSize: 18,

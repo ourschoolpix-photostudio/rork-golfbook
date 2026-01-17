@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { canViewFinance, canAddExpensesGains } from '@/utils/rolePermissions';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Plus, X } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, Modal, TextInput, Alert } from 'react-native';
 import { EventFooter } from '@/components/EventFooter';
 import { useState, useMemo, useCallback } from 'react';
 import { useEvents } from '@/contexts/EventsContext';
@@ -160,14 +160,14 @@ export default function FinanceScreen() {
   if (!canViewFinance(currentUser)) {
     return (
       <>
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>FINANCE</Text>
           </View>
           <View style={styles.noAccessContainer}>
             <Text style={styles.noAccessText}>You don&apos;t have permission to view this page</Text>
           </View>
-        </View>
+        </SafeAreaView>
         <EventFooter />
       </>
     );
@@ -175,7 +175,7 @@ export default function FinanceScreen() {
 
   return (
     <>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>FINANCE</Text>
         </View>
@@ -432,7 +432,7 @@ export default function FinanceScreen() {
             </View>
           </View>
         </Modal>
-      </View>
+      </SafeAreaView>
       <EventFooter />
     </>
   );
@@ -444,14 +444,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 58,
-    position: 'relative',
+    paddingVertical: 12,
+    paddingTop: 13.5,
   },
   headerTitle: {
     fontSize: 18,
