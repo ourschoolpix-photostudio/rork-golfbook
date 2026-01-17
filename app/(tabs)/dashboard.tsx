@@ -393,7 +393,7 @@ export default function DashboardScreen() {
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Upcoming Events</Text>
-        <Text style={styles.sectionSubtitle}>(Tap Event To Take Part)</Text>
+        <Text style={styles.sectionSubtitle}>(Tap Event To ENTER)</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
