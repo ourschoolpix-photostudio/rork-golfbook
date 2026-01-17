@@ -396,21 +396,22 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
   }, [alerts]);
 
   const undismissedCount = useMemo(() => alerts.filter(a => !a.isDismissed).length, [alerts]);
+  const undismissedNonCriticalCount = useMemo(() => alerts.filter(a => !a.isDismissed && a.priority !== 'critical').length, [alerts]);
 
   useEffect(() => {
     if (isInitialLoad.current) {
-      previousUndismissedCount.current = undismissedCount;
+      previousUndismissedCount.current = undismissedNonCriticalCount;
       isInitialLoad.current = false;
       return;
     }
 
-    if (undismissedCount > previousUndismissedCount.current && undismissedCount > 0) {
-      console.log('[AlertsContext] 🔔 New alerts detected, playing notification sound');
+    if (undismissedNonCriticalCount > previousUndismissedCount.current && undismissedNonCriticalCount > 0) {
+      console.log('[AlertsContext] 🔔 New non-critical alerts detected, playing bell notification');
       soundService.playBellNotification();
     }
 
-    previousUndismissedCount.current = undismissedCount;
-  }, [undismissedCount]);
+    previousUndismissedCount.current = undismissedNonCriticalCount;
+  }, [undismissedNonCriticalCount]);
 
   return useMemo(() => ({
     alerts,
