@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/contexts/EventsContext';
 import { useRouter, useFocusEffect, Stack } from 'expo-router';
+import { supabase } from '@/integrations/supabase/client';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
@@ -66,6 +67,37 @@ export default function DashboardScreen() {
   });
 
   const { refetch: refetchRegistrations } = registrationsQuery;
+
+  useEffect(() => {
+    console.log('[Dashboard] 🔴 Setting up realtime subscription for events');
+    
+    const channel = supabase
+      .channel('dashboard-events-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'events',
+        },
+        (payload) => {
+          console.log('[Dashboard] 🎯 Event change detected:', payload.eventType);
+          console.log('[Dashboard] 🔄 Refreshing events and registrations...');
+          refreshEvents();
+          if (refetchRegistrations) {
+            refetchRegistrations();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Dashboard] Realtime subscription status:', status);
+      });
+
+    return () => {
+      console.log('[Dashboard] 🔴 Unsubscribing from events');
+      supabase.removeChannel(channel);
+    };
+  }, [refreshEvents, refetchRegistrations]);
 
   useEffect(() => {
     if (undismissedCount > 0) {
