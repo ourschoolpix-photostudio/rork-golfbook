@@ -467,20 +467,22 @@ export default function LeaderboardScreen() {
     <>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={handleRefresh} 
-            style={styles.refreshButton}
-            disabled={isRefetching}
-            activeOpacity={0.7}
-          >
-            <RefreshCw 
-              size={16} 
-              color="#333" 
-              style={isRefetching ? styles.refreshing : undefined}
-            />
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>TOURNAMENT LEADERBOARD</Text>
+          <View style={styles.headerButtonsRow}>
+            <TouchableOpacity 
+              onPress={handleRefresh} 
+              style={styles.headerActionButton}
+              disabled={isRefetching}
+              activeOpacity={0.7}
+            >
+              <RefreshCw 
+                size={16} 
+                color="#333" 
+                style={isRefetching ? styles.refreshing : undefined}
+              />
+              <Text style={styles.headerActionButtonText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.titleText}>TOURNAMENT LEADERBOARD</Text>
         </View>
 
         {eventQuery.data?.photoUrl && (
@@ -748,17 +750,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center' as const,
     backgroundColor: '#1B5E20',
     paddingHorizontal: 16,
-    paddingVertical: 6.75,
-    paddingTop: 13.5,
+    paddingVertical: 12,
+    paddingTop: 6.75,
     gap: 10,
   },
-  headerTitle: {
+  titleText: {
     fontSize: 16,
     fontWeight: '700' as const,
     color: '#fff',
     letterSpacing: 0.5,
   },
-  refreshButton: {
+  headerButtonsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+  },
+  headerActionButton: {
     flex: 1,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
@@ -769,8 +777,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 6,
   },
-  refreshButtonText: {
-    fontSize: 14,
+  headerActionButtonText: {
+    fontSize: 13,
     fontWeight: '600' as const,
     color: '#333',
   },
