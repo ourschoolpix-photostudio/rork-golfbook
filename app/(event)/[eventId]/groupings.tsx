@@ -1247,7 +1247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     gap: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#9E9E9E',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
@@ -1433,7 +1433,7 @@ const styles = StyleSheet.create({
   unassignAllBtnContainer: {
     paddingHorizontal: 16,
     paddingVertical: 5,
-    backgroundColor: '#fff',
+    backgroundColor: '#9E9E9E',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
