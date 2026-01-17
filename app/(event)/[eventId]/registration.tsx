@@ -46,7 +46,6 @@ import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { EventStatus } from '@/components/EventStatusButton';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import { EventFooter } from '@/components/EventFooter';
-import { EventHeader } from '@/components/EventHeader';
 import { AlertsModal } from '@/components/AlertsModal';
 import { useAlerts } from '@/contexts/AlertsContext';
 import { useFocusEffect } from 'expo-router';
@@ -2113,10 +2112,6 @@ export default function EventRegistrationScreen() {
   return (
     <>
       <SafeAreaView style={styles.container}>
-      <EventHeader 
-        onBellPress={() => setAlertsModalVisible(true)} 
-        eventId={eventId as string}
-      />
       <AlertsModal
         visible={alertsModalVisible}
         onClose={() => {
