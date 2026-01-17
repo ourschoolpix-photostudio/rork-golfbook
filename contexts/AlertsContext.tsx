@@ -1,11 +1,12 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useMemo, useEffect, useState } from 'react';
+import { useCallback, useMemo, useEffect, useState, useRef } from 'react';
 import { Alert, AlertTemplate, AlertDismissal } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { localStorageService } from '@/utils/localStorageService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { soundService } from '@/utils/soundService';
 
 export const [AlertsProvider, useAlerts] = createContextHook(() => {
   const { currentUser } = useAuth();
@@ -17,6 +18,8 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
   const [templates, setTemplates] = useState<AlertTemplate[]>([]);
   const [dismissals, setDismissals] = useState<AlertDismissal[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const previousUndismissedCount = useRef<number>(0);
+  const isInitialLoad = useRef<boolean>(true);
 
   const fetchAlerts = useCallback(async () => {
     if (!memberId) {
@@ -164,6 +167,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
   useEffect(() => {
     fetchAlerts();
     fetchTemplates();
+    soundService.loadBellSound();
   }, [fetchAlerts, fetchTemplates]);
 
   useEffect(() => {
@@ -391,6 +395,21 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
   }, [alerts]);
 
   const undismissedCount = useMemo(() => alerts.filter(a => !a.isDismissed).length, [alerts]);
+
+  useEffect(() => {
+    if (isInitialLoad.current) {
+      previousUndismissedCount.current = undismissedCount;
+      isInitialLoad.current = false;
+      return;
+    }
+
+    if (undismissedCount > previousUndismissedCount.current && undismissedCount > 0) {
+      console.log('[AlertsContext] 🔔 New alerts detected, playing notification sound');
+      soundService.playBellNotification();
+    }
+
+    previousUndismissedCount.current = undismissedCount;
+  }, [undismissedCount]);
 
   return useMemo(() => ({
     alerts,
