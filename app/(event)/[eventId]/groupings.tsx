@@ -1509,7 +1509,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
   },
   switchBtn: {
-    paddingVertical: 14,
+    paddingVertical: 10.5,
     borderRadius: 8,
     backgroundColor: '#FF9800',
     alignItems: 'center',
