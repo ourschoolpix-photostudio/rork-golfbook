@@ -1503,7 +1503,7 @@ const styles = StyleSheet.create({
   },
   switchContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 5,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
