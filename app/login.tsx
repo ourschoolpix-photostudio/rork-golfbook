@@ -21,7 +21,6 @@ import { Member } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { PlayerEditModal } from '@/components/PlayerEditModal';
-import { soundService } from '@/utils/soundService';
 
 const BIOMETRIC_USER_KEY = '@golf_biometric_user';
 
@@ -40,12 +39,6 @@ export default function LoginScreen() {
   useEffect(() => {
     ensureAdminExists();
     checkBiometricAvailability();
-    
-    const playLoginSound = async () => {
-      await soundService.playGolfSwingSound();
-    };
-    
-    playLoginSound();
   }, []);
 
   const ensureAdminExists = async () => {
