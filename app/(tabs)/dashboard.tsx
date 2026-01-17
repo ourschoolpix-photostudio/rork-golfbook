@@ -524,6 +524,7 @@ const styles = StyleSheet.create({
     padding: 8,
     alignSelf: 'flex-start',
     position: 'relative' as const,
+    marginRight: 4,
   },
   bellBadge: {
     position: 'absolute' as const,
