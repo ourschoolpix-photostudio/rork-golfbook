@@ -295,6 +295,16 @@ export default function LoginScreen() {
                     <Text style={styles.biometricButtonText}>Login with Biometrics</Text>
                   </TouchableOpacity>
                 )}
+
+                {orgInfo?.name && (
+                  <View style={styles.licenseContainer}>
+                    <Text style={styles.licenseText}>
+                      Golfbook® software licensed to{' '}
+                      <Text style={styles.licenseOrgName}>{orgInfo.name}</Text>
+                      {' '}for authorized use only. All rights reserved.
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
         </KeyboardAvoidingView>
@@ -398,5 +408,20 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '600' as const,
+  },
+  licenseContainer: {
+    marginTop: 24,
+    paddingHorizontal: 8,
+  },
+  licenseText: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 16,
+    fontWeight: '500' as const,
+  },
+  licenseOrgName: {
+    fontWeight: '600' as const,
+    color: '#555',
   },
 });
