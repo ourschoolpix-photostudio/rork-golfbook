@@ -4,8 +4,10 @@ import { Platform } from 'react-native';
 class SoundService {
   private bellSound: Audio.Sound | null = null;
   private emergencySound: Audio.Sound | null = null;
+  private golfSwingSound: Audio.Sound | null = null;
   private isBellLoaded = false;
   private isEmergencyLoaded = false;
+  private isGolfSwingLoaded = false;
 
   async loadBellSound() {
     if (this.isBellLoaded) return;
@@ -38,6 +40,23 @@ class SoundService {
       console.log('[SoundService] Emergency sound loaded successfully');
     } catch (error) {
       console.error('[SoundService] Failed to load emergency sound:', error);
+    }
+  }
+
+  async loadGolfSwingSound() {
+    if (this.isGolfSwingLoaded) return;
+
+    try {
+      console.log('[SoundService] Loading golf swing sound...');
+      const { sound } = await Audio.Sound.createAsync(
+        require('@/assets/sounds/golfSwing.mp3'),
+        { shouldPlay: false }
+      );
+      this.golfSwingSound = sound;
+      this.isGolfSwingLoaded = true;
+      console.log('[SoundService] Golf swing sound loaded successfully');
+    } catch (error) {
+      console.error('[SoundService] Failed to load golf swing sound:', error);
     }
   }
 
@@ -93,6 +112,32 @@ class SoundService {
     }
   }
 
+  async playGolfSwingSound() {
+    try {
+      if (Platform.OS === 'web') {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: false,
+        });
+      } else {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+        });
+      }
+
+      if (!this.isGolfSwingLoaded) {
+        await this.loadGolfSwingSound();
+      }
+
+      if (this.golfSwingSound) {
+        console.log('[SoundService] Playing golf swing sound...');
+        await this.golfSwingSound.replayAsync();
+      }
+    } catch (error) {
+      console.error('[SoundService] Failed to play golf swing sound:', error);
+    }
+  }
+
   async unloadSound() {
     if (this.bellSound) {
       console.log('[SoundService] Unloading bell sound...');
@@ -105,6 +150,12 @@ class SoundService {
       await this.emergencySound.unloadAsync();
       this.emergencySound = null;
       this.isEmergencyLoaded = false;
+    }
+    if (this.golfSwingSound) {
+      console.log('[SoundService] Unloading golf swing sound...');
+      await this.golfSwingSound.unloadAsync();
+      this.golfSwingSound = null;
+      this.isGolfSwingLoaded = false;
     }
   }
 }
