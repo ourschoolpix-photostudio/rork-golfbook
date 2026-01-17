@@ -76,8 +76,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dayButtonActive: {
-    backgroundColor: '#a6335c',
-    borderColor: '#a6335c',
+    backgroundColor: '#FFD54F',
+    borderColor: '#FFD54F',
   },
   dayButtonText: {
     fontSize: 12,
@@ -85,13 +85,13 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   dayButtonTextActive: {
-    color: '#fff',
+    color: '#333',
   },
   doubleButtonActive: {
-    backgroundColor: '#a6335c',
-    borderColor: '#a6335c',
+    backgroundColor: '#FFD54F',
+    borderColor: '#FFD54F',
   },
   doubleButtonTextActive: {
-    color: '#fff',
+    color: '#333',
   },
 });
