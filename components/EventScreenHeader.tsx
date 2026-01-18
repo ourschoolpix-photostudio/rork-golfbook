@@ -123,11 +123,11 @@ const styles = StyleSheet.create({
   eventPhotoContainer: {
     position: 'relative' as const,
     width: '100%',
-    height: 80,
+    height: 100,
   },
   eventPhoto: {
     width: '100%',
-    height: 80,
+    height: 100,
     resizeMode: 'cover' as const,
   },
   eventNameOverlay: {
