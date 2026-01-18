@@ -16,6 +16,7 @@ interface EventScreenHeaderProps {
   event?: Event | null;
   actions?: HeaderAction[];
   showEventPhoto?: boolean;
+  onViewDetails?: () => void;
 }
 
 export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
@@ -23,6 +24,7 @@ export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
   event,
   actions = [],
   showEventPhoto = true,
+  onViewDetails,
 }) => {
   const renderActionIcon = (action: HeaderAction) => {
     if (action.customIcon) {
@@ -65,6 +67,15 @@ export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
         <View style={styles.eventPhotoContainer}>
           <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
           <View style={styles.darkOverlay} />
+          {onViewDetails && (
+            <TouchableOpacity
+              style={styles.viewDetailsButton}
+              onPress={onViewDetails}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.viewDetailsButtonText}>View Details</Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.eventNameOverlay}>{event.name}</Text>
           <View style={styles.bottomInfoOverlay}>
             <Text style={styles.eventLocationOverlay}>{event.location}</Text>
@@ -178,5 +189,20 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  viewDetailsButton: {
+    position: 'absolute' as const,
+    top: 6,
+    left: 12,
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 10,
+  },
+  viewDetailsButtonText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#fff',
   },
 });

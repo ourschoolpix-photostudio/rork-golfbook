@@ -2199,6 +2199,7 @@ export default function EventRegistrationScreen() {
         event={event}
         actions={headerActions}
         showEventPhoto={true}
+        onViewDetails={() => setEventDetailsModalVisible(true)}
       />
 
       {event && !event.registrationOpen && (
