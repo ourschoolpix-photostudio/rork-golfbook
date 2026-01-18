@@ -197,7 +197,14 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         <View style={styles.contentWrapper}>
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {event.photoUrl && event.photoUrl.trim() !== '' && (
-            <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
+            <View style={styles.photoHeaderContainer}>
+              <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
+              {event.entryFee && Number(event.entryFee) > 0 && (
+                <View style={styles.entryFeeBox}>
+                  <Text style={styles.entryFeeText}>${event.entryFee}</Text>
+                </View>
+              )}
+            </View>
           )}
 
           <View style={styles.section}>
@@ -448,10 +455,36 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  photoHeaderContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 100,
+  },
   eventPhoto: {
     width: '100%',
     height: 100,
     resizeMode: 'cover',
+  },
+  entryFeeBox: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    width: 76,
+    height: 76,
+    backgroundColor: '#1B5E20',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  entryFeeText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
   },
   section: {
     paddingHorizontal: 16,
