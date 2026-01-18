@@ -36,13 +36,13 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   
   if (!event) return null;
 
-  const isAlreadyRegistered = currentUserId && registeredPlayerIds.includes(currentUserId);
+  const isAlreadyRegistered = !!(currentUserId && registeredPlayerIds.includes(currentUserId));
   
   const getButtonMessage = () => {
     if (isAlreadyRegistered) {
-      return 'GO TO REGISTRATION PAGE';
+      return 'Already Registered';
     }
-    return 'GO TO REGISTRATION PAGE';
+    return 'Register For This Event';
   };
 
   const getPrizePoolItems = () => {
@@ -382,16 +382,28 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
           <View style={[styles.buttonFooter, { paddingBottom: insets.bottom + 12 }]}>
             <TouchableOpacity 
-              style={styles.registerButton}
+              style={[
+                styles.registerButton,
+                isAlreadyRegistered && styles.registerButtonDisabled
+              ]}
               onPress={() => {
+                if (isAlreadyRegistered) return;
                 onClose();
-                router.push({
-                  pathname: '/(event)/[eventId]/registration' as any,
-                  params: { eventId: event.id }
-                });
+                if (onRegister) {
+                  onRegister();
+                } else {
+                  router.push({
+                    pathname: '/(event)/[eventId]/registration' as any,
+                    params: { eventId: event.id }
+                  });
+                }
               }}
+              disabled={isAlreadyRegistered}
             >
-              <Text style={styles.registerButtonText}>
+              <Text style={[
+                styles.registerButtonText,
+                isAlreadyRegistered && styles.registerButtonTextDisabled
+              ]}>
                 {getButtonMessage()}
               </Text>
             </TouchableOpacity>
@@ -625,6 +637,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     letterSpacing: 0.5,
+  },
+  registerButtonDisabled: {
+    backgroundColor: '#9E9E9E',
+    opacity: 0.6,
+  },
+  registerButtonTextDisabled: {
+    color: '#e0e0e0',
   },
 
 });
