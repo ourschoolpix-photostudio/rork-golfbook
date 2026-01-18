@@ -179,7 +179,7 @@ function GroupCard({
                   <Text style={styles.playerName}>{slots[0].name}</Text>
                 </View>
                 <View style={styles.scoresRow}>
-                  <Text style={styles.scoreItem}>Total: {slots[0].scoreTotal ?? 0}</Text>
+                  <Text style={styles.scoreTotalItem}>Total: {slots[0].scoreTotal ?? 0}</Text>
                   <Text style={styles.scoreItem}>{(() => {
                     const playerReg = registrations?.[slots[0].name];
                     const handicap = getDisplayHandicap(slots[0], playerReg, event, useCourseHandicap, activeDay);
@@ -252,7 +252,7 @@ function GroupCard({
                   <Text style={styles.playerName}>{slots[2].name}</Text>
                 </View>
                 <View style={styles.scoresRow}>
-                  <Text style={styles.scoreItem}>Total: {slots[2].scoreTotal ?? 0}</Text>
+                  <Text style={styles.scoreTotalItem}>Total: {slots[2].scoreTotal ?? 0}</Text>
                   <Text style={styles.scoreItem}>{(() => {
                     const playerReg = registrations?.[slots[2].name];
                     const handicap = getDisplayHandicap(slots[2], playerReg, event, useCourseHandicap, activeDay);
@@ -324,7 +324,7 @@ function GroupCard({
                   <Text style={styles.playerName}>{slots[1].name}</Text>
                 </View>
                 <View style={styles.scoresRow}>
-                  <Text style={styles.scoreItem}>Total: {slots[1].scoreTotal ?? 0}</Text>
+                  <Text style={styles.scoreTotalItem}>Total: {slots[1].scoreTotal ?? 0}</Text>
                   <Text style={styles.scoreItem}>{(() => {
                     const playerReg = registrations?.[slots[1].name];
                     const handicap = getDisplayHandicap(slots[1], playerReg, event, useCourseHandicap, activeDay);
@@ -394,7 +394,7 @@ function GroupCard({
                   <Text style={styles.playerName}>{slots[3].name}</Text>
                 </View>
                 <View style={styles.scoresRow}>
-                  <Text style={styles.scoreItem}>Total: {slots[3].scoreTotal ?? 0}</Text>
+                  <Text style={styles.scoreTotalItem}>Total: {slots[3].scoreTotal ?? 0}</Text>
                   <Text style={styles.scoreItem}>{(() => {
                     const playerReg = registrations?.[slots[3].name];
                     const handicap = getDisplayHandicap(slots[3], playerReg, event, useCourseHandicap, activeDay);
@@ -547,6 +547,11 @@ const styles = StyleSheet.create({
   scoreItem: {
     fontSize: 11,
     fontWeight: '500',
+    color: '#000',
+  },
+  scoreTotalItem: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#000',
   },
   flightRow: {
