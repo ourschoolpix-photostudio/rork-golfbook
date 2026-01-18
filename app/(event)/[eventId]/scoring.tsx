@@ -29,7 +29,6 @@ export default function ScoringScreen() {
   const [holeScores, setHoleScores] = useState<{ [playerId: string]: { [hole: number]: number } }>({});
   const [scoreMeOnly, setScoreMeOnly] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
   const [isDayLocked, setIsDayLocked] = useState<boolean>(false);
   const [lastDayTap, setLastDayTap] = useState<{ day: number; time: number } | null>(null);
 
@@ -38,7 +37,7 @@ export default function ScoringScreen() {
     queryFn: () => supabaseService.events.get(eventId || ''),
     enabled: !!eventId,
     retry: 2,
-    staleTime: 30000,
+    staleTime: 0,
     refetchInterval: 30000,
   });
   const { data: allMembers = [], isLoading: membersLoading, error: membersError } = useQuery({
@@ -124,18 +123,7 @@ export default function ScoringScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    if (eventData && eventData.useCourseHandicap !== undefined) {
-      const shouldUseCourseHandicap = eventData.useCourseHandicap === true;
-      setUseCourseHandicap(prev => {
-        if (prev !== shouldUseCourseHandicap) {
-          console.log('[scoring] 🔄 Course handicap setting changed via realtime:', shouldUseCourseHandicap);
-          return shouldUseCourseHandicap;
-        }
-        return prev;
-      });
-    }
-  }, [eventData]);
+  const useCourseHandicap = eventData?.useCourseHandicap === true;
 
   const loadMyGroup = useCallback(async (golfEvent: Event, userId: string, dayNumber: number, groupings: any[], members: any[], registrations: any[]) => {
     try {
@@ -156,6 +144,9 @@ export default function ScoringScreen() {
       console.log('[scoring] Double mode for this event/day:', isDoubleMode);
 
       const dayGroupings = groupings.filter((g: any) => g.day === dayNumber);
+      
+      const useCourseHandicapForEvent = golfEvent.useCourseHandicap === true;
+      console.log('[scoring] 🎯 Using course handicap mode from event:', useCourseHandicapForEvent);
 
       for (const grouping of dayGroupings) {
         if (grouping.slots.includes(userId)) {
@@ -166,9 +157,9 @@ export default function ScoringScreen() {
               if (!member) return null;
               
               const registration = registrations.find((r: any) => r.memberId === id);
-              const effectiveHandicap = getDisplayHandicap(member, registration, golfEvent, useCourseHandicap, dayNumber);
+              const effectiveHandicap = getDisplayHandicap(member, registration, golfEvent, useCourseHandicapForEvent, dayNumber);
               
-              console.log(`[scoring] 🎯 Player ${member.name}: memberId=${id}, registration found=${!!registration}, base handicap=${member.handicap}, adjusted=${registration?.adjustedHandicap}, effective=${effectiveHandicap}, useCourseHandicap=${useCourseHandicap}`);
+              console.log(`[scoring] 🎯 Player ${member.name}: memberId=${id}, registration found=${!!registration}, base handicap=${member.handicap}, adjusted=${registration?.adjustedHandicap}, effective=${effectiveHandicap}, useCourseHandicap=${useCourseHandicapForEvent}`);
               if (registration) {
                 console.log(`[scoring] 📋 Registration details:`, JSON.stringify(registration));
               }
@@ -216,7 +207,7 @@ export default function ScoringScreen() {
       setMyGroup([]);
       setMyGrouping(null);
     }
-  }, [updateHoleBasedOnStartType, useCourseHandicap, groupingsLoading, membersLoading, registrationsLoading]);
+  }, [updateHoleBasedOnStartType, groupingsLoading, membersLoading, registrationsLoading]);
 
   useEffect(() => {
     const loadScores = () => {
@@ -267,18 +258,11 @@ export default function ScoringScreen() {
   }, [eventData]);
 
   useEffect(() => {
-    if (event && currentUser && eventId && !groupingsLoading && !membersLoading && !registrationsLoading && eventGroupings.length > 0) {
-      console.log('[scoring] Loading group for day:', selectedDay);
-      loadMyGroup(event, currentUser.id, selectedDay, eventGroupings, allMembers, eventRegistrations);
+    if (eventData && currentUser && eventId && !groupingsLoading && !membersLoading && !registrationsLoading && eventGroupings.length > 0) {
+      console.log('[scoring] 🔄 Loading/reloading group. useCourseHandicap:', useCourseHandicap, 'day:', selectedDay);
+      loadMyGroup(eventData as Event, currentUser.id, selectedDay, eventGroupings, allMembers, eventRegistrations);
     }
-  }, [event, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, eventGroupings, allMembers, eventRegistrations, loadMyGroup]);
-
-  useEffect(() => {
-    if (event && currentUser && eventId && !groupingsLoading && !membersLoading && !registrationsLoading && eventGroupings.length > 0) {
-      console.log('[scoring] useCourseHandicap changed, recalculating handicaps:', useCourseHandicap);
-      loadMyGroup(event, currentUser.id, selectedDay, eventGroupings, allMembers, eventRegistrations);
-    }
-  }, [useCourseHandicap, event, currentUser, eventId, groupingsLoading, membersLoading, registrationsLoading, eventGroupings, allMembers, eventRegistrations, selectedDay, loadMyGroup]);
+  }, [eventData, useCourseHandicap, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, eventGroupings, allMembers, eventRegistrations, loadMyGroup]);
 
 
 
