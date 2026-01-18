@@ -123,7 +123,15 @@ export default function ScoringScreen() {
     }
   }, []);
 
-  const useCourseHandicap = eventData?.useCourseHandicap === true;
+  const [useCourseHandicapLocal, setUseCourseHandicapLocal] = useState<boolean>(false);
+
+  useEffect(() => {
+    const newValue = eventData?.useCourseHandicap === true;
+    console.log('[scoring] 🎯 useCourseHandicap changed from eventData:', newValue);
+    setUseCourseHandicapLocal(newValue);
+  }, [eventData?.useCourseHandicap]);
+
+  const useCourseHandicap = useCourseHandicapLocal;
 
   const loadMyGroup = useCallback(async (golfEvent: Event, userId: string, dayNumber: number, groupings: any[], members: any[], registrations: any[]) => {
     try {
@@ -726,7 +734,7 @@ export default function ScoringScreen() {
 
             const currentScore = holeScores[player.id]?.[currentHole] || 0;
             const totalScore = getTotalScore(player.id);
-            const handicap = player.effectiveHandicap ?? player.handicap ?? 0;
+            const handicap = getDisplayHandicap(player, player.registration, event, useCourseHandicap, selectedDay);
             
             console.log(`[scoring] 🎯 DISPLAY - Player ${player.name}: effectiveHandicap=${player.effectiveHandicap}, baseHandicap=${player.handicap}, using=${handicap}, hasRegistration=${!!player.registration}`);
             if (player.registration?.adjustedHandicap) {
