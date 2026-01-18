@@ -76,6 +76,11 @@ export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
               <Text style={styles.viewDetailsButtonText}>View Details</Text>
             </TouchableOpacity>
           )}
+          {event.entryFee && (
+            <View style={styles.entryFeeBox}>
+              <Text style={styles.entryFeeText}>${event.entryFee}</Text>
+            </View>
+          )}
           <Text style={styles.eventNameOverlay}>{event.name}</Text>
           <View style={styles.bottomInfoOverlay}>
             <Text style={styles.eventLocationOverlay}>{event.location}</Text>
@@ -203,6 +208,21 @@ const styles = StyleSheet.create({
   viewDetailsButtonText: {
     fontSize: 11,
     fontWeight: '600' as const,
+    color: '#fff',
+  },
+  entryFeeBox: {
+    position: 'absolute' as const,
+    top: 6,
+    right: 12,
+    backgroundColor: '#2E7D32',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 10,
+  },
+  entryFeeText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
     color: '#fff',
   },
 });
