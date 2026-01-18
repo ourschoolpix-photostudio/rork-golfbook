@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   cart: {
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#9E9E9E',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
