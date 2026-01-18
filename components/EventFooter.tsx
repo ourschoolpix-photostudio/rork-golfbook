@@ -414,20 +414,22 @@ const styles = StyleSheet.create({
   },
   toggleButtonWrapper: {
     flex: 1,
+    minHeight: 36,
   },
   startButtonWrapper: {
     flex: 1,
+    minHeight: 36,
   },
   courseHandicapToggle: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 0,
     paddingHorizontal: 12,
     borderRadius: 8,
     backgroundColor: '#8B2E4A',
-    minHeight: 36,
+    height: 36,
   },
   courseHandicapToggleActive: {
     backgroundColor: '#2196F3',

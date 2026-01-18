@@ -328,10 +328,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
+    paddingVertical: 0,
     paddingHorizontal: 10,
     borderRadius: 8,
-    minHeight: 36,
+    height: 36,
   },
   footerStatusText: {
     color: '#fff',

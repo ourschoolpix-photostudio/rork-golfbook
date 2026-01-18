@@ -78,12 +78,12 @@ export function EventStatusButton({ status, onStatusChange, isAdmin }: EventStat
 const styles = StyleSheet.create({
   button: {
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 0,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    minHeight: 36,
+    height: 36,
   },
   text: {
     fontSize: 11,
