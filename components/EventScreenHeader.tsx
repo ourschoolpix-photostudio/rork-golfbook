@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   bottomInfoOverlay: {
     position: 'absolute' as const,
-    bottom: 0,
+    bottom: 20,
     left: 0,
     right: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
