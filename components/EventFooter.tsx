@@ -198,29 +198,47 @@ export function EventFooter({
     if (eventId) {
       const newValue = !useCourseHandicap;
       console.log('[EventFooter] 🎯 Toggling course handicap from', useCourseHandicap, 'to', newValue);
+      
+      // 1. Update local state immediately
       setUseCourseHandicap(newValue);
+      setEvent((prev: any) => prev ? { ...prev, useCourseHandicap: newValue } : prev);
+      
+      // 2. Immediately update React Query cache for instant UI update across all components
+      queryClient.setQueryData(['events', eventId], (oldData: any) => {
+        if (oldData) {
+          console.log('[EventFooter] 🔄 Immediately updating query cache with useCourseHandicap:', newValue);
+          return { ...oldData, useCourseHandicap: newValue };
+        }
+        return oldData;
+      });
+      
+      // 3. Save to AsyncStorage for local persistence
+      const key = `useCourseHandicap_${eventId}`;
+      AsyncStorage.setItem(key, newValue.toString()).catch(err => 
+        console.error('[EventFooter] Error saving to AsyncStorage:', err)
+      );
+      
       try {
+        // 4. Persist to Supabase (this will trigger realtime for other devices)
         await supabaseService.events.update(eventId, {
           useCourseHandicap: newValue,
         });
         console.log('[EventFooter] ✅ Course handicap saved to Supabase:', newValue);
         
-        queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+        // 5. Invalidate to ensure any stale data is refreshed
         queryClient.invalidateQueries({ queryKey: ['events'] });
-        await Promise.all([
-          queryClient.refetchQueries({ queryKey: ['events', eventId] }),
-          queryClient.refetchQueries({ queryKey: ['events'] }),
-        ]);
-        console.log('[EventFooter] 🔄 Invalidated and refetched event queries');
-        
-        setEvent((prev: any) => prev ? { ...prev, useCourseHandicap: newValue } : prev);
-        
-        const key = `useCourseHandicap_${eventId}`;
-        await AsyncStorage.setItem(key, newValue.toString());
-        console.log('[EventFooter] ✅ Course handicap saved to AsyncStorage:', newValue);
       } catch (error) {
         console.error('[EventFooter] ❌ Error saving course handicap setting:', error);
+        // Rollback on error
         setUseCourseHandicap(!newValue);
+        setEvent((prev: any) => prev ? { ...prev, useCourseHandicap: !newValue } : prev);
+        queryClient.setQueryData(['events', eventId], (oldData: any) => {
+          if (oldData) {
+            return { ...oldData, useCourseHandicap: !newValue };
+          }
+          return oldData;
+        });
+        AsyncStorage.setItem(key, (!newValue).toString()).catch(() => {});
       }
     }
   };
