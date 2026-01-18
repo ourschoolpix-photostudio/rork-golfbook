@@ -133,8 +133,8 @@ export function OfflineModeToggle({ eventId, position = 'header' }: OfflineModeT
 
   const getStatusColor = () => {
     if (!isConnected) return '#EF4444';
-    if (isOfflineMode) return '#FF9500';
-    return '#34C759';
+    if (isOfflineMode) return '#2196F3';
+    return '#8B2E4A';
   };
 
   const getStatusText = () => {

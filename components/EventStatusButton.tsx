@@ -18,7 +18,7 @@ const statusCycle: Record<EventStatus, EventStatus> = {
 };
 
 const statusColors: Record<EventStatus, { bg: string; text: string }> = {
-  upcoming: { bg: '#FF9500', text: '#fff' },
+  upcoming: { bg: '#8B2E4A', text: '#fff' },
   active: { bg: '#34C759', text: '#fff' },
   locked: { bg: '#FFA500', text: '#fff' },
   complete: { bg: '#007AFF', text: '#fff' },
