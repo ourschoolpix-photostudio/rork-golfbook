@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Alert } from '@/utils/alertPolyfill';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { Star } from 'lucide-react-native';
 
 import { EventFooter } from '@/components/EventFooter';
 import { TeeHoleIndicator } from '@/components/TeeHoleIndicator';
+import { EventScreenHeader } from '@/components/EventScreenHeader';
 import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
 import { supabaseService } from '@/utils/supabaseService';
@@ -611,9 +612,7 @@ export default function ScoringScreen() {
     return (
       <>
         <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>SCORING</Text>
-          </View>
+          <EventScreenHeader title="SCORING" showEventPhoto={false} />
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ fontSize: 16, color: '#666' }}>Loading...</Text>
             <Text style={{ fontSize: 12, color: '#999', marginTop: 8 }}>Fetching event data</Text>
@@ -633,9 +632,7 @@ export default function ScoringScreen() {
     return (
       <>
         <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>SCORING</Text>
-          </View>
+          <EventScreenHeader title="SCORING" showEventPhoto={false} />
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ fontSize: 16, color: '#666' }}>Event not found</Text>
           </View>
@@ -656,23 +653,7 @@ export default function ScoringScreen() {
     return (
       <>
         <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>SCORING</Text>
-          </View>
-
-          {event && event.photoUrl && (
-            <View style={styles.eventPhotoContainer}>
-              <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
-              <Text style={styles.eventNameOverlay}>{event.name}</Text>
-              <View style={styles.bottomInfoOverlay}>
-                <Text style={styles.eventLocationOverlay}>{event.location}</Text>
-                <Text style={styles.eventDateOverlay}>
-                  {event.date}
-                  {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
-                </Text>
-              </View>
-            </View>
-          )}
+          <EventScreenHeader title="SCORING" event={event} />
 
           <View style={styles.emptyStateContainer}>
             <Ionicons name="people" size={64} color="#999" />
@@ -694,23 +675,7 @@ export default function ScoringScreen() {
     return (
       <>
         <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>SCORING</Text>
-          </View>
-
-          {event && event.photoUrl && (
-            <View style={styles.eventPhotoContainer}>
-              <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
-              <Text style={styles.eventNameOverlay}>{event.name}</Text>
-              <View style={styles.bottomInfoOverlay}>
-                <Text style={styles.eventLocationOverlay}>{event.location}</Text>
-                <Text style={styles.eventDateOverlay}>
-                  {event.date}
-                  {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
-                </Text>
-              </View>
-            </View>
-          )}
+          <EventScreenHeader title="SCORING" event={event} />
 
           <View style={styles.emptyStateContainer}>
             <Ionicons name="lock-closed" size={64} color="#999" />
@@ -735,23 +700,7 @@ export default function ScoringScreen() {
   return (
     <>
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>SCORING</Text>
-        </View>
-
-        {event && event.photoUrl && (
-          <View style={styles.eventPhotoContainer}>
-            <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
-            <Text style={styles.eventNameOverlay}>{event.name}</Text>
-            <View style={styles.bottomInfoOverlay}>
-              <Text style={styles.eventLocationOverlay}>{event.location}</Text>
-              <Text style={styles.eventDateOverlay}>
-                {event.date}
-                {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
-              </Text>
-            </View>
-          </View>
-        )}
+        <EventScreenHeader title="SCORING" event={event} />
 
         <TeeHoleIndicator
           event={event}
@@ -943,69 +892,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: '#1B5E20',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 13.5,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    textAlign: 'center',
-  },
-  backBtn: {
-    position: 'absolute',
-    left: 16,
-  },
-  eventPhotoContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 100,
-  },
-  eventPhoto: {
-    width: '100%',
-    height: 100,
-    resizeMode: 'cover',
-  },
-  eventNameOverlay: {
-    position: 'absolute',
-    top: 8,
-    left: 0,
-    right: 0,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  bottomInfoOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: 'center',
-    gap: 2,
-  },
-  eventLocationOverlay: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  eventDateOverlay: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
+
   holeNavigator: {
     flexDirection: 'row',
     alignItems: 'center',
