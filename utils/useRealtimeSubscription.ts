@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabaseService } from '@/utils/supabaseService';
 
 export function useRealtimeScores(eventId: string, enabled: boolean = true) {
   const queryClient = useQueryClient();
@@ -160,15 +161,24 @@ export function useRealtimeEvents(eventId: string, enabled: boolean = true) {
             table: 'events',
             filter: `id=eq.${eventId}`,
           },
-          (payload) => {
+          async (payload) => {
             try {
-              console.log('[Realtime] 🎯 Event change detected:', payload);
-              queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+              console.log('[Realtime] 🎯 Event change detected:', payload.eventType);
+              
+              // Immediately fetch fresh data and update cache for instant UI update
+              const freshEvent = await supabaseService.events.get(eventId);
+              if (freshEvent) {
+                console.log('[Realtime] ✅ Immediately updating event cache with fresh data, useCourseHandicap:', freshEvent.useCourseHandicap);
+                queryClient.setQueryData(['events', eventId], freshEvent);
+              }
+              
+              // Also invalidate to ensure any other queries are updated
               queryClient.invalidateQueries({ queryKey: ['events'] });
-              queryClient.refetchQueries({ queryKey: ['events', eventId] });
-              queryClient.refetchQueries({ queryKey: ['events'] });
             } catch (error) {
               console.error('[Realtime] Error handling event change:', error);
+              // Fallback to refetch on error
+              queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+              queryClient.refetchQueries({ queryKey: ['events', eventId] });
             }
           }
         )
