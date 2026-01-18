@@ -981,6 +981,15 @@ export default function GroupingsScreen() {
             </TouchableOpacity>
           </View>
 
+          <DaySelector
+            numberOfDays={event.numberOfDays ?? 1}
+            selectedDay={activeDay}
+            onDaySelect={setActiveDay}
+            doubleMode={doubleMode}
+            onDoubleModeToggle={handleDoubleModeToggle}
+            isAdmin={canManageGroupings(currentMember)}
+          />
+
           <View style={styles.unassignAllBtnContainer}>
             <View style={styles.buttonRow}>
               <TouchableOpacity
@@ -1026,15 +1035,6 @@ export default function GroupingsScreen() {
           )}
         </View>
       )}
-
-      <DaySelector
-        numberOfDays={event.numberOfDays ?? 1}
-        selectedDay={activeDay}
-        onDaySelect={setActiveDay}
-        doubleMode={doubleMode}
-        onDoubleModeToggle={handleDoubleModeToggle}
-        isAdmin={canManageGroupings(currentMember)}
-      />
 
       {hasGroupChanges && (
         <View style={styles.saveGroupingsContainer}>
