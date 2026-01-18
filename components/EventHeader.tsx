@@ -1,24 +1,107 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Bell } from 'lucide-react-native';
 import { Event } from '@/types';
+import { useAlerts } from '@/contexts/AlertsContext';
+import { AlertsModal } from '@/components/AlertsModal';
 
 interface EventHeaderProps {
   event?: Event | null;
 }
 
 export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
+  const { getAlertsForEvent, getCriticalUndismissedAlerts } = useAlerts();
+  const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
+  const [criticalAlertShown, setCriticalAlertShown] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!event) return;
+
+    const criticalAlerts = getCriticalUndismissedAlerts();
+    const eventCriticalAlerts = criticalAlerts.filter(alert => 
+      alert.type === 'organizational' || alert.eventId === event.id
+    );
+
+    if (eventCriticalAlerts.length > 0 && !criticalAlertShown) {
+      console.log('[EventHeader] Critical alert detected, showing modal');
+      setAlertsModalVisible(true);
+      setCriticalAlertShown(true);
+    }
+  }, [event, getCriticalUndismissedAlerts, criticalAlertShown]);
+
   if (!event || !event.entryFee || !event.photoUrl) {
     return null;
   }
 
+  const eventAlerts = getAlertsForEvent(event.id);
+  const undismissedEventAlerts = eventAlerts.filter(a => !a.isDismissed);
+
   return (
-    <View style={styles.entryFeeBox}>
-      <Text style={styles.entryFeeText}>${event.entryFee}</Text>
-    </View>
+    <>
+      <TouchableOpacity
+        style={styles.bellButton}
+        onPress={() => setAlertsModalVisible(true)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <View style={styles.bellIconContainer}>
+          <Bell size={20} color="#ffffff" strokeWidth={2.5} />
+          {undismissedEventAlerts.length > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{undismissedEventAlerts.length}</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+
+      <View style={styles.entryFeeBox}>
+        <Text style={styles.entryFeeText}>${event.entryFee}</Text>
+      </View>
+
+      <AlertsModal
+        visible={alertsModalVisible}
+        onClose={() => {
+          setAlertsModalVisible(false);
+          setCriticalAlertShown(false);
+        }}
+        eventId={event.id}
+      />
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  bellButton: {
+    position: 'absolute' as const,
+    top: 6,
+    left: 16,
+    zIndex: 10,
+    opacity: 0,
+  },
+  bellIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(59, 130, 246, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute' as const,
+    top: -4,
+    right: -4,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
   entryFeeBox: {
     position: 'absolute' as const,
     top: 6,
