@@ -2202,6 +2202,12 @@ export default function EventRegistrationScreen() {
         onViewDetails={() => setEventDetailsModalVisible(true)}
       />
 
+      {event && event.entryFee && event.photoUrl && (
+        <View style={styles.entryFeeBox}>
+          <Text style={styles.entryFeeText}>${event.entryFee}</Text>
+        </View>
+      )}
+
       {event && !event.registrationOpen && (
         <View style={styles.registrationClosedBanner}>
           <Ionicons name="information-circle" size={20} color="#C62828" />
@@ -3553,6 +3559,21 @@ const styles = StyleSheet.create({
   viewDetailsButtonText: {
     fontSize: 12,
     fontWeight: '600',
+    color: '#fff',
+  },
+  entryFeeBox: {
+    position: 'absolute' as const,
+    top: 6,
+    right: 12,
+    backgroundColor: '#2E7D32',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 10,
+  },
+  entryFeeText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
     color: '#fff',
   },
   entryFeeBadge: {
