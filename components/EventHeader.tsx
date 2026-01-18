@@ -46,7 +46,7 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <View style={styles.bellIconContainer}>
-          <Bell size={20} color="#ffffff" strokeWidth={2.5} />
+          <Bell size={18} color="#ffffff" strokeWidth={2.5} />
           {undismissedEventAlerts.length > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{undismissedEventAlerts.length}</Text>
@@ -73,16 +73,15 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
 const styles = StyleSheet.create({
   bellButton: {
     position: 'absolute' as const,
-    top: 6,
-    left: 16,
+    top: 8,
+    right: 16,
     zIndex: 10,
-    opacity: 0,
   },
   bellIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(59, 130, 246, 0.9)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#5A0015',
     alignItems: 'center',
     justifyContent: 'center',
   },
