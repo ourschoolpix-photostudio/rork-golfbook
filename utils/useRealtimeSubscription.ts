@@ -117,6 +117,7 @@ export function useRealtimeRegistrations(eventId: string, enabled: boolean = tru
             try {
               console.log('[Realtime] 📝 Registration change detected:', payload);
               queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
+              queryClient.refetchQueries({ queryKey: ['registrations', eventId] });
             } catch (error) {
               console.error('[Realtime] Error handling registration change:', error);
             }
