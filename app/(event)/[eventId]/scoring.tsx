@@ -3,7 +3,6 @@ import { useLocalSearchParams } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { Alert } from '@/utils/alertPolyfill';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Star } from 'lucide-react-native';
 
@@ -13,7 +12,7 @@ import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
 import { supabaseService } from '@/utils/supabaseService';
 import { getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
-import { useRealtimeScores, useRealtimeGroupings } from '@/utils/useRealtimeSubscription';
+import { useRealtimeScores, useRealtimeGroupings, useRealtimeEvents } from '@/utils/useRealtimeSubscription';
 import { useOfflineMode } from '@/contexts/OfflineModeContext';
 
 export default function ScoringScreen() {
@@ -76,6 +75,7 @@ export default function ScoringScreen() {
   
   useRealtimeScores(eventId || '', !!eventId);
   useRealtimeGroupings(eventId || '', !!eventId);
+  useRealtimeEvents(eventId || '', !!eventId);
   
   const submitScoreMutation = useMutation({
     mutationFn: ({ eventId, memberId, day, holes, totalScore, submittedBy }: any) =>
@@ -125,35 +125,17 @@ export default function ScoringScreen() {
   }, []);
 
   useEffect(() => {
-    const loadCourseHandicapSetting = async () => {
-      if (eventId) {
-        try {
-          const key = `useCourseHandicap_${eventId}`;
-          const value = await AsyncStorage.getItem(key);
-          if (value !== null) {
-            const shouldUseCourseHandicap = value === 'true';
-            setUseCourseHandicap(prev => {
-              if (prev !== shouldUseCourseHandicap) {
-                console.log('[scoring] Loaded course handicap setting:', shouldUseCourseHandicap);
-                return shouldUseCourseHandicap;
-              }
-              return prev;
-            });
-          }
-        } catch (error) {
-          console.error('[scoring] Error loading course handicap setting:', error);
+    if (eventData && eventData.useCourseHandicap !== undefined) {
+      const shouldUseCourseHandicap = eventData.useCourseHandicap === true;
+      setUseCourseHandicap(prev => {
+        if (prev !== shouldUseCourseHandicap) {
+          console.log('[scoring] 🔄 Course handicap setting changed via realtime:', shouldUseCourseHandicap);
+          return shouldUseCourseHandicap;
         }
-      }
-    };
-    
-    loadCourseHandicapSetting();
-    
-    const interval = setInterval(() => {
-      loadCourseHandicapSetting();
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [eventId]);
+        return prev;
+      });
+    }
+  }, [eventData]);
 
   const loadMyGroup = useCallback(async (golfEvent: Event, userId: string, dayNumber: number, groupings: any[], members: any[], registrations: any[]) => {
     try {
