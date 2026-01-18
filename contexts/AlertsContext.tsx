@@ -222,7 +222,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
   }, [alerts]);
 
   useEffect(() => {
-    if (useLocalStorage || !memberId) return;
+    if (!memberId) return;
 
     console.log('[Realtime] 🔔 Setting up alerts real-time subscription for member:', memberId);
 
@@ -268,7 +268,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         // Silently handle cleanup errors
       }
     };
-  }, [useLocalStorage, memberId, fetchAlerts]);
+  }, [memberId, fetchAlerts]);
 
   const createAlert = useCallback(
     async (alert: Omit<Alert, 'id' | 'createdAt'>) => {
