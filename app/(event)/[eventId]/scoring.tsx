@@ -242,8 +242,9 @@ export default function ScoringScreen() {
 
       const dayGroupings = groupings.filter((g: any) => g.day === dayNumber);
       
-      const useCourseHandicapForEvent = golfEvent.useCourseHandicap === true;
-      console.log('[scoring] 🎯 Using course handicap mode from event:', useCourseHandicapForEvent);
+      // Use local useCourseHandicap state which is updated immediately via realtime
+      const useCourseHandicapForEvent = useCourseHandicapRef.current;
+      console.log('[scoring] 🎯 Using course handicap mode from local state (ref):', useCourseHandicapForEvent);
 
       for (const grouping of dayGroupings) {
         if (grouping.slots.includes(userId)) {
@@ -355,11 +356,13 @@ export default function ScoringScreen() {
   }, [eventData]);
 
   useEffect(() => {
-    if (eventData && currentUser && eventId && !groupingsLoading && !membersLoading && !registrationsLoading && eventGroupings.length > 0) {
-      console.log('[scoring] 🔄 Loading/reloading group. useCourseHandicap:', useCourseHandicap, 'day:', selectedDay);
-      loadMyGroup(eventData as Event, currentUser.id, selectedDay, eventGroupings, allMembers, eventRegistrations);
+    // Use local event state (updated immediately by realtime) or fall back to eventData
+    const currentEvent = event || eventData;
+    if (currentEvent && currentUser && eventId && !groupingsLoading && !membersLoading && !registrationsLoading && eventGroupings.length > 0) {
+      console.log('[scoring] 🔄 Loading/reloading group. useCourseHandicap:', useCourseHandicap, 'day:', selectedDay, 'eventUseCourseHandicap:', currentEvent.useCourseHandicap);
+      loadMyGroup(currentEvent as Event, currentUser.id, selectedDay, eventGroupings, allMembers, eventRegistrations);
     }
-  }, [eventData, useCourseHandicap, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, eventGroupings, allMembers, eventRegistrations, loadMyGroup]);
+  }, [event, eventData, useCourseHandicap, currentUser, eventId, selectedDay, groupingsLoading, membersLoading, registrationsLoading, eventGroupings, allMembers, eventRegistrations, loadMyGroup]);
 
 
 
