@@ -113,6 +113,7 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         basicMembershipPrice: data.basic_membership_price || '',
         fullMembershipMemo: data.full_membership_memo || '',
         basicMembershipMemo: data.basic_membership_memo || '',
+        useLocalStorage: data.use_local_storage || false,
       } : {};
       
       console.log('✅ [SettingsContext] Successfully fetched settings');
@@ -192,6 +193,7 @@ export const [SettingsProvider, useSettings] = createContextHook(() => {
         if (updates.fullMembershipPrice !== undefined) supabaseUpdates.full_membership_price = updates.fullMembershipPrice;
         if (updates.basicMembershipPrice !== undefined) supabaseUpdates.basic_membership_price = updates.basicMembershipPrice;
         if (updates.fullMembershipMemo !== undefined) supabaseUpdates.full_membership_memo = updates.fullMembershipMemo;
+        if (updates.useLocalStorage !== undefined) supabaseUpdates.use_local_storage = updates.useLocalStorage;
         if (updates.basicMembershipMemo !== undefined) supabaseUpdates.basic_membership_memo = updates.basicMembershipMemo;
         
         const { data: existingData } = await supabase.from('organization_settings').select('*').limit(1).single();
