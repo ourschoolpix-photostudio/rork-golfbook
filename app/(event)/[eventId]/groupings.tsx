@@ -32,7 +32,7 @@ import { supabaseService } from '@/utils/supabaseService';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { canManageGroupings } from '@/utils/rolePermissions';
-import { useRealtimeScores, useRealtimeGroupings, useRealtimeRegistrations } from '@/utils/useRealtimeSubscription';
+import { useRealtimeScores, useRealtimeGroupings, useRealtimeRegistrations, useRealtimeEvents } from '@/utils/useRealtimeSubscription';
 
 interface Group {
   hole: number;
@@ -100,11 +100,12 @@ export default function GroupingsScreen() {
   useRealtimeScores(id, !!id);
   useRealtimeGroupings(id, !!id);
   useRealtimeRegistrations(id, !!id);
+  useRealtimeEvents(id, !!id);
   
-  const triggerGroupRefresh = () => {
+  const triggerGroupRefresh = useCallback(() => {
     console.log('[groupings] 🔄 Triggering group refresh to re-enrich scores...');
     setRefreshTrigger(prev => prev + 1);
-  };
+  }, []);
 
   const { data: eventData, isLoading: eventLoading } = useQuery({
     queryKey: ['events', id],
@@ -220,39 +221,31 @@ export default function GroupingsScreen() {
   }, [event, allMembers, backendRegistrations]);
 
   useEffect(() => {
-    const loadCourseHandicapSetting = async () => {
-      if (event) {
-        try {
-          const key = `useCourseHandicap_${event.id}`;
-          const value = await AsyncStorage.getItem(key);
-          if (value !== null) {
-            const boolValue = value === 'true';
-            setUseCourseHandicap(prev => {
-              if (prev !== boolValue) {
-                console.log('[groupings] 🔄 Course handicap setting changed:', boolValue);
-                console.log('[groupings] 📊 Current event slope ratings:', {
-                  day1SlopeRating: event?.day1SlopeRating,
-                  day2SlopeRating: event?.day2SlopeRating,
-                  day3SlopeRating: event?.day3SlopeRating,
-                  activeDay,
-                  eventId: event?.id,
-                  eventName: event?.name,
-                });
-                return boolValue;
-              }
-              return prev;
-            });
+    if (eventData && eventData.useCourseHandicap !== undefined) {
+      const shouldUseCourseHandicap = eventData.useCourseHandicap === true;
+      setUseCourseHandicap(prev => {
+        if (prev !== shouldUseCourseHandicap) {
+          console.log('[groupings] 🔄 Course handicap setting changed via realtime:', shouldUseCourseHandicap);
+          console.log('[groupings] 📊 Current event slope ratings:', {
+            day1SlopeRating: eventData?.day1SlopeRating,
+            day2SlopeRating: eventData?.day2SlopeRating,
+            day3SlopeRating: eventData?.day3SlopeRating,
+            activeDay,
+            eventId: eventData?.id,
+            eventName: eventData?.name,
+          });
+          
+          if (isInitialized) {
+            console.log('[groupings] 🔄 Triggering immediate UI refresh for handicap recalculation');
+            triggerGroupRefresh();
           }
-        } catch (error) {
-          console.error('[groupings] Error loading course handicap setting:', error);
+          
+          return shouldUseCourseHandicap;
         }
-      }
-    };
-    loadCourseHandicapSetting();
-    
-    const interval = setInterval(loadCourseHandicapSetting, 2000);
-    return () => clearInterval(interval);
-  }, [event, activeDay]);
+        return prev;
+      });
+    }
+  }, [eventData, activeDay, isInitialized, triggerGroupRefresh]);
 
   useFocusEffect(
     useCallback(() => {
@@ -265,7 +258,7 @@ export default function GroupingsScreen() {
           triggerGroupRefresh();
         }
       }
-    }, [id, event, isInitialized, refetchGroupings, refetchScores, refetchRegistrations])
+    }, [id, event, isInitialized, refetchGroupings, refetchScores, refetchRegistrations, triggerGroupRefresh])
   );
 
   const enrichSlotsWithScores = useCallback((slots: (Member | null)[]) => {
