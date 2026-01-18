@@ -2344,7 +2344,6 @@ export default function EventRegistrationScreen() {
             style={[
               styles.statBox,
               membershipFilter === 'active' && styles.statBoxActive,
-              { backgroundColor: '#2E7D32' },
             ]}
             onPress={() =>
               setMembershipFilter(membershipFilter === 'active' ? 'all' : 'active')
@@ -2359,7 +2358,6 @@ export default function EventRegistrationScreen() {
             style={[
               styles.statBox,
               membershipFilter === 'in-active' && styles.statBoxActive,
-              { backgroundColor: '#C62828' },
             ]}
             onPress={() =>
               setMembershipFilter(membershipFilter === 'in-active' ? 'all' : 'in-active')
@@ -3647,7 +3645,7 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#800020',
     paddingVertical: 7,
     paddingHorizontal: 6,
     borderRadius: 6,
@@ -3660,14 +3658,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
   },
   statBoxActive: {
-    backgroundColor: '#1e40af',
+    backgroundColor: '#4A0010',
     elevation: 4,
     shadowOpacity: 0.15,
   },
   statLabel: {
     fontSize: 8,
     fontWeight: '600',
-    color: '#fff',
+    color: '#FFD700',
     marginBottom: 1,
     opacity: 0.9,
     textAlign: 'center',
@@ -3675,10 +3673,10 @@ const styles = StyleSheet.create({
   statCount: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FFD700',
   },
   statCountActive: {
-    color: '#fff',
+    color: '#FFD700',
   },
   playersContainer: {
     padding: 16,
