@@ -466,23 +466,31 @@ export default function EventRegistrationScreen() {
     loadCourseHandicapSetting();
   }, [loadCourseHandicapSetting]);
 
+  // Sync useCourseHandicap directly from query cache for instant updates
   useEffect(() => {
-    if (event?.useCourseHandicap !== undefined) {
-      console.log('[registration] 📡 Event updated, syncing course handicap setting:', event.useCourseHandicap);
-      setUseCourseHandicap(event.useCourseHandicap);
+    const queryData = eventQuery.data;
+    if (queryData?.useCourseHandicap !== undefined) {
+      console.log('[registration] 📡 Query data updated, syncing course handicap setting:', queryData.useCourseHandicap);
+      setUseCourseHandicap(queryData.useCourseHandicap);
     }
-  }, [event?.useCourseHandicap]);
+  }, [eventQuery.data?.useCourseHandicap]);
 
-  // Poll for course handicap changes every 500ms to detect toggle changes from footer
+  // Subscribe to query cache changes for immediate toggle sync
   useEffect(() => {
     if (!eventId) return;
     
-    const intervalId = setInterval(() => {
-      loadCourseHandicapSetting();
-    }, 500);
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (event?.query?.queryKey?.[0] === 'events' && event?.query?.queryKey?.[1] === eventId) {
+        const data = event?.query?.state?.data as Event | undefined;
+        if (data?.useCourseHandicap !== undefined) {
+          console.log('[registration] 🔄 Query cache changed, updating useCourseHandicap:', data.useCourseHandicap);
+          setUseCourseHandicap(data.useCourseHandicap);
+        }
+      }
+    });
     
-    return () => clearInterval(intervalId);
-  }, [eventId, loadCourseHandicapSetting]);
+    return () => unsubscribe();
+  }, [eventId, queryClient]);
 
   const autoRegisterProcessedRef = React.useRef(false);
 

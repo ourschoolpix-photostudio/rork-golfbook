@@ -222,6 +222,23 @@ export default function ScoringScreen() {
     console.log('[scoring] 🎯 useCourseHandicap value:', useCourseHandicap);
   }, [useCourseHandicap]);
 
+  // Subscribe to query cache changes for immediate toggle sync
+  useEffect(() => {
+    if (!eventId) return;
+    
+    const unsubscribe = queryClient.getQueryCache().subscribe((cacheEvent) => {
+      if (cacheEvent?.query?.queryKey?.[0] === 'events' && cacheEvent?.query?.queryKey?.[1] === eventId) {
+        const data = cacheEvent?.query?.state?.data as Event | undefined;
+        if (data?.useCourseHandicap !== undefined && data.useCourseHandicap !== useCourseHandicapRef.current) {
+          console.log('[scoring] 🔄 Query cache changed, updating useCourseHandicap:', data.useCourseHandicap);
+          setUseCourseHandicap(data.useCourseHandicap);
+        }
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [eventId, queryClient]);
+
   const loadMyGroup = useCallback(async (golfEvent: Event, userId: string, dayNumber: number, groupings: any[], members: any[], registrations: any[]) => {
     try {
       if (groupingsLoading || membersLoading || registrationsLoading) {
