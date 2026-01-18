@@ -1239,7 +1239,7 @@ const styles = StyleSheet.create({
   saveGroupingsBtnText: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: '#333',
+    color: '#fff',
   },
   contentWrapper: {
     flex: 1,
@@ -1430,6 +1430,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 0,
     paddingBottom: 8,
+    backgroundColor: '#9E9E9E',
   },
   switchCardContainer: {
     backgroundColor: '#E0E0E0',
