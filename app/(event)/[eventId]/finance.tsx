@@ -2,12 +2,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { canViewFinance, canAddExpensesGains } from '@/utils/rolePermissions';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Plus, X } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import { EventScreenHeader } from '@/components/EventScreenHeader';
 import { EventFooter } from '@/components/EventFooter';
 import { useState, useMemo, useCallback } from 'react';
 import { useEvents } from '@/contexts/EventsContext';
 import { FinancialRecord } from '@/types';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
 
 type ExpenseCategory = 'food' | 'drink' | 'venue' | 'trophy' | 'custom';
@@ -17,8 +18,6 @@ export default function FinanceScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const { currentUser } = useAuth();
   const { addFinancial } = useEvents();
-  
-  const queryClient = useQueryClient();
   
   const { data: event, refetch: refetchEvent } = useQuery({
     queryKey: ['events', eventId],
@@ -54,8 +53,8 @@ export default function FinanceScreen() {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
 
-  const eventFinancials = financials || [];
-  const eventRegistrations = registrations || [];
+  const eventFinancials = useMemo(() => financials || [], [financials]);
+  const eventRegistrations = useMemo(() => registrations || [], [registrations]);
 
   const entryFeeTotal = useMemo(() => {
     const entryFee = Number(event?.entryFee) || 0;
@@ -161,9 +160,7 @@ export default function FinanceScreen() {
     return (
       <>
         <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>FINANCE</Text>
-          </View>
+          <EventScreenHeader title="FINANCE" />
           <View style={styles.noAccessContainer}>
             <Text style={styles.noAccessText}>You don&apos;t have permission to view this page</Text>
           </View>
@@ -176,23 +173,7 @@ export default function FinanceScreen() {
   return (
     <>
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>FINANCE</Text>
-        </View>
-
-        {event && event.photoUrl && (
-          <View style={styles.eventPhotoContainer}>
-            <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
-            <Text style={styles.eventNameOverlay}>{event.name}</Text>
-            <View style={styles.bottomInfoOverlay}>
-              <Text style={styles.eventLocationOverlay}>{event.location}</Text>
-              <Text style={styles.eventDateOverlay}>
-                {event.date}
-                {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
-              </Text>
-            </View>
-          </View>
-        )}
+        <EventScreenHeader title="FINANCE" event={event as any} />
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           <View style={styles.mainCard}>
@@ -714,49 +695,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#6b7280',
   },
-  eventPhotoContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 100,
-  },
-  eventPhoto: {
-    width: '100%',
-    height: 100,
-    resizeMode: 'cover',
-  },
-  eventNameOverlay: {
-    position: 'absolute',
-    top: 8,
-    left: 0,
-    right: 0,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  bottomInfoOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: 'center',
-    gap: 2,
-  },
-  eventLocationOverlay: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  eventDateOverlay: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
+  
 });

@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  Image,
   Alert,
   Modal,
   TextInput,
@@ -18,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearScoresForEvent } from '@/utils/scorePeristence';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { RefreshCw, FileText } from 'lucide-react-native';
+import { EventScreenHeader } from '@/components/EventScreenHeader';
 import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
 import { calculateTournamentFlight, getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
@@ -877,9 +876,7 @@ export default function GroupingsScreen() {
   if (isLoadingData) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.titleText}>GROUPINGS</Text>
-        </View>
+        <EventScreenHeader title="GROUPINGS" />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16, color: '#666' }}>Loading...</Text>
         </View>
@@ -890,9 +887,7 @@ export default function GroupingsScreen() {
   if (!event) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.titleText}>GROUPINGS</Text>
-        </View>
+        <EventScreenHeader title="GROUPINGS" />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16, color: '#666' }}>Event not found</Text>
         </View>
@@ -903,51 +898,23 @@ export default function GroupingsScreen() {
   return (
     <>
       <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerButtonsRow}>
-          <TouchableOpacity 
-            onPress={handleRefresh} 
-            style={styles.headerActionButton}
-            activeOpacity={0.7}
-          >
-            <RefreshCw 
-              size={16} 
-              color="#333" 
-            />
-            <Text style={styles.headerActionButtonText}>Refresh</Text>
-          </TouchableOpacity>
-          {canManageGroupings(currentMember) && (
-            <TouchableOpacity 
-              onPress={handleGeneratePdf} 
-              style={styles.headerActionButton}
-              activeOpacity={0.7}
-              disabled={isGeneratingPdf}
-            >
-              <FileText 
-                size={16} 
-                color="#333" 
-                style={isGeneratingPdf ? styles.refreshing : undefined}
-              />
-              <Text style={styles.headerActionButtonText}>PDF</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <Text style={styles.titleText}>GROUPINGS</Text>
-      </View>
-
-      {event && event.photoUrl && (
-        <View style={styles.eventPhotoContainer}>
-          <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
-          <Text style={styles.eventNameOverlay}>{event.name}</Text>
-          <View style={styles.bottomInfoOverlay}>
-            <Text style={styles.eventLocationOverlay}>{event.location}</Text>
-            <Text style={styles.eventDateOverlay}>
-              {event.date}
-              {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
-            </Text>
-          </View>
-        </View>
-      )}
+      <EventScreenHeader
+        title="GROUPINGS"
+        event={event}
+        actions={[
+          {
+            icon: 'refresh',
+            label: 'Refresh',
+            onPress: handleRefresh,
+          },
+          ...(canManageGroupings(currentMember) ? [{
+            icon: 'pdf' as const,
+            label: 'PDF',
+            onPress: handleGeneratePdf,
+            disabled: isGeneratingPdf,
+          }] : []),
+        ]}
+      />
 
       <DaySelector
         numberOfDays={event.numberOfDays ?? 1}
@@ -1197,50 +1164,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: '#1B5E20',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 6.75,
-    gap: 10,
-  },
-  titleText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: '#fff',
-    letterSpacing: 0.5,
-  },
-  headerButtonsRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 8,
-  },
-  headerActionButton: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: '#FFD54F',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 6,
-  },
-  headerActionButtonText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#333',
-  },
-  refreshing: {
-    opacity: 0.5,
-  },
-  backBtn: {
-    position: 'absolute',
-    left: 16,
-  },
+  
   unifiedButtonsContainer: {
     backgroundColor: '#9E9E9E',
     borderBottomWidth: 1,
@@ -1523,51 +1447,7 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#333',
   },
-  eventPhotoContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 100,
-  },
-  eventPhoto: {
-    width: '100%',
-    height: 100,
-    resizeMode: 'cover',
-  },
-  eventNameOverlay: {
-    position: 'absolute',
-    top: 8,
-    left: 0,
-    right: 0,
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: '#fff',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  bottomInfoOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: 'center',
-    gap: 2,
-  },
-  eventLocationOverlay: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#fff',
-  },
-  eventDateOverlay: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#fff',
-  },
+  
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',

@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
-import { Award, RefreshCw } from 'lucide-react-native';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Award } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { EventScreenHeader } from '@/components/EventScreenHeader';
 import { Alert } from '@/utils/alertPolyfill';
 import { EventFooter } from '@/components/EventFooter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -466,38 +467,18 @@ export default function LeaderboardScreen() {
   return (
     <>
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerButtonsRow}>
-            <TouchableOpacity 
-              onPress={handleRefresh} 
-              style={styles.headerActionButton}
-              disabled={isRefetching}
-              activeOpacity={0.7}
-            >
-              <RefreshCw 
-                size={16} 
-                color="#333" 
-                style={isRefetching ? styles.refreshing : undefined}
-              />
-              <Text style={styles.headerActionButtonText}>Refresh</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.titleText}>TOURNAMENT LEADERBOARD</Text>
-        </View>
-
-        {eventQuery.data?.photoUrl && (
-          <View style={styles.eventPhotoContainer}>
-            <Image source={{ uri: eventQuery.data.photoUrl }} style={styles.eventPhoto} />
-            <Text style={styles.eventNameOverlay}>{eventQuery.data.name}</Text>
-            <View style={styles.bottomInfoOverlay}>
-              <Text style={styles.eventLocationOverlay}>{eventQuery.data.location}</Text>
-              <Text style={styles.eventDateOverlay}>
-                {eventQuery.data.date}
-                {eventQuery.data.endDate && eventQuery.data.endDate !== eventQuery.data.date ? ` - ${eventQuery.data.endDate}` : ''}
-              </Text>
-            </View>
-          </View>
-        )}
+        <EventScreenHeader
+          title="TOURNAMENT LEADERBOARD"
+          event={eventQuery.data as any}
+          actions={[
+            {
+              icon: 'refresh',
+              label: 'Refresh',
+              onPress: handleRefresh,
+              disabled: isRefetching,
+            },
+          ]}
+        />
 
         <View style={styles.tabSelector}>
           <TouchableOpacity
