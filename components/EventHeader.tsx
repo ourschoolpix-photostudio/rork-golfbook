@@ -56,7 +56,7 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
       </TouchableOpacity>
 
       {event.entryFee && (
-        <View style={styles.entryFeeBox}>
+        <View style={[styles.entryFeeBox, { opacity: 1 }]}>
           <Text style={styles.entryFeeText}>${event.entryFee}</Text>
         </View>
       )}
