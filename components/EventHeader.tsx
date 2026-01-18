@@ -73,7 +73,7 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
 const styles = StyleSheet.create({
   bellButton: {
     position: 'absolute' as const,
-    top: 8,
+    top: 38,
     right: 16,
     zIndex: 10,
   },
