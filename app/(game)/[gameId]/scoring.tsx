@@ -16,6 +16,7 @@ import { PersonalGamePlayer } from '@/types';
 import { supabaseService } from '@/utils/supabaseService';
 import * as WolfHelper from '@/utils/wolfHelper';
 import * as NinersHelper from '@/utils/ninersHelper';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function GameScoringScreen() {
   const router = useRouter();
@@ -39,6 +40,38 @@ export default function GameScoringScreen() {
       }
     };
     loadGame();
+
+    const channel = supabase
+      .channel(`game-${gameId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'personal_games',
+          filter: `id=eq.${gameId}`,
+        },
+        async (payload) => {
+          console.log('[GameScoring] Game updated via realtime:', payload);
+          if (currentUser?.id) {
+            try {
+              const games = await supabaseService.games.getAll(currentUser.id);
+              const foundGame = games.find(g => g.id === gameId);
+              if (foundGame) {
+                setGame(foundGame);
+                console.log('[GameScoring] Game reloaded from realtime update');
+              }
+            } catch (error) {
+              console.error('[GameScoring] Error reloading game after realtime update:', error);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [currentUser?.id, gameId]);
   const [currentHole, setCurrentHole] = useState<number>(1);
   const [holeScores, setHoleScores] = useState<{ [playerIndex: number]: { [hole: number]: number } }>({});
