@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { RefreshCw, FileText } from 'lucide-react-native';
+import { EventHeader } from '@/components/EventHeader';
 import { Event } from '@/types';
 
 interface HeaderAction {
@@ -76,7 +77,7 @@ export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
               <Text style={styles.viewDetailsButtonText}>View Details</Text>
             </TouchableOpacity>
           )}
-          {/* <EventHeader event={event} /> */}
+          <EventHeader event={event} />
           <Text style={styles.eventNameOverlay}>{event.name}</Text>
           <View style={styles.bottomInfoOverlay}>
             <Text style={styles.eventLocationOverlay}>{event.location}</Text>
