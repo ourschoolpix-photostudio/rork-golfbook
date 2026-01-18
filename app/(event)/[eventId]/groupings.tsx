@@ -1251,7 +1251,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 8,
+    paddingBottom: 0,
     gap: 8,
   },
   filterBtn: {
@@ -1434,7 +1434,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   unassignAllBtnContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 0,
     paddingBottom: 8,
   },
