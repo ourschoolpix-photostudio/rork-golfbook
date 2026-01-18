@@ -3640,7 +3640,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 12,
-    paddingVertical: 2,
+    paddingTop: 2,
+    paddingBottom: 1,
     gap: 6,
   },
   statBox: {
