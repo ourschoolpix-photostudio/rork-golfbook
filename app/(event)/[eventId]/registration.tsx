@@ -3838,7 +3838,7 @@ const styles = StyleSheet.create({
     color: '#FF9500',
   },
   flightSeparator: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#808080',
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginVertical: 12,
