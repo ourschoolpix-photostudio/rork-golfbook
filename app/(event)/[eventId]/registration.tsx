@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  Image,
   TextInput,
   TouchableWithoutFeedback,
   Keyboard,
@@ -24,7 +23,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RefreshCw } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseService } from '@/utils/supabaseService';
@@ -46,6 +44,7 @@ import { EventDetailsModal } from '@/components/EventDetailsModal';
 import { EventStatus } from '@/components/EventStatusButton';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import { EventFooter } from '@/components/EventFooter';
+import { EventScreenHeader } from '@/components/EventScreenHeader';
 import { AlertsModal } from '@/components/AlertsModal';
 import { useAlerts } from '@/contexts/AlertsContext';
 import { useFocusEffect } from 'expo-router';
@@ -2144,6 +2143,45 @@ export default function EventRegistrationScreen() {
     );
   }
 
+  const headerActions = [];
+  
+  if (event && currentUser?.isAdmin) {
+    headerActions.push({
+      icon: 'custom' as const,
+      label: event.registrationOpen ? 'Close' : 'Open',
+      onPress: async () => {
+        const newValue = !event.registrationOpen;
+        await updateEventMutation.mutateAsync({
+          eventId: event.id,
+          updates: { registrationOpen: newValue },
+        });
+        setEvent({ ...event, registrationOpen: newValue });
+      },
+      customIcon: (
+        <Ionicons 
+          name={event.registrationOpen ? "lock-open" : "lock-closed"} 
+          size={16} 
+          color="#333" 
+        />
+      ),
+    });
+  }
+  
+  headerActions.push({
+    icon: 'refresh' as const,
+    label: 'Refresh',
+    onPress: handleManualRefresh,
+    disabled: isRefreshing,
+  });
+  
+  if (currentUser?.isAdmin) {
+    headerActions.push({
+      icon: 'pdf' as const,
+      label: 'PDF',
+      onPress: () => setPdfOptionsModalVisible(true),
+    });
+  }
+
   return (
     <>
       <SafeAreaView style={styles.container}>
@@ -2155,58 +2193,13 @@ export default function EventRegistrationScreen() {
         }}
         eventId={eventId as string}
       />
-      <View style={styles.header}>
-        <View style={styles.headerButtonsRow}>
-          {event && currentUser?.isAdmin && (
-            <TouchableOpacity
-              style={[
-                styles.headerActionButton,
-                event.registrationOpen ? styles.headerActionButtonOpen : styles.headerActionButtonClosed,
-              ]}
-              onPress={async () => {
-                const newValue = !event.registrationOpen;
-                await updateEventMutation.mutateAsync({
-                  eventId: event.id,
-                  updates: { registrationOpen: newValue },
-                });
-                setEvent({ ...event, registrationOpen: newValue });
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons 
-                name={event.registrationOpen ? "lock-open" : "lock-closed"} 
-                size={16} 
-                color="#333" 
-              />
-              <Text style={styles.headerActionButtonText}>{event.registrationOpen ? 'Close' : 'Open'}</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity 
-            onPress={handleManualRefresh} 
-            style={styles.headerActionButton}
-            disabled={isRefreshing}
-            activeOpacity={0.7}
-          >
-            <RefreshCw 
-              size={16} 
-              color="#333" 
-              style={isRefreshing ? styles.refreshing : undefined}
-            />
-            <Text style={styles.headerActionButtonText}>Refresh</Text>
-          </TouchableOpacity>
-          {currentUser?.isAdmin && (
-            <TouchableOpacity
-              style={styles.headerActionButton}
-              onPress={() => setPdfOptionsModalVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="document-text-outline" size={16} color="#333" />
-              <Text style={styles.headerActionButtonText}>PDF</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <Text style={styles.headerTitle}>REGISTRATION</Text>
-      </View>
+      
+      <EventScreenHeader
+        title="REGISTRATION"
+        event={event}
+        actions={headerActions}
+        showEventPhoto={true}
+      />
 
       {event && !event.registrationOpen && (
         <View style={styles.registrationClosedBanner}>
@@ -2229,21 +2222,12 @@ export default function EventRegistrationScreen() {
 
       {event && event.photoUrl && (
         <View style={styles.eventPhotoContainer}>
-          <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
-          <Text style={styles.eventNameOverlay}>{event.name}</Text>
           <TouchableOpacity 
             style={styles.viewDetailsButton}
             onPress={() => setEventDetailsModalVisible(true)}
           >
             <Text style={styles.viewDetailsButtonText}>View Details</Text>
           </TouchableOpacity>
-          <View style={styles.bottomInfoOverlay}>
-            <Text style={styles.eventLocationOverlay}>{event.location}</Text>
-            <Text style={styles.eventDateOverlay}>
-              {formatDateForDisplay(event.date)}
-              {event.endDate && event.endDate !== event.date ? `-${formatDateForDisplay(event.endDate)}` : ''}
-            </Text>
-          </View>
           <View style={styles.entryFeeBadge}>
             <Text style={styles.entryFeeLabel}>Entry Fee</Text>
             <Text style={styles.entryFeeAmount}>${event.entryFee}</Text>
