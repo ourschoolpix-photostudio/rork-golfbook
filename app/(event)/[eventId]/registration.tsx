@@ -2380,7 +2380,7 @@ export default function EventRegistrationScreen() {
             <Text style={styles.buttonInRowText}>Add Member</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.addButtonInRow, { backgroundColor: '#9C27B0' }]}
+            style={styles.addButtonInRow}
             onPress={() => setAddCustomGuestModalVisible(true)}
           >
             <Text style={styles.buttonInRowText}>Add Guest</Text>
@@ -3457,7 +3457,7 @@ const styles = StyleSheet.create({
   },
   addButtonInRow: {
     flex: 1,
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#800020',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -3465,7 +3465,7 @@ const styles = StyleSheet.create({
   },
   removeButtonInRow: {
     flex: 1,
-    backgroundColor: '#EF4444',
+    backgroundColor: '#800020',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -3474,7 +3474,7 @@ const styles = StyleSheet.create({
   buttonInRowText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: '#FFD700',
   },
   eventStatusButtonWrapper: {
     flex: 1,
