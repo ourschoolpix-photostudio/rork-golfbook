@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Bell } from 'lucide-react-native';
 import { Event } from '@/types';
@@ -10,24 +10,8 @@ interface EventHeaderProps {
 }
 
 export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
-  const { getAlertsForEvent, getCriticalUndismissedAlerts } = useAlerts();
+  const { getAlertsForEvent } = useAlerts();
   const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
-  const [criticalAlertShown, setCriticalAlertShown] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!event) return;
-
-    const criticalAlerts = getCriticalUndismissedAlerts();
-    const eventCriticalAlerts = criticalAlerts.filter(alert => 
-      alert.type === 'organizational' || alert.eventId === event.id
-    );
-
-    if (eventCriticalAlerts.length > 0 && !criticalAlertShown) {
-      console.log('[EventHeader] Critical alert detected, showing modal');
-      setAlertsModalVisible(true);
-      setCriticalAlertShown(true);
-    }
-  }, [event, getCriticalUndismissedAlerts, criticalAlertShown]);
 
   if (!event || !event.entryFee || !event.photoUrl) {
     return null;
@@ -59,10 +43,7 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
 
       <AlertsModal
         visible={alertsModalVisible}
-        onClose={() => {
-          setAlertsModalVisible(false);
-          setCriticalAlertShown(false);
-        }}
+        onClose={() => setAlertsModalVisible(false)}
         eventId={event.id}
       />
     </>
