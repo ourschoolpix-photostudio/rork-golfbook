@@ -989,27 +989,29 @@ export default function GroupingsScreen() {
             )}
           </View>
 
-          {checkedPlayers.length === 2 && (
-            <View style={styles.switchContainer}>
-              <TouchableOpacity
-                style={styles.switchBtn}
-                onPress={handleSwitchCheckedPlayers}
-              >
-                <Text style={styles.switchBtnText}>SWITCH</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      )}
+          <View style={styles.switchSaveContainer}>
+            {checkedPlayers.length === 2 && !hasGroupChanges && (
+              <View style={styles.switchCardContainer}>
+                <TouchableOpacity
+                  style={styles.switchBtn}
+                  onPress={handleSwitchCheckedPlayers}
+                >
+                  <Text style={styles.switchBtnText}>SWITCH</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
-      {hasGroupChanges && (
-        <View style={styles.saveGroupingsContainer}>
-          <TouchableOpacity
-            style={styles.saveGroupingsBtn}
-            onPress={handleSave}
-          >
-            <Text style={styles.saveGroupingsBtnText}>SAVE GROUPINGS</Text>
-          </TouchableOpacity>
+            {hasGroupChanges && (
+              <View style={styles.saveCardContainer}>
+                <TouchableOpacity
+                  style={styles.saveGroupingsBtn}
+                  onPress={handleSave}
+                >
+                  <Text style={styles.saveGroupingsBtnText}>SAVE GROUPINGS</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
       )}
 
@@ -1225,11 +1227,6 @@ const styles = StyleSheet.create({
   groupContainerSelected: {
     backgroundColor: '#FFE0B2',
   },
-  saveGroupingsContainer: {
-    paddingHorizontal: 12,
-    paddingTop: 4,
-    paddingBottom: 8,
-  },
   saveGroupingsBtn: {
     paddingVertical: 10.5,
     borderRadius: 8,
@@ -1429,10 +1426,20 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#fff',
   },
-  switchContainer: {
-    paddingHorizontal: 16,
+  switchSaveContainer: {
+    paddingHorizontal: 12,
     paddingTop: 0,
     paddingBottom: 8,
+  },
+  switchCardContainer: {
+    backgroundColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 8,
+  },
+  saveCardContainer: {
+    backgroundColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 8,
   },
   switchBtn: {
     paddingVertical: 10.5,
