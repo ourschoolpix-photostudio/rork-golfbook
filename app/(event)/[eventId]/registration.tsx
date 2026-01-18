@@ -4028,24 +4028,24 @@ const styles = StyleSheet.create({
   sortButton: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#FFF9E6',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#90CAF9',
+    borderColor: '#E0E0E0',
   },
   sortButtonActive: {
-    backgroundColor: '#1976D2',
-    borderColor: '#1976D2',
+    backgroundColor: '#FFD700',
+    borderColor: '#800020',
   },
   sortButtonText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#1976D2',
+    color: '#800020',
   },
   sortButtonTextActive: {
-    color: '#fff',
+    color: '#800020',
   },
   emptyText: {
     fontSize: 13,
