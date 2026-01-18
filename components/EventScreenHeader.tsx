@@ -77,11 +77,7 @@ export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
               <Text style={styles.viewDetailsButtonText}>View Details</Text>
             </TouchableOpacity>
           )}
-          <EventHeader 
-            onBellPress={() => {}} 
-            eventId={event?.id} 
-            event={event}
-          />
+          <EventHeader event={event} />
           <Text style={styles.eventNameOverlay}>{event.name}</Text>
           <View style={styles.bottomInfoOverlay}>
             <Text style={styles.eventLocationOverlay}>{event.location}</Text>

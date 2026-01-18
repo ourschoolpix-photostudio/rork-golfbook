@@ -5,7 +5,6 @@ import { storageService } from '@/utils/storage';
 import { useState, useEffect, useCallback } from 'react';
 import { EventFooter } from '@/components/EventFooter';
 import { SyncStatusIndicator } from '@/components/SyncButton';
-import { EventHeader } from '@/components/EventHeader';
 import { AlertsModal } from '@/components/AlertsModal';
 import { useAlerts } from '@/contexts/AlertsContext';
 
@@ -53,10 +52,6 @@ export default function EventDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <EventHeader 
-        onBellPress={() => setAlertsModalVisible(true)} 
-        eventId={eventId as string}
-      />
       <AlertsModal
         visible={alertsModalVisible}
         onClose={() => {
