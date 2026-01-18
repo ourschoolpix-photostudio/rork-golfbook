@@ -24,7 +24,7 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
     }
   }, [event, criticalUndismissedAlerts.length, alertsModalVisible]);
 
-  if (!event || !event.entryFee || !event.photoUrl) {
+  if (!event) {
     return null;
   }
 
@@ -45,9 +45,11 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
         </View>
       </TouchableOpacity>
 
-      <View style={styles.entryFeeBox}>
-        <Text style={styles.entryFeeText}>${event.entryFee}</Text>
-      </View>
+      {event.entryFee && (
+        <View style={styles.entryFeeBox}>
+          <Text style={styles.entryFeeText}>${event.entryFee}</Text>
+        </View>
+      )}
 
       <AlertsModal
         visible={alertsModalVisible}
