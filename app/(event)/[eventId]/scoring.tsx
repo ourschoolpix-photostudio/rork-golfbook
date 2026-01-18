@@ -123,15 +123,12 @@ export default function ScoringScreen() {
     }
   }, []);
 
-  const [useCourseHandicapLocal, setUseCourseHandicapLocal] = useState<boolean>(false);
-
+  // Use eventData directly instead of local state for immediate updates
+  const useCourseHandicap = eventData?.useCourseHandicap === true;
+  
   useEffect(() => {
-    const newValue = eventData?.useCourseHandicap === true;
-    console.log('[scoring] 🎯 useCourseHandicap changed from eventData:', newValue);
-    setUseCourseHandicapLocal(newValue);
-  }, [eventData?.useCourseHandicap]);
-
-  const useCourseHandicap = useCourseHandicapLocal;
+    console.log('[scoring] 🎯 useCourseHandicap value:', useCourseHandicap);
+  }, [useCourseHandicap]);
 
   const loadMyGroup = useCallback(async (golfEvent: Event, userId: string, dayNumber: number, groupings: any[], members: any[], registrations: any[]) => {
     try {

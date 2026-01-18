@@ -82,7 +82,6 @@ export default function GroupingsScreen() {
   const [showUnassigned] = useState<boolean>(true);
   const [selectedUngroupedIds, setSelectedUngroupedIds] = useState<Set<string>>(new Set());
   const [labelOverride, setLabelOverride] = useState<LabelOverride>('none');
-  const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
 
   const [checkedPlayers, setCheckedPlayers] = useState<{ groupIdx: number; slotIdx: number; player: Member }[]>([]);
   const [checkedGroups, setCheckedGroups] = useState<Set<number>>(new Set());
@@ -114,6 +113,9 @@ export default function GroupingsScreen() {
     staleTime: 0,
     refetchOnMount: true,
   });
+  
+  // Use eventData directly instead of local state for immediate updates
+  const useCourseHandicap = eventData?.useCourseHandicap === true;
   
   const { data: eventGroupings = [], isLoading: groupingsLoading, refetch: refetchGroupings } = useQuery({
     queryKey: ['groupings', id],
@@ -220,32 +222,28 @@ export default function GroupingsScreen() {
     })));
   }, [event, allMembers, backendRegistrations]);
 
+  // Track previous value to detect changes and trigger refresh
+  const prevUseCourseHandicapRef = React.useRef<boolean | undefined>(undefined);
+  
   useEffect(() => {
-    if (eventData && eventData.useCourseHandicap !== undefined) {
-      const shouldUseCourseHandicap = eventData.useCourseHandicap === true;
-      setUseCourseHandicap(prev => {
-        if (prev !== shouldUseCourseHandicap) {
-          console.log('[groupings] 🔄 Course handicap setting changed via realtime:', shouldUseCourseHandicap);
-          console.log('[groupings] 📊 Current event slope ratings:', {
-            day1SlopeRating: eventData?.day1SlopeRating,
-            day2SlopeRating: eventData?.day2SlopeRating,
-            day3SlopeRating: eventData?.day3SlopeRating,
-            activeDay,
-            eventId: eventData?.id,
-            eventName: eventData?.name,
-          });
-          
-          if (isInitialized) {
-            console.log('[groupings] 🔄 Triggering immediate UI refresh for handicap recalculation');
-            triggerGroupRefresh();
-          }
-          
-          return shouldUseCourseHandicap;
-        }
-        return prev;
+    if (prevUseCourseHandicapRef.current !== undefined && prevUseCourseHandicapRef.current !== useCourseHandicap) {
+      console.log('[groupings] 🔄 Course handicap setting changed:', prevUseCourseHandicapRef.current, '->', useCourseHandicap);
+      console.log('[groupings] 📊 Current event slope ratings:', {
+        day1SlopeRating: eventData?.day1SlopeRating,
+        day2SlopeRating: eventData?.day2SlopeRating,
+        day3SlopeRating: eventData?.day3SlopeRating,
+        activeDay,
+        eventId: eventData?.id,
+        eventName: eventData?.name,
       });
+      
+      if (isInitialized) {
+        console.log('[groupings] 🔄 Triggering immediate UI refresh for handicap recalculation');
+        triggerGroupRefresh();
+      }
     }
-  }, [eventData, activeDay, isInitialized, triggerGroupRefresh]);
+    prevUseCourseHandicapRef.current = useCourseHandicap;
+  }, [useCourseHandicap, eventData, activeDay, isInitialized, triggerGroupRefresh]);
 
   useFocusEffect(
     useCallback(() => {
