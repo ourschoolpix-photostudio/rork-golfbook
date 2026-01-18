@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   },
   toggleButtonWrapper: {
     flex: 1,
-    minHeight: 36,
+    height: 36,
     borderWidth: 2,
     borderColor: '#FFD54F',
     borderRadius: 8,
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   },
   startButtonWrapper: {
     flex: 1,
-    minHeight: 36,
+    height: 36,
     borderWidth: 2,
     borderColor: '#FFD54F',
     borderRadius: 8,
