@@ -1250,7 +1250,8 @@ const styles = StyleSheet.create({
   filterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingTop: 8,
+    paddingBottom: 8,
     gap: 8,
   },
   filterBtn: {
@@ -1434,7 +1435,8 @@ const styles = StyleSheet.create({
   },
   unassignAllBtnContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 5,
+    paddingTop: 0,
+    paddingBottom: 8,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -1503,7 +1505,8 @@ const styles = StyleSheet.create({
   },
   switchContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 5,
+    paddingTop: 0,
+    paddingBottom: 8,
   },
   switchBtn: {
     paddingVertical: 10.5,
