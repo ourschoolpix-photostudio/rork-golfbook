@@ -1229,7 +1229,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 4,
     paddingBottom: 8,
-    backgroundColor: '#9E9E9E',
   },
   saveGroupingsBtn: {
     paddingVertical: 10.5,
