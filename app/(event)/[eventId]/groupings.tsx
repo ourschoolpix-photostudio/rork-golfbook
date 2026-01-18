@@ -92,6 +92,7 @@ export default function GroupingsScreen() {
   const [pinInput, setPinInput] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const [registrations, setRegistrations] = useState<Record<string, any>>({});
+  const [lastTapTime, setLastTapTime] = useState<{ teeTime: number; shotgun: number }>({ teeTime: 0, shotgun: 0 });
   
   const queryClient = useQueryClient();
   const { members: allMembers } = useAuth();
@@ -554,6 +555,22 @@ export default function GroupingsScreen() {
 
   const membersLoading = false;
   
+  const handleLabelOverrideToggle = (type: 'teeTime' | 'shotgun') => {
+    const now = Date.now();
+    const lastTap = lastTapTime[type];
+    const isDoubleTap = now - lastTap < 300;
+
+    if (isDoubleTap && labelOverride === type) {
+      console.log(`[groupings] Double-tap detected on ${type} - returning to normal sort`);
+      setLabelOverride('none');
+    } else {
+      console.log(`[groupings] Setting label override to ${type}`);
+      setLabelOverride(type);
+    }
+
+    setLastTapTime(prev => ({ ...prev, [type]: now }));
+  };
+
   const handleSortByNetScore = () => {
     if (ungroupedPlayers.length === 0) {
       console.log('[groupings] ⚠️ No unassigned players!');
@@ -955,7 +972,7 @@ export default function GroupingsScreen() {
           <View style={styles.filterContainer}>
             <TouchableOpacity
               style={[styles.filterBtn, labelOverride === 'teeTime' && styles.filterBtnActive]}
-              onPress={() => setLabelOverride('teeTime')}
+              onPress={() => handleLabelOverrideToggle('teeTime')}
             >
               <Text style={[styles.filterBtnText, labelOverride === 'teeTime' && styles.filterBtnTextActive]}>
                 TEE TIME
@@ -964,19 +981,10 @@ export default function GroupingsScreen() {
 
             <TouchableOpacity
               style={[styles.filterBtn, labelOverride === 'shotgun' && styles.filterBtnActive]}
-              onPress={() => setLabelOverride('shotgun')}
+              onPress={() => handleLabelOverrideToggle('shotgun')}
             >
               <Text style={[styles.filterBtnText, labelOverride === 'shotgun' && styles.filterBtnTextActive]}>
                 SHOTGUN
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.filterBtn, labelOverride === 'none' && styles.filterBtnActive]}
-              onPress={() => setLabelOverride('none')}
-            >
-              <Text style={[styles.filterBtnText, labelOverride === 'none' && styles.filterBtnTextActive]}>
-                NO OVERRIDE
               </Text>
             </TouchableOpacity>
 
