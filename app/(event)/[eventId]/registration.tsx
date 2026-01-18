@@ -3693,7 +3693,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#9E9E9E',
     borderRadius: 8,
     marginBottom: 8,
     borderWidth: 1,
