@@ -942,42 +942,88 @@ export default function GroupingsScreen() {
       )}
 
       {canManageGroupings(currentMember) && (
-        <View style={styles.filterContainer}>
-          <TouchableOpacity
-            style={[styles.filterBtn, labelOverride === 'teeTime' && styles.filterBtnActive]}
-            onPress={() => setLabelOverride('teeTime')}
-          >
-            <Text style={[styles.filterBtnText, labelOverride === 'teeTime' && styles.filterBtnTextActive]}>
-              TEE TIME
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.unifiedButtonsContainer}>
+          <View style={styles.filterContainer}>
+            <TouchableOpacity
+              style={[styles.filterBtn, labelOverride === 'teeTime' && styles.filterBtnActive]}
+              onPress={() => setLabelOverride('teeTime')}
+            >
+              <Text style={[styles.filterBtnText, labelOverride === 'teeTime' && styles.filterBtnTextActive]}>
+                TEE TIME
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.filterBtn, labelOverride === 'shotgun' && styles.filterBtnActive]}
-            onPress={() => setLabelOverride('shotgun')}
-          >
-            <Text style={[styles.filterBtnText, labelOverride === 'shotgun' && styles.filterBtnTextActive]}>
-              SHOTGUN
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterBtn, labelOverride === 'shotgun' && styles.filterBtnActive]}
+              onPress={() => setLabelOverride('shotgun')}
+            >
+              <Text style={[styles.filterBtnText, labelOverride === 'shotgun' && styles.filterBtnTextActive]}>
+                SHOTGUN
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.filterBtn, labelOverride === 'none' && styles.filterBtnActive]}
-            onPress={() => setLabelOverride('none')}
-          >
-            <Text style={[styles.filterBtnText, labelOverride === 'none' && styles.filterBtnTextActive]}>
-              NO OVERRIDE
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterBtn, labelOverride === 'none' && styles.filterBtnActive]}
+              onPress={() => setLabelOverride('none')}
+            >
+              <Text style={[styles.filterBtnText, labelOverride === 'none' && styles.filterBtnTextActive]}>
+                NO OVERRIDE
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.netScoreBtn}
-            onPress={handleSortByNetScore}
-          >
-            <Text style={styles.netScoreBtnText}>
-              NET SCORE
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.netScoreBtn}
+              onPress={handleSortByNetScore}
+            >
+              <Text style={styles.netScoreBtnText}>
+                NET SCORE
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.unassignAllBtnContainer}>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={styles.unassignAllBtnAdmin}
+                onPress={handleUnassignAll}
+              >
+                <Ionicons name="trash" size={16} color="#fff" />
+                <Text style={styles.unassignAllBtnText}>UNASSIGN</Text>
+              </TouchableOpacity>
+
+              {(currentMember?.isAdmin || user?.isAdmin) && (
+                <TouchableOpacity
+                  style={styles.resetScoresBtn}
+                  onPress={() => {
+                    setShowPinModal(true);
+                  }}
+                >
+                  <Ionicons name="refresh-circle" size={16} color="#fff" />
+                  <Text style={styles.resetScoresBtnText}>RESET</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {checkedGroups.size === 2 && (
+              <TouchableOpacity
+                style={styles.switchGroupsBtn}
+                onPress={handleSwitchGroups}
+              >
+                <Text style={styles.switchGroupsBtnText}>SWITCH</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {checkedPlayers.length === 2 && (
+            <View style={styles.switchContainer}>
+              <TouchableOpacity
+                style={styles.switchBtn}
+                onPress={handleSwitchCheckedPlayers}
+              >
+                <Text style={styles.switchBtnText}>SWITCH</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
@@ -989,52 +1035,6 @@ export default function GroupingsScreen() {
         onDoubleModeToggle={handleDoubleModeToggle}
         isAdmin={canManageGroupings(currentMember)}
       />
-
-      {canManageGroupings(currentMember) && (
-        <View style={styles.unassignAllBtnContainer}>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={styles.unassignAllBtnAdmin}
-              onPress={handleUnassignAll}
-            >
-              <Ionicons name="trash" size={16} color="#fff" />
-              <Text style={styles.unassignAllBtnText}>UNASSIGN</Text>
-            </TouchableOpacity>
-
-            {(currentMember?.isAdmin || user?.isAdmin) && (
-              <TouchableOpacity
-                style={styles.resetScoresBtn}
-                onPress={() => {
-                  setShowPinModal(true);
-                }}
-              >
-                <Ionicons name="refresh-circle" size={16} color="#fff" />
-                <Text style={styles.resetScoresBtnText}>RESET</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {checkedGroups.size === 2 && (
-            <TouchableOpacity
-              style={styles.switchGroupsBtn}
-              onPress={handleSwitchGroups}
-            >
-              <Text style={styles.switchGroupsBtnText}>SWITCH</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {checkedPlayers.length === 2 && (
-        <View style={styles.switchContainer}>
-          <TouchableOpacity
-            style={styles.switchBtn}
-            onPress={handleSwitchCheckedPlayers}
-          >
-            <Text style={styles.switchBtnText}>SWITCH</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {hasGroupChanges && (
         <View style={styles.saveGroupingsContainer}>
@@ -1242,14 +1242,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
   },
+  unifiedButtonsContainer: {
+    backgroundColor: '#9E9E9E',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
   filterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 12,
     paddingVertical: 5,
     gap: 8,
-    backgroundColor: '#9E9E9E',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   filterBtn: {
     flex: 1,
@@ -1433,9 +1435,6 @@ const styles = StyleSheet.create({
   unassignAllBtnContainer: {
     paddingHorizontal: 16,
     paddingVertical: 5,
-    backgroundColor: '#9E9E9E',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -1505,9 +1504,6 @@ const styles = StyleSheet.create({
   switchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 5,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   switchBtn: {
     paddingVertical: 10.5,
