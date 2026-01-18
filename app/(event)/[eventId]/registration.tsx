@@ -2224,177 +2224,179 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      {selectedPlayers.length > 0 && event?.type !== 'social' && (
-        <View style={styles.sortButtonsContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.sortButton,
-                    activeSort === 'all' && styles.sortButtonActive,
-                    { flex: 1 },
-                  ]}
-                  onPress={() => setActiveSort('all')}
-                >
-                  <Text
+      <View style={styles.allButtonsContainer}>
+        {selectedPlayers.length > 0 && event?.type !== 'social' && (
+          <View style={styles.sortButtonsContainer}>
+                  <TouchableOpacity
                     style={[
-                      styles.sortButtonText,
-                      activeSort === 'all' && styles.sortButtonTextActive,
+                      styles.sortButton,
+                      activeSort === 'all' && styles.sortButtonActive,
+                      { flex: 1 },
                     ]}
+                    onPress={() => setActiveSort('all')}
                   >
-                    All Flights
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.sortButtonText,
+                        activeSort === 'all' && styles.sortButtonTextActive,
+                      ]}
+                    >
+                      All Flights
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[
-                    styles.sortButton,
-                    activeSort === 'abc' && styles.sortButtonActive,
-                    { flex: 1 },
-                  ]}
-                  onPress={() => setActiveSort('abc')}
-                >
-                  <Text
+                  <TouchableOpacity
                     style={[
-                      styles.sortButtonText,
-                      activeSort === 'abc' && styles.sortButtonTextActive,
+                      styles.sortButton,
+                      activeSort === 'abc' && styles.sortButtonActive,
+                      { flex: 1 },
                     ]}
+                    onPress={() => setActiveSort('abc')}
                   >
-                    ABC
-                  </Text>
-                </TouchableOpacity>
-        </View>
-      )}
+                    <Text
+                      style={[
+                        styles.sortButtonText,
+                        activeSort === 'abc' && styles.sortButtonTextActive,
+                      ]}
+                    >
+                      ABC
+                    </Text>
+                  </TouchableOpacity>
+          </View>
+        )}
 
-      {canViewRegistration(currentUser) && (
-        <View style={styles.statsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.statBox,
-              paymentFilter === 'paid' && styles.statBoxActive,
-            ]}
-            onPress={() =>
-              setPaymentFilter(paymentFilter === 'paid' ? 'all' : 'paid')
-            }
-          >
-            <Text style={styles.statLabel}>Paid</Text>
-            <Text
-              style={[
-                styles.statCount,
-                paymentFilter === 'paid' && styles.statCountActive,
-              ]}
-            >
-              {event?.type === 'social' 
-                ? Object.values(registrations)
-                    .filter((reg) => reg.paymentStatus === 'paid' && !reg.isSponsor)
-                    .reduce((total, reg) => total + 1 + (reg.numberOfGuests || 0), 0)
-                : Object.values(registrations).filter(
-                    (reg) => reg.paymentStatus === 'paid' && !reg.isSponsor
-                  ).length}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.statBox,
-              paymentFilter === 'unpaid' && styles.statBoxActive,
-            ]}
-            onPress={() =>
-              setPaymentFilter(paymentFilter === 'unpaid' ? 'all' : 'unpaid')
-            }
-          >
-            <Text style={styles.statLabel}>Unpaid</Text>
-            <Text
-              style={[
-                styles.statCount,
-                paymentFilter === 'unpaid' && styles.statCountActive,
-              ]}
-            >
-              {event?.type === 'social' 
-                ? Object.values(registrations)
-                    .filter((reg) => reg.paymentStatus === 'unpaid' && !reg.isSponsor)
-                    .reduce((total, reg) => total + 1 + (reg.numberOfGuests || 0), 0)
-                : Object.values(registrations).filter(
-                    (reg) => reg.paymentStatus === 'unpaid' && !reg.isSponsor
-                  ).length}
-            </Text>
-          </TouchableOpacity>
-          {event?.type !== 'social' && (
-            <>
-              <TouchableOpacity
-                style={[
-                  styles.statBox,
-                  activeSort === 'A' && styles.statBoxActive,
-                ]}
-                onPress={() => setActiveSort('A')}
-              >
-                <Text style={styles.statLabel}>Flight A</Text>
-                <Text style={styles.statCount}>{getFlightCounts.A}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.statBox,
-                  activeSort === 'B' && styles.statBoxActive,
-                ]}
-                onPress={() => setActiveSort('B')}
-              >
-                <Text style={styles.statLabel}>Flight B</Text>
-                <Text style={styles.statCount}>{getFlightCounts.B}</Text>
-              </TouchableOpacity>
-            </>
-          )}
-          <TouchableOpacity
-            style={[
-              styles.statBox,
-              membershipFilter === 'active' && styles.statBoxActive,
-            ]}
-            onPress={() =>
-              setMembershipFilter(membershipFilter === 'active' ? 'all' : 'active')
-            }
-          >
-            <Text style={styles.statLabel}>Active</Text>
-            <Text style={styles.statCount}>
-              {selectedPlayers.filter((p) => p.membershipType === 'active').length}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.statBox,
-              membershipFilter === 'in-active' && styles.statBoxActive,
-            ]}
-            onPress={() =>
-              setMembershipFilter(membershipFilter === 'in-active' ? 'all' : 'in-active')
-            }
-          >
-            <Text style={styles.statLabel}>In-active</Text>
-            <Text style={styles.statCount}>
-              {selectedPlayers.filter((p) => p.membershipType === 'in-active').length}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {event && canAddPlayers(currentUser) && (
-        <View style={styles.statusButtonSection}>
-          <TouchableOpacity
-            style={styles.addButtonInRow}
-            onPress={() => setModalVisible(true)}
-          >
-            <Text style={styles.buttonInRowText}>Add Member</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.addButtonInRow}
-            onPress={() => setAddCustomGuestModalVisible(true)}
-          >
-            <Text style={styles.buttonInRowText}>Add Guest</Text>
-          </TouchableOpacity>
-          {canRemoveAllPlayers(currentUser) && (
+        {canViewRegistration(currentUser) && (
+          <View style={styles.statsContainer}>
             <TouchableOpacity
-              style={styles.removeButtonInRow}
-              onPress={handleRemoveAllPlayers}
+              style={[
+                styles.statBox,
+                paymentFilter === 'paid' && styles.statBoxActive,
+              ]}
+              onPress={() =>
+                setPaymentFilter(paymentFilter === 'paid' ? 'all' : 'paid')
+              }
             >
-              <Text style={styles.buttonInRowText}>Remove All</Text>
+              <Text style={styles.statLabel}>Paid</Text>
+              <Text
+                style={[
+                  styles.statCount,
+                  paymentFilter === 'paid' && styles.statCountActive,
+                ]}
+              >
+                {event?.type === 'social' 
+                  ? Object.values(registrations)
+                      .filter((reg) => reg.paymentStatus === 'paid' && !reg.isSponsor)
+                      .reduce((total, reg) => total + 1 + (reg.numberOfGuests || 0), 0)
+                  : Object.values(registrations).filter(
+                      (reg) => reg.paymentStatus === 'paid' && !reg.isSponsor
+                    ).length}
+              </Text>
             </TouchableOpacity>
-          )}
-        </View>
-      )}
+            <TouchableOpacity
+              style={[
+                styles.statBox,
+                paymentFilter === 'unpaid' && styles.statBoxActive,
+              ]}
+              onPress={() =>
+                setPaymentFilter(paymentFilter === 'unpaid' ? 'all' : 'unpaid')
+              }
+            >
+              <Text style={styles.statLabel}>Unpaid</Text>
+              <Text
+                style={[
+                  styles.statCount,
+                  paymentFilter === 'unpaid' && styles.statCountActive,
+                ]}
+              >
+                {event?.type === 'social' 
+                  ? Object.values(registrations)
+                      .filter((reg) => reg.paymentStatus === 'unpaid' && !reg.isSponsor)
+                      .reduce((total, reg) => total + 1 + (reg.numberOfGuests || 0), 0)
+                  : Object.values(registrations).filter(
+                      (reg) => reg.paymentStatus === 'unpaid' && !reg.isSponsor
+                    ).length}
+              </Text>
+            </TouchableOpacity>
+            {event?.type !== 'social' && (
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.statBox,
+                    activeSort === 'A' && styles.statBoxActive,
+                  ]}
+                  onPress={() => setActiveSort('A')}
+                >
+                  <Text style={styles.statLabel}>Flight A</Text>
+                  <Text style={styles.statCount}>{getFlightCounts.A}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.statBox,
+                    activeSort === 'B' && styles.statBoxActive,
+                  ]}
+                  onPress={() => setActiveSort('B')}
+                >
+                  <Text style={styles.statLabel}>Flight B</Text>
+                  <Text style={styles.statCount}>{getFlightCounts.B}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            <TouchableOpacity
+              style={[
+                styles.statBox,
+                membershipFilter === 'active' && styles.statBoxActive,
+              ]}
+              onPress={() =>
+                setMembershipFilter(membershipFilter === 'active' ? 'all' : 'active')
+              }
+            >
+              <Text style={styles.statLabel}>Active</Text>
+              <Text style={styles.statCount}>
+                {selectedPlayers.filter((p) => p.membershipType === 'active').length}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.statBox,
+                membershipFilter === 'in-active' && styles.statBoxActive,
+              ]}
+              onPress={() =>
+                setMembershipFilter(membershipFilter === 'in-active' ? 'all' : 'in-active')
+              }
+            >
+              <Text style={styles.statLabel}>In-active</Text>
+              <Text style={styles.statCount}>
+                {selectedPlayers.filter((p) => p.membershipType === 'in-active').length}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {event && canAddPlayers(currentUser) && (
+          <View style={styles.statusButtonSection}>
+            <TouchableOpacity
+              style={styles.addButtonInRow}
+              onPress={() => setModalVisible(true)}
+            >
+              <Text style={styles.buttonInRowText}>Add Member</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.addButtonInRow}
+              onPress={() => setAddCustomGuestModalVisible(true)}
+            >
+              <Text style={styles.buttonInRowText}>Add Guest</Text>
+            </TouchableOpacity>
+            {canRemoveAllPlayers(currentUser) && (
+              <TouchableOpacity
+                style={styles.removeButtonInRow}
+                onPress={handleRemoveAllPlayers}
+              >
+                <Text style={styles.buttonInRowText}>Remove All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </View>
 
       <View style={styles.playersTitleContainer}>
         <View style={styles.playersTitleRow}>
@@ -3450,7 +3452,6 @@ const styles = StyleSheet.create({
   statusButtonSection: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: '#808080',
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
@@ -3885,6 +3886,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+  allButtonsContainer: {
+    backgroundColor: '#808080',
+  },
   sortButtonsContainer: {
     flexDirection: 'row',
     gap: 8,
@@ -3892,7 +3896,6 @@ const styles = StyleSheet.create({
     paddingTop: 5,
     paddingBottom: 4,
     marginTop: -1,
-    backgroundColor: '#808080',
   },
   playersTitleContainer: {
     backgroundColor: '#fff',
