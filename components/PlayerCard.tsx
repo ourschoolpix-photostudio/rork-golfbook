@@ -202,6 +202,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     marginBottom: 12,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#666',
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 6,
