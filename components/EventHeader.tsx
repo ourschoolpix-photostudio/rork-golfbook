@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Bell } from 'lucide-react-native';
 import { Event } from '@/types';
 import { useAlerts } from '@/contexts/AlertsContext';
 import { AlertsModal } from '@/components/AlertsModal';
+import { soundService } from '@/utils/soundService';
 
 interface EventHeaderProps {
   event?: Event | null;
@@ -12,17 +13,26 @@ interface EventHeaderProps {
 export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
   const { getAlertsForEvent } = useAlerts();
   const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
+  const shownCriticalAlertIds = useRef<Set<string>>(new Set());
 
   const eventAlerts = event ? getAlertsForEvent(event.id) : [];
   const undismissedEventAlerts = eventAlerts.filter(a => !a.isDismissed);
   const criticalUndismissedAlerts = undismissedEventAlerts.filter(a => a.priority === 'critical');
 
   useEffect(() => {
-    if (event && criticalUndismissedAlerts.length > 0 && !alertsModalVisible) {
-      console.log('[EventHeader] Critical alert detected, auto-opening modal');
+    if (!event || criticalUndismissedAlerts.length === 0) return;
+
+    const newCriticalAlerts = criticalUndismissedAlerts.filter(
+      alert => !shownCriticalAlertIds.current.has(alert.id)
+    );
+
+    if (newCriticalAlerts.length > 0) {
+      console.log('[EventHeader] New critical alert detected, auto-opening modal');
+      newCriticalAlerts.forEach(alert => shownCriticalAlertIds.current.add(alert.id));
+      soundService.playEmergencySound();
       setAlertsModalVisible(true);
     }
-  }, [event, criticalUndismissedAlerts.length, alertsModalVisible]);
+  }, [event, criticalUndismissedAlerts]);
 
   if (!event) {
     return null;
