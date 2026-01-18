@@ -1465,13 +1465,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#FFA500',
+    backgroundColor: '#FFD54F',
+    borderWidth: 2,
+    borderColor: '#800020',
     marginTop: 8,
   },
   switchGroupsBtnText: {
     fontSize: 13,
     fontWeight: '700' as const,
-    color: '#fff',
+    color: '#333',
   },
   resetScoresBtn: {
     flex: 1,
@@ -1511,14 +1513,16 @@ const styles = StyleSheet.create({
   switchBtn: {
     paddingVertical: 10.5,
     borderRadius: 8,
-    backgroundColor: '#FF9800',
+    backgroundColor: '#FFD54F',
+    borderWidth: 2,
+    borderColor: '#800020',
     alignItems: 'center',
     justifyContent: 'center',
   },
   switchBtnText: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: '#fff',
+    color: '#333',
   },
   eventPhotoContainer: {
     position: 'relative',
