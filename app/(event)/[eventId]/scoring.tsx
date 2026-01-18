@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { Alert } from '@/utils/alertPolyfill';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { Star } from 'lucide-react-native';
 
@@ -11,9 +11,11 @@ import { TeeHoleIndicator } from '@/components/TeeHoleIndicator';
 import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
 import { supabaseService } from '@/utils/supabaseService';
+import { supabase } from '@/integrations/supabase/client';
 import { getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
-import { useRealtimeScores, useRealtimeGroupings, useRealtimeEvents } from '@/utils/useRealtimeSubscription';
+import { useRealtimeScores, useRealtimeGroupings } from '@/utils/useRealtimeSubscription';
 import { useOfflineMode } from '@/contexts/OfflineModeContext';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 export default function ScoringScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -31,6 +33,17 @@ export default function ScoringScreen() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isDayLocked, setIsDayLocked] = useState<boolean>(false);
   const [lastDayTap, setLastDayTap] = useState<{ day: number; time: number } | null>(null);
+  
+  // Local state for useCourseHandicap - updated instantly via realtime subscription (like AlertsContext pattern)
+  const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
+  const hasInitializedCourseHandicap = useRef(false);
+  const useCourseHandicapRef = useRef(useCourseHandicap);
+  const queryClient = useQueryClient();
+  
+  // Keep ref in sync with state for logging in realtime callback
+  useEffect(() => {
+    useCourseHandicapRef.current = useCourseHandicap;
+  }, [useCourseHandicap]);
 
   const { data: eventData, isLoading: eventLoading, error: eventError } = useQuery({
     queryKey: ['events', eventId],
@@ -74,7 +87,68 @@ export default function ScoringScreen() {
   
   useRealtimeScores(eventId || '', !!eventId);
   useRealtimeGroupings(eventId || '', !!eventId);
-  useRealtimeEvents(eventId || '', !!eventId);
+  
+  // Direct realtime subscription for event changes (AlertsContext pattern for instant updates)
+  useEffect(() => {
+    if (!eventId) return;
+
+    console.log('[scoring] 🔴 Setting up direct realtime subscription for event:', eventId);
+
+    let eventChannel: RealtimeChannel | null = null;
+
+    try {
+      eventChannel = supabase
+        .channel(`scoring-event-${eventId}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'events',
+            filter: `id=eq.${eventId}`,
+          },
+          async (payload) => {
+            try {
+              console.log('[scoring] 🎯 Event change detected via direct subscription:', payload.eventType);
+              
+              // Immediately fetch fresh event data and update local state (AlertsContext pattern)
+              const freshEvent = await supabaseService.events.get(eventId);
+              if (freshEvent) {
+                const newUseCourseHandicap = freshEvent.useCourseHandicap === true;
+                console.log('[scoring] ✅ Immediately updating useCourseHandicap from', useCourseHandicapRef.current, 'to', newUseCourseHandicap);
+                setUseCourseHandicap(newUseCourseHandicap);
+                setEvent(freshEvent as Event);
+                
+                // Also update the query cache for consistency
+                queryClient.setQueryData(['events', eventId], freshEvent);
+              }
+            } catch (error) {
+              console.error('[scoring] Error handling event change:', error);
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[scoring] ✅ Subscribed to event realtime channel');
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.log('[scoring] Event realtime not available - using query refresh');
+          }
+        });
+    } catch (error) {
+      console.log('[scoring] Error setting up event subscription:', error);
+    }
+
+    return () => {
+      try {
+        if (eventChannel) {
+          console.log('[scoring] 🔴 Unsubscribing from event channel');
+          supabase.removeChannel(eventChannel);
+        }
+      } catch {
+        // Silently handle cleanup errors
+      }
+    };
+  }, [eventId, queryClient]);
   
   const submitScoreMutation = useMutation({
     mutationFn: ({ eventId, memberId, day, holes, totalScore, submittedBy }: any) =>
@@ -123,8 +197,26 @@ export default function ScoringScreen() {
     }
   }, []);
 
-  // Use eventData directly instead of local state for immediate updates
-  const useCourseHandicap = eventData?.useCourseHandicap === true;
+  // Initialize useCourseHandicap from eventData when it first loads
+  useEffect(() => {
+    if (eventData && !hasInitializedCourseHandicap.current) {
+      const initialValue = eventData.useCourseHandicap === true;
+      console.log('[scoring] 🎯 Initializing useCourseHandicap from eventData:', initialValue);
+      setUseCourseHandicap(initialValue);
+      hasInitializedCourseHandicap.current = true;
+    }
+  }, [eventData]);
+  
+  // Also sync when eventData changes (for when returning to screen)
+  useEffect(() => {
+    if (eventData && hasInitializedCourseHandicap.current) {
+      const newValue = eventData.useCourseHandicap === true;
+      if (newValue !== useCourseHandicapRef.current) {
+        console.log('[scoring] 🔄 Syncing useCourseHandicap from eventData:', newValue);
+        setUseCourseHandicap(newValue);
+      }
+    }
+  }, [eventData]);
   
   useEffect(() => {
     console.log('[scoring] 🎯 useCourseHandicap value:', useCourseHandicap);
