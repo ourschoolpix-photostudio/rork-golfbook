@@ -2202,12 +2202,6 @@ export default function EventRegistrationScreen() {
         onViewDetails={() => setEventDetailsModalVisible(true)}
       />
 
-      {event && event.entryFee && event.photoUrl && (
-        <View style={styles.entryFeeBox}>
-          <Text style={styles.entryFeeText}>${event.entryFee}</Text>
-        </View>
-      )}
-
       {event && !event.registrationOpen && (
         <View style={styles.registrationClosedBanner}>
           <Ionicons name="information-circle" size={20} color="#C62828" />

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { RefreshCw, FileText } from 'lucide-react-native';
 import { Event } from '@/types';
+import { EventHeader } from '@/components/EventHeader';
 
 interface HeaderAction {
   icon: 'refresh' | 'pdf' | 'custom';
@@ -76,6 +77,11 @@ export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
               <Text style={styles.viewDetailsButtonText}>View Details</Text>
             </TouchableOpacity>
           )}
+          <EventHeader 
+            onBellPress={() => {}} 
+            eventId={event?.id} 
+            event={event}
+          />
           <Text style={styles.eventNameOverlay}>{event.name}</Text>
           <View style={styles.bottomInfoOverlay}>
             <Text style={styles.eventLocationOverlay}>{event.location}</Text>
