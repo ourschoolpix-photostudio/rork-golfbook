@@ -402,7 +402,7 @@ export function EventFooter({
 
 const styles = StyleSheet.create({
   footerContainer: {
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#5A0015',
   },
   topRow: {
     flexDirection: 'row',
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#5A0015',
     paddingBottom: 0,
   },
   tabItem: {
