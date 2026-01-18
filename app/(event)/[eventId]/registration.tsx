@@ -3458,7 +3458,7 @@ const styles = StyleSheet.create({
   addButtonInRow: {
     flex: 1,
     backgroundColor: '#800020',
-    paddingVertical: 12,
+    paddingVertical: 6,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -3466,7 +3466,7 @@ const styles = StyleSheet.create({
   removeButtonInRow: {
     flex: 1,
     backgroundColor: '#800020',
-    paddingVertical: 12,
+    paddingVertical: 6,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
