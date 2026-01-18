@@ -64,6 +64,7 @@ export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
       {showEventPhoto && event && event.photoUrl && (
         <View style={styles.eventPhotoContainer}>
           <Image source={{ uri: event.photoUrl }} style={styles.eventPhoto} />
+          <View style={styles.darkOverlay} />
           <Text style={styles.eventNameOverlay}>{event.name}</Text>
           <View style={styles.bottomInfoOverlay}>
             <Text style={styles.eventLocationOverlay}>{event.location}</Text>
@@ -129,6 +130,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 80,
     resizeMode: 'cover' as const,
+  },
+  darkOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   eventNameOverlay: {
     position: 'absolute' as const,
