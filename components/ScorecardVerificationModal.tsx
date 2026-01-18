@@ -10,9 +10,11 @@ import {
   ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, X, CheckCircle, AlertTriangle, XCircle } from 'lucide-react-native';
+import { Camera, X, CheckCircle, AlertTriangle, XCircle, ScanLine, ClipboardCheck } from 'lucide-react-native';
 import { generateObject } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
+
+type ScanMode = 'verify' | 'scanOnly';
 
 interface Player {
   id: string;
@@ -20,11 +22,18 @@ interface Player {
   scoreTotal: number;
 }
 
+interface ExtractedScore {
+  name: string;
+  holes: number[];
+  total: number;
+}
+
 interface ScorecardVerificationModalProps {
   visible: boolean;
   onClose: () => void;
   players: Player[];
   groupLabel: string;
+  onScoresExtracted?: (scores: ExtractedScore[]) => void;
 }
 
 const verificationSchema = z.object({
@@ -33,17 +42,31 @@ const verificationSchema = z.object({
   details: z.string().optional(),
 });
 
+const scanOnlySchema = z.object({
+  status: z.enum(['success', 'partial', 'illegible']),
+  message: z.string(),
+  players: z.array(z.object({
+    name: z.string(),
+    holes: z.array(z.number()),
+    total: z.number(),
+  })),
+});
+
 type VerificationResult = z.infer<typeof verificationSchema>;
+type ScanOnlyResult = z.infer<typeof scanOnlySchema>;
 
 export default function ScorecardVerificationModal({
   visible,
   onClose,
   players,
   groupLabel,
+  onScoresExtracted,
 }: ScorecardVerificationModalProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
+  const [scanResult, setScanResult] = useState<ScanOnlyResult | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [scanMode, setScanMode] = useState<ScanMode>('verify');
 
   const handleTakePhoto = async () => {
     try {
@@ -66,7 +89,11 @@ export default function ScorecardVerificationModal({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setImageUri(asset.uri);
-        await verifyScorecard(asset.base64!);
+        if (scanMode === 'verify') {
+          await verifyScorecard(asset.base64!);
+        } else {
+          await scanScorecardOnly(asset.base64!);
+        }
       }
     } catch (error) {
       console.error('[ScorecardVerification] Error taking photo:', error);
@@ -99,7 +126,11 @@ export default function ScorecardVerificationModal({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setImageUri(asset.uri);
-        await verifyScorecard(asset.base64!);
+        if (scanMode === 'verify') {
+          await verifyScorecard(asset.base64!);
+        } else {
+          await scanScorecardOnly(asset.base64!);
+        }
       }
     } catch (error) {
       console.error('[ScorecardVerification] Error selecting photo:', error);
@@ -114,6 +145,7 @@ export default function ScorecardVerificationModal({
   const verifyScorecard = async (base64Image: string) => {
     setIsAnalyzing(true);
     setResult(null);
+    setScanResult(null);
 
     try {
       const playerScores = players
@@ -167,13 +199,88 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
     }
   };
 
+  const scanScorecardOnly = async (base64Image: string) => {
+    setIsAnalyzing(true);
+    setResult(null);
+    setScanResult(null);
+
+    try {
+      const playerNames = players.map(p => p.name).join(', ');
+
+      const prompt = `You are extracting golf scores from a scorecard photo.
+
+Players in this group: ${playerNames}
+
+Your task:
+1. Read the hole-by-hole scores for each player (holes 1-18 or 1-9)
+2. Calculate the total for each player by adding up their hole scores
+3. Match names from the scorecard to the player names provided above
+
+Return:
+- status: "success" if you can read all scores clearly
+- status: "partial" if some holes are hard to read but you got most
+- status: "illegible" if you cannot read the scorecard
+- message: Brief status message
+- players: Array of player scores with:
+  - name: Player name (match to the names above)
+  - holes: Array of scores for each hole (use 0 if illegible)
+  - total: Sum of all hole scores (you calculate this from the holes array)
+
+IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use the written total on the scorecard.`;
+
+      const scanResult = await generateObject({
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image', image: `data:image/jpeg;base64,${base64Image}` },
+            ],
+          },
+        ],
+        schema: scanOnlySchema as any,
+      });
+
+      console.log('[ScorecardVerification] Scan result:', scanResult);
+      setScanResult(scanResult as any);
+    } catch (error) {
+      console.error('[ScorecardVerification] Error scanning:', error);
+      setScanResult({
+        status: 'illegible',
+        message: 'Scan failed - please try again',
+        players: [],
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const handleClose = () => {
     setResult(null);
+    setScanResult(null);
     setImageUri(null);
+    setScanMode('verify');
     onClose();
   };
 
+  const handleUseScannedScores = () => {
+    if (scanResult && scanResult.players.length > 0 && onScoresExtracted) {
+      onScoresExtracted(scanResult.players);
+      handleClose();
+    }
+  };
+
   const getStatusIcon = () => {
+    if (scanResult) {
+      switch (scanResult.status) {
+        case 'success':
+          return <CheckCircle size={48} color="#4CAF50" />;
+        case 'partial':
+          return <AlertTriangle size={48} color="#FF9800" />;
+        case 'illegible':
+          return <XCircle size={48} color="#f44336" />;
+      }
+    }
     if (!result) return null;
     
     switch (result.status) {
@@ -187,6 +294,16 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
   };
 
   const getStatusColor = () => {
+    if (scanResult) {
+      switch (scanResult.status) {
+        case 'success':
+          return '#4CAF50';
+        case 'partial':
+          return '#FF9800';
+        case 'illegible':
+          return '#f44336';
+      }
+    }
     if (!result) return '#666';
     
     switch (result.status) {
@@ -211,10 +328,41 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
           </View>
 
           <ScrollView style={styles.body}>
-            {!imageUri && !result && !isAnalyzing && (
+            {!imageUri && !result && !scanResult && !isAnalyzing && (
               <View style={styles.actionsContainer}>
-                <Text style={styles.instruction}>
-                  Take a photo of the scorecard to verify scores
+                <View style={styles.modeToggleContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeToggleBtn,
+                      scanMode === 'verify' && styles.modeToggleBtnActive,
+                    ]}
+                    onPress={() => setScanMode('verify')}
+                  >
+                    <ClipboardCheck size={18} color={scanMode === 'verify' ? '#fff' : '#666'} />
+                    <Text style={[
+                      styles.modeToggleText,
+                      scanMode === 'verify' && styles.modeToggleTextActive,
+                    ]}>Verify</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeToggleBtn,
+                      scanMode === 'scanOnly' && styles.modeToggleBtnActive,
+                    ]}
+                    onPress={() => setScanMode('scanOnly')}
+                  >
+                    <ScanLine size={18} color={scanMode === 'scanOnly' ? '#fff' : '#666'} />
+                    <Text style={[
+                      styles.modeToggleText,
+                      scanMode === 'scanOnly' && styles.modeToggleTextActive,
+                    ]}>Scan Only</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.modeDescription}>
+                  {scanMode === 'verify'
+                    ? 'Compare scorecard totals with app scores'
+                    : 'Extract hole-by-hole scores (app calculates totals)'}
                 </Text>
                 
                 <TouchableOpacity
@@ -233,10 +381,14 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
                 </TouchableOpacity>
 
                 <View style={styles.playersList}>
-                  <Text style={styles.playersTitle}>Expected Scores:</Text>
+                  <Text style={styles.playersTitle}>
+                    {scanMode === 'verify' ? 'Expected Scores:' : 'Players in Group:'}
+                  </Text>
                   {players.map((player) => (
                     <Text key={player.id} style={styles.playerScore}>
-                      {player.name}: {player.scoreTotal ?? 0}
+                      {scanMode === 'verify' 
+                        ? `${player.name}: ${player.scoreTotal ?? 0}`
+                        : player.name}
                     </Text>
                   ))}
                 </View>
@@ -282,6 +434,63 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
                 >
                   <Text style={styles.retryButtonText}>Verify Another</Text>
                 </TouchableOpacity>
+              </View>
+            )}
+
+            {scanResult && !isAnalyzing && (
+              <View style={styles.resultContainer}>
+                <View style={styles.statusIconContainer}>
+                  {getStatusIcon()}
+                </View>
+                
+                <Text style={[styles.resultMessage, { color: getStatusColor() }]}>
+                  {scanResult.message}
+                </Text>
+                
+                {scanResult.players.length > 0 && (
+                  <View style={styles.scannedScoresContainer}>
+                    <Text style={styles.scannedScoresTitle}>Extracted Scores:</Text>
+                    {scanResult.players.map((player, idx) => (
+                      <View key={idx} style={styles.scannedPlayerRow}>
+                        <Text style={styles.scannedPlayerName}>{player.name}</Text>
+                        <View style={styles.scannedHolesRow}>
+                          {player.holes.map((score, holeIdx) => (
+                            <View key={holeIdx} style={styles.scannedHoleBox}>
+                              <Text style={styles.scannedHoleNum}>{holeIdx + 1}</Text>
+                              <Text style={styles.scannedHoleScore}>{score}</Text>
+                            </View>
+                          ))}
+                        </View>
+                        <Text style={styles.scannedPlayerTotal}>Total: {player.total}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {imageUri && (
+                  <Image source={{ uri: imageUri }} style={styles.resultImage} />
+                )}
+
+                <View style={styles.scanResultButtons}>
+                  {scanResult.players.length > 0 && onScoresExtracted && (
+                    <TouchableOpacity
+                      style={styles.useScoresButton}
+                      onPress={handleUseScannedScores}
+                    >
+                      <Text style={styles.useScoresButtonText}>Use These Scores</Text>
+                    </TouchableOpacity>
+                  )}
+                  
+                  <TouchableOpacity
+                    style={styles.retryButton}
+                    onPress={() => {
+                      setScanResult(null);
+                      setImageUri(null);
+                    }}
+                  >
+                    <Text style={styles.retryButtonText}>Scan Another</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </ScrollView>
@@ -425,5 +634,110 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  modeToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    padding: 4,
+    marginBottom: 12,
+  },
+  modeToggleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  modeToggleBtnActive: {
+    backgroundColor: '#1B5E20',
+  },
+  modeToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  modeToggleTextActive: {
+    color: '#fff',
+  },
+  modeDescription: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
+  scannedScoresContainer: {
+    width: '100%',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  scannedScoresTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1B5E20',
+    marginBottom: 12,
+  },
+  scannedPlayerRow: {
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  scannedPlayerName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
+  },
+  scannedHolesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 6,
+  },
+  scannedHoleBox: {
+    width: 28,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  scannedHoleNum: {
+    fontSize: 8,
+    color: '#888',
+  },
+  scannedHoleScore: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1B5E20',
+  },
+  scannedPlayerTotal: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1B5E20',
+  },
+  scanResultButtons: {
+    gap: 8,
+    width: '100%',
+    marginTop: 8,
+  },
+  useScoresButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  useScoresButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
