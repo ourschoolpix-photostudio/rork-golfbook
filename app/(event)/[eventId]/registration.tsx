@@ -2220,21 +2220,6 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      {event && event.photoUrl && (
-        <View style={styles.eventPhotoContainer}>
-          <TouchableOpacity 
-            style={styles.viewDetailsButton}
-            onPress={() => setEventDetailsModalVisible(true)}
-          >
-            <Text style={styles.viewDetailsButtonText}>View Details</Text>
-          </TouchableOpacity>
-          <View style={styles.entryFeeBadge}>
-            <Text style={styles.entryFeeLabel}>Entry Fee</Text>
-            <Text style={styles.entryFeeAmount}>${event.entryFee}</Text>
-          </View>
-        </View>
-      )}
-
 
 
       <View style={styles.allButtonsContainer}>
