@@ -386,7 +386,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               onPress={() => {
                 onClose();
                 router.push({
-                  pathname: '/(event)/[eventId]/registration',
+                  pathname: '/(event)/[eventId]/registration' as any,
                   params: { eventId: event.id }
                 });
               }}

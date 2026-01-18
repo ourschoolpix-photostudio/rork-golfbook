@@ -340,7 +340,7 @@ export default function AdminPlayersScreen() {
           )}
           <TouchableOpacity
             style={styles.importButtonOverlay}
-            onPress={() => router.push('/(admin)/import-members')}
+            onPress={() => router.push('/(admin)/import-members' as any)}
           >
             <Ionicons name="cloud-upload" size={14} color="#fff" />
             <Text style={styles.importButtonText}>BULK</Text>

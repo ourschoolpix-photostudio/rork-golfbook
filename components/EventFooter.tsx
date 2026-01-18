@@ -270,7 +270,7 @@ export function EventFooter({
     requestAnimationFrame(() => {
       try {
         if (route === 'home') {
-          router.push('/(tabs)/dashboard');
+          router.push('/(tabs)/dashboard' as any);
         } else if (route === 'registration') {
           router.push(`/(event)/${eventId}/registration` as any);
         } else {

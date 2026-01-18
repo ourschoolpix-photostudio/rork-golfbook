@@ -228,7 +228,7 @@ export default function DashboardScreen() {
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/login');
+    router.replace('/login' as any);
   };
 
   const handleViewDetails = (event: Event) => {
@@ -456,7 +456,7 @@ export default function DashboardScreen() {
             setDetailsModalVisible(false);
             setTimeout(() => {
               router.push({
-                pathname: '/(event)/[eventId]/registration',
+                pathname: '/(event)/[eventId]/registration' as any,
                 params: { eventId: selectedEvent.id, autoRegister: 'true' }
               });
             }, 100);

@@ -49,7 +49,7 @@ export default function PayPalSuccessScreen() {
           setStatus('error');
           setMessage('Payment token not found');
           setTimeout(() => {
-            router.replace('/(tabs)/dashboard');
+            router.replace('/(tabs)/dashboard' as any);
           }, 3000);
           return;
         }
@@ -178,7 +178,7 @@ export default function PayPalSuccessScreen() {
             {
               text: 'OK',
               onPress: () => {
-                router.replace('/(tabs)/dashboard');
+                router.replace('/(tabs)/dashboard' as any);
               },
             },
           ]

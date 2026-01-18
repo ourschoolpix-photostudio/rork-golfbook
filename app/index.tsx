@@ -38,11 +38,11 @@ export default function Index() {
 
   if (currentUser) {
     console.log('[Index] Redirecting to dashboard');
-    return <Redirect href="/(tabs)/dashboard" />;
+    return <Redirect href={"/(tabs)/dashboard" as any} />;
   }
 
   console.log('[Index] Redirecting to login');
-  return <Redirect href="/login" />;
+  return <Redirect href={"/login" as any} />;
 }
 
 const styles = StyleSheet.create({

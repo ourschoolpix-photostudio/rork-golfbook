@@ -8,7 +8,7 @@ export default function PayPalCancelScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace('/(tabs)/dashboard');
+      router.replace('/(tabs)/dashboard' as any);
     }, 3000);
 
     return () => clearTimeout(timer);

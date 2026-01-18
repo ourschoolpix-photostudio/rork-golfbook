@@ -104,7 +104,7 @@ export default function LoginScreen() {
         
         if (loggedIn) {
           console.log('Biometric login - Success!');
-          router.replace('/(tabs)/dashboard');
+          router.replace('/(tabs)/dashboard' as any);
         } else {
           Alert.alert('Login Failed', 'User credentials are no longer valid. Please login with username and PIN.');
           await AsyncStorage.removeItem(BIOMETRIC_USER_KEY);
@@ -178,7 +178,7 @@ export default function LoginScreen() {
                   text: 'Enable',
                   onPress: async () => {
                     await saveBiometricCredentials(username.trim(), pin.trim());
-                    router.replace('/(tabs)/dashboard');
+                    router.replace('/(tabs)/dashboard' as any);
                   },
                 },
               ]
@@ -186,7 +186,7 @@ export default function LoginScreen() {
           } else {
             console.log('Login - Navigating to dashboard...');
             console.log('=== LOGIN END (SUCCESS) ===');
-            router.replace('/(tabs)/dashboard');
+            router.replace('/(tabs)/dashboard' as any);
           }
         }
       } else {
