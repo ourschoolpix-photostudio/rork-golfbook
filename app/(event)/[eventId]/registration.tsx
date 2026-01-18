@@ -4028,12 +4028,12 @@ const styles = StyleSheet.create({
   sortButton: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: '#FFF9E6',
+    backgroundColor: '#800020',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#800020',
   },
   sortButtonActive: {
     backgroundColor: '#FFD700',
@@ -4042,7 +4042,7 @@ const styles = StyleSheet.create({
   sortButtonText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#800020',
+    color: '#FFD700',
   },
   sortButtonTextActive: {
     color: '#800020',
