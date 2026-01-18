@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   eventNameOverlay: {
     position: 'absolute' as const,
-    top: 8,
+    top: 4,
     left: 0,
     right: 0,
     fontSize: 20,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   bottomInfoOverlay: {
     position: 'absolute' as const,
-    bottom: 24,
+    bottom: 28,
     left: 0,
     right: 0,
     paddingHorizontal: 12,
