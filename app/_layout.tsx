@@ -16,9 +16,10 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 import * as Linking from 'expo-linking';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
-console.log('🚀 [App] Starting application...');
-console.log('🔧 [App] Platform:', Platform.OS);
+logger.info('App', 'Starting application');
+logger.info('App', `Platform: ${Platform.OS}`);
 
 const originalWarn = console.warn;
 console.warn = (...args: any[]) => {
@@ -59,7 +60,13 @@ const queryClient = new QueryClient({
 });
 
 function RootLayoutNav() {
-  const { isLoading: authLoading, refreshMembers } = useAuth();
+  const { isLoading: authLoading, refreshMembers, currentUser } = useAuth();
+
+  useEffect(() => {
+    if (currentUser) {
+      logger.setIsAdmin(currentUser.isAdmin || false);
+    }
+  }, [currentUser]);
   const [isHydrated, setIsHydrated] = useState(Platform.OS === 'web');
   const [timeoutReached, setTimeoutReached] = useState(false);
   const [splashHidden, setSplashHidden] = useState(false);
@@ -67,17 +74,17 @@ function RootLayoutNav() {
 
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
-      console.log('[RootLayoutNav] Deep link received:', event.url);
+      logger.info('RootLayoutNav', `Deep link received: ${event.url}`);
       
       const { path, queryParams } = Linking.parse(event.url);
-      console.log('[RootLayoutNav] Parsed path:', path);
-      console.log('[RootLayoutNav] Query params:', queryParams);
+      logger.debug('RootLayoutNav', `Parsed path: ${path}`);
+      logger.debug('RootLayoutNav', 'Query params', queryParams);
 
       if (path === 'paypal/success') {
         const orderId = (queryParams?.token || queryParams?.Token) as string;
         
         if (!orderId) {
-          console.error('[RootLayoutNav] No order ID found in PayPal callback');
+          logger.error('RootLayoutNav', 'No order ID found in PayPal callback');
           Alert.alert(
             'Payment Error',
             'Unable to process payment. Order ID not found.',
@@ -85,7 +92,7 @@ function RootLayoutNav() {
           );
           return;
         }
-        console.log('[RootLayoutNav] Processing PayPal success for order:', orderId);
+        logger.info('RootLayoutNav', `Processing PayPal success for order: ${orderId}`);
         
         try {
           const { data: paypalConfig, error: configError } = await supabase
@@ -159,12 +166,12 @@ function RootLayoutNav() {
 
           if (!captureResponse.ok) {
             const errorText = await captureResponse.text();
-            console.error('[RootLayoutNav] Capture failed:', errorText);
+            logger.error('RootLayoutNav', 'Capture failed', { errorText });
             throw new Error('Failed to capture payment');
           }
 
           const captureData = await captureResponse.json();
-          console.log('[RootLayoutNav] Payment captured:', captureData);
+          logger.info('RootLayoutNav', 'Payment captured', captureData);
 
           const { data: membershipPayment } = await supabase
             .from('membership_payments')
@@ -173,7 +180,7 @@ function RootLayoutNav() {
             .single();
 
           if (membershipPayment) {
-            console.log('[RootLayoutNav] Updating membership payment and member status...');
+            logger.info('RootLayoutNav', 'Updating membership payment and member status');
             
             await supabase
               .from('membership_payments')
@@ -215,7 +222,7 @@ function RootLayoutNav() {
             }
           }
         } catch (error) {
-          console.error('[RootLayoutNav] Error processing PayPal callback:', error);
+          logger.error('RootLayoutNav', 'Error processing PayPal callback', error);
           Alert.alert(
             'Payment Processing',
             'There was an issue processing your payment. Please check your membership status or contact support.',
@@ -223,7 +230,7 @@ function RootLayoutNav() {
           );
         }
       } else if (path === 'paypal/cancel') {
-        console.log('[RootLayoutNav] PayPal payment cancelled');
+        logger.info('RootLayoutNav', 'PayPal payment cancelled');
         Alert.alert(
           'Payment Cancelled',
           'Your payment was cancelled. You can try again later.',
@@ -236,7 +243,7 @@ function RootLayoutNav() {
 
     Linking.getInitialURL().then((url) => {
       if (url) {
-        console.log('[RootLayoutNav] Initial URL:', url);
+        logger.info('RootLayoutNav', `Initial URL: ${url}`);
         handleDeepLink({ url });
       }
     });
@@ -254,7 +261,7 @@ function RootLayoutNav() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      console.log('[RootLayoutNav] Hydration timeout reached, forcing render');
+      logger.warn('RootLayoutNav', 'Hydration timeout reached, forcing render');
       setTimeoutReached(true);
     }, 3000);
 
@@ -267,10 +274,10 @@ function RootLayoutNav() {
         try {
           await SplashScreen.hideAsync();
           setSplashHidden(true);
-          console.log('[RootLayoutNav] Splash screen hidden successfully');
+          logger.info('RootLayoutNav', 'Splash screen hidden successfully');
         } catch (error: any) {
           setSplashHidden(true);
-          console.log('[RootLayoutNav] SplashScreen.hideAsync error (safe to ignore):', error?.message || 'Unknown error');
+          logger.debug('RootLayoutNav', 'SplashScreen.hideAsync error (safe to ignore)', error);
         }
       };
       
@@ -311,9 +318,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('❌ [ErrorBoundary] Caught error:', error.message);
-    console.error('❌ [ErrorBoundary] Error stack:', error.stack);
-    console.error('❌ [ErrorBoundary] Component stack:', errorInfo.componentStack);
+    logger.error('ErrorBoundary', 'Caught error', { message: error.message, stack: error.stack, componentStack: errorInfo.componentStack });
   }
 
   render() {

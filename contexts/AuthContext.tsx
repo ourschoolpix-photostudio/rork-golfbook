@@ -6,6 +6,7 @@ import { localStorageService } from '@/utils/localStorageService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useRealtimeMembers } from '@/utils/useRealtimeSubscription';
+import { logger } from '@/utils/logger';
 
 const STORAGE_KEYS = {
   CURRENT_USER: '@golf_current_user',
@@ -48,14 +49,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setNetworkError(false);
       
       if (useLocalStorage) {
-        console.log('📥 [AuthContext] Fetching members from local storage...');
+        logger.info('AuthContext', 'Fetching members from local storage');
         const fetchedMembers = await localStorageService.members.getAll();
-        console.log('✅ [AuthContext] Successfully fetched members from local storage:', fetchedMembers.length);
+        logger.info('AuthContext', `Successfully fetched ${fetchedMembers.length} members from local storage`);
         setMembers(fetchedMembers);
         return fetchedMembers;
       }
       
-      console.log('📥 [AuthContext] Fetching members from Supabase...');
+      logger.info('AuthContext', 'Fetching members from Supabase');
       
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Member fetch timeout')), 3000)
@@ -72,22 +73,22 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         .eq('archived', false);
       
       if (eventsError) {
-        console.error('❌ [AuthContext] Failed to fetch events for filtering:', eventsError.message);
+        logger.error('AuthContext', 'Failed to fetch events for filtering', eventsError);
       }
       
       const validEventIds = new Set((eventsData || []).map(e => e.id));
-      console.log('📋 [AuthContext] Valid non-archived event IDs:', validEventIds.size);
+      logger.debug('AuthContext', `Valid non-archived event IDs: ${validEventIds.size}`);
       
       const fetchedMembers = (data || []).map((m: any) => {
         const tournamentHandicaps = m.tournament_handicaps || [];
         const filteredHandicaps = tournamentHandicaps.filter((th: any) => {
           if (!th || !th.eventId) {
-            console.log(`🗑️ [AuthContext] Filtering out invalid tournament handicap record`);
+            logger.debug('AuthContext', 'Filtering out invalid tournament handicap record');
             return false;
           }
           const isValid = validEventIds.has(th.eventId);
           if (!isValid) {
-            console.log(`🗑️ [AuthContext] Filtering out tournament handicap for deleted/archived event: ${th.eventName || 'Unknown'} (${th.eventId})`);
+            logger.debug('AuthContext', `Filtering out tournament handicap for deleted/archived event: ${th.eventName || 'Unknown'} (${th.eventId})`);
           }
           return isValid;
         });
@@ -124,7 +125,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         };
       });
       
-      console.log('✅ [AuthContext] Successfully fetched members:', fetchedMembers.length);
+      logger.info('AuthContext', `Successfully fetched ${fetchedMembers.length} members`);
       setMembers(fetchedMembers);
       return fetchedMembers;
     } catch (error: any) {
@@ -133,22 +134,22 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                             errorMessage.includes('fetch failed') ||
                             errorMessage.includes('network');
       
-      console.error('❌ [AuthContext] Failed to fetch members:', errorMessage);
+      logger.error('AuthContext', 'Failed to fetch members', error);
       
       if (isNetworkError) {
-        console.log('🌐 [AuthContext] Network error detected, setting network error flag');
+        logger.warn('AuthContext', 'Network error detected, setting network error flag');
         setNetworkError(true);
       }
       
-      console.log('📥 [AuthContext] Falling back to local storage');
+      logger.info('AuthContext', 'Falling back to local storage');
       
       try {
         const fallbackMembers = await localStorageService.members.getAll();
-        console.log('✅ [AuthContext] Successfully fetched members from local storage fallback:', fallbackMembers.length);
+        logger.info('AuthContext', `Successfully fetched ${fallbackMembers.length} members from local storage fallback`);
         setMembers(fallbackMembers);
         return fallbackMembers;
       } catch (fallbackError) {
-        console.error('❌ [AuthContext] Fallback also failed:', fallbackError instanceof Error ? fallbackError.message : JSON.stringify(fallbackError));
+        logger.error('AuthContext', 'Fallback also failed', fallbackError);
         setMembers([]);
         return [];
       }
@@ -163,7 +164,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   useRealtimeMembers(
     useCallback(() => {
-      console.log('[AuthContext] 🔄 Real-time member update detected, refetching members...');
+      logger.info('AuthContext', 'Real-time member update detected, refetching members');
       fetchMembers();
     }, [fetchMembers]),
     !useLocalStorage
@@ -173,20 +174,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     try {
       const existingMember = members.find(m => m.id === member.id);
       if (existingMember) {
-        console.log('✅ [AuthContext] Member already exists, skipping creation');
+        logger.info('AuthContext', 'Member already exists, skipping creation');
         return;
       }
 
       if (networkError && retryCount >= MAX_RETRY_ATTEMPTS) {
-        console.log('⚠️ [AuthContext] Skipping member creation due to network issues (max retries reached)');
+        logger.warn('AuthContext', 'Skipping member creation due to network issues (max retries reached)');
         return;
       }
 
       if (useLocalStorage) {
-        console.log('➕ [AuthContext] Creating member in local storage:', member.name);
+        logger.info('AuthContext', `Creating member in local storage: ${member.name}`);
         await localStorageService.members.create(member);
       } else {
-        console.log('➕ [AuthContext] Creating member in Supabase:', member.name);
+        logger.info('AuthContext', `Creating member in Supabase: ${member.name}`);
         const { error } = await supabase.from('members').insert({
           id: member.id,
           name: member.name,
@@ -206,7 +207,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (error) throw error;
       }
       
-      console.log('✅ [AuthContext] Member created successfully');
+      logger.info('AuthContext', 'Member created successfully');
       setRetryCount(0);
       setNetworkError(false);
       await fetchMembers();
@@ -214,7 +215,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       const errorMessage = error?.message || JSON.stringify(error);
       
       if (errorMessage.includes('duplicate key') || errorMessage.includes('already exists')) {
-        console.log('✅ [AuthContext] Member already exists, skipping creation');
+        logger.info('AuthContext', 'Member already exists, skipping creation');
         return;
       }
       
@@ -223,23 +224,23 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                             errorMessage.includes('network');
       
       if (isNetworkError) {
-        console.log(`⚠️ [AuthContext] Network error creating member (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS})`);
+        logger.warn('AuthContext', `Network error creating member (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS})`);
         setNetworkError(true);
         setRetryCount(prev => prev + 1);
         
         if (retryCount < MAX_RETRY_ATTEMPTS - 1) {
-          console.log(`🔄 [AuthContext] Will retry in ${RETRY_DELAY_MS}ms...`);
+          logger.info('AuthContext', `Will retry in ${RETRY_DELAY_MS}ms`);
         } else {
-          console.log('❌ [AuthContext] Max retry attempts reached, using local storage fallback');
+          logger.warn('AuthContext', 'Max retry attempts reached, using local storage fallback');
           try {
             await localStorageService.members.create(member);
-            console.log('✅ [AuthContext] Member created in local storage fallback');
+            logger.info('AuthContext', 'Member created in local storage fallback');
           } catch {
-            console.error('❌ [AuthContext] Local storage fallback also failed');
+            logger.error('AuthContext', 'Local storage fallback also failed');
           }
         }
       } else {
-        console.error('❌ [AuthContext] Exception creating member:', JSON.stringify({ message: errorMessage, details: errorMessage, hint: '', code: '' }));
+        logger.error('AuthContext', 'Exception creating member', error);
       }
     }
   }, [members, fetchMembers, useLocalStorage, networkError, retryCount]);
@@ -253,12 +254,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       (!networkError || retryCount < MAX_RETRY_ATTEMPTS);
 
     if (shouldInitializeAdmin) {
-      console.log('AuthContext - No members found, creating default admin');
+      logger.info('AuthContext', 'No members found, creating default admin');
       setHasInitializedAdmin(true);
       
       const delay = networkError ? RETRY_DELAY_MS * retryCount : 0;
       if (delay > 0) {
-        console.log(`⏳ [AuthContext] Waiting ${delay}ms before retry...`);
+        logger.info('AuthContext', `Waiting ${delay}ms before retry`);
         setTimeout(() => {
           addMemberDirect(DEFAULT_MEMBER);
         }, delay);
@@ -288,14 +289,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       if (currentUserData) {
         const user = JSON.parse(currentUserData);
-        console.log('AuthContext - Found current user:', user.name);
+        logger.info('AuthContext', `Found current user: ${user.name}`);
         setCurrentUser(user);
       } else {
-        console.log('AuthContext - No saved user, showing login screen');
+        logger.info('AuthContext', 'No saved user, showing login screen');
       }
     } catch (error) {
-      console.error('Error loading current user:', error);
-      console.log('AuthContext - Error loading user data, showing login screen');
+      logger.error('AuthContext', 'Error loading current user', error);
+      logger.info('AuthContext', 'Error loading user data, showing login screen');
     } finally {
       setIsLoading(false);
     }
@@ -303,7 +304,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const login = useCallback(async (username: string, pin: string): Promise<boolean> => {
     try {
-      console.log('AuthContext login - searching for username:', username, 'and pin:', pin);
+      logger.debug('AuthContext', `Login attempt for username: ${username}`);
       
       const member = members.find((m: Member) => 
         (m.username?.toLowerCase() === username.trim().toLowerCase() || 
@@ -311,26 +312,26 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         m.pin === pin.trim()
       );
       
-      console.log('AuthContext login - total members in cache:', members.length);
-      console.log('AuthContext login - found member:', member ? { id: member.id, name: member.name, pin: member.pin } : 'NONE');
+      logger.debug('AuthContext', `Total members in cache: ${members.length}`);
+      logger.debug('AuthContext', member ? `Found member: ${member.name}` : 'No member found');
       
       if (member) {
         setCurrentUser(member);
         await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(member));
-        await AsyncStorage.removeItem(STORAGE_KEYS.EXPLICIT_LOGOUT); // Clear logout flag on successful login
-        console.log('AuthContext login - success, currentUser set to:', member.name);
+        await AsyncStorage.removeItem(STORAGE_KEYS.EXPLICIT_LOGOUT);
+        logger.info('AuthContext', `Login success: ${member.name}`);
         return true;
       }
-      console.log('AuthContext login - no member found with username:', username, 'and pin:', pin);
+      logger.warn('AuthContext', `Login failed: no member found with username: ${username}`);
       return false;
     } catch (error) {
-      console.error('Login error in AuthContext:', error);
+      logger.error('AuthContext', 'Login error', error);
       return false;
     }
   }, [members]);
 
   const logout = useCallback(async () => {
-    console.log('AuthContext - Logging out, setting explicit logout flag');
+    logger.info('AuthContext', 'Logging out, setting explicit logout flag');
     setCurrentUser(null);
     await AsyncStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     await AsyncStorage.setItem(STORAGE_KEYS.EXPLICIT_LOGOUT, 'true');
@@ -338,7 +339,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const addMember = useCallback(async (member: Member) => {
     try {
-      console.log('➕ [AuthContext] Adding member:', member.name);
+      logger.info('AuthContext', `Adding member: ${member.name}`);
       
       if (useLocalStorage) {
         await localStorageService.members.create(member);
@@ -375,21 +376,21 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (error) throw error;
       }
       
-      console.log('✅ [AuthContext] Member added successfully');
+      logger.info('AuthContext', 'Member added successfully');
       await fetchMembers();
     } catch (error) {
-      console.error('❌ [AuthContext] Exception adding member:', error instanceof Error ? error.message : JSON.stringify(error));
+      logger.error('AuthContext', 'Exception adding member', error);
       throw error;
     }
   }, [fetchMembers, useLocalStorage]);
 
   const updateMember = useCallback(async (memberId: string, updates: Partial<Member>) => {
     try {
-      console.log('✏️ [AuthContext] Updating member:', memberId, 'with updates:', Object.keys(updates));
+      logger.info('AuthContext', `Updating member: ${memberId}`, { fields: Object.keys(updates) });
       
       if (useLocalStorage) {
         await localStorageService.members.update(memberId, updates);
-        console.log('✅ [AuthContext] Member updated in local storage');
+        logger.info('AuthContext', 'Member updated in local storage');
       } else {
         const supabaseUpdates: any = {};
         if (updates.name !== undefined) supabaseUpdates.name = updates.name;
@@ -419,7 +420,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (updates.boardMemberRoles !== undefined) supabaseUpdates.board_member_roles = updates.boardMemberRoles || [];
         if (updates.tournamentHandicaps !== undefined) supabaseUpdates.tournament_handicaps = updates.tournamentHandicaps || [];
         
-        console.log('📤 [AuthContext] Sending Supabase update with fields:', Object.keys(supabaseUpdates));
+        logger.debug('AuthContext', 'Sending Supabase update', { fields: Object.keys(supabaseUpdates) });
         
         const { error } = await supabase
           .from('members')
@@ -427,29 +428,29 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           .eq('id', memberId);
         
         if (error) throw error;
-        console.log('✅ [AuthContext] Member updated in Supabase');
+        logger.info('AuthContext', 'Member updated in Supabase');
       }
       
-      console.log('🔄 [AuthContext] Refreshing members list...');
+      logger.info('AuthContext', 'Refreshing members list');
       await fetchMembers();
 
       if (currentUser?.id === memberId) {
         const updatedMember = { ...currentUser, ...updates };
-        console.log('🔄 [AuthContext] Updating current user in state and storage');
+        logger.info('AuthContext', 'Updating current user in state and storage');
         setCurrentUser(updatedMember);
         await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedMember));
       }
       
-      console.log('✅ [AuthContext] Member update complete');
+      logger.info('AuthContext', 'Member update complete');
     } catch (error) {
-      console.error('❌ [AuthContext] Exception updating member:', error instanceof Error ? error.message : JSON.stringify(error));
+      logger.error('AuthContext', 'Exception updating member', error);
       throw error;
     }
   }, [currentUser, fetchMembers, useLocalStorage]);
 
   const deleteMember = useCallback(async (memberId: string) => {
     try {
-      console.log('🗑️ [AuthContext] Deleting member:', memberId);
+      logger.info('AuthContext', `Deleting member: ${memberId}`);
       
       if (useLocalStorage) {
         await localStorageService.members.delete(memberId);
@@ -462,14 +463,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (error) throw error;
       }
       
-      console.log('✅ [AuthContext] Member deleted successfully');
+      logger.info('AuthContext', 'Member deleted successfully');
       await fetchMembers();
 
       if (currentUser?.id === memberId) {
         await logout();
       }
     } catch (error) {
-      console.error('❌ [AuthContext] Exception deleting member:', error instanceof Error ? error.message : JSON.stringify(error));
+      logger.error('AuthContext', 'Exception deleting member', error);
       throw error;
     }
   }, [currentUser, logout, fetchMembers, useLocalStorage]);
