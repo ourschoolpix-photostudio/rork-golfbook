@@ -3646,7 +3646,7 @@ const styles = StyleSheet.create({
   statBox: {
     flex: 1,
     backgroundColor: '#800020',
-    paddingVertical: 7,
+    paddingVertical: 3.5,
     paddingHorizontal: 6,
     borderRadius: 6,
     alignItems: 'center',
