@@ -144,6 +144,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         archived: e.archived || false,
         archivedAt: e.archived_at,
         registrationOpen: e.registration_open ?? true,
+        useCourseHandicap: e.use_course_handicap ?? false,
         registeredPlayers: registrationsByEvent.get(e.id) || [],
       }));
       
@@ -426,6 +427,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
         if (updates.archived !== undefined) supabaseUpdates.archived = updates.archived;
         if (updates.archivedAt !== undefined) supabaseUpdates.archived_at = updates.archivedAt;
         if (updates.registrationOpen !== undefined) supabaseUpdates.registration_open = updates.registrationOpen;
+        if (updates.useCourseHandicap !== undefined) supabaseUpdates.use_course_handicap = updates.useCourseHandicap;
         
         const { error } = await supabase
           .from('events')
