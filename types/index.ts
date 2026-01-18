@@ -90,6 +90,7 @@ export interface Event {
   day1CourseRating?: string;
   day1CourseId?: string;
   day1TeeBox?: 'tips' | 'men' | 'lady';
+  useCourseHandicap?: boolean;
   day2StartTime?: string;
   day2StartPeriod?: 'AM' | 'PM';
   day2EndTime?: string;

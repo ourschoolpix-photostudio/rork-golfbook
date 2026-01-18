@@ -429,29 +429,49 @@ export default function EventRegistrationScreen() {
   }, [eventDetailsModalVisible]);
 
   const loadCourseHandicapSetting = useCallback(async () => {
-    if (eventId) {
+    if (eventId && event) {
       try {
-        const key = `useCourseHandicap_${eventId}`;
-        const value = await AsyncStorage.getItem(key);
-        if (value !== null) {
-          const boolValue = value === 'true';
+        const dbValue = event.useCourseHandicap;
+        if (dbValue !== undefined && dbValue !== null) {
           setUseCourseHandicap(prev => {
-            if (prev !== boolValue) {
-              console.log('[registration] 🔄 Course handicap setting changed:', boolValue);
-              return boolValue;
+            if (prev !== dbValue) {
+              console.log('[registration] 🔄 Course handicap setting changed from database:', dbValue);
+              return dbValue;
             }
             return prev;
           });
+          const key = `useCourseHandicap_${eventId}`;
+          await AsyncStorage.setItem(key, dbValue.toString());
+        } else {
+          const key = `useCourseHandicap_${eventId}`;
+          const value = await AsyncStorage.getItem(key);
+          if (value !== null) {
+            const boolValue = value === 'true';
+            setUseCourseHandicap(prev => {
+              if (prev !== boolValue) {
+                console.log('[registration] 🔄 Course handicap setting changed from local storage:', boolValue);
+                return boolValue;
+              }
+              return prev;
+            });
+          }
         }
       } catch (error) {
         console.error('[registration] Error loading course handicap setting:', error);
       }
     }
-  }, [eventId]);
+  }, [eventId, event]);
 
   useEffect(() => {
     loadCourseHandicapSetting();
   }, [loadCourseHandicapSetting]);
+
+  useEffect(() => {
+    if (event?.useCourseHandicap !== undefined) {
+      console.log('[registration] 📡 Event updated, syncing course handicap setting:', event.useCourseHandicap);
+      setUseCourseHandicap(event.useCourseHandicap);
+    }
+  }, [event?.useCourseHandicap]);
 
   // Poll for course handicap changes every 500ms to detect toggle changes from footer
   useEffect(() => {

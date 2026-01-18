@@ -148,12 +148,19 @@ export function EventFooter({
 
   useEffect(() => {
     const loadCourseHandicapSetting = async () => {
-      if (eventId) {
+      if (eventId && event) {
         try {
-          const key = `useCourseHandicap_${eventId}`;
-          const value = await AsyncStorage.getItem(key);
-          if (value !== null) {
-            setUseCourseHandicap(value === 'true');
+          const dbValue = event.useCourseHandicap;
+          if (dbValue !== undefined && dbValue !== null) {
+            setUseCourseHandicap(dbValue);
+            const key = `useCourseHandicap_${eventId}`;
+            await AsyncStorage.setItem(key, dbValue.toString());
+          } else {
+            const key = `useCourseHandicap_${eventId}`;
+            const localValue = await AsyncStorage.getItem(key);
+            if (localValue !== null) {
+              setUseCourseHandicap(localValue === 'true');
+            }
           }
         } catch (error) {
           console.error('[EventFooter] Error loading course handicap setting:', error);
@@ -161,16 +168,20 @@ export function EventFooter({
       }
     };
     loadCourseHandicapSetting();
-  }, [eventId]);
+  }, [eventId, event]);
 
   const toggleCourseHandicap = async () => {
     if (eventId) {
       const newValue = !useCourseHandicap;
       setUseCourseHandicap(newValue);
       try {
+        await supabaseService.events.update(eventId, {
+          useCourseHandicap: newValue,
+        });
+        console.log('[EventFooter] Course handicap toggled and saved to Supabase:', newValue);
+        
         const key = `useCourseHandicap_${eventId}`;
         await AsyncStorage.setItem(key, newValue.toString());
-        console.log('[EventFooter] Course handicap toggled:', newValue);
       } catch (error) {
         console.error('[EventFooter] Error saving course handicap setting:', error);
       }
