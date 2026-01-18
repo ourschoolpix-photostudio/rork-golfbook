@@ -415,10 +415,18 @@ const styles = StyleSheet.create({
   toggleButtonWrapper: {
     flex: 1,
     minHeight: 36,
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   startButtonWrapper: {
     flex: 1,
     minHeight: 36,
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   courseHandicapToggle: {
     flex: 1,
@@ -430,6 +438,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#8B2E4A',
     height: 36,
+    borderWidth: 2,
+    borderColor: '#FFD54F',
   },
   courseHandicapToggleActive: {
     backgroundColor: '#2196F3',
