@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Bell } from 'lucide-react-native';
 import { Event } from '@/types';
@@ -13,12 +13,20 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
   const { getAlertsForEvent } = useAlerts();
   const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
 
+  const eventAlerts = event ? getAlertsForEvent(event.id) : [];
+  const undismissedEventAlerts = eventAlerts.filter(a => !a.isDismissed);
+  const criticalUndismissedAlerts = undismissedEventAlerts.filter(a => a.priority === 'critical');
+
+  useEffect(() => {
+    if (event && criticalUndismissedAlerts.length > 0 && !alertsModalVisible) {
+      console.log('[EventHeader] Critical alert detected, auto-opening modal');
+      setAlertsModalVisible(true);
+    }
+  }, [event, criticalUndismissedAlerts.length, alertsModalVisible]);
+
   if (!event || !event.entryFee || !event.photoUrl) {
     return null;
   }
-
-  const eventAlerts = getAlertsForEvent(event.id);
-  const undismissedEventAlerts = eventAlerts.filter(a => !a.isDismissed);
 
   return (
     <>
