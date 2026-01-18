@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#666',
+    borderColor: '#333',
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 6,
