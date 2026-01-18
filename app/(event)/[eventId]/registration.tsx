@@ -3889,7 +3889,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingTop: 5,
-    paddingBottom: 8,
+    paddingBottom: 4,
     marginTop: -1,
     backgroundColor: '#fff',
   },
