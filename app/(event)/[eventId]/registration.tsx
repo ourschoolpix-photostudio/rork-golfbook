@@ -2235,10 +2235,7 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      {event && (
-        <View style={styles.eventCard}>
-        </View>
-      )}
+
 
       <View style={styles.allButtonsContainer}>
         {selectedPlayers.length > 0 && event?.type !== 'social' && (
