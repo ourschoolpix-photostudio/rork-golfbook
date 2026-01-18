@@ -2615,7 +2615,7 @@ export default function EventRegistrationScreen() {
         onClose={() => setEventDetailsModalVisible(false)}
         onRegister={handleRegisterCurrentUser}
         currentUserId={currentUser?.id}
-        registeredPlayerIds={event?.registeredPlayers || []}
+        registeredPlayerIds={selectedPlayers.map(p => p.id)}
       />
 
       <EventPlayerModal
