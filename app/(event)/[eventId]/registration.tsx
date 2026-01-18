@@ -3848,7 +3848,7 @@ const styles = StyleSheet.create({
   flightSeparatorText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#fff',
   },
   handicapBadge: {
     backgroundColor: '#f0f0f0',
