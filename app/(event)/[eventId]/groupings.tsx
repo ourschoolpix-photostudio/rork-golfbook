@@ -941,6 +941,15 @@ export default function GroupingsScreen() {
         </View>
       )}
 
+      <DaySelector
+        numberOfDays={event.numberOfDays ?? 1}
+        selectedDay={activeDay}
+        onDaySelect={setActiveDay}
+        doubleMode={doubleMode}
+        onDoubleModeToggle={handleDoubleModeToggle}
+        isAdmin={canManageGroupings(currentMember)}
+      />
+
       {canManageGroupings(currentMember) && (
         <View style={styles.unifiedButtonsContainer}>
           <View style={styles.filterContainer}>
@@ -980,15 +989,6 @@ export default function GroupingsScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-
-          <DaySelector
-            numberOfDays={event.numberOfDays ?? 1}
-            selectedDay={activeDay}
-            onDaySelect={setActiveDay}
-            doubleMode={doubleMode}
-            onDoubleModeToggle={handleDoubleModeToggle}
-            isAdmin={canManageGroupings(currentMember)}
-          />
 
           <View style={styles.unassignAllBtnContainer}>
             <View style={styles.buttonRow}>
