@@ -3450,7 +3450,7 @@ const styles = StyleSheet.create({
   statusButtonSection: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#808080',
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
@@ -3892,7 +3892,7 @@ const styles = StyleSheet.create({
     paddingTop: 5,
     paddingBottom: 4,
     marginTop: -1,
-    backgroundColor: '#fff',
+    backgroundColor: '#808080',
   },
   playersTitleContainer: {
     backgroundColor: '#fff',
