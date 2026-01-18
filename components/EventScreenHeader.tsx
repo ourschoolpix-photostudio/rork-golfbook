@@ -146,11 +146,11 @@ const styles = StyleSheet.create({
   },
   bottomInfoOverlay: {
     position: 'absolute' as const,
-    bottom: 38,
+    bottom: 4,
     left: 0,
     right: 0,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 4,
     alignItems: 'center' as const,
     gap: 2,
   },
