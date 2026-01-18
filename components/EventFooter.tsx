@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { canViewFinance } from '@/utils/rolePermissions';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import type { TournamentHandicapRecord } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
 
 type EventFooterProps = {
   showStartButton?: boolean;
@@ -126,6 +127,7 @@ export function EventFooter({
   const { currentUser } = useAuth();
   const insets = useSafeAreaInsets();
   const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
+  const queryClient = useQueryClient();
 
   const [event, setEvent] = useState<any>(null);
   const isSocialEvent = event?.type === 'social';
@@ -202,6 +204,14 @@ export function EventFooter({
           useCourseHandicap: newValue,
         });
         console.log('[EventFooter] ✅ Course handicap saved to Supabase:', newValue);
+        
+        queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+        queryClient.invalidateQueries({ queryKey: ['events'] });
+        await Promise.all([
+          queryClient.refetchQueries({ queryKey: ['events', eventId] }),
+          queryClient.refetchQueries({ queryKey: ['events'] }),
+        ]);
+        console.log('[EventFooter] 🔄 Invalidated and refetched event queries');
         
         setEvent((prev: any) => prev ? { ...prev, useCourseHandicap: newValue } : prev);
         
