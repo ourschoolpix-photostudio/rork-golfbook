@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { OfflineModeToggle } from '@/components/OfflineModeToggle';
 import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
 import { supabaseService } from '@/utils/supabaseService';
+import { supabase } from '@/integrations/supabase/client';
 import { canViewFinance } from '@/utils/rolePermissions';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import type { TournamentHandicapRecord } from '@/types';
@@ -144,6 +145,27 @@ export function EventFooter({
     };
     
     fetchEvent();
+
+    const subscription = supabase
+      .channel(`event-${eventId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'events',
+          filter: `id=eq.${eventId}`,
+        },
+        (payload: any) => {
+          console.log('[EventFooter] Realtime event update:', payload);
+          fetchEvent();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [eventId]);
 
   useEffect(() => {
@@ -173,17 +195,22 @@ export function EventFooter({
   const toggleCourseHandicap = async () => {
     if (eventId) {
       const newValue = !useCourseHandicap;
+      console.log('[EventFooter] 🎯 Toggling course handicap from', useCourseHandicap, 'to', newValue);
       setUseCourseHandicap(newValue);
       try {
         await supabaseService.events.update(eventId, {
           useCourseHandicap: newValue,
         });
-        console.log('[EventFooter] Course handicap toggled and saved to Supabase:', newValue);
+        console.log('[EventFooter] ✅ Course handicap saved to Supabase:', newValue);
+        
+        setEvent((prev: any) => prev ? { ...prev, useCourseHandicap: newValue } : prev);
         
         const key = `useCourseHandicap_${eventId}`;
         await AsyncStorage.setItem(key, newValue.toString());
+        console.log('[EventFooter] ✅ Course handicap saved to AsyncStorage:', newValue);
       } catch (error) {
-        console.error('[EventFooter] Error saving course handicap setting:', error);
+        console.error('[EventFooter] ❌ Error saving course handicap setting:', error);
+        setUseCourseHandicap(!newValue);
       }
     }
   };
