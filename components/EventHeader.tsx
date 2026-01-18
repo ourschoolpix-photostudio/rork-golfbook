@@ -41,7 +41,7 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event }) => {
   return (
     <>
       <TouchableOpacity
-        style={styles.bellButton}
+        style={[styles.bellButton, { opacity: 0 }]}
         onPress={() => setAlertsModalVisible(true)}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
