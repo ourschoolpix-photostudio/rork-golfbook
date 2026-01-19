@@ -5,8 +5,9 @@ import { Camera } from 'lucide-react-native';
 import ScoringModal from '@/components/ScoringModal';
 import ScorecardVerificationModal from '@/components/ScorecardVerificationModal';
 import { calculateTournamentFlight, getDisplayHandicap, hasAdjustedHandicap, isUsingCourseHandicap } from '@/utils/handicapHelper';
-import type { Event } from '@/types';
+import type { Event, Member } from '@/types';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
+import { canVerifyScorecard } from '@/utils/rolePermissions';
 
 interface GroupCardProps {
   groupNumber: number;
@@ -32,6 +33,7 @@ interface GroupCardProps {
   event?: Event;
   registrations?: Record<string, any>;
   useCourseHandicap?: boolean;
+  currentMember?: Member | null;
 }
 
 function GroupCard({ 
@@ -57,7 +59,8 @@ function GroupCard({
   activeDay = 1,
   event,
   registrations = {},
-  useCourseHandicap = false
+  useCourseHandicap = false,
+  currentMember = null
 }: GroupCardProps) {
   const anyChecked = checkedPlayers.length > 0;
   const hasEmptySlot = slots.some(slot => slot === null);
@@ -117,7 +120,7 @@ function GroupCard({
         <TouchableOpacity onPress={handleOpenScoringModal}>
           <Text style={styles.holeLabel}>{label} • {playerCount} players</Text>
         </TouchableOpacity>
-        {isAdmin && playerCount > 0 && (
+        {canVerifyScorecard(currentMember) && playerCount > 0 && (
           <TouchableOpacity 
             style={styles.verifyButton} 
             onPress={() => setVerificationModalVisible(true)}

@@ -184,3 +184,7 @@ export function canViewTournamentHandicap(user: Member | null): boolean {
     'Operations',
   ]);
 }
+
+export function canVerifyScorecard(user: Member | null): boolean {
+  return hasRole(user, 'Admin');
+}

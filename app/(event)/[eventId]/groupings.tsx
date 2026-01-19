@@ -1098,6 +1098,7 @@ export default function GroupingsScreen() {
                     event={event}
                     registrations={registrations}
                     useCourseHandicap={useCourseHandicap}
+                    currentMember={currentMember}
                   />
                 </View>
               ))}
