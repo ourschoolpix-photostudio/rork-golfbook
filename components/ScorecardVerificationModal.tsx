@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     width: 320,
     height: 320,
     marginLeft: -160,
-    marginTop: -180,
+    marginTop: -160,
   },
   frameBorder: {
     position: 'absolute',
