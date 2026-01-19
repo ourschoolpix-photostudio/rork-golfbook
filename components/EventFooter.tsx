@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Users, Grid3x3, Target, Award, DollarSign, LayoutGrid } from 'lucide-react-native';
+import { Home, Users, Grid3x3, Target, Award, DollarSign, LayoutGrid, Upload } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { OfflineModeToggle } from '@/components/OfflineModeToggle';
+import { useOfflineMode } from '@/contexts/OfflineModeContext';
 import { EventStatusButton, EventStatus } from '@/components/EventStatusButton';
 import { supabaseService } from '@/utils/supabaseService';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +26,7 @@ type EventFooterProps = {
   isDistributing?: boolean;
   isClearing?: boolean;
   pointsDistributed?: boolean;
+  showSyncButton?: boolean;
 };
 
 export function EventFooter({
@@ -38,7 +40,9 @@ export function EventFooter({
   isDistributing = false,
   isClearing = false,
   pointsDistributed = false,
+  showSyncButton = false,
 }: EventFooterProps = {}) {
+  const { shouldUseOfflineMode, hasPendingChanges, pendingOperations } = useOfflineMode();
   const calculateAndStoreTournamentHandicaps = async (eventId: string) => {
     try {
       console.log('[EventFooter] Calculating tournament handicaps for event:', eventId);
@@ -131,6 +135,50 @@ export function EventFooter({
 
   const [event, setEvent] = useState<any>(null);
   const isSocialEvent = event?.type === 'social';
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      console.log('[EventFooter] 🔄 Starting sync...', pendingOperations.length, 'pending operations');
+      const { supabaseService } = await import('@/utils/supabaseService');
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const op of pendingOperations) {
+        try {
+          console.log('[EventFooter] Syncing operation:', op.type, op.id);
+          
+          if (op.type === 'score_submit' && op.data) {
+            const { eventId, memberId, day, holes, totalScore, submittedBy } = op.data;
+            await supabaseService.scores.submit(eventId, memberId, day, holes, totalScore, submittedBy);
+            successCount++;
+          }
+          
+        } catch (error) {
+          console.error('[EventFooter] Failed to sync operation:', op.id, error);
+          failCount++;
+        }
+      }
+      
+      console.log('[EventFooter] ✅ Sync complete:', successCount, 'success,', failCount, 'failed');
+      
+      if (failCount === 0) {
+        const { Alert } = await import('react-native');
+        Alert.alert('Sync Complete', `Successfully synced ${successCount} score(s)`);
+      } else {
+        const { Alert } = await import('react-native');
+        Alert.alert('Sync Partially Complete', `${successCount} synced, ${failCount} failed`);
+      }
+    } catch (error) {
+      console.error('[EventFooter] Sync error:', error);
+      const { Alert } = await import('react-native');
+      Alert.alert('Sync Failed', 'Unable to sync scores. Please try again.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     if (!eventId) return;
@@ -342,6 +390,19 @@ export function EventFooter({
                 </Text>
               </TouchableOpacity>
             </>
+          ) : showSyncButton ? (
+            shouldUseOfflineMode && hasPendingChanges ? (
+              <TouchableOpacity
+                style={[styles.syncButton, isSyncing && styles.syncButtonDisabled]}
+                onPress={handleSync}
+                disabled={isSyncing}
+              >
+                <Upload size={18} color="#fff" />
+                <Text style={styles.syncButtonText}>
+                  {isSyncing ? 'Syncing...' : `Sync Scores (${pendingOperations.length})`}
+                </Text>
+              </TouchableOpacity>
+            ) : null
           ) : (
             <>
               <View style={styles.toggleButtonWrapper}>
@@ -494,5 +555,28 @@ const styles = StyleSheet.create({
   },
   tabLabelActive: {
     color: '#fff',
+  },
+  syncButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#2196F3',
+    height: 36,
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+    gap: 6,
+  },
+  syncButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.7,
+  },
+  syncButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

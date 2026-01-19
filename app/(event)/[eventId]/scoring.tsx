@@ -623,7 +623,7 @@ export default function ScoringScreen() {
             )}
           </View>
         </SafeAreaView>
-        <EventFooter />
+        <EventFooter showSyncButton={true} />
       </>
     );
   }
@@ -637,7 +637,7 @@ export default function ScoringScreen() {
             <Text style={{ fontSize: 16, color: '#666' }}>Event not found</Text>
           </View>
         </SafeAreaView>
-        <EventFooter />
+        <EventFooter showSyncButton={true} />
       </>
     );
   }
@@ -666,7 +666,7 @@ export default function ScoringScreen() {
             </Text>
           </View>
         </SafeAreaView>
-        <EventFooter />
+        <EventFooter showSyncButton={true} />
       </>
     );
   }
@@ -692,7 +692,7 @@ export default function ScoringScreen() {
             </Text>
           </View>
         </SafeAreaView>
-        <EventFooter />
+        <EventFooter showSyncButton={true} />
       </>
     );
   }
