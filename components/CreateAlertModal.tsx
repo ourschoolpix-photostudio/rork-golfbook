@@ -38,7 +38,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
   const useLocalStorage = orgInfo?.useLocalStorage || false;
   const [title, setTitle] = useState<string>('');
   const [message, setMessage] = useState<string>('');
-  const [type, setType] = useState<'organizational' | 'event' | 'board'>('organizational');
+  const [type, setType] = useState<'organizational' | 'event' | 'board' | 'individual'>('organizational');
   const [priority, setPriority] = useState<'normal' | 'critical'>('normal');
   const [selectedEventId, setSelectedEventId] = useState<string | undefined>(preSelectedEventId);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -48,6 +48,8 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
   const [activeTab, setActiveTab] = useState<'create' | 'manage'>('create');
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [myAlerts, setMyAlerts] = useState<AlertType[]>([]);
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [allMembers, setAllMembers] = useState<any[]>([]);
   const [isLoadingMyAlerts, setIsLoadingMyAlerts] = useState<boolean>(false);
 
   const fetchMyAlerts = useCallback(async () => {
@@ -91,6 +93,27 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
     }
   }, [currentUser?.id, useLocalStorage]);
 
+  const fetchMembers = useCallback(async () => {
+    try {
+      if (useLocalStorage) {
+        const storedMembers = await localStorageService.members.getAll();
+        setAllMembers(storedMembers.filter(m => m.membershipType === 'active').sort((a, b) => a.name.localeCompare(b.name)));
+      } else {
+        const { data, error } = await supabase
+          .from('members')
+          .select('*')
+          .eq('membership_type', 'active')
+          .order('name', { ascending: true });
+        
+        if (error) throw error;
+        setAllMembers(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch members:', error);
+      setAllMembers([]);
+    }
+  }, [useLocalStorage]);
+
   useEffect(() => {
     if (visible) {
       setTitle('');
@@ -101,10 +124,12 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
       setSelectedTemplate(null);
       setExpiresIn(24);
       setRegistrationOnly(true);
+      setSelectedRecipients([]);
       setActiveTab('create');
       fetchMyAlerts();
+      fetchMembers();
     }
-  }, [visible, preSelectedEventId, fetchMyAlerts]);
+  }, [visible, preSelectedEventId, fetchMyAlerts, fetchMembers]);
 
   const handleTemplateSelect = (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
@@ -132,6 +157,11 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
       return;
     }
 
+    if (type === 'individual' && selectedRecipients.length === 0) {
+      Alert.alert('Error', 'Please select at least one recipient for this alert');
+      return;
+    }
+
     if (!currentUser?.id) {
       Alert.alert('Error', 'You must be logged in to create alerts');
       return;
@@ -150,6 +180,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
         createdBy: currentUser.id,
         expiresAt,
         registrationOnly: type === 'event' ? registrationOnly : false,
+        recipientIds: type === 'individual' ? selectedRecipients : undefined,
       });
 
       Alert.alert('Success', 'Alert created successfully');
@@ -334,6 +365,21 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                     Board Alert
                   </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    type === 'individual' && styles.typeButtonActive
+                  ]}
+                  onPress={() => setType('individual')}
+                  disabled={!!preSelectedEventId}
+                >
+                  <Text style={[
+                    styles.typeButtonText,
+                    type === 'individual' && styles.typeButtonTextActive
+                  ]}>
+                    Individual
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -358,6 +404,40 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                       </Text>
                     </TouchableOpacity>
                   ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {type === 'individual' && (
+              <View style={styles.section}>
+                <Text style={styles.label}>Select Recipients ({selectedRecipients.length})</Text>
+                <ScrollView style={styles.recipientsList}>
+                  {allMembers.map((member) => {
+                    const isSelected = selectedRecipients.includes(member.id);
+                    return (
+                      <TouchableOpacity
+                        key={member.id}
+                        style={[
+                          styles.recipientItem,
+                          isSelected && styles.selectedRecipientItem
+                        ]}
+                        onPress={() => {
+                          if (isSelected) {
+                            setSelectedRecipients(prev => prev.filter(id => id !== member.id));
+                          } else {
+                            setSelectedRecipients(prev => [...prev, member.id]);
+                          }
+                        }}
+                      >
+                        <Text style={[
+                          styles.recipientItemText,
+                          isSelected && styles.selectedRecipientItemText
+                        ]}>
+                          {member.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </ScrollView>
               </View>
             )}
@@ -524,7 +604,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                     </Text>
                     <View style={styles.alertItemFooter}>
                       <View style={styles.alertItemBadges}>
-                        <View style={[styles.badge, alert.type === 'organizational' ? styles.badgeOrg : alert.type === 'event' ? styles.badgeEvent : styles.badgeBoard]}>
+                        <View style={[styles.badge, alert.type === 'organizational' ? styles.badgeOrg : alert.type === 'event' ? styles.badgeEvent : alert.type === 'board' ? styles.badgeBoard : styles.badgeIndividual]}>
                           <Text style={styles.badgeText}>{alert.type}</Text>
                         </View>
                         {alert.priority === 'critical' && (
@@ -643,6 +723,30 @@ const styles = StyleSheet.create({
   },
   eventsList: {
     maxHeight: 150,
+  },
+  recipientsList: {
+    maxHeight: 200,
+  },
+  recipientItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  selectedRecipientItem: {
+    backgroundColor: '#dbeafe',
+    borderColor: '#3b82f6',
+  },
+  recipientItemText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  selectedRecipientItemText: {
+    fontWeight: '600' as const,
+    color: '#1e40af',
   },
   eventItem: {
     paddingVertical: 12,
@@ -838,6 +942,9 @@ const styles = StyleSheet.create({
   },
   badgeBoard: {
     backgroundColor: '#fef3c7',
+  },
+  badgeIndividual: {
+    backgroundColor: '#e0e7ff',
   },
   badgeCritical: {
     backgroundColor: '#fee2e2',

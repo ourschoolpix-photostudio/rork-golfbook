@@ -284,7 +284,7 @@ export interface Alert {
   id: string;
   title: string;
   message: string;
-  type: 'organizational' | 'event' | 'board';
+  type: 'organizational' | 'event' | 'board' | 'individual';
   priority: 'normal' | 'critical';
   eventId?: string;
   createdBy: string;
@@ -292,6 +292,7 @@ export interface Alert {
   expiresAt?: string;
   registrationOnly?: boolean;
   isDismissed?: boolean;
+  recipientIds?: string[];
 }
 
 export interface AlertTemplate {

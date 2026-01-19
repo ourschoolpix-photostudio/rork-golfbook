@@ -53,6 +53,22 @@ const getAllAlertsProcedure = publicProcedure
         const registeredEventIds = new Set((registrationsResult.data || []).map(r => r.event_id));
         const isAdminOrBoard = memberResult.data?.is_admin || (memberResult.data?.board_member_roles && memberResult.data.board_member_roles.length > 0);
         
+        const individualAlertIds = alertsData
+          .filter(a => a.type === 'individual')
+          .map(a => a.id);
+        
+        let recipientsData: any[] = [];
+        if (individualAlertIds.length > 0) {
+          const { data: recipientsResult } = await ctx.supabase
+            .from('alert_recipients')
+            .select('*')
+            .in('alert_id', individualAlertIds)
+            .eq('member_id', input.memberId);
+          recipientsData = recipientsResult || [];
+        }
+        
+        const recipientAlertIds = new Set(recipientsData.map(r => r.alert_id));
+        
         const now = new Date().toISOString();
         const activeAlertsData = alertsData.filter(alert => {
           if (alert.expires_at && alert.expires_at <= now) {
@@ -61,6 +77,10 @@ const getAllAlertsProcedure = publicProcedure
           
           if (alert.type === 'board') {
             return isAdminOrBoard;
+          }
+          
+          if (alert.type === 'individual') {
+            return recipientAlertIds.has(alert.id);
           }
           
           if (alert.type === 'event' && alert.registration_only && alert.event_id) {
@@ -118,21 +138,23 @@ const createAlertProcedure = publicProcedure
   .input(z.object({
     title: z.string(),
     message: z.string(),
-    type: z.enum(['organizational', 'event', 'board']),
+    type: z.enum(['organizational', 'event', 'board', 'individual']),
     priority: z.enum(['normal', 'critical']),
     eventId: z.string().optional(),
     createdBy: z.string(),
     expiresAt: z.string().optional(),
     registrationOnly: z.boolean().optional(),
+    recipientIds: z.array(z.string()).optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
       console.log('[Alerts tRPC] Creating alert:', input.title);
       
+      const alertId = `alert-${Date.now()}`;
       const { data, error } = await ctx.supabase
         .from('alerts')
         .insert({
-          id: `alert-${Date.now()}`,
+          id: alertId,
           title: input.title,
           message: input.message,
           type: input.type,
@@ -148,6 +170,22 @@ const createAlertProcedure = publicProcedure
       if (error) {
         console.error('[Alerts tRPC] Error creating alert:', error);
         throw new Error(`Failed to create alert: ${error.message}`);
+      }
+
+      if (input.type === 'individual' && input.recipientIds && input.recipientIds.length > 0) {
+        const recipients = input.recipientIds.map((memberId, index) => ({
+          id: `recipient-${Date.now()}-${index}`,
+          alert_id: alertId,
+          member_id: memberId,
+        }));
+
+        const { error: recipientsError } = await ctx.supabase
+          .from('alert_recipients')
+          .insert(recipients);
+
+        if (recipientsError) {
+          console.error('[Alerts tRPC] Error creating alert recipients:', recipientsError);
+        }
       }
 
       console.log('[Alerts tRPC] Created alert:', data.id);

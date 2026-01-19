@@ -57,6 +57,10 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
             return isAdminOrBoard;
           }
           
+          if (alert.type === 'individual') {
+            return alert.recipientIds?.includes(memberId) || false;
+          }
+          
           if (alert.type === 'event' && alert.registrationOnly && alert.eventId) {
             return registeredEventIds.has(alert.eventId) || isAdminOrBoard;
           }
@@ -96,6 +100,20 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         const isAdminOrBoard = memberResult.data?.is_admin || (memberResult.data?.board_member_roles && memberResult.data.board_member_roles.length > 0);
         const registeredEventIds = new Set((registrationsResult.data || []).map((r: any) => r.event_id));
         
+        const individualAlertIds = (alertsResult.data || []).filter((a: any) => a.type === 'individual').map((a: any) => a.id);
+        
+        let recipientsData: any[] = [];
+        if (individualAlertIds.length > 0) {
+          const { data: recipientsResult } = await supabase
+            .from('alert_recipients')
+            .select('*')
+            .in('alert_id', individualAlertIds)
+            .eq('member_id', memberId);
+          recipientsData = recipientsResult || [];
+        }
+        
+        const recipientAlertIds = new Set(recipientsData.map((r: any) => r.alert_id));
+        
         const now = new Date().toISOString();
         const activeAlertsData = (alertsResult.data || []).filter((a: any) => {
           if (a.created_by === memberId) return false;
@@ -103,6 +121,10 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           
           if (a.type === 'board') {
             return isAdminOrBoard;
+          }
+          
+          if (a.type === 'individual') {
+            return recipientAlertIds.has(a.id);
           }
           
           if (a.type === 'event' && a.registration_only && a.event_id) {
@@ -167,6 +189,10 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           
           if (alert.type === 'board') {
             return isAdminOrBoard;
+          }
+          
+          if (alert.type === 'individual') {
+            return alert.recipientIds?.includes(memberId) || false;
           }
           
           if (alert.type === 'event' && alert.registrationOnly && alert.eventId) {
@@ -351,16 +377,18 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
       try {
         console.log('➕ [AlertsContext] Creating alert');
         
+        const alertId = `alert-${Date.now()}`;
+        
         if (useLocalStorage) {
           const newAlert: Alert = {
-            id: `alert-${Date.now()}`,
+            id: alertId,
             createdAt: new Date().toISOString(),
             ...alert,
           };
           await localStorageService.alerts.create(newAlert);
         } else {
           const { error } = await supabase.from('alerts').insert({
-            id: `alert-${Date.now()}`,
+            id: alertId,
             title: alert.title,
             message: alert.message,
             type: alert.type,
@@ -372,6 +400,22 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           });
           
           if (error) throw error;
+          
+          if (alert.type === 'individual' && alert.recipientIds && alert.recipientIds.length > 0) {
+            const recipients = alert.recipientIds.map((memberId, index) => ({
+              id: `recipient-${Date.now()}-${index}`,
+              alert_id: alertId,
+              member_id: memberId,
+            }));
+
+            const { error: recipientsError } = await supabase
+              .from('alert_recipients')
+              .insert(recipients);
+
+            if (recipientsError) {
+              console.error('[AlertsContext] Error creating alert recipients:', recipientsError);
+            }
+          }
         }
         
         console.log('✅ [AlertsContext] Alert created successfully');
