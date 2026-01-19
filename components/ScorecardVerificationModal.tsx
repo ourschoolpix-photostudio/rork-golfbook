@@ -96,24 +96,37 @@ export default function ScorecardVerificationModal({
         .map(p => `${p.name}: ${p.scoreTotal}`)
         .join(', ');
 
-      const prompt = `You are verifying a golf scorecard photo. 
+      const prompt = `You are analyzing a golf scorecard photo for verification.
+
+Golf Scorecard Format:
+- Scorecards have player names in rows
+- Columns represent holes (1-9 or 1-18)
+- Each cell contains the number of strokes for that hole
+- The rightmost column shows the total score (sum of all holes)
 
 Current scores in the app for ${groupLabel}:
 ${playerScores}
 
-Your task:
-1. Check if the scorecard is legible (can you read the handwriting/numbers?)
-2. Verify the math on each player's row adds up correctly
-3. Compare the totals on the scorecard with the app scores above
+Your verification steps:
+1. LEGIBILITY: Can you clearly read the handwritten numbers and player names?
+   - If most numbers are unclear or blurry, return "illegible"
+   
+2. MATH VERIFICATION: For each player's row, add up all hole scores
+   - Check if the written total matches the sum
+   - Look carefully at each number in each hole
+   
+3. COMPARE WITH APP: Match the verified totals with the app scores listed above
+   - Player names should match (allow for nickname variations)
+   - Totals should match the numbers in the app
 
 Return:
-- status: "verified" if everything matches and math is correct
-- status: "mismatch" if there's a math error or totals don't match the app
-- status: "illegible" if you can't read the scorecard clearly
-- message: A brief flag message (under 10 words)
-- details: Optional. Only if status is "mismatch", specify which player or hole has an issue
+- status: "verified" = scorecard is legible, math is correct, totals match app
+- status: "mismatch" = you can read it but there's a math error or app mismatch
+- status: "illegible" = cannot read the scorecard clearly enough
+- message: Brief summary (e.g., "Scores verified", "Math error on John's row", "Scorecard too blurry")
+- details: (Only for "mismatch") Explain what's wrong (e.g., "John's holes add to 85 but total shows 87")
 
-Be quick and concise. We just need a simple flag, not a detailed analysis.`;
+Focus on accuracy. If in doubt about legibility, return "illegible".`;
 
       const verification = (await generateObject({
         messages: [
@@ -156,24 +169,46 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
 
       const prompt = `You are extracting golf scores from a scorecard photo.
 
+Golf Scorecard Structure:
+- Scorecards show player names in rows
+- Columns are numbered holes (typically 1-9 or 1-18)
+- Each cell contains strokes taken on that hole (usually 2-10)
+- Common golf numbers: Par is usually 3, 4, or 5
+- Player scores per hole typically range from 2 to 9
+- Look for handwritten numbers in a grid/table format
+
 Players in this group: ${playerNames}
 
-Your task:
-1. Read the hole-by-hole scores for each player (holes 1-18 or 1-9)
-2. Calculate the total for each player by adding up their hole scores
-3. Match names from the scorecard to the player names provided above
+Extraction Instructions:
+1. IDENTIFY PLAYERS: Find names on the scorecard, match them to the list above
+   - Names might be abbreviated or nicknames
+   - Match as closely as possible
 
-Return:
-- status: "success" if you can read all scores clearly
-- status: "partial" if some holes are hard to read but you got most
-- status: "illegible" if you cannot read the scorecard
-- message: Brief status message
-- players: Array of player scores with:
-  - name: Player name (match to the names above)
-  - holes: Array of scores for each hole (use 0 if illegible)
-  - total: Sum of all hole scores (you calculate this from the holes array)
+2. READ HOLE SCORES: For each player, read their score for each hole
+   - Go column by column (hole 1, hole 2, etc.)
+   - Each score should be a number between 2-10 typically
+   - If a hole score is illegible, use 0 as placeholder
+   - Look carefully at handwriting - distinguish 3 from 8, 4 from 9, etc.
 
-IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use the written total on the scorecard.`;
+3. CALCULATE TOTAL: Add up all the hole scores you extracted
+   - Do NOT use any written total on the scorecard
+   - Sum only the holes array you create
+   - If you used 0 for illegible holes, the total will be lower
+
+Return Format:
+- status: "success" = all holes clearly readable for all players
+- status: "partial" = got most scores but some holes unclear
+- status: "illegible" = cannot read the scorecard (too blurry, poor lighting)
+- message: Brief explanation (e.g., "Extracted 4 players successfully", "Some holes on back 9 unclear")
+- players: Array where each player has:
+  - name: Match to provided player list
+  - holes: Array of numbers (e.g., [4, 5, 3, 6, 4, 5, 4, 3, 5] for 9 holes)
+  - total: YOUR calculated sum of the holes array
+
+Example:
+If you see holes [5, 4, 3, 6, 5, 4, 4, 3, 5], total should be 39 (you calculate it)
+
+Be thorough and careful with number recognition.`;
 
       const scanResult = (await generateObject({
         messages: [
@@ -210,9 +245,9 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
     try {
       console.log('[ScorecardVerification] Capturing frame for analysis...');
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
+        quality: 0.95,
         base64: true,
-        skipProcessing: true,
+        skipProcessing: false,
       });
 
       if (photo && photo.base64) {
@@ -244,7 +279,7 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
+        quality: 0.95,
         base64: true,
       });
 
