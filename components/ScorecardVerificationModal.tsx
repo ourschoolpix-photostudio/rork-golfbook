@@ -70,29 +70,17 @@ export default function ScorecardVerificationModal({
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<ScanMode>('verify');
   const [showCamera, setShowCamera] = useState(false);
-  const [scanningActive, setScanningActive] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<any>(null);
-  const scanIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!visible) {
       setShowCamera(false);
-      setScanningActive(false);
-      if (scanIntervalRef.current) {
-        clearInterval(scanIntervalRef.current);
-        scanIntervalRef.current = null;
-      }
     }
   }, [visible]);
 
   const handleStopCamera = useCallback(() => {
     setShowCamera(false);
-    setScanningActive(false);
-    if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
-      scanIntervalRef.current = null;
-    }
   }, []);
 
   const verifyScorecard = useCallback(async (base64Image: string) => {
@@ -142,23 +130,18 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
 
       console.log('[ScorecardVerification] Result:', verification);
       setResult(verification);
-      
-      if (verification.status === 'verified' || verification.status === 'mismatch') {
-        handleStopCamera();
-      }
+      handleStopCamera();
     } catch (error) {
       console.error('[ScorecardVerification] Error analyzing:', error);
-      if (!scanningActive) {
-        setResult({
-          status: 'illegible',
-          message: 'Analysis failed',
-          details: 'Please try again or check the photo quality',
-        });
-      }
+      setResult({
+        status: 'illegible',
+        message: 'Analysis failed',
+        details: 'Please try again or check the photo quality',
+      });
     } finally {
       setIsAnalyzing(false);
     }
-  }, [isAnalyzing, players, groupLabel, scanningActive, handleStopCamera]);
+  }, [isAnalyzing, players, groupLabel, handleStopCamera]);
 
   const scanScorecardOnly = useCallback(async (base64Image: string) => {
     if (isAnalyzing) return;
@@ -206,23 +189,18 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
 
       console.log('[ScorecardVerification] Scan result:', scanResult);
       setScanResult(scanResult);
-      
-      if (scanResult.status === 'success' || scanResult.status === 'partial') {
-        handleStopCamera();
-      }
+      handleStopCamera();
     } catch (error) {
       console.error('[ScorecardVerification] Error scanning:', error);
-      if (!scanningActive) {
-        setScanResult({
-          status: 'illegible',
-          message: 'Scan failed - please try again',
-          players: [],
-        });
-      }
+      setScanResult({
+        status: 'illegible',
+        message: 'Scan failed - please try again',
+        players: [],
+      });
     } finally {
       setIsAnalyzing(false);
     }
-  }, [isAnalyzing, players, scanningActive, handleStopCamera]);
+  }, [isAnalyzing, players, handleStopCamera]);
 
   const captureAndAnalyze = useCallback(async () => {
     if (!cameraRef.current || isAnalyzing) return;
@@ -248,21 +226,7 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
     }
   }, [isAnalyzing, scanMode, verifyScorecard, scanScorecardOnly]);
 
-  useEffect(() => {
-    if (scanningActive && cameraRef.current && !isAnalyzing) {
-      const interval = setInterval(() => {
-        captureAndAnalyze();
-      }, 2000);
-      scanIntervalRef.current = interval;
 
-      return () => {
-        if (scanIntervalRef.current) {
-          clearInterval(scanIntervalRef.current);
-          scanIntervalRef.current = null;
-        }
-      };
-    }
-  }, [scanningActive, isAnalyzing, captureAndAnalyze]);
 
   const handleSelectFromGallery = useCallback(async () => {
     try {
@@ -320,7 +284,6 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
     }
 
     setShowCamera(true);
-    setScanningActive(true);
   };
 
   const handleClose = () => {
@@ -410,10 +373,10 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
                   <View style={styles.scanInstructions}>
                     <ScanLine size={32} color="#fff" />
                     <Text style={styles.scanInstructionsText}>
-                      {isAnalyzing ? 'Analyzing...' : 'Hold camera over scorecard'}
+                      Position scorecard in frame
                     </Text>
                     <Text style={styles.scanInstructionsSubtext}>
-                      Scanner will auto-detect when readable
+                      Tap capture when ready
                     </Text>
                   </View>
                   <View style={styles.cameraButtons}>
@@ -423,6 +386,16 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
                     >
                       <X size={20} color="#fff" />
                       <Text style={styles.stopCameraBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.stopCameraBtn, styles.captureBtn]}
+                      onPress={captureAndAnalyze}
+                      disabled={isAnalyzing}
+                    >
+                      <ScanLine size={20} color="#fff" />
+                      <Text style={styles.stopCameraBtnText}>
+                        {isAnalyzing ? 'Analyzing...' : 'Capture'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -910,5 +883,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  captureBtn: {
+    backgroundColor: '#4CAF50',
   },
 });
