@@ -471,7 +471,7 @@ export function EventFooter({
               >
                 <Upload size={18} color="#fff" />
                 <Text style={styles.syncButtonText}>
-                  {isSyncing ? 'Syncing...' : 'You Are Offline - Sync When Connected'}
+                  {isSyncing ? 'Syncing...' : hasOfflineScores ? 'You Are Offline - Sync When Connected' : 'You Are Offline - Syncing Not Required'}
                 </Text>
               </TouchableOpacity>
             ) : null
