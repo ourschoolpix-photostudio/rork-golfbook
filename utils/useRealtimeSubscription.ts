@@ -116,13 +116,27 @@ export function useRealtimeRegistrations(eventId: string, enabled: boolean = tru
           },
           async (payload) => {
             try {
-              console.log('[Realtime] 📝 Registration change detected:', payload.eventType);
+              console.log('[Realtime] 📝 Registration change detected:', payload.eventType, payload);
               
-              // Immediately fetch fresh data and update cache for instant UI update
-              const freshRegistrations = await supabaseService.registrations.getAll(eventId);
-              if (freshRegistrations) {
-                console.log('[Realtime] ✅ Immediately updating registrations cache with fresh data');
-                queryClient.setQueryData(['registrations', eventId], freshRegistrations);
+              // Handle DELETE optimistically for instant UI update
+              if (payload.eventType === 'DELETE' && payload.old) {
+                const deletedId = (payload.old as any).id;
+                console.log('[Realtime] 🗑️ DELETE detected, removing registration:', deletedId);
+                
+                // Optimistically remove from cache immediately
+                queryClient.setQueryData(['registrations', eventId], (oldData: any) => {
+                  if (!oldData) return oldData;
+                  const filtered = oldData.filter((reg: any) => reg.id !== deletedId);
+                  console.log('[Realtime] ✅ Removed from cache, old count:', oldData.length, 'new count:', filtered.length);
+                  return filtered;
+                });
+              } else {
+                // For INSERT and UPDATE, fetch fresh data
+                const freshRegistrations = await supabaseService.registrations.getAll(eventId);
+                if (freshRegistrations) {
+                  console.log('[Realtime] ✅ Immediately updating registrations cache with fresh data');
+                  queryClient.setQueryData(['registrations', eventId], freshRegistrations);
+                }
               }
               
               // Also invalidate to ensure consistency
