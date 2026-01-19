@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Camera, Image as ImageIcon } from 'lucide-react-native';
 import ScoringModal from '@/components/ScoringModal';
 import ScorecardVerificationModal from '@/components/ScorecardVerificationModal';
 import ScorecardPhotosModal from '@/components/ScorecardPhotosModal';
+import { scorecardPhotoService } from '@/utils/scorecardPhotoService';
 import { calculateTournamentFlight, getDisplayHandicap, hasAdjustedHandicap, isUsingCourseHandicap } from '@/utils/handicapHelper';
 import type { Event, Member } from '@/types';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
@@ -74,6 +75,25 @@ function GroupCard({
   const [scoringModalVisible, setScoringModalVisible] = useState(false);
   const [verificationModalVisible, setVerificationModalVisible] = useState(false);
   const [photosModalVisible, setPhotosModalVisible] = useState(false);
+  const [hasPhotos, setHasPhotos] = useState(false);
+
+  useEffect(() => {
+    const checkPhotos = async () => {
+      if (eventId && label) {
+        const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
+        setHasPhotos(photos.length > 0);
+      }
+    };
+    checkPhotos();
+  }, [eventId, label]);
+
+  const handlePhotosModalClose = async () => {
+    setPhotosModalVisible(false);
+    if (eventId && label) {
+      const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
+      setHasPhotos(photos.length > 0);
+    }
+  };
 
   const handleOpenHandicapEdit = (player: any) => {
     console.log('Open handicap edit for', player.name);
@@ -125,7 +145,7 @@ function GroupCard({
         {canVerifyScorecard(currentMember) && playerCount > 0 && (
           <>
             <TouchableOpacity 
-              style={styles.viewPhotosButton} 
+              style={[styles.viewPhotosButton, { backgroundColor: hasPhotos ? '#4CAF50' : '#f44336' }]} 
               onPress={() => setPhotosModalVisible(true)}
             >
               <ImageIcon size={14} color="#fff" />
@@ -459,7 +479,7 @@ function GroupCard({
 
     <ScorecardPhotosModal
       visible={photosModalVisible}
-      onClose={() => setPhotosModalVisible(false)}
+      onClose={handlePhotosModalClose}
       eventId={eventId || ''}
       groupLabel={label}
     />
@@ -519,7 +539,6 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   viewPhotosButton: {
-    backgroundColor: '#4CAF50',
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 6,
