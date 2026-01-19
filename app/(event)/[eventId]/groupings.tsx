@@ -907,7 +907,7 @@ export default function GroupingsScreen() {
             label: 'Refresh',
             onPress: handleRefresh,
           },
-          ...(canManageGroupings(currentMember) ? [{
+          ...((currentMember?.isAdmin || user?.isAdmin) ? [{
             icon: 'pdf' as const,
             label: 'PDF',
             onPress: handleGeneratePdf,
