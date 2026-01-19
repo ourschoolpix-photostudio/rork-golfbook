@@ -4686,7 +4686,7 @@ const styles = StyleSheet.create({
   },
   registeredBadgeContainer: {
     position: 'absolute' as const,
-    top: 135,
+    top: 115,
     left: 16,
     zIndex: 100,
   },
