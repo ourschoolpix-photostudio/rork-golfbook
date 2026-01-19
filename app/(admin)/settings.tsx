@@ -64,6 +64,7 @@ export default function SettingsScreen() {
     membership: boolean;
     courses: boolean;
     storage: boolean;
+    bulkUpdate: boolean;
   }>({
     organization: false,
     paypal: false,
@@ -71,6 +72,7 @@ export default function SettingsScreen() {
     membership: false,
     courses: false,
     storage: false,
+    bulkUpdate: false,
   });
   const [showCoursesModal, setShowCoursesModal] = useState(false);
   const [orgInfo, setOrgInfo] = useState<OrganizationInfo>({
@@ -952,6 +954,42 @@ export default function SettingsScreen() {
               </TouchableOpacity>
               <Text style={styles.actionDescription}>
                 Add, edit, or remove courses that can be used when creating events and games
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('bulkUpdate')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons name="refresh" size={22} color="#007AFF" />
+              <Text style={styles.sectionTitle}>Bulk Update Members</Text>
+            </View>
+            <Ionicons
+              name={expandedSections.bulkUpdate ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color="#007AFF"
+            />
+          </TouchableOpacity>
+          
+          {expandedSections.bulkUpdate && (
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionDescription}>
+                Update all members at once with bulk operations.
+              </Text>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => router.push('/(admin)/bulk-update')}
+              >
+                <Ionicons name="refresh" size={20} color="#fff" />
+                <Text style={styles.actionButtonText}>Bulk Update Members</Text>
+              </TouchableOpacity>
+              <Text style={styles.actionDescription}>
+                Perform bulk updates on member information and settings
               </Text>
             </View>
           )}

@@ -89,11 +89,11 @@ export default function AdminScreen() {
       href: '/(admin)/admin-financial' as const,
     },
     {
-      id: 'bulk-update',
-      title: 'Bulk Update Members',
-      description: 'Update all members at once',
-      icon: 'refresh',
-      href: '/(admin)/bulk-update' as const,
+      id: 'email-manager',
+      title: 'Email Manager',
+      description: 'Send emails to members with templates',
+      icon: 'mail',
+      href: '/(admin)/email-manager' as const,
     },
     {
       id: 'settings',
@@ -101,13 +101,6 @@ export default function AdminScreen() {
       description: 'Configure app branding and preferences',
       icon: 'settings',
       href: '/(admin)/settings' as const,
-    },
-    {
-      id: 'email-manager',
-      title: 'Email Manager',
-      description: 'Send emails to members with templates',
-      icon: 'mail',
-      href: '/(admin)/email-manager' as const,
     },
     {
       id: 'alerts',
@@ -399,7 +392,6 @@ export default function AdminScreen() {
             if (option.id === 'players') hasAccess = canAccessPlayerManagement(currentUser);
             else if (option.id === 'events') hasAccess = canAccessEventManagement(currentUser);
             else if (option.id === 'financial') hasAccess = canAccessFinancialSummary(currentUser);
-            else if (option.id === 'bulk-update') hasAccess = canAccessBulkUpdate(currentUser);
             else if (option.id === 'settings') hasAccess = canAccessSettings(currentUser);
             else if (option.id === 'email-manager') hasAccess = canAccessSettings(currentUser);
             else if (option.id === 'alerts') hasAccess = canAccessSettings(currentUser);
