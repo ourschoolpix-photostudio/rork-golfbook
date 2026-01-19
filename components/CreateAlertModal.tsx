@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal,
   View,
@@ -15,7 +15,10 @@ import { X, Trash2, AlertCircle } from 'lucide-react-native';
 import { useAlerts } from '@/contexts/AlertsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/contexts/EventsContext';
-import { Event } from '@/types';
+import { Event, Alert as AlertType } from '@/types';
+import { localStorageService } from '@/utils/localStorageService';
+import { supabase } from '@/integrations/supabase/client';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface CreateAlertModalProps {
   visible: boolean;
@@ -29,8 +32,10 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
   preSelectedEventId,
 }) => {
   const { currentUser } = useAuth();
-  const { templates, createAlert, refreshAlerts, alerts, deleteAlert } = useAlerts();
+  const { templates, createAlert, refreshAlerts, deleteAlert } = useAlerts();
   const { events } = useEvents();
+  const { orgInfo } = useSettings();
+  const useLocalStorage = orgInfo?.useLocalStorage || false;
   const [title, setTitle] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const [type, setType] = useState<'organizational' | 'event'>('organizational');
@@ -41,6 +46,49 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'create' | 'manage'>('create');
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [myAlerts, setMyAlerts] = useState<AlertType[]>([]);
+  const [isLoadingMyAlerts, setIsLoadingMyAlerts] = useState<boolean>(false);
+
+  const fetchMyAlerts = useCallback(async () => {
+    if (!currentUser?.id) return;
+    
+    try {
+      setIsLoadingMyAlerts(true);
+      
+      if (useLocalStorage) {
+        const storedAlerts = await localStorageService.alerts.getAll();
+        const myCreatedAlerts = storedAlerts.filter(alert => alert.createdBy === currentUser.id);
+        setMyAlerts(myCreatedAlerts);
+      } else {
+        const { data, error } = await supabase
+          .from('alerts')
+          .select('*')
+          .eq('created_by', currentUser.id)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        const fetchedAlerts = (data || []).map((a: any) => ({
+          id: a.id,
+          title: a.title,
+          message: a.message,
+          type: a.type,
+          priority: a.priority,
+          eventId: a.event_id,
+          createdBy: a.created_by,
+          createdAt: a.created_at,
+          expiresAt: a.expires_at,
+        }));
+        
+        setMyAlerts(fetchedAlerts);
+      }
+    } catch (error) {
+      console.error('Failed to fetch my alerts:', error);
+      setMyAlerts([]);
+    } finally {
+      setIsLoadingMyAlerts(false);
+    }
+  }, [currentUser?.id, useLocalStorage]);
 
   useEffect(() => {
     if (visible) {
@@ -52,8 +100,9 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
       setSelectedTemplate(null);
       setExpiresIn(24);
       setActiveTab('create');
+      fetchMyAlerts();
     }
-  }, [visible, preSelectedEventId]);
+  }, [visible, preSelectedEventId, fetchMyAlerts]);
 
   const handleTemplateSelect = (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
@@ -102,6 +151,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
 
       Alert.alert('Success', 'Alert created successfully');
       await refreshAlerts();
+      await fetchMyAlerts();
       onClose();
     } catch (error) {
       console.error('Failed to create alert:', error);
@@ -115,8 +165,8 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
 
   const handleDeleteAll = async () => {
     Alert.alert(
-      'Delete All Alerts',
-      'Are you sure you want to delete ALL alerts? This action cannot be undone.',
+      'Delete All My Alerts',
+      `Are you sure you want to delete all ${myAlerts.length} of your alerts? This action cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -126,12 +176,13 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
             try {
               setIsDeleting(true);
               
-              for (const alert of alerts) {
+              for (const alert of myAlerts) {
                 await deleteAlert(alert.id);
               }
               
-              Alert.alert('Success', `Deleted ${alerts.length} alert(s)`);
+              Alert.alert('Success', `Deleted ${myAlerts.length} alert(s)`);
               await refreshAlerts();
+              await fetchMyAlerts();
             } catch (error) {
               console.error('Failed to delete alerts:', error);
               Alert.alert('Error', 'Failed to delete some alerts');
@@ -148,6 +199,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
     try {
       await deleteAlert(alertId);
       await refreshAlerts();
+      await fetchMyAlerts();
     } catch (error) {
       console.error('Failed to delete alert:', error);
       Alert.alert('Error', 'Failed to delete alert');
@@ -388,9 +440,9 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
               <View style={styles.manageHeader}>
                 <Text style={styles.manageTitle}>
-                  All Alerts ({alerts.length})
+                  My Alerts ({myAlerts.length})
                 </Text>
-                {alerts.length > 0 && (
+                {myAlerts.length > 0 && (
                   <TouchableOpacity
                     style={[styles.deleteAllButton, isDeleting && styles.deleteAllButtonDisabled]}
                     onPress={handleDeleteAll}
@@ -404,12 +456,16 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                 )}
               </View>
 
-              {alerts.length === 0 ? (
+              {isLoadingMyAlerts ? (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>No alerts created yet</Text>
+                  <Text style={styles.emptyText}>Loading...</Text>
+                </View>
+              ) : myAlerts.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>You haven&apos;t created any alerts yet</Text>
                 </View>
               ) : (
-                alerts.map((alert) => (
+                myAlerts.map((alert) => (
                   <View key={alert.id} style={styles.alertItem}>
                     <View style={styles.alertItemHeader}>
                       <View style={styles.alertItemTitleRow}>
