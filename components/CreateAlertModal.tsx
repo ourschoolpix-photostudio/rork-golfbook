@@ -377,7 +377,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                     styles.typeButtonText,
                     type === 'individual' && styles.typeButtonTextActive
                   ]}>
-                    Individual
+                    Player Alert
                   </Text>
                 </TouchableOpacity>
               </View>
