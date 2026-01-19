@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,11 @@ import {
   ActivityIndicator,
   Image,
   ScrollView,
+  Platform,
 } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, X, CheckCircle, AlertTriangle, XCircle, ScanLine, ClipboardCheck } from 'lucide-react-native';
+import { X, CheckCircle, AlertTriangle, XCircle, ScanLine, ClipboardCheck, ImageIcon } from 'lucide-react-native';
 import { generateObject } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 
@@ -67,82 +69,35 @@ export default function ScorecardVerificationModal({
   const [scanResult, setScanResult] = useState<ScanOnlyResult | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<ScanMode>('verify');
+  const [showCamera, setShowCamera] = useState(false);
+  const [scanningActive, setScanningActive] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<any>(null);
+  const scanIntervalRef = useRef<number | null>(null);
 
-  const handleTakePhoto = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        setResult({
-          status: 'illegible',
-          message: 'Camera permission denied',
-          details: 'Please enable camera access in settings',
-        });
-        return;
+  useEffect(() => {
+    if (!visible) {
+      setShowCamera(false);
+      setScanningActive(false);
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
       }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setImageUri(asset.uri);
-        if (scanMode === 'verify') {
-          await verifyScorecard(asset.base64!);
-        } else {
-          await scanScorecardOnly(asset.base64!);
-        }
-      }
-    } catch (error) {
-      console.error('[ScorecardVerification] Error taking photo:', error);
-      setResult({
-        status: 'illegible',
-        message: 'Failed to capture photo',
-        details: 'Please try again',
-      });
     }
-  };
+  }, [visible]);
 
-  const handleSelectFromGallery = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        setResult({
-          status: 'illegible',
-          message: 'Gallery permission denied',
-          details: 'Please enable photo access in settings',
-        });
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setImageUri(asset.uri);
-        if (scanMode === 'verify') {
-          await verifyScorecard(asset.base64!);
-        } else {
-          await scanScorecardOnly(asset.base64!);
-        }
-      }
-    } catch (error) {
-      console.error('[ScorecardVerification] Error selecting photo:', error);
-      setResult({
-        status: 'illegible',
-        message: 'Failed to select photo',
-        details: 'Please try again',
-      });
+  const handleStopCamera = useCallback(() => {
+    setShowCamera(false);
+    setScanningActive(false);
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
     }
-  };
+  }, []);
 
-  const verifyScorecard = async (base64Image: string) => {
+  const verifyScorecard = useCallback(async (base64Image: string) => {
+    if (isAnalyzing) return;
+    
     setIsAnalyzing(true);
     setResult(null);
     setScanResult(null);
@@ -187,19 +142,27 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
 
       console.log('[ScorecardVerification] Result:', verification);
       setResult(verification as any);
+      
+      if (verification.status === 'verified' || verification.status === 'mismatch') {
+        handleStopCamera();
+      }
     } catch (error) {
       console.error('[ScorecardVerification] Error analyzing:', error);
-      setResult({
-        status: 'illegible',
-        message: 'Analysis failed',
-        details: 'Please try again or check the photo quality',
-      });
+      if (!scanningActive) {
+        setResult({
+          status: 'illegible',
+          message: 'Analysis failed',
+          details: 'Please try again or check the photo quality',
+        });
+      }
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [isAnalyzing, players, groupLabel, scanningActive, handleStopCamera]);
 
-  const scanScorecardOnly = async (base64Image: string) => {
+  const scanScorecardOnly = useCallback(async (base64Image: string) => {
+    if (isAnalyzing) return;
+    
     setIsAnalyzing(true);
     setResult(null);
     setScanResult(null);
@@ -243,23 +206,130 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
 
       console.log('[ScorecardVerification] Scan result:', scanResult);
       setScanResult(scanResult as any);
+      
+      if (scanResult.status === 'success' || scanResult.status === 'partial') {
+        handleStopCamera();
+      }
     } catch (error) {
       console.error('[ScorecardVerification] Error scanning:', error);
-      setScanResult({
-        status: 'illegible',
-        message: 'Scan failed - please try again',
-        players: [],
-      });
+      if (!scanningActive) {
+        setScanResult({
+          status: 'illegible',
+          message: 'Scan failed - please try again',
+          players: [],
+        });
+      }
     } finally {
       setIsAnalyzing(false);
     }
+  }, [isAnalyzing, players, scanningActive, handleStopCamera]);
+
+  const captureAndAnalyze = useCallback(async () => {
+    if (!cameraRef.current || isAnalyzing) return;
+
+    try {
+      console.log('[ScorecardVerification] Capturing frame for analysis...');
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.7,
+        base64: true,
+        skipProcessing: true,
+      });
+
+      if (photo && photo.base64) {
+        setImageUri(photo.uri);
+        if (scanMode === 'verify') {
+          verifyScorecard(photo.base64);
+        } else {
+          scanScorecardOnly(photo.base64);
+        }
+      }
+    } catch (error) {
+      console.error('[ScorecardVerification] Error capturing frame:', error);
+    }
+  }, [isAnalyzing, scanMode, verifyScorecard, scanScorecardOnly]);
+
+  useEffect(() => {
+    if (scanningActive && cameraRef.current && !isAnalyzing) {
+      const interval = setInterval(() => {
+        captureAndAnalyze();
+      }, 2000);
+      scanIntervalRef.current = interval;
+
+      return () => {
+        if (scanIntervalRef.current) {
+          clearInterval(scanIntervalRef.current);
+          scanIntervalRef.current = null;
+        }
+      };
+    }
+  }, [scanningActive, isAnalyzing, captureAndAnalyze]);
+
+  const handleSelectFromGallery = useCallback(async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        setResult({
+          status: 'illegible',
+          message: 'Gallery permission denied',
+          details: 'Please enable photo access in settings',
+        });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setImageUri(asset.uri);
+        if (scanMode === 'verify') {
+          verifyScorecard(asset.base64!);
+        } else {
+          scanScorecardOnly(asset.base64!);
+        }
+      }
+    } catch (error) {
+      console.error('[ScorecardVerification] Error selecting photo:', error);
+      setResult({
+        status: 'illegible',
+        message: 'Failed to select photo',
+        details: 'Please try again',
+      });
+    }
+  }, [scanMode, verifyScorecard, scanScorecardOnly]);
+
+  const handleStartCamera = async () => {
+    if (Platform.OS === 'web') {
+      handleSelectFromGallery();
+      return;
+    }
+
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) {
+        setResult({
+          status: 'illegible',
+          message: 'Camera permission denied',
+          details: 'Please enable camera access in settings',
+        });
+        return;
+      }
+    }
+
+    setShowCamera(true);
+    setScanningActive(true);
   };
 
   const handleClose = () => {
+    handleStopCamera();
     setResult(null);
     setScanResult(null);
     setImageUri(null);
     setScanMode('verify');
+    setShowCamera(false);
     onClose();
   };
 
@@ -328,7 +398,38 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
           </View>
 
           <ScrollView style={styles.body}>
-            {!imageUri && !result && !scanResult && !isAnalyzing && (
+            {showCamera && !result && !scanResult && (
+              <View style={styles.cameraContainer}>
+                <CameraView
+                  ref={cameraRef}
+                  style={styles.camera}
+                  facing="back"
+                />
+                <View style={styles.scanOverlay}>
+                  <View style={styles.scanFrame} />
+                  <View style={styles.scanInstructions}>
+                    <ScanLine size={32} color="#fff" />
+                    <Text style={styles.scanInstructionsText}>
+                      {isAnalyzing ? 'Analyzing...' : 'Hold camera over scorecard'}
+                    </Text>
+                    <Text style={styles.scanInstructionsSubtext}>
+                      Scanner will auto-detect when readable
+                    </Text>
+                  </View>
+                  <View style={styles.cameraButtons}>
+                    <TouchableOpacity
+                      style={styles.stopCameraBtn}
+                      onPress={handleStopCamera}
+                    >
+                      <X size={20} color="#fff" />
+                      <Text style={styles.stopCameraBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {!showCamera && !imageUri && !result && !scanResult && !isAnalyzing && (
               <View style={styles.actionsContainer}>
                 <View style={styles.modeToggleContainer}>
                   <TouchableOpacity
@@ -367,18 +468,23 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
                 
                 <TouchableOpacity
                   style={styles.actionButton}
-                  onPress={handleTakePhoto}
+                  onPress={handleStartCamera}
                 >
-                  <Camera size={24} color="#fff" />
-                  <Text style={styles.actionButtonText}>Take Photo</Text>
+                  <ScanLine size={24} color="#fff" />
+                  <Text style={styles.actionButtonText}>
+                    {Platform.OS === 'web' ? 'Choose Photo' : 'Start Scanner'}
+                  </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.secondaryButton]}
-                  onPress={handleSelectFromGallery}
-                >
-                  <Text style={styles.actionButtonText}>Choose from Gallery</Text>
-                </TouchableOpacity>
+                {Platform.OS !== 'web' && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.secondaryButton]}
+                    onPress={handleSelectFromGallery}
+                  >
+                    <ImageIcon size={24} color="#fff" />
+                    <Text style={styles.actionButtonText}>Choose from Gallery</Text>
+                  </TouchableOpacity>
+                )}
 
                 <View style={styles.playersList}>
                   <Text style={styles.playersTitle}>
@@ -430,9 +536,10 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
                   onPress={() => {
                     setResult(null);
                     setImageUri(null);
+                    handleStartCamera();
                   }}
                 >
-                  <Text style={styles.retryButtonText}>Verify Another</Text>
+                  <Text style={styles.retryButtonText}>Scan Another</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -486,6 +593,7 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
                     onPress={() => {
                       setScanResult(null);
                       setImageUri(null);
+                      handleStartCamera();
                     }}
                   >
                     <Text style={styles.retryButtonText}>Scan Another</Text>
@@ -739,5 +847,68 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  cameraContainer: {
+    width: '100%',
+    height: 400,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    position: 'relative',
+  },
+  camera: {
+    width: '100%',
+    height: '100%',
+  },
+  scanOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  scanFrame: {
+    width: '80%',
+    height: 200,
+    borderWidth: 3,
+    borderColor: '#4CAF50',
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+  },
+  scanInstructions: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  scanInstructionsText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  scanInstructionsSubtext: {
+    color: '#ddd',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  cameraButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  stopCameraBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    gap: 8,
+  },
+  stopCameraBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
