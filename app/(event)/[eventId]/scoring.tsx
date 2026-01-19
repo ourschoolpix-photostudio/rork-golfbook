@@ -916,19 +916,21 @@ export default function ScoringScreen() {
           })}
         </ScrollView>
 
-        <View style={styles.submitContainer}>
-          <TouchableOpacity 
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-            onPress={handleSubmitScores}
-            disabled={isSubmitting}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Submitting...' : 'SUBMIT SCORES'}
-            </Text>
-            {!isSubmitting && <Ionicons name="checkmark-circle" size={24} color="#fff" />}
-          </TouchableOpacity>
-        </View>
+        {!shouldUseOfflineMode && (
+          <View style={styles.submitContainer}>
+            <TouchableOpacity 
+              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+              onPress={handleSubmitScores}
+              disabled={isSubmitting}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.submitButtonText}>
+                {isSubmitting ? 'Submitting...' : 'SUBMIT SCORES'}
+              </Text>
+              {!isSubmitting && <Ionicons name="checkmark-circle" size={24} color="#fff" />}
+            </TouchableOpacity>
+          </View>
+        )}
       </SafeAreaView>
       <EventFooter showSyncButton={true} />
     </>
