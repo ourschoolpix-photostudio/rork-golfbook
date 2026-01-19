@@ -75,13 +75,15 @@ function GroupCard({
   const [scoringModalVisible, setScoringModalVisible] = useState(false);
   const [verificationModalVisible, setVerificationModalVisible] = useState(false);
   const [photosModalVisible, setPhotosModalVisible] = useState(false);
-  const [hasPhotos, setHasPhotos] = useState(false);
+  const [photoCount, setPhotoCount] = useState(0);
 
   useEffect(() => {
     const checkPhotos = async () => {
       if (eventId && label) {
+        console.log('[GroupCard] Checking photos for', label);
         const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
-        setHasPhotos(photos.length > 0);
+        console.log('[GroupCard] Found', photos.length, 'photos for', label);
+        setPhotoCount(photos.length);
       }
     };
     checkPhotos();
@@ -90,8 +92,10 @@ function GroupCard({
   const handlePhotosModalClose = async () => {
     setPhotosModalVisible(false);
     if (eventId && label) {
+      console.log('[GroupCard] Modal closed, rechecking photos for', label);
       const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
-      setHasPhotos(photos.length > 0);
+      console.log('[GroupCard] After close found', photos.length, 'photos');
+      setPhotoCount(photos.length);
     }
   };
 
@@ -145,7 +149,7 @@ function GroupCard({
         {canVerifyScorecard(currentMember) && playerCount > 0 && (
           <>
             <TouchableOpacity 
-              style={[styles.viewPhotosButton, { backgroundColor: hasPhotos ? '#4CAF50' : '#f44336' }]} 
+              style={[styles.viewPhotosButton, photoCount > 0 ? styles.viewPhotosButtonGreen : styles.viewPhotosButtonRed]} 
               onPress={() => setPhotosModalVisible(true)}
             >
               <ImageIcon size={14} color="#fff" />
@@ -546,6 +550,12 @@ const styles = StyleSheet.create({
     marginRight: 4,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  viewPhotosButtonRed: {
+    backgroundColor: '#f44336',
+  },
+  viewPhotosButtonGreen: {
+    backgroundColor: '#4CAF50',
   },
   playerCard: {
     backgroundColor: '#D0D0D0',
