@@ -64,16 +64,17 @@ export default function ScorecardVerificationModal({
         const screenHeight = Dimensions.get('window').height;
         const frameSize = 320;
         
-        const imageCenterX = photo.width / 2;
-        const imageCenterY = photo.height / 2 - (40 * (photo.height / screenHeight));
-        
+        // Scale factors from screen to photo
         const scaleX = photo.width / screenWidth;
         const scaleY = photo.height / screenHeight;
         
-        const frameSizeInImage = frameSize * Math.max(scaleX, scaleY);
+        // Use consistent scale to maintain square
+        const scale = Math.min(scaleX, scaleY);
+        const frameSizeInImage = frameSize * scale;
         
-        const cropX = Math.max(0, imageCenterX - frameSizeInImage / 2);
-        const cropY = Math.max(0, imageCenterY - frameSizeInImage / 2);
+        // Calculate crop position (centered)
+        const cropX = Math.max(0, (photo.width - frameSizeInImage) / 2);
+        const cropY = Math.max(0, (photo.height - frameSizeInImage) / 2);
         const cropWidth = Math.min(frameSizeInImage, photo.width - cropX);
         const cropHeight = Math.min(frameSizeInImage, photo.height - cropY);
         
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
     width: 320,
     height: 320,
     marginLeft: -160,
-    marginTop: -200,
+    marginTop: -160,
   },
   frameBorder: {
     position: 'absolute',
