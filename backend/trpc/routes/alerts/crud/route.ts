@@ -29,7 +29,7 @@ const getAllAlertsProcedure = publicProcedure
       }
 
       if (input?.memberId) {
-        const [dismissalsResult, registrationsResult] = await Promise.all([
+        const [dismissalsResult, registrationsResult, memberResult] = await Promise.all([
           ctx.supabase
             .from('alert_dismissals')
             .select('*')
@@ -37,7 +37,12 @@ const getAllAlertsProcedure = publicProcedure
           ctx.supabase
             .from('event_registrations')
             .select('event_id')
-            .eq('member_id', input.memberId)
+            .eq('member_id', input.memberId),
+          ctx.supabase
+            .from('members')
+            .select('is_admin, board_member_roles')
+            .eq('id', input.memberId)
+            .single()
         ]);
         
         if (dismissalsResult.error) {
@@ -46,6 +51,7 @@ const getAllAlertsProcedure = publicProcedure
 
         const dismissedIds = new Set((dismissalsResult.data || []).map(d => d.alert_id));
         const registeredEventIds = new Set((registrationsResult.data || []).map(r => r.event_id));
+        const isAdminOrBoard = memberResult.data?.is_admin || (memberResult.data?.board_member_roles && memberResult.data.board_member_roles.length > 0);
         
         const now = new Date().toISOString();
         const activeAlertsData = alertsData.filter(alert => {
@@ -53,8 +59,12 @@ const getAllAlertsProcedure = publicProcedure
             return false;
           }
           
+          if (alert.type === 'board') {
+            return isAdminOrBoard;
+          }
+          
           if (alert.type === 'event' && alert.registration_only && alert.event_id) {
-            return registeredEventIds.has(alert.event_id);
+            return registeredEventIds.has(alert.event_id) || isAdminOrBoard;
           }
           
           return true;
@@ -108,7 +118,7 @@ const createAlertProcedure = publicProcedure
   .input(z.object({
     title: z.string(),
     message: z.string(),
-    type: z.enum(['organizational', 'event']),
+    type: z.enum(['organizational', 'event', 'board']),
     priority: z.enum(['normal', 'critical']),
     eventId: z.string().optional(),
     createdBy: z.string(),

@@ -38,7 +38,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
   const useLocalStorage = orgInfo?.useLocalStorage || false;
   const [title, setTitle] = useState<string>('');
   const [message, setMessage] = useState<string>('');
-  const [type, setType] = useState<'organizational' | 'event'>('organizational');
+  const [type, setType] = useState<'organizational' | 'event' | 'board'>('organizational');
   const [priority, setPriority] = useState<'normal' | 'critical'>('normal');
   const [selectedEventId, setSelectedEventId] = useState<string | undefined>(preSelectedEventId);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -319,6 +319,21 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                     Event Specific
                   </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeButton,
+                    type === 'board' && styles.typeButtonActive
+                  ]}
+                  onPress={() => setType('board')}
+                  disabled={!!preSelectedEventId}
+                >
+                  <Text style={[
+                    styles.typeButtonText,
+                    type === 'board' && styles.typeButtonTextActive
+                  ]}>
+                    Board Alert
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -509,7 +524,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                     </Text>
                     <View style={styles.alertItemFooter}>
                       <View style={styles.alertItemBadges}>
-                        <View style={[styles.badge, alert.type === 'organizational' ? styles.badgeOrg : styles.badgeEvent]}>
+                        <View style={[styles.badge, alert.type === 'organizational' ? styles.badgeOrg : alert.type === 'event' ? styles.badgeEvent : styles.badgeBoard]}>
                           <Text style={styles.badgeText}>{alert.type}</Text>
                         </View>
                         {alert.priority === 'critical' && (
@@ -603,7 +618,8 @@ const styles = StyleSheet.create({
   },
   typeButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
+    flexWrap: 'wrap',
   },
   typeButton: {
     flex: 1,
@@ -818,6 +834,9 @@ const styles = StyleSheet.create({
   },
   badgeEvent: {
     backgroundColor: '#f3e8ff',
+  },
+  badgeBoard: {
+    backgroundColor: '#fef3c7',
   },
   badgeCritical: {
     backgroundColor: '#fee2e2',

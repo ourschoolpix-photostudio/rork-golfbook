@@ -53,6 +53,10 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           if (alert.createdBy === memberId) return false;
           if (alert.expiresAt && alert.expiresAt <= now) return false;
           
+          if (alert.type === 'board') {
+            return isAdminOrBoard;
+          }
+          
           if (alert.type === 'event' && alert.registrationOnly && alert.eventId) {
             return registeredEventIds.has(alert.eventId) || isAdminOrBoard;
           }
@@ -96,6 +100,10 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         const activeAlertsData = (alertsResult.data || []).filter((a: any) => {
           if (a.created_by === memberId) return false;
           if (a.expires_at && a.expires_at <= now) return false;
+          
+          if (a.type === 'board') {
+            return isAdminOrBoard;
+          }
           
           if (a.type === 'event' && a.registration_only && a.event_id) {
             return registeredEventIds.has(a.event_id) || isAdminOrBoard;
@@ -156,6 +164,10 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         const activeAlerts = fallbackAlerts.filter(alert => {
           if (alert.createdBy === memberId) return false;
           if (alert.expiresAt && alert.expiresAt <= now) return false;
+          
+          if (alert.type === 'board') {
+            return isAdminOrBoard;
+          }
           
           if (alert.type === 'event' && alert.registrationOnly && alert.eventId) {
             return registeredEventIds.has(alert.eventId) || isAdminOrBoard;

@@ -284,7 +284,7 @@ export interface Alert {
   id: string;
   title: string;
   message: string;
-  type: 'organizational' | 'event';
+  type: 'organizational' | 'event' | 'board';
   priority: 'normal' | 'critical';
   eventId?: string;
   createdBy: string;
