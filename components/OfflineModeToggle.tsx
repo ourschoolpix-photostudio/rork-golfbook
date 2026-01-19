@@ -149,6 +149,12 @@ export function OfflineModeToggle({ eventId, position = 'header' }: OfflineModeT
     return 'cloud-done';
   };
 
+  const getIconColor = () => {
+    if (!isConnected) return '#fff';
+    if (isOfflineMode) return '#fff';
+    return '#34C759';
+  };
+
   if (position === 'footer') {
     return (
       <>
@@ -157,7 +163,7 @@ export function OfflineModeToggle({ eventId, position = 'header' }: OfflineModeT
             style={[styles.footerStatus, { backgroundColor: getStatusColor() }]}
             onPress={handleShowDetails}
           >
-            <Ionicons name={getStatusIcon() as any} size={16} color="#fff" />
+            <Ionicons name={getStatusIcon() as any} size={16} color={getIconColor()} />
             <Text style={styles.footerStatusText}>{getStatusText()}</Text>
             {hasPendingChanges && (
               <View style={styles.pendingBadge}>
@@ -198,7 +204,7 @@ export function OfflineModeToggle({ eventId, position = 'header' }: OfflineModeT
 
               <View style={styles.modalContent}>
                 <View style={[styles.statusCard, { backgroundColor: getStatusColor() }]}>
-                  <Ionicons name={getStatusIcon() as any} size={32} color="#fff" />
+                  <Ionicons name={getStatusIcon() as any} size={32} color={getIconColor()} />
                   <Text style={styles.statusCardTitle}>{getStatusText()}</Text>
                 </View>
 
