@@ -133,10 +133,11 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
       handleStopCamera();
     } catch (error) {
       console.error('[ScorecardVerification] Error analyzing:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setResult({
         status: 'illegible',
         message: 'Analysis failed',
-        details: 'Please try again or check the photo quality',
+        details: `Error: ${errorMessage}. Please try again or check the photo quality.`,
       });
     } finally {
       setIsAnalyzing(false);
@@ -192,9 +193,10 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
       handleStopCamera();
     } catch (error) {
       console.error('[ScorecardVerification] Error scanning:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setScanResult({
         status: 'illegible',
-        message: 'Scan failed - please try again',
+        message: `Scan failed: ${errorMessage}`,
         players: [],
       });
     } finally {
