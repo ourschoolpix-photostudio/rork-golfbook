@@ -471,7 +471,7 @@ export function EventFooter({
               >
                 <Upload size={18} color="#fff" />
                 <Text style={styles.syncButtonText}>
-                  {isSyncing ? 'Syncing...' : hasOfflineScores ? 'Sync Scores' : 'No Scores to Sync'}
+                  {isSyncing ? 'Syncing...' : 'You Are Offline - Sync When Connected'}
                 </Text>
               </TouchableOpacity>
             ) : null
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 8,
     backgroundColor: '#2196F3',
