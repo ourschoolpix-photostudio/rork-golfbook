@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   },
   thumbnailContainer: {
     width: '100%',
-    height: 200,
+    aspectRatio: 1,
     backgroundColor: '#e0e0e0',
   },
   thumbnail: {
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   fullImageContainer: {
     width: '100%',
-    height: 400,
+    aspectRatio: 1,
     backgroundColor: '#000',
   },
   fullImage: {
