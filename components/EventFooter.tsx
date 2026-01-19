@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { Alert } from '@/utils/alertPolyfill';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Users, Grid3x3, Target, Award, DollarSign, LayoutGrid, Upload } from 'lucide-react-native';
@@ -237,18 +238,14 @@ export function EventFooter({
       console.log('[EventFooter] ✅ Sync complete:', successCount, 'player scores synced,', failCount, 'failed');
       
       if (failCount === 0 && successCount > 0) {
-        const { Alert } = await import('react-native');
         Alert.alert('Sync Complete', `Successfully synced ${successCount} player score(s) to the server!`);
       } else if (successCount > 0) {
-        const { Alert } = await import('react-native');
         Alert.alert('Sync Partially Complete', `${successCount} synced, ${failCount} failed`);
       } else {
-        const { Alert } = await import('react-native');
         Alert.alert('No Scores to Sync', 'No offline scores found.');
       }
     } catch (error) {
       console.error('[EventFooter] Sync error:', error);
-      const { Alert } = await import('react-native');
       Alert.alert('Sync Failed', 'Unable to sync scores. Please try again.');
     } finally {
       setIsSyncing(false);
