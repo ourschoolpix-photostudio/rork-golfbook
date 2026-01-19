@@ -62,7 +62,7 @@ export default function ScorecardVerificationModal({
         
         const screenWidth = Dimensions.get('window').width;
         const screenHeight = Dimensions.get('window').height;
-        const frameSize = 320;
+        const frameSize = screenWidth;
         
         // Scale factors from screen to photo
         const scaleX = photo.width / screenWidth;
@@ -294,11 +294,11 @@ const styles = StyleSheet.create({
   frameGuide: {
     position: 'absolute',
     top: '50%',
-    left: '50%',
-    width: 320,
-    height: 320,
-    marginLeft: -160,
-    marginTop: -160,
+    left: 0,
+    right: 0,
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').width,
+    marginTop: -(Dimensions.get('window').width / 2),
   },
   frameBorder: {
     position: 'absolute',
