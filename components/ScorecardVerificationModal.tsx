@@ -127,7 +127,7 @@ Return:
 
 Be quick and concise. We just need a simple flag, not a detailed analysis.`;
 
-      const verification = await generateObject({
+      const verification = (await generateObject({
         messages: [
           {
             role: 'user',
@@ -138,10 +138,10 @@ Be quick and concise. We just need a simple flag, not a detailed analysis.`;
           },
         ],
         schema: verificationSchema as any,
-      });
+      })) as VerificationResult;
 
       console.log('[ScorecardVerification] Result:', verification);
-      setResult(verification as any);
+      setResult(verification);
       
       if (verification.status === 'verified' || verification.status === 'mismatch') {
         handleStopCamera();
@@ -191,7 +191,7 @@ Return:
 
 IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use the written total on the scorecard.`;
 
-      const scanResult = await generateObject({
+      const scanResult = (await generateObject({
         messages: [
           {
             role: 'user',
@@ -202,10 +202,10 @@ IMPORTANT: Calculate the total yourself by adding up the hole scores. Do NOT use
           },
         ],
         schema: scanOnlySchema as any,
-      });
+      })) as ScanOnlyResult;
 
       console.log('[ScorecardVerification] Scan result:', scanResult);
-      setScanResult(scanResult as any);
+      setScanResult(scanResult);
       
       if (scanResult.status === 'success' || scanResult.status === 'partial') {
         handleStopCamera();
