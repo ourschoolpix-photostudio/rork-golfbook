@@ -199,92 +199,44 @@ export default function ScorecardPhotosModal({
               )}
             </ScrollView>
           ) : (
-            <View 
-              style={styles.photoDetailContainer}
-              onStartShouldSetResponder={() => true}
-              onResponderTerminationRequest={() => false}
-            >
-              <ScrollView 
-                style={styles.photoDetailScroll}
-                contentContainerStyle={styles.photoDetailScrollContent}
-                onStartShouldSetResponder={() => true}
-              >
-                {Platform.OS === 'web' ? (
-                  <View style={styles.zoomableContainer}>
-                    <View style={styles.fullImageContainer}>
-                      <Image 
-                        source={{ uri: selectedPhoto.photo_url }} 
-                        style={styles.fullImage}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  </View>
-                ) : (
-                  <View 
-                    style={styles.zoomableContainer}
-                    onStartShouldSetResponder={() => true}
-                  >
-                    <ScrollView
-                      style={styles.zoomableScrollView}
-                      contentContainerStyle={styles.zoomableContent}
-                      maximumZoomScale={4}
-                      minimumZoomScale={1}
-                      showsHorizontalScrollIndicator={false}
-                      showsVerticalScrollIndicator={false}
-                      bouncesZoom={true}
-                      centerContent={true}
-                      pinchGestureEnabled={true}
-                      scrollEnabled={true}
-                    >
-                      <View style={styles.fullImageContainer}>
-                        <Image 
-                          source={{ uri: selectedPhoto.photo_url }} 
-                          style={styles.fullImage}
-                          resizeMode="contain"
-                        />
-                      </View>
-                    </ScrollView>
-                  </View>
-                )}
-                <Text style={styles.zoomHint}>{Platform.OS !== 'web' ? 'Pinch to zoom' : 'View full size'}</Text>
-                <View style={styles.photoDetails}>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Group:</Text>
-                    <Text style={styles.detailValue}>{selectedPhoto.group_label}</Text>
-                  </View>
-                  {selectedPhoto.day && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Day:</Text>
-                      <Text style={styles.detailValue}>{selectedPhoto.day}</Text>
-                    </View>
-                  )}
-                  {selectedPhoto.tee && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Tee:</Text>
-                      <Text style={styles.detailValue}>{selectedPhoto.tee}</Text>
-                    </View>
-                  )}
-                  {selectedPhoto.hole_range && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Holes:</Text>
-                      <Text style={styles.detailValue}>{selectedPhoto.hole_range}</Text>
-                    </View>
-                  )}
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Saved:</Text>
-                    <Text style={styles.detailValue}>
-                      {formatDistanceToNow(new Date(selectedPhoto.created_at), { addSuffix: true })}
-                    </Text>
-                  </View>
-                </View>
-              </ScrollView>
-
+            <View style={styles.photoDetailContainer}>
+              <View style={styles.zoomableContainer}>
+                <ScrollView
+                  style={styles.zoomableScrollView}
+                  contentContainerStyle={styles.zoomableContent}
+                  maximumZoomScale={4}
+                  minimumZoomScale={1}
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                  bouncesZoom={true}
+                  centerContent={true}
+                  pinchGestureEnabled={true}
+                  scrollEnabled={true}
+                >
+                  <Image 
+                    source={{ uri: selectedPhoto.photo_url }} 
+                    style={styles.fullImage}
+                    resizeMode="contain"
+                  />
+                </ScrollView>
+              </View>
+              <Text style={styles.zoomHint}>{Platform.OS !== 'web' ? 'Pinch to zoom' : 'View full size'}</Text>
+              <View style={styles.photoDetailInfo}>
+                <Text style={styles.detailText}>
+                  {selectedPhoto.group_label}
+                  {selectedPhoto.day ? ` • Day ${selectedPhoto.day}` : ''}
+                  {selectedPhoto.tee ? ` • ${selectedPhoto.tee}` : ''}
+                </Text>
+                <Text style={styles.detailDate}>
+                  {formatDistanceToNow(new Date(selectedPhoto.created_at), { addSuffix: true })}
+                </Text>
+              </View>
               <View style={styles.photoDetailActions}>
                 <TouchableOpacity
                   style={styles.backButton}
                   onPress={() => setSelectedPhoto(null)}
                 >
-                  <Text style={styles.backButtonText}>Back to List</Text>
+                  <Text style={styles.backButtonText}>Back</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.deleteButton}
@@ -421,15 +373,8 @@ const styles = StyleSheet.create({
   photoDetailContainer: {
     flex: 1,
   },
-  photoDetailScroll: {
-    flex: 1,
-  },
-  photoDetailScrollContent: {
-    flexGrow: 1,
-  },
   zoomableContainer: {
-    width: '100%',
-    aspectRatio: 1,
+    flex: 1,
     backgroundColor: '#000',
     overflow: 'hidden',
   },
@@ -440,45 +385,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minWidth: '100%',
-    minHeight: '100%',
-  },
-  fullImageContainer: {
-    width: Dimensions.get('window').width * 0.9,
-    height: Dimensions.get('window').width * 0.9,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   fullImage: {
-    width: '100%',
-    height: '100%',
+    width: Dimensions.get('window').width * 0.9,
+    height: Dimensions.get('window').width * 0.9,
   },
   zoomHint: {
     textAlign: 'center',
     fontSize: 12,
     color: '#999',
-    paddingVertical: 8,
+    paddingVertical: 6,
     fontStyle: 'italic' as const,
+    backgroundColor: '#fff',
   },
-  photoDetails: {
-    padding: 20,
-    gap: 12,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  photoDetailInfo: {
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#f5f5f5',
   },
-  detailLabel: {
+  detailText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
-  },
-  detailValue: {
-    fontSize: 14,
     color: '#333',
+  },
+  detailDate: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
   },
   photoDetailActions: {
     flexDirection: 'row',

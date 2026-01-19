@@ -30,6 +30,13 @@ export const scorecardPhotoService = {
     try {
       console.log('📸 Uploading scorecard photo to cloud storage...');
       
+      // Delete existing photo for this group (limit 1 photo per group)
+      const existingPhotos = await this.getPhotosByGroup(eventId, groupLabel);
+      for (const existingPhoto of existingPhotos) {
+        console.log('🗑️ Deleting existing photo for group:', groupLabel);
+        await this.deletePhoto(existingPhoto.id, existingPhoto.photo_url);
+      }
+      
       const response = await fetch(photoUri);
       const blob = await response.blob();
       
