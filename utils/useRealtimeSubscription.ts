@@ -116,36 +116,39 @@ export function useRealtimeRegistrations(eventId: string, enabled: boolean = tru
           },
           async (payload) => {
             try {
-              console.log('[Realtime] 📝 Registration change detected:', payload.eventType, payload);
+              console.log('[Realtime] 📝 Registration change detected:', payload.eventType);
+              console.log('[Realtime] 📝 Payload details:', JSON.stringify({
+                eventType: payload.eventType,
+                hasOld: !!payload.old,
+                hasNew: !!payload.new,
+                oldId: (payload.old as any)?.id,
+                newId: (payload.new as any)?.id
+              }));
               
-              // Handle DELETE optimistically for instant UI update
-              if (payload.eventType === 'DELETE' && payload.old) {
-                const deletedId = (payload.old as any).id;
-                console.log('[Realtime] 🗑️ DELETE detected, removing registration:', deletedId);
-                
-                // Optimistically remove from cache immediately
-                queryClient.setQueryData(['registrations', eventId], (oldData: any) => {
-                  if (!oldData) return oldData;
-                  const filtered = oldData.filter((reg: any) => reg.id !== deletedId);
-                  console.log('[Realtime] ✅ Removed from cache, old count:', oldData.length, 'new count:', filtered.length);
-                  return filtered;
-                });
-              } else {
-                // For INSERT and UPDATE, fetch fresh data
-                const freshRegistrations = await supabaseService.registrations.getAll(eventId);
-                if (freshRegistrations) {
-                  console.log('[Realtime] ✅ Immediately updating registrations cache with fresh data');
-                  queryClient.setQueryData(['registrations', eventId], freshRegistrations);
-                }
+              // For all events, fetch fresh data immediately
+              console.log('[Realtime] 🔄 Fetching fresh registrations data...');
+              const freshRegistrations = await supabaseService.registrations.getAll(eventId);
+              
+              if (freshRegistrations) {
+                console.log('[Realtime] ✅ Updating cache with fresh data, count:', freshRegistrations.length);
+                queryClient.setQueryData(['registrations', eventId], freshRegistrations);
               }
               
-              // Also invalidate to ensure consistency
-              queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
+              // Force refetch to ensure consistency
+              await queryClient.refetchQueries({ 
+                queryKey: ['registrations', eventId],
+                exact: true 
+              });
+              
+              console.log('[Realtime] ✅ Registration update complete');
             } catch (error) {
-              console.error('[Realtime] Error handling registration change:', error);
+              console.error('[Realtime] ❌ Error handling registration change:', error);
               // Fallback to refetch on error
               queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
-              queryClient.refetchQueries({ queryKey: ['registrations', eventId] });
+              await queryClient.refetchQueries({ 
+                queryKey: ['registrations', eventId],
+                exact: true 
+              });
             }
           }
         )
