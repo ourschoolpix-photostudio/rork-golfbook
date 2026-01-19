@@ -95,16 +95,23 @@ export default function ScorecardVerificationModal({
       return;
     }
 
+    console.log('[ScorecardPhoto] Starting camera...');
+    console.log('[ScorecardPhoto] Permission status:', permission);
+
     if (!permission?.granted) {
+      console.log('[ScorecardPhoto] Requesting camera permission...');
       const result = await requestPermission();
+      console.log('[ScorecardPhoto] Permission result:', result);
       if (!result.granted) {
-        console.log('Camera permission denied');
+        console.log('[ScorecardPhoto] Camera permission denied');
+        handleClose();
         return;
       }
     }
 
+    console.log('[ScorecardPhoto] Setting showCamera to true');
     setShowCamera(true);
-  }, [permission, requestPermission, handleSelectFromGallery]);
+  }, [permission, requestPermission, handleSelectFromGallery, handleClose]);
 
   const capturePhoto = useCallback(async () => {
     if (!cameraRef.current) return;
@@ -151,8 +158,13 @@ export default function ScorecardVerificationModal({
 
   useEffect(() => {
     if (visible) {
-      handleStartCamera();
+      console.log('[ScorecardPhoto] Modal became visible, starting camera...');
+      setShowCamera(false);
+      setTimeout(() => {
+        handleStartCamera();
+      }, 100);
     } else {
+      console.log('[ScorecardPhoto] Modal closed, resetting camera');
       setShowCamera(false);
     }
   }, [visible, handleStartCamera]);
@@ -169,7 +181,14 @@ export default function ScorecardVerificationModal({
           </View>
 
           <View style={styles.body}>
-            {showCamera && (
+            {!showCamera && !isSavingPhoto && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#1B5E20" />
+                <Text style={styles.loadingText}>Opening camera...</Text>
+              </View>
+            )}
+
+            {showCamera && Platform.OS !== 'web' && (
               <View style={styles.cameraContainer}>
                 <CameraView
                   ref={cameraRef}
@@ -200,7 +219,7 @@ export default function ScorecardVerificationModal({
               </View>
             )}
 
-            {!showCamera && isSavingPhoto && (
+            {isSavingPhoto && (
               <View style={styles.savingContainer}>
                 <ActivityIndicator size="large" color="#1B5E20" />
                 <Text style={styles.savingText}>Saving photo...</Text>
@@ -301,6 +320,18 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   savingText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    gap: 16,
+  },
+  loadingText: {
     fontSize: 16,
     color: '#666',
     fontWeight: '500',
