@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3b82f6',
   },
   typeButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600' as const,
     color: '#6b7280',
     textAlign: 'center',
