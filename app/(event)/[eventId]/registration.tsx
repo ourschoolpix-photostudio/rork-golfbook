@@ -367,7 +367,6 @@ export default function EventRegistrationScreen() {
   }, []);
 
   useEffect(() => {
-    // Wait for both queries to complete before processing
     if (!eventQuery.data || registrationsQuery.isLoading || isProcessingRef.current) {
       console.log('[registration] Waiting for data:', {
         hasEventData: !!eventQuery.data,
@@ -394,27 +393,30 @@ export default function EventRegistrationScreen() {
     
     console.log('[registration] ✅ Processing data, regs count:', regs.length);
     
-    setEvent(foundEvent);
-    
-    if (foundEvent.type === 'social') {
-      setActiveSort('abc');
-    }
-    
-    // Always process registrations (even if empty array)
     registrationCache.cacheRegistrations(foundEvent.id, regs).catch(err => {
       console.error('[registration] Cache error:', err);
     });
     
     const { registered, regMap } = processRegistrations(regs, allMembers);
     console.log('[registration] ✅ Processed players count:', registered.length);
-    setSelectedPlayers(registered);
-    setRegistrations(regMap);
     
-    setTimeout(() => {
-      if (isMountedRef.current) {
+    queueMicrotask(() => {
+      if (!isMountedRef.current) {
         isProcessingRef.current = false;
+        return;
       }
-    }, 100);
+      
+      setEvent(foundEvent);
+      
+      if (foundEvent.type === 'social') {
+        setActiveSort('abc');
+      }
+      
+      setSelectedPlayers(registered);
+      setRegistrations(regMap);
+      
+      isProcessingRef.current = false;
+    });
   }, [eventQuery.data, registrationsQuery.data, registrationsQuery.isLoading, allMembers, processRegistrations]);
 
   useEffect(() => {
