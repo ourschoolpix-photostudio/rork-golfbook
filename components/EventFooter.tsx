@@ -169,7 +169,6 @@ export function EventFooter({
     setIsSyncing(true);
     try {
       console.log('[EventFooter] 🔄 Starting offline scores sync for event:', eventId);
-      const { supabaseService } = await import('@/utils/supabaseService');
       
       let successCount = 0;
       let failCount = 0;
