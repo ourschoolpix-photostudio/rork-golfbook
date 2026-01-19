@@ -414,6 +414,8 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
 
             if (recipientsError) {
               console.error('[AlertsContext] Error creating alert recipients:', recipientsError);
+              await supabase.from('alerts').delete().eq('id', alertId);
+              throw new Error(`Failed to create alert recipients: ${recipientsError.message}`);
             }
           }
         }
