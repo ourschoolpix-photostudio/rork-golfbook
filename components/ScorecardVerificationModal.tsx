@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as ImagePicker from 'expo-image-picker';
 import { X, Camera } from 'lucide-react-native';
 import { scorecardPhotoService } from '@/utils/scorecardPhotoService';
 
@@ -32,394 +31,255 @@ export default function ScorecardVerificationModal({
   tee,
   holeRange,
 }: ScorecardVerificationModalProps) {
-  const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<any>(null);
-  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showManualButton, setShowManualButton] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleClose = useCallback(() => {
-    setShowCamera(false);
-    setIsSavingPhoto(false);
-    setError(null);
-    setShowManualButton(false);
-    onClose();
-  }, [onClose]);
-
-  const handleSelectFromGallery = useCallback(async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Gallery permission denied');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.95,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        
-        setIsSavingPhoto(true);
-        try {
-          const saved = await scorecardPhotoService.savePhoto(
-            eventId,
-            groupLabel,
-            asset.uri,
-            {
-              day,
-              tee,
-              holeRange,
-            }
-          );
-          
-          if (saved) {
-            console.log('✅ Photo saved and closing modal');
-            setTimeout(() => {
-              handleClose();
-            }, 500);
-          }
-        } catch (saveError) {
-          console.error('❌ Error saving photo:', saveError);
-        } finally {
-          setIsSavingPhoto(false);
-        }
-      }
-    } catch (error) {
-      console.error('[ScorecardPhoto] Error selecting photo:', error);
+  useEffect(() => {
+    if (visible && !permission?.granted && Platform.OS !== 'web') {
+      requestPermission();
     }
-  }, [eventId, groupLabel, day, tee, holeRange, handleClose]);
+  }, [visible, permission?.granted, requestPermission]);
 
-  const handleStartCamera = useCallback(async () => {
-    try {
-      setError(null);
-      
-      if (Platform.OS === 'web') {
-        handleSelectFromGallery();
-        return;
-      }
-
-      console.log('[ScorecardPhoto] Starting camera...');
-      console.log('[ScorecardPhoto] Permission status:', permission);
-
-      if (!permission) {
-        console.log('[ScorecardPhoto] Permission object is null, waiting...');
-        return;
-      }
-
-      if (!permission.granted) {
-        console.log('[ScorecardPhoto] Requesting camera permission...');
-        const result = await requestPermission();
-        console.log('[ScorecardPhoto] Permission result:', result);
-        if (!result.granted) {
-          console.log('[ScorecardPhoto] Camera permission denied');
-          setError('Camera permission denied');
-          setTimeout(() => handleClose(), 2000);
-          return;
-        }
-      }
-
-      console.log('[ScorecardPhoto] Setting showCamera to true');
-      setShowCamera(true);
-    } catch (err) {
-      console.error('[ScorecardPhoto] Error starting camera:', err);
-      setError('Failed to open camera');
-      setTimeout(() => handleClose(), 2000);
-    }
-  }, [permission, requestPermission, handleSelectFromGallery, handleClose]);
-
-  const capturePhoto = useCallback(async () => {
-    if (!cameraRef.current) return;
+  const capturePhoto = async () => {
+    if (!cameraRef.current || isSaving) return;
 
     try {
       console.log('[ScorecardPhoto] Capturing photo...');
+      setIsSaving(true);
+      
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.95,
-        skipProcessing: false,
       });
 
-      if (photo && photo.uri) {
-        setShowCamera(false);
+      if (photo?.uri) {
+        console.log('[ScorecardPhoto] Saving photo...');
+        const saved = await scorecardPhotoService.savePhoto(
+          eventId,
+          groupLabel,
+          photo.uri,
+          { day, tee, holeRange }
+        );
         
-        setIsSavingPhoto(true);
-        try {
-          const saved = await scorecardPhotoService.savePhoto(
-            eventId,
-            groupLabel,
-            photo.uri,
-            {
-              day,
-              tee,
-              holeRange,
-            }
-          );
-          
-          if (saved) {
-            console.log('✅ Photo saved and closing modal');
-            setTimeout(() => {
-              handleClose();
-            }, 500);
-          }
-        } catch (saveError) {
-          console.error('❌ Error saving photo:', saveError);
-        } finally {
-          setIsSavingPhoto(false);
+        if (saved) {
+          console.log('✅ Photo saved successfully');
+          onClose();
+        } else {
+          console.error('❌ Failed to save photo');
+          setIsSaving(false);
         }
       }
     } catch (error) {
-      console.error('[ScorecardPhoto] Error capturing photo:', error);
+      console.error('[ScorecardPhoto] Error:', error);
+      setIsSaving(false);
     }
-  }, [eventId, groupLabel, day, tee, holeRange, handleClose]);
+  };
 
-  useEffect(() => {
-    if (visible) {
-      console.log('[ScorecardPhoto] Modal became visible');
-      console.log('[ScorecardPhoto] Permission state:', permission);
-      setShowCamera(false);
-      setError(null);
-      setShowManualButton(false);
-    } else {
-      console.log('[ScorecardPhoto] Modal closed, resetting camera');
-      setShowCamera(false);
-      setError(null);
-      setShowManualButton(false);
-    }
-  }, [visible, permission]);
+  if (Platform.OS === 'web') {
+    return null;
+  }
 
-  useEffect(() => {
-    if (visible && permission !== null) {
-      console.log('[ScorecardPhoto] Permissions loaded, starting camera...');
-      const timer = setTimeout(() => {
-        handleStartCamera();
-      }, 300);
-      
-      const fallbackTimer = setTimeout(() => {
-        if (!showCamera) {
-          console.log('[ScorecardPhoto] Camera did not open in time, showing manual button');
-          setShowManualButton(true);
-        }
-      }, 3000);
-      
-      return () => {
-        clearTimeout(timer);
-        clearTimeout(fallbackTimer);
-      };
-    }
-  }, [visible, permission, handleStartCamera, showCamera]);
+  if (!permission) {
+    return null;
+  }
 
-  return (
-    <Modal visible={visible} animationType="slide" transparent={true}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Scorecard Photo - {groupLabel}</Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <X size={24} color="#666" />
+  if (!permission.granted) {
+    return (
+      <Modal visible={visible} animationType="fade" transparent={false}>
+        <View style={styles.permissionContainer}>
+          <View style={styles.permissionContent}>
+            <Camera size={64} color="#1B5E20" />
+            <Text style={styles.permissionTitle}>Camera Permission Required</Text>
+            <Text style={styles.permissionText}>
+              Allow camera access to capture scorecard photos
+            </Text>
+            <TouchableOpacity
+              style={styles.permissionButton}
+              onPress={requestPermission}
+            >
+              <Text style={styles.permissionButtonText}>Grant Permission</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={onClose}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+    );
+  }
 
-          <View style={styles.body}>
-            {error ? (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-                <Text style={styles.errorSubtext}>Closing...</Text>
-              </View>
-            ) : !showCamera && !isSavingPhoto ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#1B5E20" />
-                <Text style={styles.loadingText}>Opening camera...</Text>
-                {showManualButton && (
-                  <TouchableOpacity
-                    style={styles.manualOpenButton}
-                    onPress={handleStartCamera}
-                  >
-                    <Camera size={20} color="#fff" />
-                    <Text style={styles.manualOpenButtonText}>Open Camera</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ) : null}
+  return (
+    <Modal visible={visible} animationType="slide" transparent={false}>
+      <View style={styles.cameraFullscreen}>
+        <CameraView
+          ref={cameraRef}
+          style={styles.camera}
+          facing="back"
+        >
+          <View style={styles.cameraHeader}>
+            <Text style={styles.cameraTitle}>{groupLabel}</Text>
+            <Text style={styles.cameraSubtitle}>Scorecard Photo</Text>
+          </View>
 
-            {showCamera && Platform.OS !== 'web' && !error && (
-              <View style={styles.cameraContainer}>
-                <CameraView
-                  ref={cameraRef}
-                  style={styles.camera}
-                  facing="back"
-                />
-                <View style={styles.cameraOverlay}>
-                  <View style={styles.cameraButtons}>
-                    <TouchableOpacity
-                      style={styles.cancelBtn}
-                      onPress={handleClose}
-                    >
-                      <X size={20} color="#fff" />
-                      <Text style={styles.cameraBtnText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.captureBtn}
-                      onPress={capturePhoto}
-                      disabled={isSavingPhoto}
-                    >
-                      <Camera size={20} color="#fff" />
-                      <Text style={styles.cameraBtnText}>
-                        {isSavingPhoto ? 'Saving...' : 'Capture'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {isSavingPhoto && (
-              <View style={styles.savingContainer}>
-                <ActivityIndicator size="large" color="#1B5E20" />
+          <View style={styles.cameraFooter}>
+            {isSaving ? (
+              <View style={styles.savingIndicator}>
+                <ActivityIndicator size="large" color="#fff" />
                 <Text style={styles.savingText}>Saving photo...</Text>
+              </View>
+            ) : (
+              <View style={styles.cameraButtons}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={onClose}
+                >
+                  <X size={24} color="#fff" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={styles.captureBtn}
+                  onPress={capturePhoto}
+                >
+                  <View style={styles.captureCircle} />
+                </TouchableOpacity>
+                
+                <View style={styles.placeholderBtn} />
               </View>
             )}
           </View>
-        </View>
+        </CameraView>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  permissionContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    width: '90%',
-    maxHeight: '80%',
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  permissionContent: {
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    paddingHorizontal: 40,
+    gap: 20,
   },
-  title: {
-    fontSize: 18,
+  permissionTitle: {
+    fontSize: 22,
     fontWeight: '700',
     color: '#1B5E20',
-    flex: 1,
+    textAlign: 'center',
   },
-  closeButton: {
-    padding: 4,
+  permissionText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
   },
-  body: {
-    flex: 1,
-  },
-  cameraContainer: {
-    width: '100%',
-    height: 400,
+  permissionButton: {
+    backgroundColor: '#1B5E20',
+    paddingVertical: 16,
+    paddingHorizontal: 40,
     borderRadius: 12,
-    overflow: 'hidden',
+    marginTop: 8,
+  },
+  permissionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  cancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cameraFullscreen: {
+    flex: 1,
     backgroundColor: '#000',
-    position: 'relative',
   },
   camera: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
   },
-  cameraOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
+  cameraHeader: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    paddingBottom: 32,
+    gap: 4,
+  },
+  cameraTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  cameraSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  cameraFooter: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
   },
   cameraButtons: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 40,
   },
   cancelBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    gap: 8,
-  },
-  captureBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    gap: 8,
-  },
-  cameraBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  savingContainer: {
-    flex: 1,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
-    gap: 16,
+  },
+  captureBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  captureCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#fff',
+  },
+  placeholderBtn: {
+    width: 50,
+    height: 50,
+  },
+  savingIndicator: {
+    alignItems: 'center',
+    gap: 12,
   },
   savingText: {
     fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-    gap: 8,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#f44336',
-    fontWeight: '600',
-  },
-  errorSubtext: {
-    fontSize: 14,
-    color: '#999',
-  },
-  manualOpenButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    gap: 8,
-    marginTop: 16,
-  },
-  manualOpenButtonText: {
     color: '#fff',
-    fontSize: 16,
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });
