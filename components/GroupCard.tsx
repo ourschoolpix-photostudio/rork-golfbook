@@ -452,11 +452,6 @@ function GroupCard({
     <ScorecardVerificationModal
       visible={verificationModalVisible}
       onClose={() => setVerificationModalVisible(false)}
-      players={slots.filter(s => s !== null && s.name !== 'F9' && s.name !== 'B9').map(s => ({
-        id: s.id,
-        name: s.name,
-        scoreTotal: s.scoreTotal ?? 0,
-      }))}
       groupLabel={label}
       eventId={eventId || ''}
       day={activeDay}
