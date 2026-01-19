@@ -199,10 +199,15 @@ export default function ScorecardPhotosModal({
               )}
             </ScrollView>
           ) : (
-            <View style={styles.photoDetailContainer}>
+            <View 
+              style={styles.photoDetailContainer}
+              onStartShouldSetResponder={() => true}
+              onResponderTerminationRequest={() => false}
+            >
               <ScrollView 
                 style={styles.photoDetailScroll}
                 contentContainerStyle={styles.photoDetailScrollContent}
+                onStartShouldSetResponder={() => true}
               >
                 {Platform.OS === 'web' ? (
                   <View style={styles.zoomableContainer}>
@@ -215,25 +220,31 @@ export default function ScorecardPhotosModal({
                     </View>
                   </View>
                 ) : (
-                  <ScrollView
+                  <View 
                     style={styles.zoomableContainer}
-                    contentContainerStyle={styles.zoomableContent}
-                    maximumZoomScale={4}
-                    minimumZoomScale={1}
-                    showsHorizontalScrollIndicator={false}
-                    showsVerticalScrollIndicator={false}
-                    bouncesZoom={true}
-                    centerContent={true}
-                    pinchGestureEnabled={true}
+                    onStartShouldSetResponder={() => true}
                   >
-                    <View style={styles.fullImageContainer}>
-                      <Image 
-                        source={{ uri: selectedPhoto.photo_url }} 
-                        style={styles.fullImage}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  </ScrollView>
+                    <ScrollView
+                      style={styles.zoomableScrollView}
+                      contentContainerStyle={styles.zoomableContent}
+                      maximumZoomScale={4}
+                      minimumZoomScale={1}
+                      showsHorizontalScrollIndicator={false}
+                      showsVerticalScrollIndicator={false}
+                      bouncesZoom={true}
+                      centerContent={true}
+                      pinchGestureEnabled={true}
+                      scrollEnabled={true}
+                    >
+                      <View style={styles.fullImageContainer}>
+                        <Image 
+                          source={{ uri: selectedPhoto.photo_url }} 
+                          style={styles.fullImage}
+                          resizeMode="contain"
+                        />
+                      </View>
+                    </ScrollView>
+                  </View>
                 )}
                 <Text style={styles.zoomHint}>{Platform.OS !== 'web' ? 'Pinch to zoom' : 'View full size'}</Text>
                 <View style={styles.photoDetails}>
@@ -420,11 +431,17 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 1,
     backgroundColor: '#000',
+    overflow: 'hidden',
+  },
+  zoomableScrollView: {
+    flex: 1,
   },
   zoomableContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    minWidth: '100%',
+    minHeight: '100%',
   },
   fullImageContainer: {
     width: Dimensions.get('window').width * 0.9,
