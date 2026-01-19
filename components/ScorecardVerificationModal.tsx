@@ -36,8 +36,11 @@ export default function ScorecardVerificationModal({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (visible && !permission?.granted && Platform.OS !== 'web') {
-      requestPermission();
+    if (visible) {
+      setIsSaving(false);
+      if (!permission?.granted && Platform.OS !== 'web') {
+        requestPermission();
+      }
     }
   }, [visible, permission?.granted, requestPermission]);
 
