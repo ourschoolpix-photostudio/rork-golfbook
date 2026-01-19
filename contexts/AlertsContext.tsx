@@ -24,7 +24,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
   const notificationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasPlayedOnAppOpen = useRef<boolean>(false);
 
-  const fetchAlerts = useCallback(async () => {
+  const fetchAlerts = useCallback(async (skipLoadingState = false) => {
     if (!memberId) {
       setAlerts([]);
       setIsLoading(false);
@@ -32,7 +32,9 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
     }
 
     try {
-      setIsLoading(true);
+      if (!skipLoadingState) {
+        setIsLoading(true);
+      }
       
       if (useLocalStorage) {
         console.log('📥 [AlertsContext] Fetching alerts from local storage...');
@@ -64,7 +66,15 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         }));
         
         console.log('✅ [AlertsContext] Successfully fetched alerts from local storage:', alertsWithDismissal.length);
-        setAlerts(alertsWithDismissal);
+        
+        setAlerts(prev => {
+          const hasChanged = JSON.stringify(prev) !== JSON.stringify(alertsWithDismissal);
+          if (!hasChanged && skipLoadingState) {
+            console.log('📭 [AlertsContext] No changes detected, skipping state update');
+            return prev;
+          }
+          return alertsWithDismissal;
+        });
         setDismissals(storedDismissals);
       } else {
         console.log('📥 [AlertsContext] Fetching alerts from Supabase...');
@@ -116,7 +126,15 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         }));
         
         console.log('✅ [AlertsContext] Successfully fetched alerts:', fetchedAlerts.length);
-        setAlerts(fetchedAlerts);
+        
+        setAlerts(prev => {
+          const hasChanged = JSON.stringify(prev) !== JSON.stringify(fetchedAlerts);
+          if (!hasChanged && skipLoadingState) {
+            console.log('📭 [AlertsContext] No changes detected, skipping state update');
+            return prev;
+          }
+          return fetchedAlerts;
+        });
         setDismissals(fetchedDismissals);
       }
     } catch (error) {
@@ -152,7 +170,15 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         }));
         
         console.log('✅ [AlertsContext] Successfully fetched alerts from local storage fallback:', alertsWithDismissal.length);
-        setAlerts(alertsWithDismissal);
+        
+        setAlerts(prev => {
+          const hasChanged = JSON.stringify(prev) !== JSON.stringify(alertsWithDismissal);
+          if (!hasChanged && skipLoadingState) {
+            console.log('📭 [AlertsContext] No changes detected, skipping state update');
+            return prev;
+          }
+          return alertsWithDismissal;
+        });
         setDismissals(fallbackDismissals);
       } catch (fallbackError) {
         console.error('❌ [AlertsContext] Fallback also failed:', fallbackError instanceof Error ? fallbackError.message : JSON.stringify(fallbackError));
@@ -279,7 +305,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           (payload) => {
             try {
               console.log('[Realtime] 🔔 Alert change detected:', payload.eventType);
-              fetchAlerts();
+              fetchAlerts(true);
             } catch (error) {
               console.log('[Realtime] Error handling alert change:', error);
             }
