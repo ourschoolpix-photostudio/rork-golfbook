@@ -38,12 +38,21 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         console.log('📥 [AlertsContext] Fetching alerts from local storage...');
         const storedAlerts = await localStorageService.alerts.getAll();
         const storedDismissals = await localStorageService.alertDismissals.getByMember(memberId);
+        const storedRegistrations = await localStorageService.eventRegistrations.getByMember(memberId);
+        
+        const registeredEventIds = new Set(storedRegistrations.map(r => r.eventId));
         
         const now = new Date().toISOString();
-        const activeAlerts = storedAlerts.filter(alert => 
-          (!alert.expiresAt || alert.expiresAt > now) &&
-          alert.createdBy !== memberId
-        );
+        const activeAlerts = storedAlerts.filter(alert => {
+          if (alert.createdBy === memberId) return false;
+          if (alert.expiresAt && alert.expiresAt <= now) return false;
+          
+          if (alert.type === 'event' && alert.registrationOnly && alert.eventId) {
+            return registeredEventIds.has(alert.eventId);
+          }
+          
+          return true;
+        });
         
         const alertsWithDismissal = activeAlerts.map(alert => ({
           ...alert,
@@ -56,19 +65,28 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
       } else {
         console.log('📥 [AlertsContext] Fetching alerts from Supabase...');
         
-        const [alertsResult, dismissalsResult] = await Promise.all([
+        const [alertsResult, dismissalsResult, registrationsResult] = await Promise.all([
           supabase.from('alerts').select('*').order('created_at', { ascending: false }),
-          supabase.from('alert_dismissals').select('*').eq('member_id', memberId)
+          supabase.from('alert_dismissals').select('*').eq('member_id', memberId),
+          supabase.from('event_registrations').select('event_id').eq('member_id', memberId)
         ]);
         
         if (alertsResult.error) throw alertsResult.error;
         if (dismissalsResult.error) throw dismissalsResult.error;
         
+        const registeredEventIds = new Set((registrationsResult.data || []).map((r: any) => r.event_id));
+        
         const now = new Date().toISOString();
-        const activeAlertsData = (alertsResult.data || []).filter((a: any) => 
-          (!a.expires_at || a.expires_at > now) &&
-          a.created_by !== memberId
-        );
+        const activeAlertsData = (alertsResult.data || []).filter((a: any) => {
+          if (a.created_by === memberId) return false;
+          if (a.expires_at && a.expires_at <= now) return false;
+          
+          if (a.type === 'event' && a.registration_only && a.event_id) {
+            return registeredEventIds.has(a.event_id);
+          }
+          
+          return true;
+        });
         
         const fetchedAlerts = activeAlertsData.map((a: any) => ({
           id: a.id,
@@ -80,6 +98,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           createdBy: a.created_by,
           createdAt: a.created_at,
           expiresAt: a.expires_at,
+          registrationOnly: a.registration_only || false,
           isDismissed: (dismissalsResult.data || []).some((d: any) => d.alert_id === a.id)
         }));
         
@@ -101,12 +120,21 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
       try {
         const fallbackAlerts = await localStorageService.alerts.getAll();
         const fallbackDismissals = await localStorageService.alertDismissals.getByMember(memberId);
+        const fallbackRegistrations = await localStorageService.eventRegistrations.getByMember(memberId);
+        
+        const registeredEventIds = new Set(fallbackRegistrations.map(r => r.eventId));
         
         const now = new Date().toISOString();
-        const activeAlerts = fallbackAlerts.filter(alert => 
-          (!alert.expiresAt || alert.expiresAt > now) &&
-          alert.createdBy !== memberId
-        );
+        const activeAlerts = fallbackAlerts.filter(alert => {
+          if (alert.createdBy === memberId) return false;
+          if (alert.expiresAt && alert.expiresAt <= now) return false;
+          
+          if (alert.type === 'event' && alert.registrationOnly && alert.eventId) {
+            return registeredEventIds.has(alert.eventId);
+          }
+          
+          return true;
+        });
         
         const alertsWithDismissal = activeAlerts.map(alert => ({
           ...alert,
@@ -292,6 +320,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
             event_id: alert.eventId,
             created_by: alert.createdBy,
             expires_at: alert.expiresAt,
+            registration_only: alert.registrationOnly || false,
           });
           
           if (error) throw error;

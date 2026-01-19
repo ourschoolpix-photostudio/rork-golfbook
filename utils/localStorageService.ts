@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Member, Event, PersonalGame, RegistrationNotification, Alert, AlertTemplate, AlertDismissal } from '@/types';
+import { Member, Event, PersonalGame, RegistrationNotification, Alert, AlertTemplate, AlertDismissal, EventRegistration } from '@/types';
 
 const STORAGE_KEYS = {
   MEMBERS: '@golf_local_members',
@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   ALERTS: '@golf_local_alerts',
   ALERT_TEMPLATES: '@golf_local_alert_templates',
   ALERT_DISMISSALS: '@golf_local_alert_dismissals',
+  EVENT_REGISTRATIONS: '@golf_local_event_registrations',
 } as const;
 
 export const localStorageService = {
@@ -525,6 +526,52 @@ export const localStorageService = {
       } catch (error) {
         console.error('❌ [LocalStorage] Failed to create alert dismissal:', error);
         throw error;
+      }
+    },
+  },
+
+  eventRegistrations: {
+    async getAll(): Promise<EventRegistration[]> {
+      try {
+        const data = await AsyncStorage.getItem(STORAGE_KEYS.EVENT_REGISTRATIONS);
+        if (!data) return [];
+        
+        try {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          console.error('❌ [LocalStorage] Event registrations data is not an array, resetting');
+          await AsyncStorage.setItem(STORAGE_KEYS.EVENT_REGISTRATIONS, JSON.stringify([]));
+          return [];
+        } catch (parseError) {
+          console.error('❌ [LocalStorage] Failed to parse event registrations JSON:', parseError);
+          await AsyncStorage.setItem(STORAGE_KEYS.EVENT_REGISTRATIONS, JSON.stringify([]));
+          return [];
+        }
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to get event registrations:', error);
+        return [];
+      }
+    },
+
+    async getByMember(memberId: string): Promise<EventRegistration[]> {
+      try {
+        const registrations = await this.getAll();
+        return registrations.filter(r => r.memberId === memberId);
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to get registrations by member:', error);
+        return [];
+      }
+    },
+
+    async getByEvent(eventId: string): Promise<EventRegistration[]> {
+      try {
+        const registrations = await this.getAll();
+        return registrations.filter(r => r.eventId === eventId);
+      } catch (error) {
+        console.error('❌ [LocalStorage] Failed to get registrations by event:', error);
+        return [];
       }
     },
   },

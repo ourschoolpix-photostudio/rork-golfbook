@@ -43,6 +43,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
   const [selectedEventId, setSelectedEventId] = useState<string | undefined>(preSelectedEventId);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState<number>(24);
+  const [registrationOnly, setRegistrationOnly] = useState<boolean>(true);
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'create' | 'manage'>('create');
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
@@ -99,6 +100,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
       setSelectedEventId(preSelectedEventId);
       setSelectedTemplate(null);
       setExpiresIn(24);
+      setRegistrationOnly(true);
       setActiveTab('create');
       fetchMyAlerts();
     }
@@ -147,6 +149,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
         eventId: type === 'event' ? selectedEventId : undefined,
         createdBy: currentUser.id,
         expiresAt,
+        registrationOnly: type === 'event' ? registrationOnly : false,
       });
 
       Alert.alert('Success', 'Alert created successfully');
@@ -341,6 +344,26 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
+              </View>
+            )}
+
+            {type === 'event' && (
+              <View style={styles.section}>
+                <TouchableOpacity
+                  style={styles.checkboxContainer}
+                  onPress={() => setRegistrationOnly(!registrationOnly)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, registrationOnly && styles.checkboxChecked]}>
+                    {registrationOnly && <View style={styles.checkboxInner} />}
+                  </View>
+                  <View style={styles.checkboxLabelContainer}>
+                    <Text style={styles.checkboxLabel}>Only send to registered players</Text>
+                    <Text style={styles.checkboxDescription}>
+                      Alert will only be visible to players registered for this event
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -832,5 +855,45 @@ const styles = StyleSheet.create({
   },
   expiresButtonTextActive: {
     color: '#1e40af',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  checkboxInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: '#ffffff',
+  },
+  checkboxLabelContainer: {
+    flex: 1,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  checkboxDescription: {
+    fontSize: 12,
+    color: '#6b7280',
+    lineHeight: 16,
   },
 });

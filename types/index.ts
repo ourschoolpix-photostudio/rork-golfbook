@@ -290,6 +290,7 @@ export interface Alert {
   createdBy: string;
   createdAt: string;
   expiresAt?: string;
+  registrationOnly?: boolean;
   isDismissed?: boolean;
 }
 

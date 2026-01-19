@@ -29,21 +29,36 @@ const getAllAlertsProcedure = publicProcedure
       }
 
       if (input?.memberId) {
-        const { data: dismissalsData, error: dismissalsError } = await ctx.supabase
-          .from('alert_dismissals')
-          .select('*')
-          .eq('member_id', input.memberId);
+        const [dismissalsResult, registrationsResult] = await Promise.all([
+          ctx.supabase
+            .from('alert_dismissals')
+            .select('*')
+            .eq('member_id', input.memberId),
+          ctx.supabase
+            .from('event_registrations')
+            .select('event_id')
+            .eq('member_id', input.memberId)
+        ]);
         
-        if (dismissalsError) {
-          console.error('[Alerts tRPC] Error fetching dismissals:', dismissalsError);
+        if (dismissalsResult.error) {
+          console.error('[Alerts tRPC] Error fetching dismissals:', dismissalsResult.error);
         }
 
-        const dismissedIds = new Set((dismissalsData || []).map(d => d.alert_id));
+        const dismissedIds = new Set((dismissalsResult.data || []).map(d => d.alert_id));
+        const registeredEventIds = new Set((registrationsResult.data || []).map(r => r.event_id));
         
         const now = new Date().toISOString();
-        const activeAlertsData = alertsData.filter(alert => 
-          !alert.expires_at || alert.expires_at > now
-        );
+        const activeAlertsData = alertsData.filter(alert => {
+          if (alert.expires_at && alert.expires_at <= now) {
+            return false;
+          }
+          
+          if (alert.type === 'event' && alert.registration_only && alert.event_id) {
+            return registeredEventIds.has(alert.event_id);
+          }
+          
+          return true;
+        });
         
         const alerts = activeAlertsData.map(alert => ({
           id: alert.id,
@@ -55,6 +70,7 @@ const getAllAlertsProcedure = publicProcedure
           createdBy: alert.created_by,
           createdAt: alert.created_at,
           expiresAt: alert.expires_at,
+          registrationOnly: alert.registration_only || false,
           isDismissed: dismissedIds.has(alert.id),
         }));
 
@@ -76,6 +92,7 @@ const getAllAlertsProcedure = publicProcedure
           createdBy: alert.created_by,
           createdAt: alert.created_at,
           expiresAt: alert.expires_at,
+          registrationOnly: alert.registration_only || false,
         }));
 
         console.log('[Alerts tRPC] Fetched alerts:', alerts.length);
@@ -96,6 +113,7 @@ const createAlertProcedure = publicProcedure
     eventId: z.string().optional(),
     createdBy: z.string(),
     expiresAt: z.string().optional(),
+    registrationOnly: z.boolean().optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     try {
@@ -112,6 +130,7 @@ const createAlertProcedure = publicProcedure
           event_id: input.eventId,
           created_by: input.createdBy,
           expires_at: input.expiresAt,
+          registration_only: input.registrationOnly || false,
         })
         .select()
         .single();
@@ -132,6 +151,7 @@ const createAlertProcedure = publicProcedure
         createdBy: data.created_by,
         createdAt: data.created_at,
         expiresAt: data.expires_at,
+        registrationOnly: data.registration_only || false,
       };
     } catch (error) {
       console.error('[Alerts tRPC] Error in createAlert:', error);
