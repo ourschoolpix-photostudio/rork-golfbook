@@ -39,6 +39,10 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         const storedAlerts = await localStorageService.alerts.getAll();
         const storedDismissals = await localStorageService.alertDismissals.getByMember(memberId);
         const storedRegistrations = await localStorageService.eventRegistrations.getByMember(memberId);
+        const storedMembers = await localStorageService.members.getAll();
+        
+        const currentMember = storedMembers.find(m => m.id === memberId);
+        const isAdminOrBoard = currentMember?.isAdmin || (currentMember?.boardMemberRoles && currentMember.boardMemberRoles.length > 0);
         
         const registeredEventIds = new Set(storedRegistrations.map(r => r.eventId));
         
@@ -48,7 +52,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           if (alert.expiresAt && alert.expiresAt <= now) return false;
           
           if (alert.type === 'event' && alert.registrationOnly && alert.eventId) {
-            return registeredEventIds.has(alert.eventId);
+            return registeredEventIds.has(alert.eventId) || isAdminOrBoard;
           }
           
           return true;
@@ -65,15 +69,17 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
       } else {
         console.log('📥 [AlertsContext] Fetching alerts from Supabase...');
         
-        const [alertsResult, dismissalsResult, registrationsResult] = await Promise.all([
+        const [alertsResult, dismissalsResult, registrationsResult, memberResult] = await Promise.all([
           supabase.from('alerts').select('*').order('created_at', { ascending: false }),
           supabase.from('alert_dismissals').select('*').eq('member_id', memberId),
-          supabase.from('event_registrations').select('event_id').eq('member_id', memberId)
+          supabase.from('event_registrations').select('event_id').eq('member_id', memberId),
+          supabase.from('members').select('is_admin, board_member_roles').eq('id', memberId).single()
         ]);
         
         if (alertsResult.error) throw alertsResult.error;
         if (dismissalsResult.error) throw dismissalsResult.error;
         
+        const isAdminOrBoard = memberResult.data?.is_admin || (memberResult.data?.board_member_roles && memberResult.data.board_member_roles.length > 0);
         const registeredEventIds = new Set((registrationsResult.data || []).map((r: any) => r.event_id));
         
         const now = new Date().toISOString();
@@ -82,7 +88,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           if (a.expires_at && a.expires_at <= now) return false;
           
           if (a.type === 'event' && a.registration_only && a.event_id) {
-            return registeredEventIds.has(a.event_id);
+            return registeredEventIds.has(a.event_id) || isAdminOrBoard;
           }
           
           return true;
@@ -121,6 +127,10 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
         const fallbackAlerts = await localStorageService.alerts.getAll();
         const fallbackDismissals = await localStorageService.alertDismissals.getByMember(memberId);
         const fallbackRegistrations = await localStorageService.eventRegistrations.getByMember(memberId);
+        const fallbackMembers = await localStorageService.members.getAll();
+        
+        const currentMember = fallbackMembers.find(m => m.id === memberId);
+        const isAdminOrBoard = currentMember?.isAdmin || (currentMember?.boardMemberRoles && currentMember.boardMemberRoles.length > 0);
         
         const registeredEventIds = new Set(fallbackRegistrations.map(r => r.eventId));
         
@@ -130,7 +140,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
           if (alert.expiresAt && alert.expiresAt <= now) return false;
           
           if (alert.type === 'event' && alert.registrationOnly && alert.eventId) {
-            return registeredEventIds.has(alert.eventId);
+            return registeredEventIds.has(alert.eventId) || isAdminOrBoard;
           }
           
           return true;
