@@ -114,13 +114,24 @@ export function useRealtimeRegistrations(eventId: string, enabled: boolean = tru
             table: 'event_registrations',
             filter: `event_id=eq.${eventId}`,
           },
-          (payload) => {
+          async (payload) => {
             try {
-              console.log('[Realtime] 📝 Registration change detected:', payload);
+              console.log('[Realtime] 📝 Registration change detected:', payload.eventType);
+              
+              // Immediately fetch fresh data and update cache for instant UI update
+              const freshRegistrations = await supabaseService.registrations.getAll(eventId);
+              if (freshRegistrations) {
+                console.log('[Realtime] ✅ Immediately updating registrations cache with fresh data');
+                queryClient.setQueryData(['registrations', eventId], freshRegistrations);
+              }
+              
+              // Also invalidate to ensure consistency
               queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
-              queryClient.refetchQueries({ queryKey: ['registrations', eventId] });
             } catch (error) {
               console.error('[Realtime] Error handling registration change:', error);
+              // Fallback to refetch on error
+              queryClient.invalidateQueries({ queryKey: ['registrations', eventId] });
+              queryClient.refetchQueries({ queryKey: ['registrations', eventId] });
             }
           }
         )
