@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { X, Trash2, ImageIcon } from 'lucide-react-native';
 import { scorecardPhotoService, ScorecardPhoto } from '@/utils/scorecardPhotoService';
@@ -199,13 +200,15 @@ export default function ScorecardPhotosModal({
                 style={styles.photoDetailScroll}
                 contentContainerStyle={styles.photoDetailScrollContent}
               >
-                <View style={styles.fullImageContainer}>
-                  <Image 
-                    source={{ uri: selectedPhoto.photo_url }} 
-                    style={styles.fullImage}
-                    resizeMode="contain"
-                  />
-                </View>
+                <TouchableWithoutFeedback>
+                  <View style={styles.fullImageContainer}>
+                    <Image 
+                      source={{ uri: selectedPhoto.photo_url }} 
+                      style={styles.fullImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                </TouchableWithoutFeedback>
                 <View style={styles.photoDetails}>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Group:</Text>
