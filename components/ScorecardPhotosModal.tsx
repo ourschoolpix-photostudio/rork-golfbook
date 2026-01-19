@@ -4,11 +4,13 @@ import {
   Text,
   Modal,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   ScrollView,
   Image,
   ActivityIndicator,
   Alert,
+  Pressable,
 } from 'react-native';
 import { X, Trash2, ImageIcon } from 'lucide-react-native';
 import { scorecardPhotoService, ScorecardPhoto } from '@/utils/scorecardPhotoService';
@@ -118,8 +120,10 @@ export default function ScorecardPhotosModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <TouchableWithoutFeedback onPress={handleClose}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
           <View style={styles.header}>
             <Text style={styles.title}>
               {groupLabel ? `${groupLabel} - Scorecards` : 'Event Scorecards'}
@@ -152,15 +156,10 @@ export default function ScorecardPhotosModal({
                 <>
                   <View style={styles.photosGrid}>
                     {photos.map((photo) => (
-                      <TouchableOpacity
+                      <Pressable
                         key={photo.id}
                         style={styles.photoCard}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          setSelectedPhoto(photo);
-                        }}
-                        activeOpacity={0.7}
-                        delayPressIn={0}
+                        onPress={() => setSelectedPhoto(photo)}
                       >
                         <View style={styles.thumbnailContainer}>
                           <Image 
@@ -180,7 +179,7 @@ export default function ScorecardPhotosModal({
                             {formatDistanceToNow(new Date(photo.created_at), { addSuffix: true })}
                           </Text>
                         </View>
-                      </TouchableOpacity>
+                      </Pressable>
                     ))}
                   </View>
 
@@ -262,8 +261,10 @@ export default function ScorecardPhotosModal({
               </View>
             </View>
           )}
+            </View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
