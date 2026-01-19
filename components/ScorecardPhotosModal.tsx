@@ -200,25 +200,11 @@ export default function ScorecardPhotosModal({
                 contentContainerStyle={styles.photoDetailScrollContent}
               >
                 <View style={styles.fullImageContainer}>
-                  <ScrollView
-                    style={styles.zoomScrollView}
-                    contentContainerStyle={styles.zoomContentContainer}
-                    maximumZoomScale={4}
-                    minimumZoomScale={1}
-                    showsHorizontalScrollIndicator={false}
-                    showsVerticalScrollIndicator={false}
-                    bouncesZoom={true}
-                    centerContent={true}
-                    scrollEnabled={true}
-                    pinchGestureEnabled={true}
-                  >
-                    <Image 
-                      source={{ uri: selectedPhoto.photo_url }} 
-                      style={styles.fullImage}
-                      resizeMode="contain"
-                    />
-                  </ScrollView>
-                  <Text style={styles.zoomHint}>Pinch to zoom</Text>
+                  <Image 
+                    source={{ uri: selectedPhoto.photo_url }} 
+                    style={styles.fullImage}
+                    resizeMode="contain"
+                  />
                 </View>
                 <View style={styles.photoDetails}>
                   <View style={styles.detailRow}>
@@ -404,31 +390,12 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 1,
     backgroundColor: '#000',
-    position: 'relative',
-  },
-  zoomScrollView: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  zoomContentContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   fullImage: {
     width: '100%',
     height: '100%',
-  },
-  zoomHint: {
-    position: 'absolute',
-    bottom: 8,
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 12,
-    fontWeight: '500',
   },
   photoDetails: {
     padding: 20,
