@@ -485,7 +485,12 @@ export default function EventRegistrationScreen() {
         const data = event?.query?.state?.data as Event | undefined;
         if (data?.useCourseHandicap !== undefined) {
           console.log('[registration] 🔄 Query cache changed, updating useCourseHandicap:', data.useCourseHandicap);
-          setUseCourseHandicap(data.useCourseHandicap);
+          // Defer state update to avoid "Cannot update a component while rendering" error
+          setTimeout(() => {
+            if (data.useCourseHandicap !== undefined) {
+              setUseCourseHandicap(data.useCourseHandicap);
+            }
+          }, 0);
         }
       }
     });
