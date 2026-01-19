@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { X, Trash2, ImageIcon } from 'lucide-react-native';
 import { scorecardPhotoService, ScorecardPhoto } from '@/utils/scorecardPhotoService';
@@ -199,13 +200,25 @@ export default function ScorecardPhotosModal({
                 style={styles.photoDetailScroll}
                 contentContainerStyle={styles.photoDetailScrollContent}
               >
-                <View style={styles.fullImageContainer}>
-                  <Image 
-                    source={{ uri: selectedPhoto.photo_url }} 
-                    style={styles.fullImage}
-                    resizeMode="contain"
-                  />
-                </View>
+                <ScrollView
+                  style={styles.zoomableContainer}
+                  contentContainerStyle={styles.zoomableContent}
+                  maximumZoomScale={4}
+                  minimumZoomScale={1}
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                  bouncesZoom={true}
+                  centerContent={true}
+                >
+                  <View style={styles.fullImageContainer}>
+                    <Image 
+                      source={{ uri: selectedPhoto.photo_url }} 
+                      style={styles.fullImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                </ScrollView>
+                <Text style={styles.zoomHint}>Pinch to zoom</Text>
                 <View style={styles.photoDetails}>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Group:</Text>
@@ -386,16 +399,32 @@ const styles = StyleSheet.create({
   photoDetailScrollContent: {
     flexGrow: 1,
   },
-  fullImageContainer: {
+  zoomableContainer: {
     width: '100%',
     aspectRatio: 1,
     backgroundColor: '#000',
+  },
+  zoomableContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImageContainer: {
+    width: Dimensions.get('window').width * 0.9,
+    height: Dimensions.get('window').width * 0.9,
     justifyContent: 'center',
     alignItems: 'center',
   },
   fullImage: {
     width: '100%',
     height: '100%',
+  },
+  zoomHint: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#999',
+    paddingVertical: 8,
+    fontStyle: 'italic' as const,
   },
   photoDetails: {
     padding: 20,
