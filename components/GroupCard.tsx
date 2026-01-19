@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Camera, Image as ImageIcon } from 'lucide-react-native';
@@ -77,29 +77,37 @@ function GroupCard({
   const [photosModalVisible, setPhotosModalVisible] = useState(false);
   const [photoCount, setPhotoCount] = useState(0);
 
-  const refreshPhotoCount = useCallback(async () => {
-    if (eventId && label) {
-      console.log('[GroupCard] Checking photos for', label);
-      const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
-      console.log('[GroupCard] Found', photos.length, 'photos for', label);
-      setPhotoCount(photos.length);
-    }
-  }, [eventId, label]);
-
   useEffect(() => {
-    refreshPhotoCount();
-  }, [refreshPhotoCount]);
-
-  const handleOpenPhotosModal = async () => {
-    setPhotosModalVisible(true);
-    // Refresh count when opening to ensure sync
-    await refreshPhotoCount();
-  };
+    let isMounted = true;
+    const checkPhotos = async () => {
+      if (eventId && label) {
+        console.log('[GroupCard] Checking photos for', label, 'eventId:', eventId);
+        try {
+          const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
+          console.log('[GroupCard] Found', photos?.length || 0, 'photos for', label, 'photos:', JSON.stringify(photos));
+          if (isMounted) {
+            setPhotoCount(photos?.length || 0);
+          }
+        } catch (error) {
+          console.error('[GroupCard] Error fetching photos for', label, ':', error);
+          if (isMounted) {
+            setPhotoCount(0);
+          }
+        }
+      }
+    };
+    checkPhotos();
+    return () => { isMounted = false; };
+  }, [eventId, label]);
 
   const handlePhotosModalClose = async () => {
     setPhotosModalVisible(false);
-    console.log('[GroupCard] Modal closed, rechecking photos for', label);
-    await refreshPhotoCount();
+    if (eventId && label) {
+      console.log('[GroupCard] Modal closed, rechecking photos for', label);
+      const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
+      console.log('[GroupCard] After close found', photos.length, 'photos');
+      setPhotoCount(photos.length);
+    }
   };
 
   const handleOpenHandicapEdit = (player: any) => {
@@ -153,7 +161,7 @@ function GroupCard({
           <>
             <TouchableOpacity 
               style={[styles.viewPhotosButton, photoCount > 0 ? styles.viewPhotosButtonGreen : styles.viewPhotosButtonRed]} 
-              onPress={handleOpenPhotosModal}
+              onPress={() => setPhotosModalVisible(true)}
             >
               <ImageIcon size={14} color="#fff" />
             </TouchableOpacity>
@@ -489,7 +497,6 @@ function GroupCard({
       onClose={handlePhotosModalClose}
       eventId={eventId || ''}
       groupLabel={label}
-      onPhotoCountChange={setPhotoCount}
     />
     </>
   );
