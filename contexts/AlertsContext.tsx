@@ -529,12 +529,19 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
     }
 
     if (undismissedNonCriticalCount > previousUndismissedCount.current && undismissedNonCriticalCount > 0) {
-      console.log('[AlertsContext] 🔔 New non-critical alerts detected, playing bell notification');
-      soundService.playBellNotification();
+      const newAlerts = alerts.filter(a => !a.isDismissed && a.priority !== 'critical');
+      const hasNewOrganizationalAlert = newAlerts.some(a => a.type === 'organizational');
+      
+      if (hasNewOrganizationalAlert) {
+        console.log('[AlertsContext] 🔔 New organizational alert detected, playing bell notification');
+        soundService.playBellNotification();
+      } else {
+        console.log('[AlertsContext] 📢 New event-specific alert detected, sound will play when event is opened');
+      }
     }
 
     previousUndismissedCount.current = undismissedNonCriticalCount;
-  }, [undismissedNonCriticalCount]);
+  }, [undismissedNonCriticalCount, alerts]);
 
   return useMemo(() => ({
     alerts,

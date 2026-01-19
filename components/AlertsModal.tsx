@@ -27,7 +27,9 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
   const { getAlertsForEvent, getUndismissedAlerts, dismissAlert } = useAlerts();
   const [displayAlerts, setDisplayAlerts] = useState<Alert[]>([]);
   const hasCriticalAlerts = displayAlerts.some(a => a.priority === 'critical');
+  const hasNonCriticalAlerts = displayAlerts.some(a => a.priority !== 'critical');
   const hasPlayedEmergencySound = useRef(false);
+  const hasPlayedBellSound = useRef(false);
 
   useEffect(() => {
     if (visible) {
@@ -40,6 +42,7 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
       }
     } else {
       hasPlayedEmergencySound.current = false;
+      hasPlayedBellSound.current = false;
     }
   }, [visible, eventId, getAlertsForEvent, getUndismissedAlerts]);
 
@@ -50,6 +53,14 @@ export const AlertsModal: React.FC<AlertsModalProps> = ({
       hasPlayedEmergencySound.current = true;
     }
   }, [visible, hasCriticalAlerts]);
+
+  useEffect(() => {
+    if (visible && eventId && hasNonCriticalAlerts && !hasCriticalAlerts && !hasPlayedBellSound.current) {
+      console.log('[AlertsModal] Event-specific non-critical alert detected, playing bell notification');
+      soundService.playBellNotification();
+      hasPlayedBellSound.current = true;
+    }
+  }, [visible, eventId, hasNonCriticalAlerts, hasCriticalAlerts]);
 
   const handleDismiss = async (alertId: string) => {
     try {
