@@ -156,8 +156,15 @@ export default function ScorecardPhotosModal({
                         key={photo.id}
                         style={styles.photoCard}
                         onPress={() => setSelectedPhoto(photo)}
+                        activeOpacity={0.7}
                       >
-                        <Image source={{ uri: photo.photo_url }} style={styles.thumbnail} />
+                        <View style={styles.thumbnailContainer}>
+                          <Image 
+                            source={{ uri: photo.photo_url }} 
+                            style={styles.thumbnail}
+                            resizeMode="cover"
+                          />
+                        </View>
                         <View style={styles.photoInfo}>
                           <Text style={styles.photoLabel} numberOfLines={1}>
                             {photo.group_label}
@@ -188,8 +195,17 @@ export default function ScorecardPhotosModal({
             </ScrollView>
           ) : (
             <View style={styles.photoDetailContainer}>
-              <ScrollView style={styles.photoDetailScroll}>
-                <Image source={{ uri: selectedPhoto.photo_url }} style={styles.fullImage} />
+              <ScrollView 
+                style={styles.photoDetailScroll}
+                contentContainerStyle={styles.photoDetailScrollContent}
+              >
+                <View style={styles.fullImageContainer}>
+                  <Image 
+                    source={{ uri: selectedPhoto.photo_url }} 
+                    style={styles.fullImage}
+                    resizeMode="contain"
+                  />
+                </View>
                 <View style={styles.photoDetails}>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Group:</Text>
@@ -319,10 +335,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  thumbnail: {
+  thumbnailContainer: {
     width: '100%',
     height: 200,
     backgroundColor: '#e0e0e0',
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
   },
   photoInfo: {
     padding: 12,
@@ -363,10 +383,17 @@ const styles = StyleSheet.create({
   photoDetailScroll: {
     flex: 1,
   },
-  fullImage: {
+  photoDetailScrollContent: {
+    flexGrow: 1,
+  },
+  fullImageContainer: {
     width: '100%',
     height: 400,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#000',
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
   },
   photoDetails: {
     padding: 20,
