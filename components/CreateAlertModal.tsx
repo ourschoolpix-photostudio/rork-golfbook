@@ -301,7 +301,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
                     styles.typeButtonText,
                     type === 'organizational' && styles.typeButtonTextActive
                   ]}>
-                    Organizational
+                    Club Alert
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -636,6 +636,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: '#6b7280',
+    textAlign: 'center',
   },
   typeButtonTextActive: {
     color: '#ffffff',
