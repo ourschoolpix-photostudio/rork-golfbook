@@ -124,7 +124,15 @@ export default function ScorecardVerificationModal({
         >
           <View style={styles.cameraHeader}>
             <Text style={styles.cameraTitle}>{groupLabel}</Text>
-            <Text style={styles.cameraSubtitle}>Scorecard Photo</Text>
+            <Text style={styles.cameraSubtitle}>Align scorecard within frame</Text>
+          </View>
+
+          <View style={styles.frameGuide}>
+            <View style={styles.frameCornerTL} />
+            <View style={styles.frameCornerTR} />
+            <View style={styles.frameCornerBL} />
+            <View style={styles.frameCornerBR} />
+            <View style={styles.frameBorder} />
           </View>
 
           <View style={styles.cameraFooter}>
@@ -234,6 +242,69 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  frameGuide: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 320,
+    height: 320,
+    marginLeft: -160,
+    marginTop: -160,
+  },
+  frameBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 8,
+  },
+  frameCornerTL: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: '#4CAF50',
+    borderTopLeftRadius: 8,
+  },
+  frameCornerTR: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderColor: '#4CAF50',
+    borderTopRightRadius: 8,
+  },
+  frameCornerBL: {
+    position: 'absolute',
+    bottom: -2,
+    left: -2,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: '#4CAF50',
+    borderBottomLeftRadius: 8,
+  },
+  frameCornerBR: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: '#4CAF50',
+    borderBottomRightRadius: 8,
   },
   cameraFooter: {
     position: 'absolute',
