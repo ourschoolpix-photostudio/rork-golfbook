@@ -4,7 +4,6 @@ import {
   Text,
   Modal,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   StyleSheet,
   ScrollView,
   Image,
@@ -120,10 +119,8 @@ export default function ScorecardPhotosModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
-      <TouchableWithoutFeedback onPress={handleClose}>
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modalContent}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
           <View style={styles.header}>
             <Text style={styles.title}>
               {groupLabel ? `${groupLabel} - Scorecards` : 'Event Scorecards'}
@@ -212,6 +209,8 @@ export default function ScorecardPhotosModal({
                     showsVerticalScrollIndicator={false}
                     bouncesZoom={true}
                     centerContent={true}
+                    scrollEnabled={true}
+                    pinchGestureEnabled={true}
                   >
                     <Image 
                       source={{ uri: selectedPhoto.photo_url }} 
@@ -273,10 +272,8 @@ export default function ScorecardPhotosModal({
               </View>
             </View>
           )}
-            </View>
-          </TouchableWithoutFeedback>
         </View>
-      </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 }
