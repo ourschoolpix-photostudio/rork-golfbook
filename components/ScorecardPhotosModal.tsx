@@ -9,8 +9,8 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-  Pressable,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { X, Trash2, ImageIcon } from 'lucide-react-native';
 import { scorecardPhotoService, ScorecardPhoto } from '@/utils/scorecardPhotoService';
@@ -154,19 +154,23 @@ export default function ScorecardPhotosModal({
                 <>
                   <View style={styles.photosGrid}>
                     {photos.map((photo) => (
-                      <Pressable
+                      <TouchableOpacity
                         key={photo.id}
                         style={styles.photoCard}
-                        onPress={() => setSelectedPhoto(photo)}
+                        onPress={() => {
+                          console.log('[ScorecardPhotosModal] Photo tapped:', photo.id);
+                          setSelectedPhoto(photo);
+                        }}
+                        activeOpacity={0.7}
                       >
-                        <View style={styles.thumbnailContainer}>
+                        <View style={styles.thumbnailContainer} pointerEvents="none">
                           <Image 
                             source={{ uri: photo.photo_url }} 
                             style={styles.thumbnail}
                             resizeMode="cover"
                           />
                         </View>
-                        <View style={styles.photoInfo}>
+                        <View style={styles.photoInfo} pointerEvents="none">
                           <Text style={styles.photoLabel} numberOfLines={1}>
                             {photo.group_label}
                           </Text>
@@ -177,7 +181,7 @@ export default function ScorecardPhotosModal({
                             {formatDistanceToNow(new Date(photo.created_at), { addSuffix: true })}
                           </Text>
                         </View>
-                      </Pressable>
+                      </TouchableOpacity>
                     ))}
                   </View>
 
@@ -200,25 +204,38 @@ export default function ScorecardPhotosModal({
                 style={styles.photoDetailScroll}
                 contentContainerStyle={styles.photoDetailScrollContent}
               >
-                <ScrollView
-                  style={styles.zoomableContainer}
-                  contentContainerStyle={styles.zoomableContent}
-                  maximumZoomScale={4}
-                  minimumZoomScale={1}
-                  showsHorizontalScrollIndicator={false}
-                  showsVerticalScrollIndicator={false}
-                  bouncesZoom={true}
-                  centerContent={true}
-                >
-                  <View style={styles.fullImageContainer}>
-                    <Image 
-                      source={{ uri: selectedPhoto.photo_url }} 
-                      style={styles.fullImage}
-                      resizeMode="contain"
-                    />
+                {Platform.OS === 'web' ? (
+                  <View style={styles.zoomableContainer}>
+                    <View style={styles.fullImageContainer}>
+                      <Image 
+                        source={{ uri: selectedPhoto.photo_url }} 
+                        style={styles.fullImage}
+                        resizeMode="contain"
+                      />
+                    </View>
                   </View>
-                </ScrollView>
-                <Text style={styles.zoomHint}>Pinch to zoom</Text>
+                ) : (
+                  <ScrollView
+                    style={styles.zoomableContainer}
+                    contentContainerStyle={styles.zoomableContent}
+                    maximumZoomScale={4}
+                    minimumZoomScale={1}
+                    showsHorizontalScrollIndicator={false}
+                    showsVerticalScrollIndicator={false}
+                    bouncesZoom={true}
+                    centerContent={true}
+                    pinchGestureEnabled={true}
+                  >
+                    <View style={styles.fullImageContainer}>
+                      <Image 
+                        source={{ uri: selectedPhoto.photo_url }} 
+                        style={styles.fullImage}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  </ScrollView>
+                )}
+                <Text style={styles.zoomHint}>{Platform.OS !== 'web' ? 'Pinch to zoom' : 'View full size'}</Text>
                 <View style={styles.photoDetails}>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Group:</Text>
