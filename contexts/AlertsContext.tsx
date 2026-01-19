@@ -445,6 +445,14 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
     return alerts.filter(alert => !alert.isDismissed && alert.priority === 'critical');
   }, [alerts]);
 
+  const getOrganizationalCriticalAlerts = useCallback(() => {
+    return alerts.filter(alert => 
+      !alert.isDismissed && 
+      alert.priority === 'critical' && 
+      alert.type === 'organizational'
+    );
+  }, [alerts]);
+
   const undismissedCount = useMemo(() => alerts.filter(a => !a.isDismissed).length, [alerts]);
   const undismissedNonCriticalCount = useMemo(() => alerts.filter(a => !a.isDismissed && a.priority !== 'critical').length, [alerts]);
 
@@ -477,6 +485,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
     getAlertsForEvent,
     getUndismissedAlerts,
     getCriticalUndismissedAlerts,
+    getOrganizationalCriticalAlerts,
     refreshAlerts: fetchAlerts,
-  }), [alerts, templates, dismissals, undismissedCount, isLoading, createAlert, dismissAlert, deleteAlert, createTemplate, deleteTemplate, getAlertsForEvent, getUndismissedAlerts, getCriticalUndismissedAlerts, fetchAlerts]);
+  }), [alerts, templates, dismissals, undismissedCount, isLoading, createAlert, dismissAlert, deleteAlert, createTemplate, deleteTemplate, getAlertsForEvent, getUndismissedAlerts, getCriticalUndismissedAlerts, getOrganizationalCriticalAlerts, fetchAlerts]);
 });

@@ -43,7 +43,7 @@ export default function DashboardScreen() {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
   const [criticalAlertShown, setCriticalAlertShown] = useState<boolean>(false);
-  const { undismissedCount, getCriticalUndismissedAlerts } = useAlerts();
+  const { undismissedCount, getOrganizationalCriticalAlerts } = useAlerts();
   const bellShake = useRef(new Animated.Value(0)).current;
 
   const registrationsQuery = useQuery({
@@ -148,14 +148,14 @@ export default function DashboardScreen() {
       }
       loadExpandedEventId();
       
-      const criticalAlerts = getCriticalUndismissedAlerts();
+      const criticalAlerts = getOrganizationalCriticalAlerts();
       if (criticalAlerts.length > 0 && !criticalAlertShown) {
         setCriticalAlertShown(true);
         setTimeout(() => {
           setAlertsModalVisible(true);
         }, 500);
       }
-    }, [refreshEvents, refetchRegistrations, getCriticalUndismissedAlerts, criticalAlertShown])
+    }, [refreshEvents, refetchRegistrations, getOrganizationalCriticalAlerts, criticalAlertShown])
   );
 
   const loadExpandedEventId = async () => {
