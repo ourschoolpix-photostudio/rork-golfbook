@@ -42,7 +42,40 @@ export function EventFooter({
   pointsDistributed = false,
   showSyncButton = false,
 }: EventFooterProps = {}) {
-  const { shouldUseOfflineMode, hasPendingChanges, pendingOperations } = useOfflineMode();
+  const { shouldUseOfflineMode } = useOfflineMode();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { eventId } = useLocalSearchParams<{ eventId: string }>();
+  const { currentUser } = useAuth();
+  const insets = useSafeAreaInsets();
+  const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
+  const queryClient = useQueryClient();
+  const [hasOfflineScores, setHasOfflineScores] = useState(false);
+
+  const [event, setEvent] = useState<any>(null);
+  const isSocialEvent = event?.type === 'social';
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    const checkForOfflineScores = async () => {
+      if (!eventId) return;
+      try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        const scoreKeys = allKeys.filter(key => key.startsWith(`@golf_offline_scores_${eventId}_`));
+        setHasOfflineScores(scoreKeys.length > 0);
+      } catch (error) {
+        console.error('[EventFooter] Error checking offline scores:', error);
+      }
+    };
+
+    if (shouldUseOfflineMode && showSyncButton) {
+      checkForOfflineScores();
+      const interval = setInterval(checkForOfflineScores, 3000);
+      return () => clearInterval(interval);
+    } else {
+      setHasOfflineScores(false);
+    }
+  }, [eventId, shouldUseOfflineMode, showSyncButton]);
   const calculateAndStoreTournamentHandicaps = async (eventId: string) => {
     try {
       console.log('[EventFooter] Calculating tournament handicaps for event:', eventId);
@@ -125,51 +158,93 @@ export function EventFooter({
       console.error('[EventFooter] Error calculating tournament handicaps:', error);
     }
   };
-  const router = useRouter();
-  const pathname = usePathname();
-  const { eventId } = useLocalSearchParams<{ eventId: string }>();
-  const { currentUser } = useAuth();
-  const insets = useSafeAreaInsets();
-  const [useCourseHandicap, setUseCourseHandicap] = useState<boolean>(false);
-  const queryClient = useQueryClient();
-
-  const [event, setEvent] = useState<any>(null);
-  const isSocialEvent = event?.type === 'social';
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const handleSync = async () => {
+    if (!eventId || !currentUser) {
+      console.log('[EventFooter] Missing eventId or currentUser');
+      return;
+    }
+
     setIsSyncing(true);
     try {
-      console.log('[EventFooter] 🔄 Starting sync...', pendingOperations.length, 'pending operations');
+      console.log('[EventFooter] 🔄 Starting offline scores sync for event:', eventId);
       const { supabaseService } = await import('@/utils/supabaseService');
       
       let successCount = 0;
       let failCount = 0;
-      
-      for (const op of pendingOperations) {
+      const storagKeysToDelete: string[] = [];
+
+      const allKeys = await AsyncStorage.getAllKeys();
+      const scoreKeys = allKeys.filter(key => 
+        key.startsWith(`@golf_offline_scores_${eventId}_`)
+      );
+
+      console.log('[EventFooter] Found', scoreKeys.length, 'offline score entries');
+
+      for (const key of scoreKeys) {
         try {
-          console.log('[EventFooter] Syncing operation:', op.type, op.id);
+          const dayMatch = key.match(/_day(\d+)$/);
+          if (!dayMatch) continue;
+
+          const day = parseInt(dayMatch[1], 10);
+          const scoresJson = await AsyncStorage.getItem(key);
           
-          if (op.type === 'score_submit' && op.data) {
-            const { eventId, memberId, day, holes, totalScore, submittedBy } = op.data;
-            await supabaseService.scores.submit(eventId, memberId, day, holes, totalScore, submittedBy);
-            successCount++;
+          if (!scoresJson) continue;
+
+          const scores = JSON.parse(scoresJson);
+          console.log('[EventFooter] Syncing scores for day', day, ':', Object.keys(scores).length, 'players');
+
+          for (const [memberId, playerScores] of Object.entries(scores as Record<string, Record<number, number>>)) {
+            const holesArray = Array(18).fill(null);
+            let totalScore = 0;
+
+            Object.entries(playerScores).forEach(([hole, score]) => {
+              const holeNum = parseInt(hole, 10);
+              if (holeNum >= 1 && holeNum <= 18) {
+                holesArray[holeNum - 1] = score;
+                totalScore += score;
+              }
+            });
+
+            if (totalScore > 0) {
+              await supabaseService.scores.submit(
+                eventId,
+                memberId,
+                day,
+                holesArray,
+                totalScore,
+                currentUser.id
+              );
+              console.log('[EventFooter] ✅ Synced scores for member:', memberId, 'day:', day, 'total:', totalScore);
+              successCount++;
+            }
           }
-          
+
+          storagKeysToDelete.push(key);
         } catch (error) {
-          console.error('[EventFooter] Failed to sync operation:', op.id, error);
+          console.error('[EventFooter] Failed to sync scores from key:', key, error);
           failCount++;
         }
       }
+
+      for (const key of storagKeysToDelete) {
+        await AsyncStorage.removeItem(key);
+        console.log('[EventFooter] 🗑️ Cleared synced scores:', key);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['scores', eventId] });
       
-      console.log('[EventFooter] ✅ Sync complete:', successCount, 'success,', failCount, 'failed');
+      console.log('[EventFooter] ✅ Sync complete:', successCount, 'player scores synced,', failCount, 'failed');
       
-      if (failCount === 0) {
+      if (failCount === 0 && successCount > 0) {
         const { Alert } = await import('react-native');
-        Alert.alert('Sync Complete', `Successfully synced ${successCount} score(s)`);
-      } else {
+        Alert.alert('Sync Complete', `Successfully synced ${successCount} player score(s) to the server!`);
+      } else if (successCount > 0) {
         const { Alert } = await import('react-native');
         Alert.alert('Sync Partially Complete', `${successCount} synced, ${failCount} failed`);
+      } else {
+        const { Alert } = await import('react-native');
+        Alert.alert('No Scores to Sync', 'No offline scores found.');
       }
     } catch (error) {
       console.error('[EventFooter] Sync error:', error);
@@ -393,13 +468,13 @@ export function EventFooter({
           ) : showSyncButton ? (
             shouldUseOfflineMode ? (
               <TouchableOpacity
-                style={[styles.syncButton, (isSyncing || !hasPendingChanges) && styles.syncButtonDisabled]}
+                style={[styles.syncButton, (isSyncing || !hasOfflineScores) && styles.syncButtonDisabled]}
                 onPress={handleSync}
-                disabled={isSyncing || !hasPendingChanges}
+                disabled={isSyncing || !hasOfflineScores}
               >
                 <Upload size={18} color="#fff" />
                 <Text style={styles.syncButtonText}>
-                  {isSyncing ? 'Syncing...' : hasPendingChanges ? `Sync Scores (${pendingOperations.length})` : 'No Scores to Sync'}
+                  {isSyncing ? 'Syncing...' : hasOfflineScores ? 'Sync Scores' : 'No Scores to Sync'}
                 </Text>
               </TouchableOpacity>
             ) : null

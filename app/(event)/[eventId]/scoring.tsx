@@ -5,6 +5,7 @@ import { Alert } from '@/utils/alertPolyfill';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { Star } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { EventFooter } from '@/components/EventFooter';
 import { TeeHoleIndicator } from '@/components/TeeHoleIndicator';
@@ -325,10 +326,37 @@ export default function ScoringScreen() {
     }
   }, [updateHoleBasedOnStartType, groupingsLoading, membersLoading, registrationsLoading]);
 
+  const loadScoresFromLocalStorage = useCallback(async () => {
+    if (!eventId) return null;
+    try {
+      const storageKey = `@golf_offline_scores_${eventId}_day${selectedDay}`;
+      const stored = await AsyncStorage.getItem(storageKey);
+      if (stored) {
+        const parsedScores = JSON.parse(stored);
+        console.log('[scoring] 📂 Loaded scores from local storage:', parsedScores);
+        return parsedScores;
+      }
+    } catch (error) {
+      console.error('[scoring] Error loading scores from local storage:', error);
+    }
+    return null;
+  }, [eventId, selectedDay]);
+
   useEffect(() => {
-    const loadScores = () => {
+    const loadScores = async () => {
       try {
-        if (!eventId || scoresLoading || eventScores.length === 0) return;
+        if (!eventId) return;
+        
+        if (shouldUseOfflineMode) {
+          const localScores = await loadScoresFromLocalStorage();
+          if (localScores) {
+            console.log('[scoring] Loading from local storage (offline mode)');
+            setHoleScores(localScores);
+            return;
+          }
+        }
+        
+        if (scoresLoading || eventScores.length === 0) return;
         
         const scoresMap: { [playerId: string]: { [hole: number]: number } } = {};
 
@@ -357,7 +385,7 @@ export default function ScoringScreen() {
     };
     
     loadScores();
-  }, [eventId, selectedDay, scoresLoading, eventScores]);
+  }, [eventId, selectedDay, scoresLoading, eventScores, shouldUseOfflineMode, loadScoresFromLocalStorage]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -420,13 +448,19 @@ export default function ScoringScreen() {
     }
     newScore = Math.max(1, newScore);
 
-    setHoleScores(prev => ({
-      ...prev,
+    const updatedScores = {
+      ...holeScores,
       [playerId]: {
-        ...(prev[playerId] || {}),
+        ...(holeScores[playerId] || {}),
         [currentHole]: newScore,
       },
-    }));
+    };
+
+    setHoleScores(updatedScores);
+
+    if (shouldUseOfflineMode) {
+      await saveScoresToLocalStorage(updatedScores);
+    }
 
     console.log(`[scoring] Updated hole ${currentHole} score for player ${playerId}:`, newScore);
   };
@@ -437,27 +471,40 @@ export default function ScoringScreen() {
     const holePar = getHolePar();
     const currentScore = holeScores[playerId]?.[currentHole] || 0;
 
+    let updatedScores;
     if (currentScore === holePar) {
-      setHoleScores(prev => {
-        const newScores = { ...prev };
-        if (newScores[playerId]) {
-          newScores[playerId] = { ...newScores[playerId] };
-          delete newScores[playerId][currentHole];
-        }
-        return newScores;
-      });
-
+      updatedScores = { ...holeScores };
+      if (updatedScores[playerId]) {
+        updatedScores[playerId] = { ...updatedScores[playerId] };
+        delete updatedScores[playerId][currentHole];
+      }
+      setHoleScores(updatedScores);
       console.log(`[scoring] Reset score for hole ${currentHole}, player ${playerId}`);
     } else {
-      setHoleScores(prev => ({
-        ...prev,
+      updatedScores = {
+        ...holeScores,
         [playerId]: {
-          ...(prev[playerId] || {}),
+          ...(holeScores[playerId] || {}),
           [currentHole]: holePar,
         },
-      }));
-
+      };
+      setHoleScores(updatedScores);
       console.log(`[scoring] Set par for hole ${currentHole}, player ${playerId}:`, holePar);
+    }
+
+    if (shouldUseOfflineMode) {
+      await saveScoresToLocalStorage(updatedScores);
+    }
+  };
+
+  const saveScoresToLocalStorage = async (scores: { [playerId: string]: { [hole: number]: number } }) => {
+    if (!eventId) return;
+    try {
+      const storageKey = `@golf_offline_scores_${eventId}_day${selectedDay}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(scores));
+      console.log('[scoring] 💾 Saved scores to local storage');
+    } catch (error) {
+      console.error('[scoring] Error saving scores to local storage:', error);
     }
   };
 
@@ -476,10 +523,11 @@ export default function ScoringScreen() {
     if (!eventId || !currentUser) return;
 
     if (shouldUseOfflineMode) {
+      await saveScoresToLocalStorage(holeScores);
       Alert.alert(
-        'Offline Mode',
-        'You are currently offline or in offline mode. Scores cannot be submitted. Please go online to submit scores.',
-        [{ text: 'OK' }]
+        'Scores Saved Locally',
+        'Your scores have been saved locally. They will be synced to the server when you go back online and tap the Sync button.',
+        [{ text: 'OK', onPress: () => handleNextHole() }]
       );
       return;
     }
