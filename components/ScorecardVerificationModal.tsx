@@ -5,13 +5,12 @@ import {
   Modal,
   TouchableOpacity,
   StyleSheet,
-  Image,
-  ScrollView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { X, CheckCircle, Camera, ImageIcon, Save } from 'lucide-react-native';
+import { X, Camera } from 'lucide-react-native';
 import { scorecardPhotoService } from '@/utils/scorecardPhotoService';
 
 interface ScorecardVerificationModalProps {
@@ -33,45 +32,16 @@ export default function ScorecardVerificationModal({
   tee,
   holeRange,
 }: ScorecardVerificationModalProps) {
-  const [imageUri, setImageUri] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<any>(null);
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
-  const [photoSaved, setPhotoSaved] = useState(false);
 
-  useEffect(() => {
-    if (!visible) {
-      setShowCamera(false);
-      setPhotoSaved(false);
-      setImageUri(null);
-    }
-  }, [visible]);
-
-  const handleStopCamera = useCallback(() => {
+  const handleClose = useCallback(() => {
     setShowCamera(false);
-  }, []);
-
-  const capturePhoto = useCallback(async () => {
-    if (!cameraRef.current) return;
-
-    try {
-      console.log('[ScorecardPhoto] Capturing photo...');
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.95,
-        skipProcessing: false,
-      });
-
-      if (photo && photo.uri) {
-        setImageUri(photo.uri);
-        setShowCamera(false);
-      }
-    } catch (error) {
-      console.error('[ScorecardPhoto] Error capturing photo:', error);
-    }
-  }, []);
-
-
+    setIsSavingPhoto(false);
+    onClose();
+  }, [onClose]);
 
   const handleSelectFromGallery = useCallback(async () => {
     try {
@@ -88,14 +58,38 @@ export default function ScorecardVerificationModal({
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        setImageUri(asset.uri);
+        
+        setIsSavingPhoto(true);
+        try {
+          const saved = await scorecardPhotoService.savePhoto(
+            eventId,
+            groupLabel,
+            asset.uri,
+            {
+              day,
+              tee,
+              holeRange,
+            }
+          );
+          
+          if (saved) {
+            console.log('✅ Photo saved and closing modal');
+            setTimeout(() => {
+              handleClose();
+            }, 500);
+          }
+        } catch (saveError) {
+          console.error('❌ Error saving photo:', saveError);
+        } finally {
+          setIsSavingPhoto(false);
+        }
       }
     } catch (error) {
       console.error('[ScorecardPhoto] Error selecting photo:', error);
     }
-  }, []);
+  }, [eventId, groupLabel, day, tee, holeRange, handleClose]);
 
-  const handleStartCamera = async () => {
+  const handleStartCamera = useCallback(async () => {
     if (Platform.OS === 'web') {
       handleSelectFromGallery();
       return;
@@ -110,44 +104,58 @@ export default function ScorecardVerificationModal({
     }
 
     setShowCamera(true);
-  };
+  }, [permission, requestPermission, handleSelectFromGallery]);
 
-  const handleClose = () => {
-    handleStopCamera();
-    setImageUri(null);
-    setShowCamera(false);
-    setPhotoSaved(false);
-    onClose();
-  };
+  const capturePhoto = useCallback(async () => {
+    if (!cameraRef.current) return;
 
-  const handleSavePhoto = async () => {
-    if (!imageUri) return;
-    
-    setIsSavingPhoto(true);
     try {
-      const saved = await scorecardPhotoService.savePhoto(
-        eventId,
-        groupLabel,
-        imageUri,
-        {
-          day,
-          tee,
-          holeRange,
+      console.log('[ScorecardPhoto] Capturing photo...');
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.95,
+        skipProcessing: false,
+      });
+
+      if (photo && photo.uri) {
+        setShowCamera(false);
+        
+        setIsSavingPhoto(true);
+        try {
+          const saved = await scorecardPhotoService.savePhoto(
+            eventId,
+            groupLabel,
+            photo.uri,
+            {
+              day,
+              tee,
+              holeRange,
+            }
+          );
+          
+          if (saved) {
+            console.log('✅ Photo saved and closing modal');
+            setTimeout(() => {
+              handleClose();
+            }, 500);
+          }
+        } catch (saveError) {
+          console.error('❌ Error saving photo:', saveError);
+        } finally {
+          setIsSavingPhoto(false);
         }
-      );
-      
-      if (saved) {
-        console.log('✅ Photo saved for future reference');
-        setPhotoSaved(true);
       }
     } catch (error) {
-      console.error('❌ Error saving photo:', error);
-    } finally {
-      setIsSavingPhoto(false);
+      console.error('[ScorecardPhoto] Error capturing photo:', error);
     }
-  };
+  }, [eventId, groupLabel, day, tee, holeRange, handleClose]);
 
-
+  useEffect(() => {
+    if (visible) {
+      handleStartCamera();
+    } else {
+      setShowCamera(false);
+    }
+  }, [visible, handleStartCamera]);
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
@@ -160,7 +168,7 @@ export default function ScorecardVerificationModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.body}>
+          <View style={styles.body}>
             {showCamera && (
               <View style={styles.cameraContainer}>
                 <CameraView
@@ -172,7 +180,7 @@ export default function ScorecardVerificationModal({
                   <View style={styles.cameraButtons}>
                     <TouchableOpacity
                       style={styles.cancelBtn}
-                      onPress={handleStopCamera}
+                      onPress={handleClose}
                     >
                       <X size={20} color="#fff" />
                       <Text style={styles.cameraBtnText}>Cancel</Text>
@@ -180,81 +188,25 @@ export default function ScorecardVerificationModal({
                     <TouchableOpacity
                       style={styles.captureBtn}
                       onPress={capturePhoto}
+                      disabled={isSavingPhoto}
                     >
                       <Camera size={20} color="#fff" />
-                      <Text style={styles.cameraBtnText}>Capture</Text>
+                      <Text style={styles.cameraBtnText}>
+                        {isSavingPhoto ? 'Saving...' : 'Capture'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               </View>
             )}
 
-            {!showCamera && !imageUri && (
-              <View style={styles.actionsContainer}>
-                <Text style={styles.instruction}>
-                  Take a photo of the scorecard to save for future reference
-                </Text>
-                
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={handleStartCamera}
-                >
-                  <Camera size={24} color="#fff" />
-                  <Text style={styles.actionButtonText}>
-                    {Platform.OS === 'web' ? 'Choose Photo' : 'Take Photo'}
-                  </Text>
-                </TouchableOpacity>
-
-                {Platform.OS !== 'web' && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.secondaryButton]}
-                    onPress={handleSelectFromGallery}
-                  >
-                    <ImageIcon size={24} color="#fff" />
-                    <Text style={styles.actionButtonText}>Choose from Gallery</Text>
-                  </TouchableOpacity>
-                )}
+            {!showCamera && isSavingPhoto && (
+              <View style={styles.savingContainer}>
+                <ActivityIndicator size="large" color="#1B5E20" />
+                <Text style={styles.savingText}>Saving photo...</Text>
               </View>
             )}
-
-            {imageUri && (
-              <View style={styles.photoContainer}>
-                <Image source={{ uri: imageUri }} style={styles.photoImage} />
-
-                <View style={styles.photoActions}>
-                  {!photoSaved && (
-                    <TouchableOpacity
-                      style={styles.savePhotoButton}
-                      onPress={handleSavePhoto}
-                      disabled={isSavingPhoto}
-                    >
-                      <Save size={18} color="#fff" />
-                      <Text style={styles.savePhotoButtonText}>
-                        {isSavingPhoto ? 'Saving...' : 'Save Photo'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  {photoSaved && (
-                    <View style={styles.savedIndicator}>
-                      <CheckCircle size={18} color="#4CAF50" />
-                      <Text style={styles.savedIndicatorText}>Photo Saved</Text>
-                    </View>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={styles.takeAnotherButton}
-                  onPress={() => {
-                    setImageUri(null);
-                    setPhotoSaved(false);
-                    handleStartCamera();
-                  }}
-                >
-                  <Text style={styles.takeAnotherButtonText}>Take Another Photo</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </ScrollView>
+          </View>
         </View>
       </View>
     </Modal>
@@ -294,45 +246,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   body: {
-    padding: 20,
-  },
-  actionsContainer: {
-    gap: 16,
-    paddingVertical: 20,
-  },
-  instruction: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 16,
-    lineHeight: 24,
-  },
-  actionButton: {
-    backgroundColor: '#1B5E20',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 8,
-    gap: 8,
-  },
-  secondaryButton: {
-    backgroundColor: '#4CAF50',
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  photoContainer: {
-    alignItems: 'center',
-    gap: 16,
-  },
-  photoImage: {
-    width: '100%',
-    height: 300,
-    borderRadius: 12,
-    backgroundColor: '#f0f0f0',
+    flex: 1,
   },
   cameraContainer: {
     width: '100%',
@@ -379,47 +293,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  photoActions: {
-    width: '100%',
-    marginVertical: 8,
-  },
-  savePhotoButton: {
-    backgroundColor: '#2196F3',
-    flexDirection: 'row',
-    alignItems: 'center',
+  savingContainer: {
+    flex: 1,
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    gap: 6,
-  },
-  savePhotoButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  savedIndicator: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    gap: 6,
+    paddingVertical: 60,
+    gap: 16,
   },
-  savedIndicatorText: {
-    color: '#4CAF50',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  takeAnotherButton: {
-    backgroundColor: '#666',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  takeAnotherButtonText: {
-    color: '#fff',
+  savingText: {
     fontSize: 16,
-    fontWeight: '600',
+    color: '#666',
+    fontWeight: '500',
   },
 });
