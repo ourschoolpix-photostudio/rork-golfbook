@@ -65,7 +65,7 @@ export default function ScorecardVerificationModal({
         const frameSize = 320;
         
         const imageCenterX = photo.width / 2;
-        const imageCenterY = photo.height / 2;
+        const imageCenterY = photo.height / 2 - (40 * (photo.height / screenHeight));
         
         const scaleX = photo.width / screenWidth;
         const scaleY = photo.height / screenHeight;
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     width: 320,
     height: 320,
     marginLeft: -160,
-    marginTop: -160,
+    marginTop: -200,
   },
   frameBorder: {
     position: 'absolute',
