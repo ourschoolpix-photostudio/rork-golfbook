@@ -24,6 +24,7 @@ import {
   canAccessBulkUpdate,
   canAccessSettings,
   canAccessBackupRestore,
+  canAccessAlertsManagement,
 } from '@/utils/rolePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateAlertModal } from '@/components/CreateAlertModal';
@@ -43,6 +44,7 @@ export default function AdminScreen() {
         canAccessPlayerManagement(currentUser) ||
         canAccessEventManagement(currentUser) ||
         canAccessFinancialSummary(currentUser) ||
+        canAccessAlertsManagement(currentUser) ||
         canAccessBulkUpdate(currentUser) ||
         canAccessSettings(currentUser) ||
         canAccessBackupRestore(currentUser);
@@ -58,6 +60,7 @@ export default function AdminScreen() {
     canAccessPlayerManagement(currentUser) ||
     canAccessEventManagement(currentUser) ||
     canAccessFinancialSummary(currentUser) ||
+    canAccessAlertsManagement(currentUser) ||
     canAccessBulkUpdate(currentUser) ||
     canAccessSettings(currentUser) ||
     canAccessBackupRestore(currentUser);
@@ -394,7 +397,7 @@ export default function AdminScreen() {
             else if (option.id === 'financial') hasAccess = canAccessFinancialSummary(currentUser);
             else if (option.id === 'settings') hasAccess = canAccessSettings(currentUser);
             else if (option.id === 'email-manager') hasAccess = canAccessSettings(currentUser);
-            else if (option.id === 'alerts') hasAccess = canAccessSettings(currentUser);
+            else if (option.id === 'alerts') hasAccess = canAccessAlertsManagement(currentUser);
             
             if (!hasAccess) return null;
             

@@ -135,6 +135,19 @@ export function canAccessBackupRestore(user: Member | null): boolean {
   return hasRole(user, 'Admin');
 }
 
+export function canAccessAlertsManagement(user: Member | null): boolean {
+  return hasAnyRole(user, [
+    'Admin',
+    'President',
+    'VP',
+    'Tournament Director',
+    'Handicap Director',
+    'Member Relations',
+    'Financer',
+    'Operations',
+  ]);
+}
+
 export function canTogglePaymentStatus(user: Member | null): boolean {
   return hasAnyRole(user, [
     'Admin',
