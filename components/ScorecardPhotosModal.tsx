@@ -20,6 +20,7 @@ interface ScorecardPhotosModalProps {
   onClose: () => void;
   eventId: string;
   groupLabel?: string;
+  onPhotoCountChange?: (count: number) => void;
 }
 
 export default function ScorecardPhotosModal({
@@ -27,6 +28,7 @@ export default function ScorecardPhotosModal({
   onClose,
   eventId,
   groupLabel,
+  onPhotoCountChange,
 }: ScorecardPhotosModalProps) {
   const [photos, setPhotos] = useState<ScorecardPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,8 +52,10 @@ export default function ScorecardPhotosModal({
         fetchedPhotos = await scorecardPhotoService.getPhotosByEvent(eventId);
       }
       setPhotos(fetchedPhotos);
+      onPhotoCountChange?.(fetchedPhotos.length);
     } catch (error) {
       console.error('Error loading photos:', error);
+      onPhotoCountChange?.(0);
     } finally {
       setIsLoading(false);
     }
@@ -71,8 +75,10 @@ export default function ScorecardPhotosModal({
             const success = await scorecardPhotoService.deletePhoto(photo.id, photo.photo_url);
             setIsDeleting(false);
             if (success) {
-              setPhotos(photos.filter(p => p.id !== photo.id));
+              const remaining = photos.filter(p => p.id !== photo.id);
+              setPhotos(remaining);
               setSelectedPhoto(null);
+              onPhotoCountChange?.(remaining.length);
             }
           },
         },
@@ -98,10 +104,12 @@ export default function ScorecardPhotosModal({
                 await scorecardPhotoService.deletePhoto(photo.id, photo.photo_url);
               }
               setPhotos([]);
+              onPhotoCountChange?.(0);
             } else {
               const success = await scorecardPhotoService.deleteAllEventPhotos(eventId);
               if (success) {
                 setPhotos([]);
+                onPhotoCountChange?.(0);
               }
             }
             setIsDeleting(false);

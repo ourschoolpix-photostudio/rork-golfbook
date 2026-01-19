@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Camera, Image as ImageIcon } from 'lucide-react-native';
@@ -77,26 +77,29 @@ function GroupCard({
   const [photosModalVisible, setPhotosModalVisible] = useState(false);
   const [photoCount, setPhotoCount] = useState(0);
 
-  useEffect(() => {
-    const checkPhotos = async () => {
-      if (eventId && label) {
-        console.log('[GroupCard] Checking photos for', label);
-        const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
-        console.log('[GroupCard] Found', photos.length, 'photos for', label);
-        setPhotoCount(photos.length);
-      }
-    };
-    checkPhotos();
+  const refreshPhotoCount = useCallback(async () => {
+    if (eventId && label) {
+      console.log('[GroupCard] Checking photos for', label);
+      const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
+      console.log('[GroupCard] Found', photos.length, 'photos for', label);
+      setPhotoCount(photos.length);
+    }
   }, [eventId, label]);
+
+  useEffect(() => {
+    refreshPhotoCount();
+  }, [refreshPhotoCount]);
+
+  const handleOpenPhotosModal = async () => {
+    setPhotosModalVisible(true);
+    // Refresh count when opening to ensure sync
+    await refreshPhotoCount();
+  };
 
   const handlePhotosModalClose = async () => {
     setPhotosModalVisible(false);
-    if (eventId && label) {
-      console.log('[GroupCard] Modal closed, rechecking photos for', label);
-      const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
-      console.log('[GroupCard] After close found', photos.length, 'photos');
-      setPhotoCount(photos.length);
-    }
+    console.log('[GroupCard] Modal closed, rechecking photos for', label);
+    await refreshPhotoCount();
   };
 
   const handleOpenHandicapEdit = (player: any) => {
@@ -150,7 +153,7 @@ function GroupCard({
           <>
             <TouchableOpacity 
               style={[styles.viewPhotosButton, photoCount > 0 ? styles.viewPhotosButtonGreen : styles.viewPhotosButtonRed]} 
-              onPress={() => setPhotosModalVisible(true)}
+              onPress={handleOpenPhotosModal}
             >
               <ImageIcon size={14} color="#fff" />
             </TouchableOpacity>
@@ -486,6 +489,7 @@ function GroupCard({
       onClose={handlePhotosModalClose}
       eventId={eventId || ''}
       groupLabel={label}
+      onPhotoCountChange={setPhotoCount}
     />
     </>
   );
