@@ -391,15 +391,15 @@ export function EventFooter({
               </TouchableOpacity>
             </>
           ) : showSyncButton ? (
-            shouldUseOfflineMode && hasPendingChanges ? (
+            shouldUseOfflineMode ? (
               <TouchableOpacity
-                style={[styles.syncButton, isSyncing && styles.syncButtonDisabled]}
+                style={[styles.syncButton, (isSyncing || !hasPendingChanges) && styles.syncButtonDisabled]}
                 onPress={handleSync}
-                disabled={isSyncing}
+                disabled={isSyncing || !hasPendingChanges}
               >
                 <Upload size={18} color="#fff" />
                 <Text style={styles.syncButtonText}>
-                  {isSyncing ? 'Syncing...' : `Sync Scores (${pendingOperations.length})`}
+                  {isSyncing ? 'Syncing...' : hasPendingChanges ? `Sync Scores (${pendingOperations.length})` : 'No Scores to Sync'}
                 </Text>
               </TouchableOpacity>
             ) : null
