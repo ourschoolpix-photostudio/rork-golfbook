@@ -4692,7 +4692,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     gap: 6,
-    marginTop: -2,
+    marginTop: -7,
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 4,
