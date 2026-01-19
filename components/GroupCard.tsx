@@ -75,38 +75,54 @@ function GroupCard({
   const [scoringModalVisible, setScoringModalVisible] = useState(false);
   const [verificationModalVisible, setVerificationModalVisible] = useState(false);
   const [photosModalVisible, setPhotosModalVisible] = useState(false);
-  const [photoCount, setPhotoCount] = useState(0);
+  const [photoCount, setPhotoCount] = useState<number>(0);
+  const [photoCountLoaded, setPhotoCountLoaded] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
+    
     const checkPhotos = async () => {
       if (eventId && label) {
         console.log('[GroupCard] Checking photos for', label, 'eventId:', eventId);
         try {
           const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
-          console.log('[GroupCard] Found', photos?.length || 0, 'photos for', label, 'photos:', JSON.stringify(photos));
+          console.log('[GroupCard] Found', photos.length, 'photos for', label);
           if (isMounted) {
-            setPhotoCount(photos?.length || 0);
+            setPhotoCount(photos.length);
+            setPhotoCountLoaded(true);
           }
         } catch (error) {
-          console.error('[GroupCard] Error fetching photos for', label, ':', error);
+          console.error('[GroupCard] Error checking photos:', error);
           if (isMounted) {
             setPhotoCount(0);
+            setPhotoCountLoaded(true);
           }
         }
       }
     };
+    
+    // Reset state before fetching
+    setPhotoCount(0);
+    setPhotoCountLoaded(false);
     checkPhotos();
-    return () => { isMounted = false; };
+    
+    return () => {
+      isMounted = false;
+    };
   }, [eventId, label]);
 
   const handlePhotosModalClose = async () => {
     setPhotosModalVisible(false);
     if (eventId && label) {
       console.log('[GroupCard] Modal closed, rechecking photos for', label);
-      const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
-      console.log('[GroupCard] After close found', photos.length, 'photos');
-      setPhotoCount(photos.length);
+      try {
+        const photos = await scorecardPhotoService.getPhotosByGroup(eventId, label);
+        console.log('[GroupCard] After close found', photos.length, 'photos');
+        setPhotoCount(photos.length);
+      } catch (error) {
+        console.error('[GroupCard] Error rechecking photos:', error);
+        setPhotoCount(0);
+      }
     }
   };
 
@@ -160,7 +176,7 @@ function GroupCard({
         {canVerifyScorecard(currentMember) && playerCount > 0 && (
           <>
             <TouchableOpacity 
-              style={[styles.viewPhotosButton, photoCount > 0 ? styles.viewPhotosButtonGreen : styles.viewPhotosButtonRed]} 
+              style={[styles.viewPhotosButton, photoCountLoaded && photoCount > 0 ? styles.viewPhotosButtonGreen : styles.viewPhotosButtonRed]} 
               onPress={() => setPhotosModalVisible(true)}
             >
               <ImageIcon size={14} color="#fff" />
