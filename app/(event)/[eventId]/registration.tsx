@@ -3245,25 +3245,25 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      <TouchableOpacity
-        style={[
-          styles.registerButton,
-          (isCurrentUserRegistered() || !event?.registrationOpen) && styles.registerButtonInactive,
-        ]}
-        onPress={handleRegisterCurrentUser}
-        disabled={isCurrentUserRegistered() || !event?.registrationOpen}
-      >
-        <Text style={[
-          styles.registerButtonText,
-          (isCurrentUserRegistered() || !event?.registrationOpen) && styles.registerButtonTextInactive,
-        ]}>
-          {isCurrentUserRegistered() 
-            ? "You're Registered For This Event" 
-            : !event?.registrationOpen
+      {!isCurrentUserRegistered() && (
+        <TouchableOpacity
+          style={[
+            styles.registerButton,
+            !event?.registrationOpen && styles.registerButtonInactive,
+          ]}
+          onPress={handleRegisterCurrentUser}
+          disabled={!event?.registrationOpen}
+        >
+          <Text style={[
+            styles.registerButtonText,
+            !event?.registrationOpen && styles.registerButtonTextInactive,
+          ]}>
+            {!event?.registrationOpen
               ? 'Registration Closed'
               : 'Register For This Event'}
-        </Text>
-      </TouchableOpacity>
+          </Text>
+        </TouchableOpacity>
+      )}
       </SafeAreaView>
       <EventFooter 
         showStartButton={!!event && canStartEvent(currentUser)}
