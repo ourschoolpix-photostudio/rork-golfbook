@@ -1,7 +1,6 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState, useMemo } from 'react';
-import NetInfo from '@react-native-community/netinfo';
 
 const STORAGE_KEYS = {
   OFFLINE_MODE: '@golf_offline_mode',
@@ -47,19 +46,12 @@ export const [OfflineModeProvider, useOfflineMode] = createContextHook(() => {
     scores: {},
     lastUpdated: new Date().toISOString(),
   });
-  const [isConnected, setIsConnected] = useState<boolean>(true);
+  const [isConnected] = useState<boolean>(true);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
   useEffect(() => {
     loadOfflineState();
-    
-    const unsubscribe = NetInfo.addEventListener(state => {
-      console.log('[OfflineMode] Network state changed:', state.isConnected);
-      setIsConnected(state.isConnected ?? true);
-    });
-
-    return () => unsubscribe();
   }, []);
 
   const loadOfflineState = async () => {
