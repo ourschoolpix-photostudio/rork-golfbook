@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Camera } from 'lucide-react-native';
+import { Camera, Image as ImageIcon } from 'lucide-react-native';
 import ScoringModal from '@/components/ScoringModal';
 import ScorecardVerificationModal from '@/components/ScorecardVerificationModal';
+import ScorecardPhotosModal from '@/components/ScorecardPhotosModal';
 import { calculateTournamentFlight, getDisplayHandicap, hasAdjustedHandicap, isUsingCourseHandicap } from '@/utils/handicapHelper';
 import type { Event, Member } from '@/types';
 import { truncateToTwoDecimals } from '@/utils/numberUtils';
@@ -72,6 +73,7 @@ function GroupCard({
 
   const [scoringModalVisible, setScoringModalVisible] = useState(false);
   const [verificationModalVisible, setVerificationModalVisible] = useState(false);
+  const [photosModalVisible, setPhotosModalVisible] = useState(false);
 
   const handleOpenHandicapEdit = (player: any) => {
     console.log('Open handicap edit for', player.name);
@@ -121,13 +123,21 @@ function GroupCard({
           <Text style={styles.holeLabel}>{label} • {playerCount} players</Text>
         </TouchableOpacity>
         {canVerifyScorecard(currentMember) && playerCount > 0 && (
-          <TouchableOpacity 
-            style={styles.verifyButton} 
-            onPress={() => setVerificationModalVisible(true)}
-          >
-            <Camera size={14} color="#fff" />
-            <Text style={styles.verifyButtonText}>VERIFY</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity 
+              style={styles.viewPhotosButton} 
+              onPress={() => setPhotosModalVisible(true)}
+            >
+              <ImageIcon size={14} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.verifyButton} 
+              onPress={() => setVerificationModalVisible(true)}
+            >
+              <Camera size={14} color="#fff" />
+              <Text style={styles.verifyButtonText}>VERIFY</Text>
+            </TouchableOpacity>
+          </>
         )}
         {showAddButton && (
           <TouchableOpacity style={styles.addButton} onPress={onAddPlayers}>
@@ -448,6 +458,15 @@ function GroupCard({
         scoreTotal: s.scoreTotal ?? 0,
       }))}
       groupLabel={label}
+      eventId={eventId || ''}
+      day={activeDay}
+    />
+
+    <ScorecardPhotosModal
+      visible={photosModalVisible}
+      onClose={() => setPhotosModalVisible(false)}
+      eventId={eventId || ''}
+      groupLabel={label}
     />
     </>
   );
@@ -503,6 +522,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#fff',
+  },
+  viewPhotosButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginLeft: 'auto',
+    marginRight: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   playerCard: {
     backgroundColor: '#D0D0D0',

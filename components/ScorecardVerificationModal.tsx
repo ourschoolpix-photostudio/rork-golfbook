@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { X, CheckCircle, AlertTriangle, XCircle, ScanLine, ClipboardCheck, ImageIcon } from 'lucide-react-native';
+import { X, CheckCircle, AlertTriangle, XCircle, ScanLine, ClipboardCheck, ImageIcon, Save } from 'lucide-react-native';
 import { generateObject } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
+import { scorecardPhotoService } from '@/utils/scorecardPhotoService';
 
 type ScanMode = 'verify' | 'scanOnly';
 
@@ -35,6 +36,10 @@ interface ScorecardVerificationModalProps {
   onClose: () => void;
   players: Player[];
   groupLabel: string;
+  eventId: string;
+  day?: number;
+  tee?: string;
+  holeRange?: string;
   onScoresExtracted?: (scores: ExtractedScore[]) => void;
 }
 
@@ -62,6 +67,10 @@ export default function ScorecardVerificationModal({
   onClose,
   players,
   groupLabel,
+  eventId,
+  day,
+  tee,
+  holeRange,
   onScoresExtracted,
 }: ScorecardVerificationModalProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -72,10 +81,13 @@ export default function ScorecardVerificationModal({
   const [showCamera, setShowCamera] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<any>(null);
+  const [isSavingPhoto, setIsSavingPhoto] = useState(false);
+  const [photoSaved, setPhotoSaved] = useState(false);
 
   useEffect(() => {
     if (!visible) {
       setShowCamera(false);
+      setPhotoSaved(false);
     }
   }, [visible]);
 
@@ -330,7 +342,35 @@ Be thorough and careful with number recognition.`;
     setImageUri(null);
     setScanMode('verify');
     setShowCamera(false);
+    setPhotoSaved(false);
     onClose();
+  };
+
+  const handleSavePhoto = async () => {
+    if (!imageUri) return;
+    
+    setIsSavingPhoto(true);
+    try {
+      const saved = await scorecardPhotoService.savePhoto(
+        eventId,
+        groupLabel,
+        imageUri,
+        {
+          day,
+          tee,
+          holeRange,
+        }
+      );
+      
+      if (saved) {
+        console.log('✅ Photo saved for future reference');
+        setPhotoSaved(true);
+      }
+    } catch (error) {
+      console.error('❌ Error saving photo:', error);
+    } finally {
+      setIsSavingPhoto(false);
+    }
   };
 
   const handleUseScannedScores = () => {
@@ -541,11 +581,33 @@ Be thorough and careful with number recognition.`;
                   <Image source={{ uri: imageUri }} style={styles.resultImage} />
                 )}
 
+                <View style={styles.photoActions}>
+                  {imageUri && !photoSaved && (
+                    <TouchableOpacity
+                      style={styles.savePhotoButton}
+                      onPress={handleSavePhoto}
+                      disabled={isSavingPhoto}
+                    >
+                      <Save size={18} color="#fff" />
+                      <Text style={styles.savePhotoButtonText}>
+                        {isSavingPhoto ? 'Saving...' : 'Save Photo'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {photoSaved && (
+                    <View style={styles.savedIndicator}>
+                      <CheckCircle size={18} color="#4CAF50" />
+                      <Text style={styles.savedIndicatorText}>Photo Saved</Text>
+                    </View>
+                  )}
+                </View>
+
                 <TouchableOpacity
                   style={styles.retryButton}
                   onPress={() => {
                     setResult(null);
                     setImageUri(null);
+                    setPhotoSaved(false);
                     handleStartCamera();
                   }}
                 >
@@ -588,6 +650,27 @@ Be thorough and careful with number recognition.`;
                   <Image source={{ uri: imageUri }} style={styles.resultImage} />
                 )}
 
+                <View style={styles.photoActions}>
+                  {imageUri && !photoSaved && (
+                    <TouchableOpacity
+                      style={styles.savePhotoButton}
+                      onPress={handleSavePhoto}
+                      disabled={isSavingPhoto}
+                    >
+                      <Save size={18} color="#fff" />
+                      <Text style={styles.savePhotoButtonText}>
+                        {isSavingPhoto ? 'Saving...' : 'Save Photo'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {photoSaved && (
+                    <View style={styles.savedIndicator}>
+                      <CheckCircle size={18} color="#4CAF50" />
+                      <Text style={styles.savedIndicatorText}>Photo Saved</Text>
+                    </View>
+                  )}
+                </View>
+
                 <View style={styles.scanResultButtons}>
                   {scanResult.players.length > 0 && onScoresExtracted && (
                     <TouchableOpacity
@@ -603,6 +686,7 @@ Be thorough and careful with number recognition.`;
                     onPress={() => {
                       setScanResult(null);
                       setImageUri(null);
+                      setPhotoSaved(false);
                       handleStartCamera();
                     }}
                   >
@@ -923,5 +1007,36 @@ const styles = StyleSheet.create({
   },
   captureBtn: {
     backgroundColor: '#4CAF50',
+  },
+  photoActions: {
+    width: '100%',
+    marginVertical: 8,
+  },
+  savePhotoButton: {
+    backgroundColor: '#2196F3',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    gap: 6,
+  },
+  savePhotoButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  savedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    gap: 6,
+  },
+  savedIndicatorText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
