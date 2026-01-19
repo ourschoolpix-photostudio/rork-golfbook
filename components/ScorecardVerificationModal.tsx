@@ -7,8 +7,10 @@ import {
   StyleSheet,
   Platform,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { X, Camera } from 'lucide-react-native';
 import { scorecardPhotoService } from '@/utils/scorecardPhotoService';
 
@@ -56,11 +58,56 @@ export default function ScorecardVerificationModal({
       });
 
       if (photo?.uri) {
-        console.log('[ScorecardPhoto] Saving photo...');
+        console.log('[ScorecardPhoto] Photo captured, cropping to frame...');
+        
+        const screenWidth = Dimensions.get('window').width;
+        const screenHeight = Dimensions.get('window').height;
+        const frameSize = 320;
+        
+        const imageCenterX = photo.width / 2;
+        const imageCenterY = photo.height / 2;
+        
+        const scaleX = photo.width / screenWidth;
+        const scaleY = photo.height / screenHeight;
+        
+        const frameSizeInImage = frameSize * Math.max(scaleX, scaleY);
+        
+        const cropX = Math.max(0, imageCenterX - frameSizeInImage / 2);
+        const cropY = Math.max(0, imageCenterY - frameSizeInImage / 2);
+        const cropWidth = Math.min(frameSizeInImage, photo.width - cropX);
+        const cropHeight = Math.min(frameSizeInImage, photo.height - cropY);
+        
+        console.log('[ScorecardPhoto] Crop params:', {
+          screenWidth,
+          screenHeight,
+          photoWidth: photo.width,
+          photoHeight: photo.height,
+          cropX,
+          cropY,
+          cropWidth,
+          cropHeight,
+        });
+        
+        const croppedPhoto = await manipulateAsync(
+          photo.uri,
+          [
+            {
+              crop: {
+                originX: cropX,
+                originY: cropY,
+                width: cropWidth,
+                height: cropHeight,
+              },
+            },
+          ],
+          { compress: 0.95, format: SaveFormat.JPEG }
+        );
+        
+        console.log('[ScorecardPhoto] Saving cropped photo...');
         const saved = await scorecardPhotoService.savePhoto(
           eventId,
           groupLabel,
-          photo.uri,
+          croppedPhoto.uri,
           { day, tee, holeRange }
         );
         
