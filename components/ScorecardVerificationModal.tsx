@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,10 @@ import {
   StyleSheet,
   Platform,
   ActivityIndicator,
-  Dimensions,
+  Image,
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import { X, Camera } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { X, Camera, Check } from 'lucide-react-native';
 import { scorecardPhotoService } from '@/utils/scorecardPhotoService';
 
 interface ScorecardVerificationModalProps {
@@ -33,361 +32,254 @@ export default function ScorecardVerificationModal({
   tee,
   holeRange,
 }: ScorecardVerificationModalProps) {
-  const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [capturedUri, setCapturedUri] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (visible) {
-      setIsSaving(false);
-      if (!permission?.granted && Platform.OS !== 'web') {
-        requestPermission();
-      }
-    }
-  }, [visible, permission?.granted, requestPermission]);
-
-  const capturePhoto = async () => {
-    if (!cameraRef.current || isSaving) return;
-
+  const takePhoto = async () => {
     try {
-      console.log('[ScorecardPhoto] Capturing photo...');
-      setIsSaving(true);
+      console.log('[ScorecardPhoto] Opening camera...');
       
-      const photo = await cameraRef.current.takePictureAsync({
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        console.log('[ScorecardPhoto] Camera permission denied');
+        return;
+      }
+      
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
         quality: 0.95,
+        allowsEditing: false,
       });
 
-      if (photo?.uri) {
-        console.log('[ScorecardPhoto] Photo captured, cropping to frame...');
-        
-        const screenWidth = Dimensions.get('window').width;
-        const screenHeight = Dimensions.get('window').height;
-        const frameSize = screenWidth;
-        
-        // Scale factors from screen to photo
-        const scaleX = photo.width / screenWidth;
-        const scaleY = photo.height / screenHeight;
-        
-        // Use consistent scale to maintain square
-        const scale = Math.min(scaleX, scaleY);
-        const frameSizeInImage = frameSize * scale;
-        
-        // Calculate crop position (centered)
-        const cropX = Math.max(0, (photo.width - frameSizeInImage) / 2);
-        const cropY = Math.max(0, (photo.height - frameSizeInImage) / 2);
-        const cropWidth = Math.min(frameSizeInImage, photo.width - cropX);
-        const cropHeight = Math.min(frameSizeInImage, photo.height - cropY);
-        
-        console.log('[ScorecardPhoto] Crop params:', {
-          screenWidth,
-          screenHeight,
-          photoWidth: photo.width,
-          photoHeight: photo.height,
-          cropX,
-          cropY,
-          cropWidth,
-          cropHeight,
-        });
-        
-        const croppedPhoto = await manipulateAsync(
-          photo.uri,
-          [
-            {
-              crop: {
-                originX: cropX,
-                originY: cropY,
-                width: cropWidth,
-                height: cropHeight,
-              },
-            },
-          ],
-          { compress: 0.95, format: SaveFormat.JPEG }
-        );
-        
-        console.log('[ScorecardPhoto] Saving cropped photo...');
-        const saved = await scorecardPhotoService.savePhoto(
-          eventId,
-          groupLabel,
-          croppedPhoto.uri,
-          { day, tee, holeRange }
-        );
-        
-        if (saved) {
-          console.log('✅ Photo saved successfully');
-          onClose();
-        } else {
-          console.error('❌ Failed to save photo');
-          setIsSaving(false);
-        }
+      if (!result.canceled && result.assets[0]) {
+        console.log('[ScorecardPhoto] Photo captured:', result.assets[0].uri);
+        setCapturedUri(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('[ScorecardPhoto] Error:', error);
+      console.error('[ScorecardPhoto] Error taking photo:', error);
+    }
+  };
+
+  const savePhoto = async () => {
+    if (!capturedUri || isSaving) return;
+
+    try {
+      console.log('[ScorecardPhoto] Saving photo...');
+      setIsSaving(true);
+      
+      const saved = await scorecardPhotoService.savePhoto(
+        eventId,
+        groupLabel,
+        capturedUri,
+        { day, tee, holeRange }
+      );
+      
+      if (saved) {
+        console.log('✅ Photo saved successfully');
+        setCapturedUri(null);
+        onClose();
+      } else {
+        console.error('❌ Failed to save photo');
+      }
+    } catch (error) {
+      console.error('[ScorecardPhoto] Error saving:', error);
+    } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleClose = () => {
+    setCapturedUri(null);
+    onClose();
+  };
+
+  const retakePhoto = () => {
+    setCapturedUri(null);
+    takePhoto();
   };
 
   if (Platform.OS === 'web') {
     return null;
   }
 
-  if (!permission) {
-    return null;
-  }
-
-  if (!permission.granted) {
-    return (
-      <Modal visible={visible} animationType="fade" transparent={false}>
-        <View style={styles.permissionContainer}>
-          <View style={styles.permissionContent}>
-            <Camera size={64} color="#1B5E20" />
-            <Text style={styles.permissionTitle}>Camera Permission Required</Text>
-            <Text style={styles.permissionText}>
-              Allow camera access to capture scorecard photos
-            </Text>
-            <TouchableOpacity
-              style={styles.permissionButton}
-              onPress={requestPermission}
-            >
-              <Text style={styles.permissionButtonText}>Grant Permission</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onClose}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    );
-  }
-
   return (
-    <Modal visible={visible} animationType="slide" transparent={false}>
-      <View style={styles.cameraFullscreen}>
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing="back"
-        >
-          <View style={styles.cameraHeader}>
-            <Text style={styles.cameraTitle}>{groupLabel}</Text>
-            <Text style={styles.cameraSubtitle}>Align scorecard within frame</Text>
+    <Modal visible={visible} animationType="slide" transparent={true}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>{groupLabel}</Text>
+            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+              <X size={24} color="#666" />
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.frameGuide}>
-            <View style={styles.frameCornerTL} />
-            <View style={styles.frameCornerTR} />
-            <View style={styles.frameCornerBL} />
-            <View style={styles.frameCornerBR} />
-            <View style={styles.frameBorder} />
-          </View>
-
-          <View style={styles.cameraFooter}>
-            {isSaving ? (
-              <View style={styles.savingIndicator}>
-                <ActivityIndicator size="large" color="#fff" />
-                <Text style={styles.savingText}>Saving photo...</Text>
+          <View style={styles.body}>
+            {capturedUri ? (
+              <View style={styles.previewContainer}>
+                <Image 
+                  source={{ uri: capturedUri }} 
+                  style={styles.previewImage} 
+                  resizeMode="contain"
+                />
+                
+                {isSaving ? (
+                  <View style={styles.savingOverlay}>
+                    <ActivityIndicator size="large" color="#fff" />
+                    <Text style={styles.savingText}>Saving photo...</Text>
+                  </View>
+                ) : (
+                  <View style={styles.previewActions}>
+                    <TouchableOpacity style={styles.retakeBtn} onPress={retakePhoto}>
+                      <Camera size={20} color="#fff" />
+                      <Text style={styles.retakeBtnText}>Retake</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.saveBtn} onPress={savePhoto}>
+                      <Check size={20} color="#fff" />
+                      <Text style={styles.saveBtnText}>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             ) : (
-              <View style={styles.cameraButtons}>
-                <TouchableOpacity
-                  style={styles.cancelBtn}
-                  onPress={onClose}
-                >
-                  <X size={24} color="#fff" />
+              <View style={styles.captureContainer}>
+                <Camera size={64} color="#1B5E20" />
+                <Text style={styles.captureTitle}>Capture Scorecard</Text>
+                <Text style={styles.captureSubtitle}>
+                  Take a photo of the scorecard for verification
+                </Text>
+                <TouchableOpacity style={styles.captureBtn} onPress={takePhoto}>
+                  <Camera size={24} color="#fff" />
+                  <Text style={styles.captureBtnText}>Open Camera</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={styles.captureBtn}
-                  onPress={capturePhoto}
-                >
-                  <View style={styles.captureCircle} />
-                </TouchableOpacity>
-                
-                <View style={styles.placeholderBtn} />
               </View>
             )}
           </View>
-        </CameraView>
+        </View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  permissionContainer: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  permissionContent: {
-    alignItems: 'center',
-    paddingHorizontal: 40,
-    gap: 20,
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '90%',
+    maxHeight: '85%',
+    overflow: 'hidden',
   },
-  permissionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1B5E20',
-    textAlign: 'center',
-  },
-  permissionText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  permissionButton: {
-    backgroundColor: '#1B5E20',
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  permissionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cancelButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  cameraFullscreen: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  camera: {
-    flex: 1,
-  },
-  cameraHeader: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    gap: 4,
-  },
-  cameraTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  cameraSubtitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  frameGuide: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').width,
-    marginTop: -(Dimensions.get('window').width / 2),
-  },
-  frameBorder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  frameCornerTL: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 50,
-    height: 50,
-    borderTopWidth: 5,
-    borderLeftWidth: 5,
-    borderColor: '#4CAF50',
-  },
-  frameCornerTR: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 50,
-    height: 50,
-    borderTopWidth: 5,
-    borderRightWidth: 5,
-    borderColor: '#4CAF50',
-  },
-  frameCornerBL: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 50,
-    height: 50,
-    borderBottomWidth: 5,
-    borderLeftWidth: 5,
-    borderColor: '#4CAF50',
-  },
-  frameCornerBR: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 50,
-    height: 50,
-    borderBottomWidth: 5,
-    borderRightWidth: 5,
-    borderColor: '#4CAF50',
-  },
-  cameraFooter: {
-    position: 'absolute',
-    bottom: 50,
-    left: 0,
-    right: 0,
-  },
-  cameraButtons: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
-  cancelBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1B5E20',
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  body: {
+    padding: 20,
+  },
+  captureContainer: {
     alignItems: 'center',
+    paddingVertical: 40,
+    gap: 16,
+  },
+  captureTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1B5E20',
+  },
+  captureSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   captureBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: '#1B5E20',
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    marginTop: 8,
+    gap: 10,
+  },
+  captureBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  previewContainer: {
     alignItems: 'center',
   },
-  captureCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#fff',
+  previewImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
   },
-  placeholderBtn: {
-    width: 50,
-    height: 50,
+  previewActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 20,
   },
-  savingIndicator: {
+  retakeBtn: {
+    flex: 1,
+    backgroundColor: '#666',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  retakeBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveBtn: {
+    flex: 1,
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  savingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
     gap: 12,
   },
@@ -395,8 +287,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
 });
