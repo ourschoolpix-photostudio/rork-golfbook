@@ -11,7 +11,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { X } from 'lucide-react-native';
+import { X, Trash2, AlertCircle } from 'lucide-react-native';
 import { useAlerts } from '@/contexts/AlertsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents } from '@/contexts/EventsContext';
@@ -29,7 +29,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
   preSelectedEventId,
 }) => {
   const { currentUser } = useAuth();
-  const { templates, createAlert, refreshAlerts } = useAlerts();
+  const { templates, createAlert, refreshAlerts, alerts, deleteAlert } = useAlerts();
   const { events } = useEvents();
   const [title, setTitle] = useState<string>('');
   const [message, setMessage] = useState<string>('');
@@ -39,6 +39,8 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState<number>(24);
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'create' | 'manage'>('create');
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   useEffect(() => {
     if (visible) {
@@ -49,6 +51,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
       setSelectedEventId(preSelectedEventId);
       setSelectedTemplate(null);
       setExpiresIn(24);
+      setActiveTab('create');
     }
   }, [visible, preSelectedEventId]);
 
@@ -110,6 +113,57 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
 
   const activeEvents = events?.filter(e => !e.archived) || [];
 
+  const handleDeleteAll = async () => {
+    Alert.alert(
+      'Delete All Alerts',
+      'Are you sure you want to delete ALL alerts? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+              
+              for (const alert of alerts) {
+                await deleteAlert(alert.id);
+              }
+              
+              Alert.alert('Success', `Deleted ${alerts.length} alert(s)`);
+              await refreshAlerts();
+            } catch (error) {
+              console.error('Failed to delete alerts:', error);
+              Alert.alert('Error', 'Failed to delete some alerts');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteSingle = async (alertId: string) => {
+    try {
+      await deleteAlert(alertId);
+      await refreshAlerts();
+    } catch (error) {
+      console.error('Failed to delete alert:', error);
+      Alert.alert('Error', 'Failed to delete alert');
+    }
+  };
+
+  const formatDate = (isoDate: string) => {
+    const date = new Date(isoDate);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <Modal
       visible={visible}
@@ -123,7 +177,7 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
       >
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Create Alert</Text>
+            <Text style={styles.headerTitle}>Alerts</Text>
             <TouchableOpacity
               onPress={onClose}
               style={styles.closeButton}
@@ -133,7 +187,27 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'create' && styles.tabActive]}
+              onPress={() => setActiveTab('create')}
+            >
+              <Text style={[styles.tabText, activeTab === 'create' && styles.tabTextActive]}>
+                Create Alert
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'manage' && styles.tabActive]}
+              onPress={() => setActiveTab('manage')}
+            >
+              <Text style={[styles.tabText, activeTab === 'manage' && styles.tabTextActive]}>
+                Manage Alerts
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {activeTab === 'create' ? (
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Templates</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templatesScroll}>
@@ -310,6 +384,68 @@ export const CreateAlertModal: React.FC<CreateAlertModalProps> = ({
               </Text>
             </TouchableOpacity>
           </ScrollView>
+          ) : (
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+              <View style={styles.manageHeader}>
+                <Text style={styles.manageTitle}>
+                  All Alerts ({alerts.length})
+                </Text>
+                {alerts.length > 0 && (
+                  <TouchableOpacity
+                    style={[styles.deleteAllButton, isDeleting && styles.deleteAllButtonDisabled]}
+                    onPress={handleDeleteAll}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 size={16} color="#ffffff" />
+                    <Text style={styles.deleteAllButtonText}>
+                      {isDeleting ? 'Deleting...' : 'Delete All'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {alerts.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>No alerts created yet</Text>
+                </View>
+              ) : (
+                alerts.map((alert) => (
+                  <View key={alert.id} style={styles.alertItem}>
+                    <View style={styles.alertItemHeader}>
+                      <View style={styles.alertItemTitleRow}>
+                        {alert.priority === 'critical' && (
+                          <AlertCircle size={16} color="#ef4444" />
+                        )}
+                        <Text style={styles.alertItemTitle}>{alert.title}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteSingle(alert.id)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Trash2 size={18} color="#ef4444" />
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.alertItemMessage} numberOfLines={2}>
+                      {alert.message}
+                    </Text>
+                    <View style={styles.alertItemFooter}>
+                      <View style={styles.alertItemBadges}>
+                        <View style={[styles.badge, alert.type === 'organizational' ? styles.badgeOrg : styles.badgeEvent]}>
+                          <Text style={styles.badgeText}>{alert.type}</Text>
+                        </View>
+                        {alert.priority === 'critical' && (
+                          <View style={[styles.badge, styles.badgeCritical]}>
+                            <Text style={styles.badgeText}>Critical</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.alertItemDate}>{formatDate(alert.createdAt)}</Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -491,6 +627,130 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#ffffff',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    paddingHorizontal: 20,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: '#3b82f6',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#9ca3af',
+  },
+  tabTextActive: {
+    color: '#3b82f6',
+  },
+  manageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  manageTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#111827',
+  },
+  deleteAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ef4444',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  deleteAllButtonDisabled: {
+    backgroundColor: '#9ca3af',
+  },
+  deleteAllButtonText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#ffffff',
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#9ca3af',
+  },
+  alertItem: {
+    padding: 16,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 12,
+  },
+  alertItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  alertItemTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  alertItemTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#111827',
+    flex: 1,
+  },
+  alertItemMessage: {
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  alertItemFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  alertItemBadges: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  badge: {
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+  },
+  badgeOrg: {
+    backgroundColor: '#dbeafe',
+  },
+  badgeEvent: {
+    backgroundColor: '#f3e8ff',
+  },
+  badgeCritical: {
+    backgroundColor: '#fee2e2',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#374151',
+  },
+  alertItemDate: {
+    fontSize: 11,
+    color: '#9ca3af',
   },
   expiresButtons: {
     flexDirection: 'row',
