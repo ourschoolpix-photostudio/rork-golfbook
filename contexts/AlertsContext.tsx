@@ -572,7 +572,7 @@ export const [AlertsProvider, useAlerts] = createContextHook(() => {
     return alerts.filter(alert => 
       !alert.isDismissed && 
       alert.priority === 'critical' && 
-      alert.type === 'organizational'
+      (alert.type === 'organizational' || alert.type === 'individual')
     );
   }, [alerts]);
 
