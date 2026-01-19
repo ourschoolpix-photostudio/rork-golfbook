@@ -36,10 +36,14 @@ export default function ScorecardVerificationModal({
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<any>(null);
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showManualButton, setShowManualButton] = useState(false);
 
   const handleClose = useCallback(() => {
     setShowCamera(false);
     setIsSavingPhoto(false);
+    setError(null);
+    setShowManualButton(false);
     onClose();
   }, [onClose]);
 
@@ -90,27 +94,41 @@ export default function ScorecardVerificationModal({
   }, [eventId, groupLabel, day, tee, holeRange, handleClose]);
 
   const handleStartCamera = useCallback(async () => {
-    if (Platform.OS === 'web') {
-      handleSelectFromGallery();
-      return;
-    }
-
-    console.log('[ScorecardPhoto] Starting camera...');
-    console.log('[ScorecardPhoto] Permission status:', permission);
-
-    if (!permission?.granted) {
-      console.log('[ScorecardPhoto] Requesting camera permission...');
-      const result = await requestPermission();
-      console.log('[ScorecardPhoto] Permission result:', result);
-      if (!result.granted) {
-        console.log('[ScorecardPhoto] Camera permission denied');
-        handleClose();
+    try {
+      setError(null);
+      
+      if (Platform.OS === 'web') {
+        handleSelectFromGallery();
         return;
       }
-    }
 
-    console.log('[ScorecardPhoto] Setting showCamera to true');
-    setShowCamera(true);
+      console.log('[ScorecardPhoto] Starting camera...');
+      console.log('[ScorecardPhoto] Permission status:', permission);
+
+      if (!permission) {
+        console.log('[ScorecardPhoto] Permission object is null, waiting...');
+        return;
+      }
+
+      if (!permission.granted) {
+        console.log('[ScorecardPhoto] Requesting camera permission...');
+        const result = await requestPermission();
+        console.log('[ScorecardPhoto] Permission result:', result);
+        if (!result.granted) {
+          console.log('[ScorecardPhoto] Camera permission denied');
+          setError('Camera permission denied');
+          setTimeout(() => handleClose(), 2000);
+          return;
+        }
+      }
+
+      console.log('[ScorecardPhoto] Setting showCamera to true');
+      setShowCamera(true);
+    } catch (err) {
+      console.error('[ScorecardPhoto] Error starting camera:', err);
+      setError('Failed to open camera');
+      setTimeout(() => handleClose(), 2000);
+    }
   }, [permission, requestPermission, handleSelectFromGallery, handleClose]);
 
   const capturePhoto = useCallback(async () => {
@@ -158,16 +176,39 @@ export default function ScorecardVerificationModal({
 
   useEffect(() => {
     if (visible) {
-      console.log('[ScorecardPhoto] Modal became visible, starting camera...');
+      console.log('[ScorecardPhoto] Modal became visible');
+      console.log('[ScorecardPhoto] Permission state:', permission);
       setShowCamera(false);
-      setTimeout(() => {
-        handleStartCamera();
-      }, 100);
+      setError(null);
+      setShowManualButton(false);
     } else {
       console.log('[ScorecardPhoto] Modal closed, resetting camera');
       setShowCamera(false);
+      setError(null);
+      setShowManualButton(false);
     }
-  }, [visible, handleStartCamera]);
+  }, [visible, permission]);
+
+  useEffect(() => {
+    if (visible && permission !== null) {
+      console.log('[ScorecardPhoto] Permissions loaded, starting camera...');
+      const timer = setTimeout(() => {
+        handleStartCamera();
+      }, 300);
+      
+      const fallbackTimer = setTimeout(() => {
+        if (!showCamera) {
+          console.log('[ScorecardPhoto] Camera did not open in time, showing manual button');
+          setShowManualButton(true);
+        }
+      }, 3000);
+      
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(fallbackTimer);
+      };
+    }
+  }, [visible, permission, handleStartCamera, showCamera]);
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
@@ -181,14 +222,28 @@ export default function ScorecardVerificationModal({
           </View>
 
           <View style={styles.body}>
-            {!showCamera && !isSavingPhoto && (
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorSubtext}>Closing...</Text>
+              </View>
+            ) : !showCamera && !isSavingPhoto ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#1B5E20" />
                 <Text style={styles.loadingText}>Opening camera...</Text>
+                {showManualButton && (
+                  <TouchableOpacity
+                    style={styles.manualOpenButton}
+                    onPress={handleStartCamera}
+                  >
+                    <Camera size={20} color="#fff" />
+                    <Text style={styles.manualOpenButtonText}>Open Camera</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            )}
+            ) : null}
 
-            {showCamera && Platform.OS !== 'web' && (
+            {showCamera && Platform.OS !== 'web' && !error && (
               <View style={styles.cameraContainer}>
                 <CameraView
                   ref={cameraRef}
@@ -335,5 +390,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     fontWeight: '500',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    gap: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#f44336',
+    fontWeight: '600',
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: '#999',
+  },
+  manualOpenButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 16,
+  },
+  manualOpenButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
