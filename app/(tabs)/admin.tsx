@@ -96,18 +96,18 @@ export default function AdminScreen() {
       href: '/(admin)/email-manager' as const,
     },
     {
-      id: 'settings',
-      title: 'Settings',
-      description: 'Configure app branding and preferences',
-      icon: 'settings',
-      href: '/(admin)/settings' as const,
-    },
-    {
       id: 'alerts',
       title: 'Alerts Management',
       description: 'Create and manage player alerts',
       icon: 'notifications',
       action: 'openAlerts',
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      description: 'Configure app branding and preferences',
+      icon: 'settings',
+      href: '/(admin)/settings' as const,
     },
   ];
 
