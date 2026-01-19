@@ -2202,6 +2202,15 @@ export default function EventRegistrationScreen() {
         onViewDetails={() => setEventDetailsModalVisible(true)}
       />
 
+      {isCurrentUserRegistered() && (
+        <View style={styles.registeredBadgeContainer}>
+          <View style={styles.registeredBadge}>
+            <Ionicons name="checkmark-circle" size={16} color="#fff" />
+            <Text style={styles.registeredBadgeText}>Registered</Text>
+          </View>
+        </View>
+      )}
+
       {event && !event.registrationOpen && (
         <View style={styles.registrationClosedBanner}>
           <Ionicons name="information-circle" size={20} color="#C62828" />
@@ -4674,5 +4683,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+  },
+  registeredBadgeContainer: {
+    position: 'absolute' as const,
+    top: 155,
+    left: 16,
+    zIndex: 100,
+  },
+  registeredBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: '#34C759',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  registeredBadgeText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#fff',
   },
 });
