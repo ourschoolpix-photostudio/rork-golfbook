@@ -882,7 +882,7 @@ export default function ScoringScreen() {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-      <EventFooter />
+      <EventFooter showSyncButton={true} />
     </>
   );
 }
