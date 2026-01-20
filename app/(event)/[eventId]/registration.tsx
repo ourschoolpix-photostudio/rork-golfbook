@@ -782,16 +782,37 @@ export default function EventRegistrationScreen() {
     }
     
     const currentStatus = playerReg.paymentStatus;
+    console.log('[registration] handlePaymentToggle called for:', playerName, 'currentStatus:', currentStatus);
     
     if (currentStatus === 'paid') {
+      // Optimistically update local state
+      setRegistrations(prev => ({
+        ...prev,
+        [playerName]: {
+          ...prev[playerName],
+          paymentStatus: 'unpaid',
+        },
+      }));
+      
       try {
         await updatePaymentStatusMutation.mutateAsync({
           registrationId: playerReg.id,
           updates: { paymentStatus: 'pending' },
         });
+        console.log('[registration] ✅ Payment status reverted to unpaid');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
         console.error('[registration] ❌ Payment toggle failed:', errorMessage);
+        
+        // Revert optimistic update on failure
+        setRegistrations(prev => ({
+          ...prev,
+          [playerName]: {
+            ...prev[playerName],
+            paymentStatus: 'paid',
+          },
+        }));
+        
         Alert.alert('Error', `Payment toggle failed: ${errorMessage}`);
       }
     } else {
@@ -804,11 +825,28 @@ export default function EventRegistrationScreen() {
   const handlePaymentStatusMethodSelected = async (method: 'zelle' | 'paypal') => {
     if (!selectedPlayerForPayment) return;
     
-    console.log('[registration] Payment method selected:', method, 'for player:', selectedPlayerForPayment.name);
+    const playerName = selectedPlayerForPayment.name;
+    const regId = selectedPlayerForPayment.reg.id;
+    
+    console.log('[registration] Payment method selected:', method, 'for player:', playerName);
+    
+    // Optimistically update local state immediately
+    setRegistrations(prev => ({
+      ...prev,
+      [playerName]: {
+        ...prev[playerName],
+        paymentStatus: 'paid',
+        paymentMethod: method,
+      },
+    }));
+    
+    // Close modal immediately for better UX
+    setPaymentStatusModalVisible(false);
+    setSelectedPlayerForPayment(null);
     
     try {
       await updatePaymentStatusMutation.mutateAsync({
-        registrationId: selectedPlayerForPayment.reg.id,
+        registrationId: regId,
         updates: { 
           paymentStatus: 'paid',
           paymentMethod: method,
@@ -816,13 +854,44 @@ export default function EventRegistrationScreen() {
         },
       });
       console.log('[registration] ✅ Payment status updated successfully');
+      
+      // Find the member to add payment notification
+      const player = selectedPlayers.find(p => p.name === playerName);
+      if (player && event) {
+        try {
+          await addNotification({
+            eventId: event.id,
+            type: 'payment',
+            title: 'Payment Received',
+            message: `${playerName} marked as paid via ${method === 'zelle' ? 'Zelle' : 'PayPal'} for ${event.name}`,
+            metadata: {
+              eventName: event.name,
+              playerName: playerName,
+              memberId: player.id,
+              paymentMethod: method,
+              paidAt: new Date().toISOString(),
+            },
+          });
+          console.log('[registration] ✅ Payment notification created');
+        } catch (notifError) {
+          console.error('[registration] ⚠️ Failed to create payment notification:', notifError);
+        }
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       console.error('[registration] ❌ Payment status update failed:', errorMessage);
+      
+      // Revert optimistic update on failure
+      setRegistrations(prev => ({
+        ...prev,
+        [playerName]: {
+          ...prev[playerName],
+          paymentStatus: 'unpaid',
+          paymentMethod: undefined,
+        },
+      }));
+      
       Alert.alert('Error', `Payment status update failed: ${errorMessage}`);
-    } finally {
-      setPaymentStatusModalVisible(false);
-      setSelectedPlayerForPayment(null);
     }
   };
 
