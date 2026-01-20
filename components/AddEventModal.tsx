@@ -32,6 +32,15 @@ interface AddEventModalProps {
     city: string;
     state: string;
     zipcode: string;
+    package1Name: string;
+    package1Price: string;
+    package1Description: string;
+    package2Name: string;
+    package2Price: string;
+    package2Description: string;
+    package3Name: string;
+    package3Price: string;
+    package3Description: string;
     startDate: string;
     endDate: string;
     numberOfDays: 1 | 2 | 3;
@@ -344,24 +353,14 @@ export function AddEventModal({
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>VENUE</Text>
-              <View style={styles.twoColumnRow}>
-                <TextInput
-                  style={[styles.input, styles.twoColumnInput]}
-                  placeholder="Event Name"
-                  placeholderTextColor="#666"
-                  autoCapitalize="words"
-                  value={form.eventName}
-                  onChangeText={(text) => onFormChange('eventName', text)}
-                />
-                <TextInput
-                  style={[styles.input, styles.twoColumnInput]}
-                  placeholder="Entry Fee"
-                  placeholderTextColor="#666"
-                  keyboardType="decimal-pad"
-                  value={displayEntryFee}
-                  onChangeText={handleEntryFeeChange}
-                />
-              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Event Name"
+                placeholderTextColor="#666"
+                autoCapitalize="words"
+                value={form.eventName}
+                onChangeText={(text) => onFormChange('eventName', text)}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Venue"
@@ -405,8 +404,129 @@ export function AddEventModal({
                 />
               </View>
 
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>PACKAGE INFORMATION</Text>
+              
+              <View style={styles.packageContainer}>
+                <Text style={styles.packageLabel}>Package 1</Text>
+                <View style={styles.twoColumnRow}>
+                  <TextInput
+                    style={[styles.input, styles.twoColumnInput]}
+                    placeholder="Package Name"
+                    placeholderTextColor="#666"
+                    autoCapitalize="words"
+                    value={form.package1Name}
+                    onChangeText={(text) => onFormChange('package1Name', text)}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.twoColumnInput]}
+                    placeholder="Price"
+                    placeholderTextColor="#666"
+                    keyboardType="decimal-pad"
+                    value={form.package1Price ? `${form.package1Price}` : ''}
+                    onChangeText={(text) => {
+                      const numericValue = text.replace(/[^0-9.]/g, '');
+                      const parts = numericValue.split('.');
+                      const formattedValue = parts.length > 2 
+                        ? parts[0] + '.' + parts.slice(1).join('')
+                        : numericValue;
+                      onFormChange('package1Price', formattedValue);
+                    }}
+                  />
+                </View>
+                <TextInput
+                  style={styles.packageDescriptionInput}
+                  placeholder="What's included? (e.g., Golf, Cart, Lunch)"
+                  placeholderTextColor="#666"
+                  multiline
+                  textAlignVertical="top"
+                  value={form.package1Description}
+                  onChangeText={(text) => onFormChange('package1Description', text)}
+                />
+              </View>
+
+              <View style={styles.packageContainer}>
+                <Text style={styles.packageLabel}>Package 2 (Optional)</Text>
+                <View style={styles.twoColumnRow}>
+                  <TextInput
+                    style={[styles.input, styles.twoColumnInput]}
+                    placeholder="Package Name"
+                    placeholderTextColor="#666"
+                    autoCapitalize="words"
+                    value={form.package2Name}
+                    onChangeText={(text) => onFormChange('package2Name', text)}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.twoColumnInput]}
+                    placeholder="Price"
+                    placeholderTextColor="#666"
+                    keyboardType="decimal-pad"
+                    value={form.package2Price ? `${form.package2Price}` : ''}
+                    onChangeText={(text) => {
+                      const numericValue = text.replace(/[^0-9.]/g, '');
+                      const parts = numericValue.split('.');
+                      const formattedValue = parts.length > 2 
+                        ? parts[0] + '.' + parts.slice(1).join('')
+                        : numericValue;
+                      onFormChange('package2Price', formattedValue);
+                    }}
+                  />
+                </View>
+                <TextInput
+                  style={styles.packageDescriptionInput}
+                  placeholder="What's included?"
+                  placeholderTextColor="#666"
+                  multiline
+                  textAlignVertical="top"
+                  value={form.package2Description}
+                  onChangeText={(text) => onFormChange('package2Description', text)}
+                />
+              </View>
+
+              <View style={styles.packageContainer}>
+                <Text style={styles.packageLabel}>Package 3 (Optional)</Text>
+                <View style={styles.twoColumnRow}>
+                  <TextInput
+                    style={[styles.input, styles.twoColumnInput]}
+                    placeholder="Package Name"
+                    placeholderTextColor="#666"
+                    autoCapitalize="words"
+                    value={form.package3Name}
+                    onChangeText={(text) => onFormChange('package3Name', text)}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.twoColumnInput]}
+                    placeholder="Price"
+                    placeholderTextColor="#666"
+                    keyboardType="decimal-pad"
+                    value={form.package3Price ? `${form.package3Price}` : ''}
+                    onChangeText={(text) => {
+                      const numericValue = text.replace(/[^0-9.]/g, '');
+                      const parts = numericValue.split('.');
+                      const formattedValue = parts.length > 2 
+                        ? parts[0] + '.' + parts.slice(1).join('')
+                        : numericValue;
+                      onFormChange('package3Price', formattedValue);
+                    }}
+                  />
+                </View>
+                <TextInput
+                  style={styles.packageDescriptionInput}
+                  placeholder="What's included?"
+                  placeholderTextColor="#666"
+                  multiline
+                  textAlignVertical="top"
+                  value={form.package3Description}
+                  onChangeText={(text) => onFormChange('package3Description', text)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>EVENT PHOTO</Text>
               <View style={styles.photoSection}>
-                <Text style={styles.sectionLabel}>Event Photo</Text>
                 <TouchableOpacity 
                   style={styles.photoPickerButton} 
                   onPress={async () => {
@@ -2018,6 +2138,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#1a1a1a',
     marginBottom: 4,
+  },
+  packageContainer: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  packageLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 12,
+  },
+  packageDescriptionInput: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 0,
+    fontSize: 14,
+    minHeight: 80,
   },
   teeBoxButtons: {
     flexDirection: 'row',

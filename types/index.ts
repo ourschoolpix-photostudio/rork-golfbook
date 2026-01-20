@@ -70,6 +70,15 @@ export interface Event {
   type?: 'tournament' | 'social';
   photoUrl?: string;
   entryFee?: string;
+  package1Name?: string;
+  package1Price?: string;
+  package1Description?: string;
+  package2Name?: string;
+  package2Price?: string;
+  package2Description?: string;
+  package3Name?: string;
+  package3Price?: string;
+  package3Description?: string;
   numberOfDays?: 1 | 2 | 3;
   players?: string[];
   registeredPlayers?: string[];
