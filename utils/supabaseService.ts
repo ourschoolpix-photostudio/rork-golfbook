@@ -113,6 +113,7 @@ const mapEventFromDB = (e: any) => ({
   package3Name: e.package3_name,
   package3Price: e.package3_price,
   package3Description: e.package3_description,
+  specialNotes: e.special_notes,
 });
 
 export const supabaseService = {
@@ -266,6 +267,16 @@ export const supabaseService = {
         low_gross_trophy: event.lowGrossTrophy,
         low_gross_cash_prize: event.lowGrossCashPrize,
         closest_to_pin: event.closestToPin,
+        package1_name: event.package1Name,
+        package1_price: event.package1Price,
+        package1_description: event.package1Description,
+        package2_name: event.package2Name,
+        package2_price: event.package2Price,
+        package2_description: event.package2Description,
+        package3_name: event.package3Name,
+        package3_price: event.package3Price,
+        package3_description: event.package3Description,
+        special_notes: event.specialNotes,
       });
       
       if (error) throw error;
@@ -376,6 +387,7 @@ export const supabaseService = {
       if (updates.package3Name !== undefined) supabaseUpdates.package3_name = updates.package3Name;
       if (updates.package3Price !== undefined) supabaseUpdates.package3_price = updates.package3Price;
       if (updates.package3Description !== undefined) supabaseUpdates.package3_description = updates.package3Description;
+      if (updates.specialNotes !== undefined) supabaseUpdates.special_notes = updates.specialNotes;
 
       console.log('[supabaseService.events.update] Updating event:', eventId);
       console.log('[supabaseService.events.update] Updates:', JSON.stringify(supabaseUpdates, null, 2));
