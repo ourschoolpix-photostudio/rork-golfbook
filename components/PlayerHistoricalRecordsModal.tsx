@@ -43,12 +43,25 @@ interface MembershipRecord {
   createdAt: string;
 }
 
+interface EventPaymentRecord {
+  id: string;
+  eventId: string;
+  eventName: string;
+  amount: string;
+  paymentMethod: 'cash' | 'zelle' | 'paypal';
+  paymentStatus: string;
+  numberOfGuests: number;
+  createdAt: string;
+}
+
 interface SeasonData {
   year: number;
   events: EventRecord[];
   membershipRecords: MembershipRecord[];
+  eventPayments: EventPaymentRecord[];
   totalEntryFees: number;
   totalMembershipFees: number;
+  totalEventPayments: number;
 }
 
 interface PlayerHistoricalRecordsModalProps {
@@ -221,6 +234,34 @@ export function PlayerHistoricalRecordsModal({
       }
 
       console.log('[Historical Records] ========================================');
+      console.log('[Historical Records] Querying event_payments for member_id:', member.id);
+      
+      const { data: eventPayments, error: eventPaymentsError } = await supabase
+        .from('event_payments')
+        .select('*')
+        .eq('member_id', member.id)
+        .eq('payment_status', 'completed')
+        .order('created_at', { ascending: false });
+
+      console.log('[Historical Records] Event payments:', JSON.stringify(eventPayments, null, 2));
+      console.log('[Historical Records] Event payments count:', eventPayments?.length || 0);
+      
+      if (eventPaymentsError) {
+        console.error('[Historical Records] Event payments error:', eventPaymentsError);
+      }
+      
+      const eventPaymentRecords: EventPaymentRecord[] = (eventPayments || []).map((payment: any) => ({
+        id: payment.id,
+        eventId: payment.event_id,
+        eventName: payment.event_name,
+        amount: payment.amount,
+        paymentMethod: payment.payment_method,
+        paymentStatus: payment.payment_status,
+        numberOfGuests: payment.number_of_guests || 0,
+        createdAt: payment.created_at,
+      }));
+      
+      console.log('[Historical Records] ========================================');
       console.log('[Historical Records] Querying membership_payments for member_id:', member.id);
       
       // First, get ALL records for this member to debug
@@ -261,12 +302,12 @@ export function PlayerHistoricalRecordsModal({
         createdAt: payment.created_at,
       }));
 
-      const seasonMap = new Map<number, { events: EventRecord[]; memberships: MembershipRecord[] }>();
+      const seasonMap = new Map<number, { events: EventRecord[]; memberships: MembershipRecord[]; eventPayments: EventPaymentRecord[] }>();
       
       eventRecords.forEach(record => {
         const year = parseDateSafe(record.startDate).getFullYear();
         if (!seasonMap.has(year)) {
-          seasonMap.set(year, { events: [], memberships: [] });
+          seasonMap.set(year, { events: [], memberships: [], eventPayments: [] });
         }
         seasonMap.get(year)!.events.push(record);
       });
@@ -274,9 +315,17 @@ export function PlayerHistoricalRecordsModal({
       membershipRecords.forEach(record => {
         const year = new Date(record.createdAt).getFullYear();
         if (!seasonMap.has(year)) {
-          seasonMap.set(year, { events: [], memberships: [] });
+          seasonMap.set(year, { events: [], memberships: [], eventPayments: [] });
         }
         seasonMap.get(year)!.memberships.push(record);
+      });
+
+      eventPaymentRecords.forEach(record => {
+        const year = new Date(record.createdAt).getFullYear();
+        if (!seasonMap.has(year)) {
+          seasonMap.set(year, { events: [], memberships: [], eventPayments: [] });
+        }
+        seasonMap.get(year)!.eventPayments.push(record);
       });
 
       const seasonsData: SeasonData[] = Array.from(seasonMap.entries())
@@ -287,18 +336,26 @@ export function PlayerHistoricalRecordsModal({
           const sortedMemberships = data.memberships.sort((a, b) => 
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
+          const sortedEventPayments = data.eventPayments.sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
           const totalEntryFees = sortedEvents.reduce((sum, event) => 
             sum + (event.entryFee || 0), 0
           );
           const totalMembershipFees = sortedMemberships.reduce((sum, m) => 
             sum + parseFloat(m.amount || '0'), 0
           );
+          const totalEventPayments = sortedEventPayments.reduce((sum, p) => 
+            sum + parseFloat(p.amount || '0'), 0
+          );
           return {
             year,
             events: sortedEvents,
             membershipRecords: sortedMemberships,
+            eventPayments: sortedEventPayments,
             totalEntryFees,
             totalMembershipFees,
+            totalEventPayments,
           };
         })
         .sort((a, b) => b.year - a.year);
@@ -343,10 +400,10 @@ export function PlayerHistoricalRecordsModal({
     });
   };
 
-  const handleDeleteRecord = useCallback(async (recordId: string, recordType: string) => {
+  const handleDeleteRecord = useCallback(async (recordId: string, recordType: 'membership' | 'event_payment') => {
     Alert.alert(
       'Delete Record',
-      `Are you sure you want to delete this ${recordType} record? This action cannot be undone.`,
+      `Are you sure you want to delete this ${recordType === 'membership' ? 'membership' : 'event payment'} record? This action cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -357,8 +414,9 @@ export function PlayerHistoricalRecordsModal({
               setDeleting(recordId);
               console.log('[Historical Records] Deleting record:', recordId);
               
+              const tableName = recordType === 'membership' ? 'membership_payments' : 'event_payments';
               const { error } = await supabase
-                .from('membership_payments')
+                .from(tableName)
                 .delete()
                 .eq('id', recordId);
               
@@ -453,7 +511,7 @@ export function PlayerHistoricalRecordsModal({
                 style={[styles.tab, activeTab === 'membership' && styles.tabActive]}
                 onPress={() => setActiveTab('membership')}
               >
-                <Text style={[styles.tabText, activeTab === 'membership' && styles.tabTextActive]}>Membership</Text>
+                <Text style={[styles.tabText, activeTab === 'membership' && styles.tabTextActive]}>Payments</Text>
               </TouchableOpacity>
             </View>
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -552,13 +610,13 @@ export function PlayerHistoricalRecordsModal({
                 ))
               )
             ) : (
-              seasons.filter(s => s.membershipRecords.length > 0).length === 0 ? (
+              seasons.filter(s => s.membershipRecords.length > 0 || s.eventPayments.length > 0).length === 0 ? (
                 <View style={styles.emptyTabContainer}>
                   <Trophy size={40} color="#ccc" />
-                  <Text style={styles.emptyTabText}>No membership records yet</Text>
+                  <Text style={styles.emptyTabText}>No payment records yet</Text>
                 </View>
               ) : (
-                seasons.filter(s => s.membershipRecords.length > 0).map(season => (
+                seasons.filter(s => s.membershipRecords.length > 0 || s.eventPayments.length > 0).map(season => (
                   <View key={`membership-${season.year}`} style={styles.seasonContainer}>
                     <TouchableOpacity
                       style={[styles.seasonHeader, styles.membershipSeasonHeader]}
@@ -571,11 +629,11 @@ export function PlayerHistoricalRecordsModal({
                       </View>
                       <View style={styles.seasonStatsContainer}>
                         <View style={styles.seasonStats}>
-                          <Text style={styles.seasonStatsText}>{season.membershipRecords.length} Renewals</Text>
+                          <Text style={styles.seasonStatsText}>{season.membershipRecords.length + season.eventPayments.length} Payments</Text>
                         </View>
-                        {season.totalMembershipFees > 0 && (
+                        {(season.totalMembershipFees + season.totalEventPayments) > 0 && (
                           <View style={styles.seasonStats}>
-                            <Text style={styles.seasonStatsText}>${season.totalMembershipFees.toFixed(2)}</Text>
+                            <Text style={styles.seasonStatsText}>${(season.totalMembershipFees + season.totalEventPayments).toFixed(2)}</Text>
                           </View>
                         )}
                       </View>
@@ -583,6 +641,52 @@ export function PlayerHistoricalRecordsModal({
 
                     {expandedSeasons.has(season.year) && (
                       <View style={styles.eventsContainer}>
+                        {season.eventPayments.map((payment) => (
+                          <View key={payment.id} style={styles.membershipCard}>
+                            <View style={styles.membershipHeader}>
+                              <Text style={styles.membershipType}>
+                                {payment.eventName}
+                              </Text>
+                              <View style={styles.membershipHeaderRight}>
+                                <View style={[styles.membershipStatusBadge, { backgroundColor: '#007AFF' }]}>
+                                  <Text style={styles.membershipStatusText}>Paid</Text>
+                                </View>
+                                {isAdmin && (
+                                  <TouchableOpacity
+                                    style={styles.deleteButton}
+                                    onPress={() => handleDeleteRecord(payment.id, 'event_payment')}
+                                    disabled={deleting === payment.id}
+                                  >
+                                    {deleting === payment.id ? (
+                                      <ActivityIndicator size="small" color="#FF3B30" />
+                                    ) : (
+                                      <Trash2 size={18} color="#FF3B30" />
+                                    )}
+                                  </TouchableOpacity>
+                                )}
+                              </View>
+                            </View>
+                            <View style={styles.membershipDetails}>
+                              <Text style={styles.membershipDate}>
+                                {new Date(payment.createdAt).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric', 
+                                  year: 'numeric' 
+                                })}
+                              </Text>
+                              <Text style={styles.membershipPaymentMethod}>
+                                via {payment.paymentMethod === 'paypal' ? 'PayPal' : 
+                                    payment.paymentMethod === 'zelle' ? 'Zelle' : 'Cash'}
+                              </Text>
+                              {payment.numberOfGuests > 0 && (
+                                <Text style={styles.membershipPaymentMethod}>
+                                  +{payment.numberOfGuests} Guest{payment.numberOfGuests > 1 ? 's' : ''}
+                                </Text>
+                              )}
+                              <Text style={styles.membershipAmount}>${parseFloat(payment.amount).toFixed(2)}</Text>
+                            </View>
+                          </View>
+                        ))}
                         {season.membershipRecords.map((record) => (
                           <View key={record.id} style={styles.membershipCard}>
                             <View style={styles.membershipHeader}>
