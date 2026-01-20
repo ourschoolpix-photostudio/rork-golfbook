@@ -137,6 +137,7 @@ type EventFormType = {
   package3Name: string;
   package3Price: string;
   package3Description: string;
+  specialNotes: string;
 };
 
 export default function AdminEventsScreen() {
@@ -247,6 +248,7 @@ export default function AdminEventsScreen() {
     package3Name: '',
     package3Price: '',
     package3Description: '',
+    specialNotes: '',
   });
 
   const registrationsQuery = useQuery({
@@ -391,6 +393,7 @@ export default function AdminEventsScreen() {
       package3Name: '',
       package3Price: '',
       package3Description: '',
+      specialNotes: '',
     });
   };
 
@@ -510,6 +513,7 @@ export default function AdminEventsScreen() {
             package3Name: form.package3Name,
             package3Price: form.package3Price,
             package3Description: form.package3Description,
+            specialNotes: form.specialNotes,
         });
       } else {
         const eventId = generateUUID();
@@ -612,6 +616,7 @@ export default function AdminEventsScreen() {
           package3Name: form.package3Name,
           package3Price: form.package3Price,
           package3Description: form.package3Description,
+          specialNotes: form.specialNotes,
           createdAt: new Date().toISOString(),
         };
         await supabaseService.events.create(newEvent);
@@ -773,6 +778,7 @@ export default function AdminEventsScreen() {
       package3Name: event.package3Name || '',
       package3Price: event.package3Price || '',
       package3Description: event.package3Description || '',
+      specialNotes: event.specialNotes || '',
     });
     setModalVisible(true);
   };
