@@ -43,6 +43,7 @@ export function PayPalInvoiceModal({
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [numberOfGuests, setNumberOfGuests] = useState('');
   const [guestNames, setGuestNames] = useState('');
+  const [selectedPackage, setSelectedPackage] = useState<1 | 2 | 3 | null>(null);
 
   const [paypalConfig, setPaypalConfig] = useState<{
     clientId: string;
@@ -89,6 +90,7 @@ export function PayPalInvoiceModal({
       setAgreeToTerms(false);
       setNumberOfGuests('');
       setGuestNames('');
+      setSelectedPackage(null);
     }
   }, [visible, currentUser]);
 
@@ -98,12 +100,25 @@ export function PayPalInvoiceModal({
   const guestCount = parseInt(numberOfGuests, 10) || 0;
   const totalPeople = 1 + guestCount;
   
+  const getPackagePrice = () => {
+    if (selectedPackage === 1 && event.package1Price) return Number(event.package1Price);
+    if (selectedPackage === 2 && event.package2Price) return Number(event.package2Price);
+    if (selectedPackage === 3 && event.package3Price) return Number(event.package3Price);
+    return Number(event.entryFee || 0);
+  };
+  
   const serviceFeePercentage = 0.03;
   const serviceFeeFixed = 0.30;
-  const entryFeeAmount = Number(event.entryFee);
+  const entryFeeAmount = getPackagePrice();
   const subtotal = entryFeeAmount * totalPeople;
   const serviceFeeAmount = (subtotal * serviceFeePercentage) + serviceFeeFixed;
   const totalAmount = subtotal + serviceFeeAmount;
+  
+  const availablePackages = [
+    event.package1Name && event.package1Price ? { id: 1 as const, name: event.package1Name, price: event.package1Price, description: event.package1Description } : null,
+    event.package2Name && event.package2Price ? { id: 2 as const, name: event.package2Name, price: event.package2Price, description: event.package2Description } : null,
+    event.package3Name && event.package3Price ? { id: 3 as const, name: event.package3Name, price: event.package3Price, description: event.package3Description } : null,
+  ].filter(Boolean) as { id: 1 | 2 | 3; name: string; price: string; description?: string }[];
 
   const getPaymentDeadline = () => {
     if (!event.date) return 'N/A';
@@ -127,7 +142,8 @@ export function PayPalInvoiceModal({
   };
 
   const canRegister = () => {
-    return hasRequiredInfo() && agreeToTerms && !isSubmitting;
+    const hasPackageSelection = availablePackages.length === 0 || selectedPackage !== null;
+    return hasRequiredInfo() && agreeToTerms && hasPackageSelection && !isSubmitting;
   };
 
   const handlePayPalPayment = async () => {
@@ -460,6 +476,59 @@ export function PayPalInvoiceModal({
                 </>
               )}
             </View>
+
+            {availablePackages.length > 0 && (
+              <View style={styles.packageSection}>
+                <Text style={styles.packageTitle}>Select Your Package</Text>
+                <Text style={styles.packageSubtitle}>Choose one of the following options</Text>
+                
+                {availablePackages.map((pkg) => (
+                  <TouchableOpacity
+                    key={pkg.id}
+                    style={[
+                      styles.packageCard,
+                      selectedPackage === pkg.id && styles.packageCardSelected,
+                    ]}
+                    onPress={() => setSelectedPackage(pkg.id)}
+                    disabled={isSubmitting}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.packageHeader}>
+                      <View style={styles.packageTitleRow}>
+                        <Text style={[
+                          styles.packageName,
+                          selectedPackage === pkg.id && styles.packageNameSelected,
+                        ]}>
+                          {pkg.name}
+                        </Text>
+                        <Text style={[
+                          styles.packagePrice,
+                          selectedPackage === pkg.id && styles.packagePriceSelected,
+                        ]}>
+                          ${Number(pkg.price).toFixed(2)}
+                        </Text>
+                      </View>
+                      {pkg.description && (
+                        <Text style={[
+                          styles.packageDescription,
+                          selectedPackage === pkg.id && styles.packageDescriptionSelected,
+                        ]}>
+                          {pkg.description}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={[
+                      styles.packageCheckbox,
+                      selectedPackage === pkg.id && styles.packageCheckboxSelected,
+                    ]}>
+                      {selectedPackage === pkg.id && (
+                        <Ionicons name="checkmark" size={18} color="#fff" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <View style={styles.paymentCard}>
               <View style={styles.invoiceSection}>
@@ -865,6 +934,92 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top' as const,
     paddingTop: 12,
+  },
+  packageSection: {
+    marginBottom: 20,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  packageTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  packageSubtitle: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  packageCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#D0D0D0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  packageCardSelected: {
+    borderColor: '#0070BA',
+    backgroundColor: '#E8F4FC',
+  },
+  packageHeader: {
+    flex: 1,
+  },
+  packageTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  packageName: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#333',
+    flex: 1,
+  },
+  packageNameSelected: {
+    color: '#0070BA',
+  },
+  packagePrice: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+    marginLeft: 12,
+  },
+  packagePriceSelected: {
+    color: '#0070BA',
+  },
+  packageDescription: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  packageDescriptionSelected: {
+    color: '#0070BA',
+  },
+  packageCheckbox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#D0D0D0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    marginLeft: 12,
+  },
+  packageCheckboxSelected: {
+    backgroundColor: '#0070BA',
+    borderColor: '#0070BA',
   },
   paymentCard: {
     backgroundColor: '#F8F9FA',
