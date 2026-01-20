@@ -5,12 +5,10 @@ import {
   Modal,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Image,
   ActivityIndicator,
   Alert,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { X, Trash2, ImageIcon } from 'lucide-react-native';
 import { scorecardPhotoService, ScorecardPhoto } from '@/utils/scorecardPhotoService';
@@ -132,7 +130,7 @@ export default function ScorecardPhotosModal({
           </View>
 
           {!selectedPhoto ? (
-            <ScrollView style={styles.body}>
+            <View style={styles.body}>
               {isLoading && (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color="#1B5E20" />
@@ -192,35 +190,21 @@ export default function ScorecardPhotosModal({
                   >
                     <Trash2 size={18} color="#fff" />
                     <Text style={styles.deleteAllButtonText}>
-                      {isDeleting ? 'Deleting...' : `Delete All (${photos.length})`}
+                      {isDeleting ? 'Deleting...' : 'Delete Photo'}
                     </Text>
                   </TouchableOpacity>
                 </>
               )}
-            </ScrollView>
+            </View>
           ) : (
             <View style={styles.photoDetailContainer}>
-              <View style={styles.zoomableContainer}>
-                <ScrollView
-                  style={styles.zoomableScrollView}
-                  contentContainerStyle={styles.zoomableContent}
-                  maximumZoomScale={4}
-                  minimumZoomScale={1}
-                  showsHorizontalScrollIndicator={false}
-                  showsVerticalScrollIndicator={false}
-                  bouncesZoom={true}
-                  centerContent={true}
-                  pinchGestureEnabled={true}
-                  scrollEnabled={true}
-                >
-                  <Image 
-                    source={{ uri: selectedPhoto.photo_url }} 
-                    style={styles.fullImage}
-                    resizeMode="contain"
-                  />
-                </ScrollView>
+              <View style={styles.imageContainer}>
+                <Image 
+                  source={{ uri: selectedPhoto.photo_url }} 
+                  style={styles.fullImage}
+                  resizeMode="contain"
+                />
               </View>
-              <Text style={styles.zoomHint}>{Platform.OS !== 'web' ? 'Pinch to zoom' : 'View full size'}</Text>
               <View style={styles.photoDetailInfo}>
                 <Text style={styles.detailText}>
                   {selectedPhoto.group_label}
@@ -373,30 +357,15 @@ const styles = StyleSheet.create({
   photoDetailContainer: {
     flex: 1,
   },
-  zoomableContainer: {
+  imageContainer: {
     flex: 1,
     backgroundColor: '#000',
-    overflow: 'hidden',
-  },
-  zoomableScrollView: {
-    flex: 1,
-  },
-  zoomableContent: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   fullImage: {
-    width: Dimensions.get('window').width * 0.9,
-    height: Dimensions.get('window').width * 0.9,
-  },
-  zoomHint: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: '#999',
-    paddingVertical: 6,
-    fontStyle: 'italic' as const,
-    backgroundColor: '#fff',
+    width: Dimensions.get('window').width * 0.85,
+    height: Dimensions.get('window').height * 0.45,
   },
   photoDetailInfo: {
     paddingHorizontal: 16,
