@@ -104,6 +104,15 @@ const mapEventFromDB = (e: any) => ({
   rolexPointsDistributedBy: e.rolex_points_distributed_by,
   registrationOpen: e.registration_open ?? true,
   useCourseHandicap: e.use_course_handicap ?? false,
+  package1Name: e.package1_name,
+  package1Price: e.package1_price,
+  package1Description: e.package1_description,
+  package2Name: e.package2_name,
+  package2Price: e.package2_price,
+  package2Description: e.package2_description,
+  package3Name: e.package3_name,
+  package3Price: e.package3_price,
+  package3Description: e.package3_description,
 });
 
 export const supabaseService = {
@@ -358,6 +367,15 @@ export const supabaseService = {
       if (updates.rolexPointsDistributedBy !== undefined) supabaseUpdates.rolex_points_distributed_by = updates.rolexPointsDistributedBy;
       if (updates.registrationOpen !== undefined) supabaseUpdates.registration_open = updates.registrationOpen;
       if (updates.useCourseHandicap !== undefined) supabaseUpdates.use_course_handicap = updates.useCourseHandicap;
+      if (updates.package1Name !== undefined) supabaseUpdates.package1_name = updates.package1Name;
+      if (updates.package1Price !== undefined) supabaseUpdates.package1_price = updates.package1Price;
+      if (updates.package1Description !== undefined) supabaseUpdates.package1_description = updates.package1Description;
+      if (updates.package2Name !== undefined) supabaseUpdates.package2_name = updates.package2Name;
+      if (updates.package2Price !== undefined) supabaseUpdates.package2_price = updates.package2Price;
+      if (updates.package2Description !== undefined) supabaseUpdates.package2_description = updates.package2Description;
+      if (updates.package3Name !== undefined) supabaseUpdates.package3_name = updates.package3Name;
+      if (updates.package3Price !== undefined) supabaseUpdates.package3_price = updates.package3Price;
+      if (updates.package3Description !== undefined) supabaseUpdates.package3_description = updates.package3Description;
 
       console.log('[supabaseService.events.update] Updating event:', eventId);
       console.log('[supabaseService.events.update] Updates:', JSON.stringify(supabaseUpdates, null, 2));
