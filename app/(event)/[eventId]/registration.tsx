@@ -1826,6 +1826,62 @@ export default function EventRegistrationScreen() {
       font-size: 14px;
       font-weight: 600;
     }
+    .package-section {
+      margin-bottom: 24px;
+    }
+    .package-section h3 {
+      color: #333;
+      font-size: 18px;
+      margin: 0 0 16px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #1B5E20;
+    }
+    .package-card {
+      background-color: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .package-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .package-name {
+      font-weight: 600;
+      color: #1a1a1a;
+      font-size: 15px;
+    }
+    .package-price {
+      color: #1B5E20;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .package-description {
+      color: #666;
+      font-size: 13px;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+    .special-notes-box {
+      background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+      border: 2px solid #F57C00;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .special-notes-title {
+      color: #E65100;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .special-notes-text {
+      color: #E65100;
+      font-size: 14px;
+      line-height: 1.5;
+    }
     .footer {
       background-color: #f8f9fa;
       padding: 32px 24px;
@@ -1870,6 +1926,37 @@ export default function EventRegistrationScreen() {
           <span class="detail-value">${player.name}${guestCount > 0 ? ` + ${guestCount} guest${guestCount > 1 ? 's' : ''}` : ''}</span>
         </div>
       </div>
+      
+      ${(() => {
+        const packages = [
+          event.package1Name && event.package1Price ? { name: event.package1Name, price: event.package1Price, description: event.package1Description } : null,
+          event.package2Name && event.package2Price ? { name: event.package2Name, price: event.package2Price, description: event.package2Description } : null,
+          event.package3Name && event.package3Price ? { name: event.package3Name, price: event.package3Price, description: event.package3Description } : null,
+        ].filter(Boolean) as { name: string; price: string; description?: string }[];
+        
+        if (packages.length === 0 && !event.specialNotes) return '';
+        
+        return `
+      <div class="package-section">
+        <h3>Package Options</h3>
+        ${packages.map(pkg => `
+        <div class="package-card">
+          <div class="package-header">
+            <span class="package-name">${pkg.name}</span>
+            <span class="package-price">${Number(pkg.price).toFixed(2)}</span>
+          </div>
+          ${pkg.description ? `<p class="package-description">${pkg.description}</p>` : ''}
+        </div>
+        `).join('')}
+        ${event.specialNotes ? `
+        <div class="special-notes-box">
+          <p class="special-notes-title">Special Notes</p>
+          <p class="special-notes-text">${event.specialNotes}</p>
+        </div>
+        ` : ''}
+      </div>
+      `;
+      })()}
       
       <div class="amount-box">
         <p class="amount-label">Total Amount Due</p>
