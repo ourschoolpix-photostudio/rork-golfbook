@@ -31,7 +31,10 @@ export function PaymentReminderModal({
   onClose,
 }: PaymentReminderModalProps) {
   const { orgInfo } = useSettings();
-  const [amount, setAmount] = useState('');
+  const [option1Name, setOption1Name] = useState('');
+  const [option1Amount, setOption1Amount] = useState('');
+  const [option2Name, setOption2Name] = useState('');
+  const [option2Amount, setOption2Amount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [itemDescription, setItemDescription] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -39,7 +42,10 @@ export function PaymentReminderModal({
 
   useEffect(() => {
     if (visible) {
-      setAmount('');
+      setOption1Name('');
+      setOption1Amount('');
+      setOption2Name('');
+      setOption2Amount('');
       setDueDate('');
       setItemDescription('');
       loadTemplateSubject();
@@ -59,7 +65,10 @@ export function PaymentReminderModal({
   };
 
   const canSend = () => {
-    return amount.trim().length > 0 && 
+    return option1Name.trim().length > 0 &&
+           option1Amount.trim().length > 0 && 
+           option2Name.trim().length > 0 &&
+           option2Amount.trim().length > 0 && 
            dueDate.trim().length > 0 && 
            itemDescription.trim().length > 0 && 
            !isSending;
@@ -82,32 +91,49 @@ export function PaymentReminderModal({
     setIsSending(true);
 
     try {
-      console.log('[PaymentReminder] Creating PayPal payment link...');
-      const baseAmount = parseFloat(amount);
+      console.log('[PaymentReminder] Creating PayPal payment links for both options...');
+      const option1AmountNum = parseFloat(option1Amount);
+      const option2AmountNum = parseFloat(option2Amount);
       
-      const paypalLink = await createPayPalPaymentLink({
-        amount: baseAmount,
-        eventName: itemDescription,
-        eventId: 'payment-reminder',
-        playerEmail: recipientEmails[0],
-        itemDescription,
-        dueDate,
-        includeProcessingFee: true,
-      });
+      const [paypalLink1, paypalLink2] = await Promise.all([
+        createPayPalPaymentLink({
+          amount: option1AmountNum,
+          eventName: `${itemDescription} - ${option1Name}`,
+          eventId: 'payment-reminder-opt1',
+          playerEmail: recipientEmails[0],
+          itemDescription: `${itemDescription} - ${option1Name}`,
+          dueDate,
+          includeProcessingFee: true,
+        }),
+        createPayPalPaymentLink({
+          amount: option2AmountNum,
+          eventName: `${itemDescription} - ${option2Name}`,
+          eventId: 'payment-reminder-opt2',
+          playerEmail: recipientEmails[0],
+          itemDescription: `${itemDescription} - ${option2Name}`,
+          dueDate,
+          includeProcessingFee: true,
+        }),
+      ]);
 
-      console.log('[PaymentReminder] PayPal link created successfully');
-      console.log('[PaymentReminder] Order ID:', paypalLink.orderId);
-      console.log('[PaymentReminder] Approval URL:', paypalLink.approvalUrl);
+      console.log('[PaymentReminder] PayPal links created successfully');
+      console.log('[PaymentReminder] Option 1 Order ID:', paypalLink1.orderId);
+      console.log('[PaymentReminder] Option 2 Order ID:', paypalLink2.orderId);
 
       const htmlContent = generatePaymentReminderHTML({
         playerName: recipients.length === 1 ? recipients[0].name : 'there',
         eventName: itemDescription,
-        amount: baseAmount,
+        option1Name,
+        option1Amount: option1AmountNum,
+        option2Name,
+        option2Amount: option2AmountNum,
         dueDate,
         itemDescription,
         zellePhone: orgInfo.zellePhone || '5714811006',
-        paypalApprovalUrl: paypalLink.approvalUrl,
-        paypalAmountWithFee: paypalLink.amountWithFee,
+        paypalApprovalUrl1: paypalLink1.approvalUrl,
+        paypalAmountWithFee1: paypalLink1.amountWithFee,
+        paypalApprovalUrl2: paypalLink2.approvalUrl,
+        paypalAmountWithFee2: paypalLink2.amountWithFee,
         organizationName: orgInfo.name || 'DMVVGA',
       });
 
@@ -116,7 +142,7 @@ export function PaymentReminderModal({
       if (!isAvailable) {
         const bccEmails = recipientEmails.join(',');
         const subject = encodeURIComponent(templateSubject);
-        const body = encodeURIComponent(`Payment Reminder\n\nAmount Due: ${baseAmount.toFixed(2)}\nDue Date: ${dueDate}\nFor: ${itemDescription}\n\nPlease send payment via:\n- Zelle: ${formatPhoneNumber(orgInfo.zellePhone || '5714811006')}\n- PayPal: ${paypalLink.approvalUrl}`);
+        const body = encodeURIComponent(`Payment Reminder\n\nFor: ${itemDescription}\nDue Date: ${dueDate}\n\nOption 1: ${option1Name} - ${option1AmountNum.toFixed(2)}\nOption 2: ${option2Name} - ${option2AmountNum.toFixed(2)}\n\nPlease send payment via:\n- Zelle: ${formatPhoneNumber(orgInfo.zellePhone || '5714811006')}\n- PayPal Option 1: ${paypalLink1.approvalUrl}\n- PayPal Option 2: ${paypalLink2.approvalUrl}`);
         
         const mailtoUrl = `mailto:?bcc=${bccEmails}&subject=${subject}&body=${body}`;
         
@@ -186,21 +212,71 @@ export function PaymentReminderModal({
             </View>
 
             <View style={styles.formSection}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>
-                  Amount <Text style={styles.required}>*</Text>
-                </Text>
-                <View style={styles.amountInputContainer}>
-                  <Text style={styles.dollarSign}>$</Text>
+              <View style={styles.optionCard}>
+                <Text style={styles.optionTitle}>Option 1</Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Name <Text style={styles.required}>*</Text>
+                  </Text>
                   <TextInput
-                    style={styles.amountInput}
-                    value={amount}
-                    onChangeText={setAmount}
-                    placeholder="0.00"
-                    keyboardType="decimal-pad"
+                    style={styles.textInput}
+                    value={option1Name}
+                    onChangeText={setOption1Name}
+                    placeholder="e.g., Golf & Lunch"
                     editable={!isSending}
                     placeholderTextColor="#999"
                   />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Amount <Text style={styles.required}>*</Text>
+                  </Text>
+                  <View style={styles.amountInputContainer}>
+                    <Text style={styles.dollarSign}>$</Text>
+                    <TextInput
+                      style={styles.amountInput}
+                      value={option1Amount}
+                      onChangeText={setOption1Amount}
+                      placeholder="0.00"
+                      keyboardType="decimal-pad"
+                      editable={!isSending}
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.optionCard}>
+                <Text style={styles.optionTitle}>Option 2</Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Name <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={option2Name}
+                    onChangeText={setOption2Name}
+                    placeholder="e.g., Golf Only"
+                    editable={!isSending}
+                    placeholderTextColor="#999"
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Amount <Text style={styles.required}>*</Text>
+                  </Text>
+                  <View style={styles.amountInputContainer}>
+                    <Text style={styles.dollarSign}>$</Text>
+                    <TextInput
+                      style={styles.amountInput}
+                      value={option2Amount}
+                      onChangeText={setOption2Amount}
+                      placeholder="0.00"
+                      keyboardType="decimal-pad"
+                      editable={!isSending}
+                      placeholderTextColor="#999"
+                    />
+                  </View>
                 </View>
               </View>
 
@@ -244,9 +320,12 @@ export function PaymentReminderModal({
               <View style={styles.paymentInfoRow}>
                 <Text style={styles.paymentInfoLabel}>PayPal:</Text>
                 <Text style={styles.paymentInfoValue}>
-                  Secure checkout via PayPal API
+                  2 links with fees included
                 </Text>
               </View>
+              <Text style={styles.paymentInfoNote}>
+                Email will include both package options with separate PayPal buttons showing exact amounts.
+              </Text>
             </View>
 
             <View style={styles.buttonContainer}>
@@ -411,6 +490,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#1a1a1a',
     fontWeight: '600' as const,
+  },
+  paymentInfoNote: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic' as const,
+    marginTop: 12,
+    lineHeight: 18,
+  },
+  optionCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  optionTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#003366',
+    marginBottom: 12,
   },
   buttonContainer: {
     marginBottom: 20,

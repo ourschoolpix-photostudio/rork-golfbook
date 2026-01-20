@@ -83,20 +83,27 @@ export interface GeneratePaymentEmailHTMLConfig {
   eventName: string;
   eventVenue?: string;
   eventDate?: string;
-  amount: number;
+  option1Name: string;
+  option1Amount: number;
+  option2Name: string;
+  option2Amount: number;
   dueDate: string;
   itemDescription: string;
   zellePhone: string;
-  paypalApprovalUrl: string;
-  paypalAmountWithFee: number;
+  paypalApprovalUrl1: string;
+  paypalAmountWithFee1: number;
+  paypalApprovalUrl2: string;
+  paypalAmountWithFee2: number;
   guestCount?: number;
   organizationName?: string;
 }
 
 export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConfig): string {
   const zellePhone = formatPhoneNumber(config.zellePhone);
-  const amountValue = config.amount.toFixed(2);
-  const paypalAmountValue = config.paypalAmountWithFee.toFixed(2);
+  const option1Value = config.option1Amount.toFixed(2);
+  const option2Value = config.option2Amount.toFixed(2);
+  const paypalAmount1Value = config.paypalAmountWithFee1.toFixed(2);
+  const paypalAmount2Value = config.paypalAmountWithFee2.toFixed(2);
 
   return `<!DOCTYPE html>
 <html>
@@ -128,11 +135,18 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
     .payment-icon.zelle { background-color: #6B21A8; }
     .payment-icon.paypal { background-color: #0070BA; }
     .payment-name { font-size: 20px; font-weight: 700; color: #333333; }
-    .payment-info { font-size: 20px; font-weight: 700; text-align: center; padding: 16px; background-color: #F8F9FA; border-radius: 8px; margin-top: 12px; letter-spacing: 1px; }
+    .payment-info { font-size: 16px; font-weight: 600; text-align: center; padding: 16px; background-color: #F8F9FA; border-radius: 8px; margin-top: 12px; }
     .payment-info.zelle { color: #6B21A8; }
-    .paypal-amount-display { font-size: 24px; font-weight: 700; color: #0070BA; text-align: center; margin: 12px 0; }
-    .paypal-fee-note { font-size: 13px; color: #666666; text-align: center; margin-bottom: 16px; }
-    .paypal-button { display: inline-block; background-color: #0070BA; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 700; margin-top: 12px; text-align: center; width: 100%; box-sizing: border-box; transition: background-color 0.2s; }
+    .zelle-option { display: flex; justify-content: space-between; padding: 12px 16px; background-color: #F3E8FF; border-radius: 8px; margin: 8px 0; }
+    .zelle-option-name { font-size: 15px; color: #6B21A8; font-weight: 600; }
+    .zelle-option-amount { font-size: 18px; color: #6B21A8; font-weight: 700; }
+    .paypal-options { margin-top: 16px; }
+    .paypal-option-box { background-color: #E3F2FD; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .paypal-option-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .paypal-option-name { font-size: 15px; color: #0070BA; font-weight: 600; }
+    .paypal-option-amount { font-size: 20px; color: #0070BA; font-weight: 700; }
+    .paypal-fee-note { font-size: 12px; color: #666666; text-align: center; margin-bottom: 8px; }
+    .paypal-button { display: inline-block; background-color: #0070BA; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 700; text-align: center; width: 100%; box-sizing: border-box; transition: background-color 0.2s; }
     .paypal-button:hover { background-color: #005A9C; }
     .deadline-box { background-color: #FEE2E2; border-left: 4px solid #DC2626; padding: 16px; border-radius: 8px; margin: 24px 0; }
     .deadline-text { color: #DC2626; font-size: 14px; font-weight: 600; margin: 0; }
@@ -186,8 +200,17 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
       </div>
       
       <div class="amount-box">
-        <div class="amount-label">Amount Due</div>
-        <div class="amount-value">$${amountValue}</div>
+        <div class="amount-label">Payment Options</div>
+        <div style="margin-top: 12px;">
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+            <span style="font-size: 16px; color: #333;">${config.option1Name}</span>
+            <span style="font-size: 18px; font-weight: 700; color: #1B5E20;">${option1Value}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+            <span style="font-size: 16px; color: #333;">${config.option2Name}</span>
+            <span style="font-size: 18px; font-weight: 700; color: #1B5E20;">${option2Value}</span>
+          </div>
+        </div>
       </div>
       
       <div class="payment-methods">
@@ -200,6 +223,16 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
           </div>
           <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0; text-align: center;">Send payment via Zelle to:</p>
           <div class="payment-info zelle">${zellePhone}</div>
+          <div style="margin-top: 16px;">
+            <div class="zelle-option">
+              <span class="zelle-option-name">${config.option1Name}</span>
+              <span class="zelle-option-amount">${option1Value}</span>
+            </div>
+            <div class="zelle-option">
+              <span class="zelle-option-name">${config.option2Name}</span>
+              <span class="zelle-option-amount">${option2Value}</span>
+            </div>
+          </div>
         </div>
         
         <div class="payment-option">
@@ -207,10 +240,25 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
             <div class="payment-icon paypal">🅿️</div>
             <div class="payment-name">PayPal</div>
           </div>
-          <p style="font-size: 14px; color: #666666; margin: 0 0 8px 0; text-align: center;">Click the button below to pay with PayPal:</p>
-          <div class="paypal-amount-display">$${paypalAmountValue}</div>
-          <p class="paypal-fee-note">(Includes processing fee)</p>
-          <a href="${config.paypalApprovalUrl}" class="paypal-button">PAY $${paypalAmountValue} WITH PAYPAL</a>
+          <p style="font-size: 14px; color: #666666; margin: 0 0 16px 0; text-align: center;">Choose your option below (includes processing fee):</p>
+          
+          <div class="paypal-options">
+            <div class="paypal-option-box">
+              <div class="paypal-option-header">
+                <span class="paypal-option-name">${config.option1Name}</span>
+                <span class="paypal-option-amount">${paypalAmount1Value}</span>
+              </div>
+              <a href="${config.paypalApprovalUrl1}" class="paypal-button">PAY ${paypalAmount1Value} WITH PAYPAL</a>
+            </div>
+            
+            <div class="paypal-option-box">
+              <div class="paypal-option-header">
+                <span class="paypal-option-name">${config.option2Name}</span>
+                <span class="paypal-option-amount">${paypalAmount2Value}</span>
+              </div>
+              <a href="${config.paypalApprovalUrl2}" class="paypal-button">PAY ${paypalAmount2Value} WITH PAYPAL</a>
+            </div>
+          </div>
         </div>
       </div>
       
