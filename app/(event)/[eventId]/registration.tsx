@@ -41,6 +41,7 @@ import { ZelleInvoiceModal } from '@/components/ZelleInvoiceModal';
 import { PayPalInvoiceModal } from '@/components/PayPalInvoiceModal';
 import { MembershipRenewalModal } from '@/components/MembershipRenewalModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
+import { EventPaymentInvoiceModal } from '@/components/EventPaymentInvoiceModal';
 import { EventStatus } from '@/components/EventStatusButton';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import { EventFooter } from '@/components/EventFooter';
@@ -3356,40 +3357,64 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      {paymentStatusModalVisible && (
-        <View style={styles.paymentModalOverlay}>
-          <View style={styles.paymentModal}>
-            <View style={styles.paymentModalHeader}>
-              <Text style={styles.paymentModalTitle}>Mark as Paid</Text>
-              <TouchableOpacity onPress={() => {
-                setPaymentStatusModalVisible(false);
-                setSelectedPlayerForPayment(null);
-              }}>
-                <Ionicons name="close" size={24} color="#1a1a1a" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.paymentModalContent}>
-              <Text style={styles.paymentModalSubtitle}>
-                How did {selectedPlayerForPayment?.name} pay?
-              </Text>
-              <TouchableOpacity
-                style={[styles.paymentMethodButton, { backgroundColor: '#6B21A8' }]}
-                onPress={() => handlePaymentStatusMethodSelected('zelle')}
-              >
-                <Text style={styles.paymentMethodButtonText}>Zelle</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.paymentMethodButton, { backgroundColor: '#0070BA' }]}
-                onPress={() => handlePaymentStatusMethodSelected('paypal')}
-              >
-                <Text style={styles.paymentMethodButtonText}>PayPal</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
+      <EventPaymentInvoiceModal
+        visible={paymentStatusModalVisible}
+        member={selectedPlayerForPayment ? selectedPlayers.find(p => p.name === selectedPlayerForPayment.name) || null : null}
+        event={event}
+        registration={selectedPlayerForPayment?.reg}
+        onClose={() => {
+          setPaymentStatusModalVisible(false);
+          setSelectedPlayerForPayment(null);
+        }}
+        onPaymentComplete={async (method) => {
+          if (!selectedPlayerForPayment) return;
+          
+          const playerName = selectedPlayerForPayment.name;
+          const regId = selectedPlayerForPayment.reg.id;
+          
+          setRegistrations(prev => ({
+            ...prev,
+            [playerName]: {
+              ...prev[playerName],
+              paymentStatus: 'paid',
+              paymentMethod: method,
+            },
+          }));
+          
+          await updatePaymentStatusMutation.mutateAsync({
+            registrationId: regId,
+            updates: { 
+              paymentStatus: 'paid',
+              paymentMethod: method,
+              emailSent: false,
+            },
+          });
+          
+          const player = selectedPlayers.find(p => p.name === playerName);
+          if (player && event) {
+            try {
+              await addNotification({
+                eventId: event.id,
+                type: 'payment',
+                title: 'Payment Received',
+                message: `${playerName} marked as paid via ${method === 'zelle' ? 'Zelle' : method === 'paypal' ? 'PayPal' : 'Cash'} for ${event.name}`,
+                metadata: {
+                  eventName: event.name,
+                  playerName: playerName,
+                  memberId: player.id,
+                  paymentMethod: method,
+                  paidAt: new Date().toISOString(),
+                },
+              });
+            } catch (notifError) {
+              console.error('[registration] ⚠️ Failed to create payment notification:', notifError);
+            }
+          }
+          
+          setPaymentStatusModalVisible(false);
+          setSelectedPlayerForPayment(null);
+        }}
+      />
 
       {!isCurrentUserRegistered() && (
         <TouchableOpacity
