@@ -801,6 +801,28 @@ export default function EventRegistrationScreen() {
           updates: { paymentStatus: 'pending' },
         });
         console.log('[registration] ✅ Payment status reverted to unpaid');
+        
+        // Remove historical payment record from event_payments table
+        if (event) {
+          try {
+            const memberId = playerReg.memberId;
+            const { error: deleteError } = await supabase
+              .from('event_payments')
+              .delete()
+              .eq('event_id', event.id)
+              .eq(memberId ? 'member_id' : 'member_name', memberId || playerName)
+              .order('created_at', { ascending: false })
+              .limit(1);
+            
+            if (deleteError) {
+              console.log('[registration] ⚠️ Could not delete payment history record:', deleteError.message);
+            } else {
+              console.log('[registration] ✅ Payment history record deleted');
+            }
+          } catch (historyError) {
+            console.error('[registration] ⚠️ Error deleting payment history:', historyError);
+          }
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
         console.error('[registration] ❌ Payment toggle failed:', errorMessage);
