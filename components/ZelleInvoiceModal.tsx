@@ -320,6 +320,13 @@ export function ZelleInvoiceModal({
                     </View>
                   </TouchableOpacity>
                 ))}
+                
+                {event.specialNotes && event.specialNotes.trim() && (
+                  <View style={styles.specialNotesBox}>
+                    <Text style={styles.specialNotesTitle}>Special Notes</Text>
+                    <Text style={styles.specialNotesText}>{event.specialNotes}</Text>
+                  </View>
+                )}
               </View>
             )}
 
@@ -799,5 +806,24 @@ const styles = StyleSheet.create({
   },
   termsSection: {
     marginBottom: 20,
+  },
+  specialNotesBox: {
+    backgroundColor: '#FFF9E6',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 4,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+  },
+  specialNotesTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#92400E',
+    marginBottom: 8,
+  },
+  specialNotesText: {
+    fontSize: 13,
+    color: '#78350F',
+    lineHeight: 20,
   },
 });

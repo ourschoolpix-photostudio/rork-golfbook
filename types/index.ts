@@ -79,6 +79,7 @@ export interface Event {
   package3Name?: string;
   package3Price?: string;
   package3Description?: string;
+  specialNotes?: string;
   numberOfDays?: 1 | 2 | 3;
   players?: string[];
   registeredPlayers?: string[];

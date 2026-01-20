@@ -41,6 +41,7 @@ interface AddEventModalProps {
     package3Name: string;
     package3Price: string;
     package3Description: string;
+    specialNotes: string;
     startDate: string;
     endDate: string;
     numberOfDays: 1 | 2 | 3;
@@ -520,6 +521,19 @@ export function AddEventModal({
                   textAlignVertical="top"
                   value={form.package3Description}
                   onChangeText={(text) => onFormChange('package3Description', text)}
+                />
+              </View>
+
+              <View style={styles.packageContainer}>
+                <Text style={styles.packageLabel}>Special Notes (Optional)</Text>
+                <TextInput
+                  style={styles.packageDescriptionInput}
+                  placeholder="Any special notes or instructions for all packages"
+                  placeholderTextColor="#666"
+                  multiline
+                  textAlignVertical="top"
+                  value={form.specialNotes}
+                  onChangeText={(text) => onFormChange('specialNotes', text)}
                 />
               </View>
             </View>
