@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { X, Trash2, ImageIcon } from 'lucide-react-native';
 import { scorecardPhotoService, ScorecardPhoto } from '@/utils/scorecardPhotoService';
@@ -198,13 +200,7 @@ export default function ScorecardPhotosModal({
             </View>
           ) : (
             <View style={styles.photoDetailContainer}>
-              <View style={styles.imageContainer}>
-                <Image 
-                  source={{ uri: selectedPhoto.photo_url }} 
-                  style={styles.fullImage}
-                  resizeMode="contain"
-                />
-              </View>
+              <ZoomableImage photoUrl={selectedPhoto.photo_url} />
               <View style={styles.photoDetailInfo}>
                 <Text style={styles.detailText}>
                   {selectedPhoto.group_label}
@@ -238,6 +234,82 @@ export default function ScorecardPhotosModal({
         </View>
       </View>
     </Modal>
+  );
+}
+
+function ZoomableImage({ photoUrl }: { photoUrl: string }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const baseScale = useRef(1);
+  const lastScale = useRef(1);
+  const pinchRef = useRef<number | null>(null);
+
+  const getDistance = (touches: { pageX: number; pageY: number }[]) => {
+    const dx = touches[0].pageX - touches[1].pageX;
+    const dy = touches[0].pageY - touches[1].pageY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return gestureState.numberActiveTouches === 2;
+      },
+      onPanResponderGrant: (evt) => {
+        if (evt.nativeEvent.touches.length === 2) {
+          pinchRef.current = getDistance(evt.nativeEvent.touches as any);
+          baseScale.current = lastScale.current;
+        }
+      },
+      onPanResponderMove: (evt) => {
+        if (evt.nativeEvent.touches.length === 2 && pinchRef.current !== null) {
+          const currentDistance = getDistance(evt.nativeEvent.touches as any);
+          const newScale = (currentDistance / pinchRef.current) * baseScale.current;
+          const clampedScale = Math.min(Math.max(newScale, 0.5), 4);
+          scale.setValue(clampedScale);
+        }
+      },
+      onPanResponderRelease: () => {
+        lastScale.current = (scale as any)._value || 1;
+        pinchRef.current = null;
+      },
+      onPanResponderTerminate: () => {
+        lastScale.current = (scale as any)._value || 1;
+        pinchRef.current = null;
+      },
+    })
+  ).current;
+
+  const lastTap = useRef(0);
+
+  const onTap = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      // Double tap - reset zoom
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+      lastScale.current = 1;
+      baseScale.current = 1;
+    }
+    lastTap.current = now;
+  };
+
+  return (
+    <View style={styles.zoomContainer} {...panResponder.panHandlers}>
+      <TouchableOpacity activeOpacity={1} onPress={onTap} style={styles.zoomTouchable}>
+        <Animated.Image
+          source={{ uri: photoUrl }}
+          style={[
+            styles.fullImage,
+            { transform: [{ scale }] },
+          ]}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+      <Text style={styles.zoomHint}>Pinch to zoom • Double tap to reset</Text>
+    </View>
   );
 }
 
@@ -357,15 +429,27 @@ const styles = StyleSheet.create({
   photoDetailContainer: {
     flex: 1,
   },
-  imageContainer: {
+  zoomContainer: {
     flex: 1,
     backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomTouchable: {
+    flex: 1,
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
   fullImage: {
     width: Dimensions.get('window').width * 0.85,
     height: Dimensions.get('window').height * 0.45,
+  },
+  zoomHint: {
+    position: 'absolute',
+    bottom: 8,
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 12,
   },
   photoDetailInfo: {
     paddingHorizontal: 16,
