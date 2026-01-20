@@ -91,6 +91,8 @@ export default function EventRegistrationScreen() {
   const [playerGuestCounts, setPlayerGuestCounts] = useState<Record<string, string>>({});
   const [playerGuestNames, setPlayerGuestNames] = useState<Record<string, string>>({});
   const [playerSponsorFlags, setPlayerSponsorFlags] = useState<Record<string, boolean>>({});
+  const [paymentStatusModalVisible, setPaymentStatusModalVisible] = useState(false);
+  const [selectedPlayerForPayment, setSelectedPlayerForPayment] = useState<{ name: string; reg: any } | null>(null);
   const [paymentMethodModalVisible, setPaymentMethodModalVisible] = useState(false);
   const [zelleInvoiceModalVisible, setZelleInvoiceModalVisible] = useState(false);
   const [paypalInvoiceModalVisible, setPaypalInvoiceModalVisible] = useState(false);
@@ -780,24 +782,47 @@ export default function EventRegistrationScreen() {
     }
     
     const currentStatus = playerReg.paymentStatus;
-    const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
-    const backendStatus = newStatus === 'unpaid' ? 'pending' : newStatus;
+    
+    if (currentStatus === 'paid') {
+      try {
+        await updatePaymentStatusMutation.mutateAsync({
+          registrationId: playerReg.id,
+          updates: { paymentStatus: 'pending' },
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+        console.error('[registration] ❌ Payment toggle failed:', errorMessage);
+        Alert.alert('Error', `Payment toggle failed: ${errorMessage}`);
+      }
+    } else {
+      console.log('[registration] Opening payment status modal for:', playerName);
+      setSelectedPlayerForPayment({ name: playerName, reg: playerReg });
+      setPaymentStatusModalVisible(true);
+    }
+  };
+
+  const handlePaymentStatusMethodSelected = async (method: 'zelle' | 'paypal') => {
+    if (!selectedPlayerForPayment) return;
+    
+    console.log('[registration] Payment method selected:', method, 'for player:', selectedPlayerForPayment.name);
     
     try {
-      const updates: any = { paymentStatus: backendStatus };
-      
-      if (currentStatus === 'unpaid' && newStatus === 'paid') {
-        updates.emailSent = false;
-      }
-      
       await updatePaymentStatusMutation.mutateAsync({
-        registrationId: playerReg.id,
-        updates,
+        registrationId: selectedPlayerForPayment.reg.id,
+        updates: { 
+          paymentStatus: 'paid',
+          paymentMethod: method,
+          emailSent: false,
+        },
       });
+      console.log('[registration] ✅ Payment status updated successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-      console.error('[registration] ❌ Payment toggle failed:', errorMessage);
-      Alert.alert('Error', `Payment toggle failed: ${errorMessage}`);
+      console.error('[registration] ❌ Payment status update failed:', errorMessage);
+      Alert.alert('Error', `Payment status update failed: ${errorMessage}`);
+    } finally {
+      setPaymentStatusModalVisible(false);
+      setSelectedPlayerForPayment(null);
     }
   };
 
@@ -2543,12 +2568,14 @@ export default function EventRegistrationScreen() {
                               isPaid ? styles.paymentBadgePaid : styles.paymentBadgeUnpaid,
                             ]}
                             onPress={() => {
+                              console.log('[registration] Payment badge pressed for:', player.name, 'canToggle:', canTogglePaymentStatus(currentUser), 'hasReg:', !!playerReg);
                               if (canTogglePaymentStatus(currentUser) && playerReg) {
                                 handlePaymentToggle(player.name, playerReg);
                               }
                             }}
                             disabled={!canTogglePaymentStatus(currentUser) || !playerReg}
                             activeOpacity={0.7}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                           >
                             <Text
                               style={[
@@ -3252,6 +3279,41 @@ export default function EventRegistrationScreen() {
               <TouchableOpacity
                 style={styles.paymentMethodButton}
                 onPress={() => handlePaymentMethodSelected('paypal')}
+              >
+                <Text style={styles.paymentMethodButtonText}>PayPal</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {paymentStatusModalVisible && (
+        <View style={styles.paymentModalOverlay}>
+          <View style={styles.paymentModal}>
+            <View style={styles.paymentModalHeader}>
+              <Text style={styles.paymentModalTitle}>Mark as Paid</Text>
+              <TouchableOpacity onPress={() => {
+                setPaymentStatusModalVisible(false);
+                setSelectedPlayerForPayment(null);
+              }}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.paymentModalContent}>
+              <Text style={styles.paymentModalSubtitle}>
+                How did {selectedPlayerForPayment?.name} pay?
+              </Text>
+              <TouchableOpacity
+                style={[styles.paymentMethodButton, { backgroundColor: '#6B21A8' }]}
+                onPress={() => handlePaymentStatusMethodSelected('zelle')}
+              >
+                <Text style={styles.paymentMethodButtonText}>Zelle</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.paymentMethodButton, { backgroundColor: '#0070BA' }]}
+                onPress={() => handlePaymentStatusMethodSelected('paypal')}
               >
                 <Text style={styles.paymentMethodButtonText}>PayPal</Text>
               </TouchableOpacity>
@@ -4320,6 +4382,12 @@ const styles = StyleSheet.create({
   paymentModalContent: {
     padding: 20,
     gap: 12,
+  },
+  paymentModalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center' as const,
+    marginBottom: 8,
   },
   paymentMethodButton: {
     flexDirection: 'row',
