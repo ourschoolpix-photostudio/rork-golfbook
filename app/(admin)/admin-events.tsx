@@ -128,6 +128,15 @@ type EventFormType = {
   memo: string;
   photoUrl: string;
   holePars: string[];
+  package1Name: string;
+  package1Price: string;
+  package1Description: string;
+  package2Name: string;
+  package2Price: string;
+  package2Description: string;
+  package3Name: string;
+  package3Price: string;
+  package3Description: string;
 };
 
 export default function AdminEventsScreen() {
@@ -229,6 +238,15 @@ export default function AdminEventsScreen() {
     day1TeeBox: 'men',
     day2TeeBox: 'men',
     day3TeeBox: 'men',
+    package1Name: '',
+    package1Price: '',
+    package1Description: '',
+    package2Name: '',
+    package2Price: '',
+    package2Description: '',
+    package3Name: '',
+    package3Price: '',
+    package3Description: '',
   });
 
   const registrationsQuery = useQuery({
@@ -364,6 +382,15 @@ export default function AdminEventsScreen() {
       day1TeeBox: 'men',
       day2TeeBox: 'men',
       day3TeeBox: 'men',
+      package1Name: '',
+      package1Price: '',
+      package1Description: '',
+      package2Name: '',
+      package2Price: '',
+      package2Description: '',
+      package3Name: '',
+      package3Price: '',
+      package3Description: '',
     });
   };
 
@@ -474,6 +501,15 @@ export default function AdminEventsScreen() {
             lowGrossTrophy: form.lowGrossTrophy,
             lowGrossCashPrize: form.lowGrossCashPrize,
             closestToPin: form.closestToPin,
+            package1Name: form.package1Name,
+            package1Price: form.package1Price,
+            package1Description: form.package1Description,
+            package2Name: form.package2Name,
+            package2Price: form.package2Price,
+            package2Description: form.package2Description,
+            package3Name: form.package3Name,
+            package3Price: form.package3Price,
+            package3Description: form.package3Description,
         });
       } else {
         const eventId = generateUUID();
@@ -567,6 +603,15 @@ export default function AdminEventsScreen() {
           lowGrossTrophy: form.lowGrossTrophy,
           lowGrossCashPrize: form.lowGrossCashPrize,
           closestToPin: form.closestToPin,
+          package1Name: form.package1Name,
+          package1Price: form.package1Price,
+          package1Description: form.package1Description,
+          package2Name: form.package2Name,
+          package2Price: form.package2Price,
+          package2Description: form.package2Description,
+          package3Name: form.package3Name,
+          package3Price: form.package3Price,
+          package3Description: form.package3Description,
           createdAt: new Date().toISOString(),
         };
         await supabaseService.events.create(newEvent);
@@ -719,6 +764,15 @@ export default function AdminEventsScreen() {
       day1TeeBox: event.day1TeeBox || 'men',
       day2TeeBox: event.day2TeeBox || 'men',
       day3TeeBox: event.day3TeeBox || 'men',
+      package1Name: event.package1Name || '',
+      package1Price: event.package1Price || '',
+      package1Description: event.package1Description || '',
+      package2Name: event.package2Name || '',
+      package2Price: event.package2Price || '',
+      package2Description: event.package2Description || '',
+      package3Name: event.package3Name || '',
+      package3Price: event.package3Price || '',
+      package3Description: event.package3Description || '',
     });
     setModalVisible(true);
   };
