@@ -40,24 +40,44 @@ export function EventPaymentInvoiceModal({
   const { orgInfo } = useSettings();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'cash' | 'zelle' | 'paypal' | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<1 | 2 | 3 | null>(null);
 
   if (!member || !event) return null;
 
   const guestCount = registration?.numberOfGuests || 0;
   const totalPeople = 1 + guestCount;
-  const entryFee = Number(event.entryFee) || 0;
+  
+  const availablePackages = [
+    event.package1Name && event.package1Price ? { id: 1 as const, name: event.package1Name, price: event.package1Price, description: event.package1Description } : null,
+    event.package2Name && event.package2Price ? { id: 2 as const, name: event.package2Name, price: event.package2Price, description: event.package2Description } : null,
+    event.package3Name && event.package3Price ? { id: 3 as const, name: event.package3Name, price: event.package3Price, description: event.package3Description } : null,
+  ].filter(Boolean) as { id: 1 | 2 | 3; name: string; price: string; description?: string }[];
+  
+  const getPackagePrice = () => {
+    if (selectedPackage === 1 && event.package1Price) return Number(event.package1Price);
+    if (selectedPackage === 2 && event.package2Price) return Number(event.package2Price);
+    if (selectedPackage === 3 && event.package3Price) return Number(event.package3Price);
+    return Number(event.entryFee || 0);
+  };
+  
+  const entryFee = availablePackages.length > 0 ? getPackagePrice() : (Number(event.entryFee) || 0);
   const baseAmount = entryFee * totalPeople;
   const serviceFeeAmount = (baseAmount * PAYPAL_FEE_PERCENT) + PAYPAL_FEE_FIXED;
   const paypalTotalAmount = baseAmount + serviceFeeAmount;
 
   const handleConfirmPayment = async () => {
     if (!selectedMethod || isSubmitting) return;
+    
+    if (availablePackages.length > 0 && !selectedPackage) {
+      Alert.alert('Package Required', 'Please select a package option before confirming payment.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const amount = selectedMethod === 'paypal' ? paypalTotalAmount : baseAmount;
 
-      const { error } = await supabase.from('event_payments').insert({
+      const paymentData: any = {
         event_id: event.id,
         member_id: member.id,
         member_name: member.name,
@@ -67,7 +87,13 @@ export function EventPaymentInvoiceModal({
         payment_status: 'completed',
         number_of_guests: guestCount,
         created_at: new Date().toISOString(),
-      });
+      };
+      
+      if (selectedPackage) {
+        paymentData.package_selected = selectedPackage;
+      }
+      
+      const { error } = await supabase.from('event_payments').insert(paymentData);
 
       if (error) {
         console.log('[EventPaymentInvoiceModal] event_payments table may not exist, skipping historical record:', error.message);
@@ -120,6 +146,43 @@ export function EventPaymentInvoiceModal({
             contentContainerStyle={styles.scrollContentContainer}
             showsVerticalScrollIndicator={false}
           >
+            {availablePackages.length > 0 && (
+              <View style={styles.packageSection}>
+                <Text style={styles.sectionTitle}>Select Your Package</Text>
+                <Text style={styles.packageSubtitle}>Choose one package option</Text>
+                {availablePackages.map((pkg) => (
+                  <TouchableOpacity
+                    key={pkg.id}
+                    style={[
+                      styles.packageCard,
+                      selectedPackage === pkg.id && styles.packageCardSelected,
+                    ]}
+                    onPress={() => setSelectedPackage(pkg.id)}
+                    disabled={isSubmitting}
+                  >
+                    <View style={styles.packageHeader}>
+                      <View style={styles.packageNameContainer}>
+                        <Text style={styles.packageName}>{pkg.name}</Text>
+                        <Text style={styles.packagePrice}>${Number(pkg.price).toFixed(2)}</Text>
+                      </View>
+                      {selectedPackage === pkg.id && (
+                        <Ionicons name="checkmark-circle" size={24} color="#1B5E20" />
+                      )}
+                    </View>
+                    {pkg.description && (
+                      <Text style={styles.packageDescription}>{pkg.description}</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+                {event.specialNotes && (
+                  <View style={styles.specialNotesBox}>
+                    <Text style={styles.specialNotesTitle}>Special Notes</Text>
+                    <Text style={styles.specialNotesText}>{event.specialNotes}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
             <View style={styles.invoiceCard}>
               <View style={styles.invoiceHeader}>
                 <Ionicons name="receipt" size={32} color="#1B5E20" />
@@ -142,6 +205,14 @@ export function EventPaymentInvoiceModal({
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Guests:</Text>
                     <Text style={styles.detailValue}>+{guestCount}</Text>
+                  </View>
+                )}
+                {selectedPackage && availablePackages.length > 0 && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Package:</Text>
+                    <Text style={styles.detailValue}>
+                      {availablePackages.find(p => p.id === selectedPackage)?.name}
+                    </Text>
                   </View>
                 )}
                 <View style={styles.detailRow}>
@@ -452,5 +523,69 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#fff',
     letterSpacing: 1,
+  },
+  packageSection: {
+    marginBottom: 16,
+  },
+  packageSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+  },
+  packageCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+  },
+  packageCardSelected: {
+    borderColor: '#1B5E20',
+    backgroundColor: '#F1F8F4',
+  },
+  packageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  packageNameContainer: {
+    flex: 1,
+  },
+  packageName: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  packagePrice: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: '#1B5E20',
+  },
+  packageDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  specialNotesBox: {
+    backgroundColor: '#FFF9E6',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#FFD700',
+  },
+  specialNotesTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#B8860B',
+    marginBottom: 8,
+  },
+  specialNotesText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
   },
 });
