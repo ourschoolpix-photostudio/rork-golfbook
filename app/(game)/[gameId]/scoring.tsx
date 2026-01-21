@@ -761,7 +761,7 @@ export default function GameScoringScreen() {
 
       <View style={styles.holeNavigator}>
         <TouchableOpacity style={styles.holeNavBtn} onPress={handlePreviousHole}>
-          <ChevronLeft size={21} color="#fff" />
+          <ChevronLeft size={16} color="#fff" />
         </TouchableOpacity>
 
         <View style={styles.holeIndicator}>
@@ -775,7 +775,7 @@ export default function GameScoringScreen() {
         </View>
 
         <TouchableOpacity style={styles.holeNavBtn} onPress={handleNextHole}>
-          <ChevronRight size={21} color="#fff" />
+          <ChevronRight size={16} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -1285,15 +1285,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 6,
+    paddingVertical: 4,
     backgroundColor: '#ADD8E6',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   holeNavBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#2196F3',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1302,22 +1302,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   holeLabel: {
-    fontSize: 7,
+    fontSize: 6,
     fontWeight: '600' as const,
     color: '#666',
-    marginBottom: 1,
+    marginBottom: 0,
   },
   holeNumber: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: '700' as const,
     color: '#1B5E20',
   },
   strokeIndexContainer: {
     alignItems: 'center',
-    marginTop: 1,
+    marginTop: 0,
   },
   strokeIndexLabel: {
-    fontSize: 8,
+    fontSize: 6,
     fontWeight: '600' as const,
     color: '#666',
   },
