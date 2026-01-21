@@ -1043,6 +1043,21 @@ export default function GroupingsScreen() {
               </View>
             )}
           </View>
+
+          <View style={styles.tempButtonsContainer}>
+            <TouchableOpacity
+              style={styles.tempLoadBtn}
+              onPress={handleSortByHandicap}
+            >
+              <Text style={styles.tempLoadBtnText}>LOAD BY HDC</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tempLoadBtn}
+              onPress={handleSortByNetScore}
+            >
+              <Text style={styles.tempLoadBtnText}>LOAD BY NET SCORES</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -1190,9 +1205,7 @@ export default function GroupingsScreen() {
 
       <EventFooter 
         hideTopRowButtons={true}
-        showGroupingButtons={true}
-        onLoadByHDC={handleSortByHandicap}
-        onLoadByNetScores={handleSortByNetScore}
+        showGroupingButtons={false}
       />
     </>
   );
@@ -1565,5 +1578,24 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 8,
     textAlign: 'center',
+  },
+  tempButtonsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  tempLoadBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#1B5E20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tempLoadBtnText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#fff',
   },
 });
