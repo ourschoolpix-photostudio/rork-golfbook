@@ -1173,7 +1173,7 @@ const styles = StyleSheet.create({
   dayButtonText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#FDB813',
+    color: '#fff',
     textAlign: 'center',
   },
   dayButtonTextActive: {
@@ -1200,7 +1200,7 @@ const styles = StyleSheet.create({
   scoreMeOnlyText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#FDB813',
+    color: '#fff',
     textAlign: 'center',
   },
   scoreMeOnlyTextActive: {
