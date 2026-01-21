@@ -223,7 +223,7 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
             <div class="payment-icon paypal">🅿️</div>
             <div class="payment-name">PayPal</div>
           </div>
-          <p style="font-size: 14px; color: #666666; margin: 0 0 16px 0; text-align: center;">Choose your option below (includes processing fee):</p>
+          <p style="font-size: 14px; color: #666666; margin: 0 0 16px 0; text-align: center;">Options below includes a processing fee of 3% + .30 per transaction.</p>
           
           <div class="paypal-options">
             <div class="paypal-option-box">
