@@ -1209,8 +1209,8 @@ export default function GroupingsScreen() {
         showPlaceholderButton={true}
         placeholderButtonLabel="LOAD BY HDC"
         onPlaceholderPress={handleSortByHandicap}
-        placeholder2ButtonLabel="Placeholder 2"
-        onPlaceholder2Press={() => console.log('[groupings] Placeholder 2 button pressed')}
+        placeholder2ButtonLabel="LOAD BY NET SCORE"
+        onPlaceholder2Press={handleSortByNetScore}
       />
     </>
   );
