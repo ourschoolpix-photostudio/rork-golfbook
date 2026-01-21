@@ -935,6 +935,7 @@ export default function ScoringScreen() {
         placeholderButtonLabel={isSubmitting ? 'Submitting...' : 'Submit Scores'}
         placeholderButtonDisabled={isSubmitting}
         hideTopRowButtons={true}
+        hidePlaceholder2Button={true}
       />
     </>
   );
