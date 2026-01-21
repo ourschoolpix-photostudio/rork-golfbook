@@ -199,20 +199,6 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
         ` : ''}
       </div>
       
-      <div class="amount-box">
-        <div class="amount-label">Payment Options</div>
-        <div style="margin-top: 12px;">
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
-            <span style="font-size: 16px; color: #333;">${config.option1Name}</span>
-            <span style="font-size: 18px; font-weight: 700; color: #1B5E20;">${option1Value}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span style="font-size: 16px; color: #333;">${config.option2Name}</span>
-            <span style="font-size: 18px; font-weight: 700; color: #1B5E20;">${option2Value}</span>
-          </div>
-        </div>
-      </div>
-      
       <div class="payment-methods">
         <h2 class="section-title">Payment Options</h2>
         
