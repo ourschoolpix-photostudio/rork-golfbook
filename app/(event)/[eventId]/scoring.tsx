@@ -514,6 +514,15 @@ export default function ScoringScreen() {
     return Object.values(playerScores).reduce((sum, score) => sum + score, 0);
   };
 
+  const hasAnyScoreChanges = (): boolean => {
+    for (const playerId of Object.keys(holeScores)) {
+      const playerScores = holeScores[playerId] || {};
+      const totalScore = Object.values(playerScores).reduce((sum, score) => sum + score, 0);
+      if (totalScore > 0) return true;
+    }
+    return false;
+  };
+
   const isPlayerScoringComplete = (playerId: string): boolean => {
     const playerScores = holeScores[playerId] || {};
     const scoredHoles = Object.keys(playerScores).filter(hole => playerScores[Number(hole)] > 0);
@@ -1025,8 +1034,13 @@ export default function ScoringScreen() {
       <EventFooter 
         showPlaceholderButton={true}
         onPlaceholderPress={shouldUseOfflineMode ? handleSyncOfflineScores : handleSubmitScores}
-        placeholderButtonLabel={shouldUseOfflineMode ? (isSyncing ? 'Syncing...' : 'Sync Scores') : (isSubmitting ? 'Submitting...' : 'Submit Scores')}
-        placeholderButtonDisabled={shouldUseOfflineMode ? isSyncing : isSubmitting}
+        placeholderButtonLabel={
+          shouldUseOfflineMode 
+            ? (isSyncing ? 'Syncing...' : (hasAnyScoreChanges() ? 'Sync When Internet Is Available' : 'No Changes to Sync'))
+            : (isSubmitting ? 'Submitting...' : 'Submit Scores')
+        }
+        placeholderButtonDisabled={shouldUseOfflineMode ? (isSyncing || !hasAnyScoreChanges()) : isSubmitting}
+        placeholderButtonSyncReady={shouldUseOfflineMode && hasAnyScoreChanges() && !isSyncing}
         hideTopRowButtons={true}
         hidePlaceholder2Button={true}
       />

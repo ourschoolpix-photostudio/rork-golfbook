@@ -43,6 +43,7 @@ type EventFooterProps = {
   placeholder2ButtonLabel?: string;
   placeholder2ButtonDisabled?: boolean;
   hidePlaceholder2Button?: boolean;
+  placeholderButtonSyncReady?: boolean;
 };
 
 export function EventFooter({
@@ -72,6 +73,7 @@ export function EventFooter({
   placeholder2ButtonLabel = 'Placeholder 2',
   placeholder2ButtonDisabled = false,
   hidePlaceholder2Button = false,
+  placeholderButtonSyncReady = false,
 }: EventFooterProps = {}) {
   const { shouldUseOfflineMode } = useOfflineMode();
   const router = useRouter();
@@ -493,12 +495,19 @@ export function EventFooter({
       {showPlaceholderButton && (
         <View style={styles.topRow}>
           <TouchableOpacity
-            style={[styles.placeholderButton, placeholderButtonDisabled && styles.placeholderButtonDisabled]}
+            style={[
+              styles.placeholderButton,
+              placeholderButtonDisabled && styles.placeholderButtonDisabled,
+              placeholderButtonSyncReady && styles.placeholderButtonSyncReady,
+            ]}
             onPress={onPlaceholderPress}
             activeOpacity={0.8}
             disabled={placeholderButtonDisabled}
           >
-            <Text style={styles.placeholderButtonText}>{placeholderButtonLabel}</Text>
+            <Text style={[
+              styles.placeholderButtonText,
+              placeholderButtonSyncReady && styles.placeholderButtonTextSyncReady,
+            ]}>{placeholderButtonLabel}</Text>
           </TouchableOpacity>
           {!hidePlaceholder2Button && (
             <TouchableOpacity
@@ -802,5 +811,12 @@ const styles = StyleSheet.create({
   },
   placeholderButtonDisabled: {
     backgroundColor: '#9E9E9E',
+  },
+  placeholderButtonSyncReady: {
+    backgroundColor: '#2196F3',
+    borderColor: '#1976D2',
+  },
+  placeholderButtonTextSyncReady: {
+    color: '#fff',
   },
 });
