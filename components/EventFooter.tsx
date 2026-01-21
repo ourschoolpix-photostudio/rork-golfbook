@@ -501,7 +501,7 @@ export function EventFooter({
                 onPress={toggleCourseHandicap}
               >
                 <Text style={styles.courseHandicapToggleText}>
-                  {useCourseHandicap ? 'Play Course HDC' : 'Play GHIN HDC'}
+                  {useCourseHandicap ? 'Load by HDC' : 'Load by Net Scores'}
                 </Text>
               </TouchableOpacity>
             </>
