@@ -1207,8 +1207,10 @@ export default function GroupingsScreen() {
         hideTopRowButtons={true}
         showGroupingButtons={false}
         showPlaceholderButton={true}
-        placeholderButtonLabel="Placeholder Button"
-        onPlaceholderPress={() => console.log('[groupings] Placeholder button pressed')}
+        placeholderButtonLabel="Placeholder 1"
+        onPlaceholderPress={() => console.log('[groupings] Placeholder 1 button pressed')}
+        placeholder2ButtonLabel="Placeholder 2"
+        onPlaceholder2Press={() => console.log('[groupings] Placeholder 2 button pressed')}
       />
     </>
   );
