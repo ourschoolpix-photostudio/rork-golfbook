@@ -806,18 +806,36 @@ export default function EventRegistrationScreen() {
         if (event) {
           try {
             const memberId = playerReg.memberId;
-            const { error: deleteError } = await supabase
+            console.log('[registration] 🔍 Looking for payment record to delete:', { eventId: event.id, memberId, playerName });
+            
+            // First, fetch the most recent payment record
+            const { data: paymentRecords, error: fetchError } = await supabase
               .from('event_payments')
-              .delete()
+              .select('id')
               .eq('event_id', event.id)
               .eq(memberId ? 'member_id' : 'member_name', memberId || playerName)
               .order('created_at', { ascending: false })
               .limit(1);
             
-            if (deleteError) {
-              console.log('[registration] ⚠️ Could not delete payment history record:', deleteError.message);
+            if (fetchError) {
+              console.log('[registration] ⚠️ Error fetching payment history record:', fetchError.message);
+            } else if (paymentRecords && paymentRecords.length > 0) {
+              const recordId = paymentRecords[0].id;
+              console.log('[registration] 🗑️ Deleting payment record ID:', recordId);
+              
+              // Now delete it by ID
+              const { error: deleteError } = await supabase
+                .from('event_payments')
+                .delete()
+                .eq('id', recordId);
+              
+              if (deleteError) {
+                console.log('[registration] ⚠️ Could not delete payment history record:', deleteError.message);
+              } else {
+                console.log('[registration] ✅ Payment history record deleted successfully');
+              }
             } else {
-              console.log('[registration] ✅ Payment history record deleted');
+              console.log('[registration] ℹ️ No payment record found to delete');
             }
           } catch (historyError) {
             console.error('[registration] ⚠️ Error deleting payment history:', historyError);
