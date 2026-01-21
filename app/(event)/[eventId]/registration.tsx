@@ -1642,13 +1642,18 @@ export default function EventRegistrationScreen() {
     });
   };
 
-  const generatePlayerInvoiceHtml = (player: Member, playerReg: any, paypalApprovalUrl: string, paypalAmountWithFee: number): string => {
+  interface PayPalPackageLink {
+    name: string;
+    baseAmount: number;
+    approvalUrl: string;
+    amountWithFee: number;
+    description?: string;
+  }
+
+  const generatePlayerInvoiceHtml = (player: Member, playerReg: any, paypalLinks: PayPalPackageLink[]): string => {
     if (!event || !orgInfo) return '';
     
-    const entryFee = Number(event.entryFee) || 0;
     const guestCount = playerReg?.numberOfGuests || 0;
-    const totalPeople = 1 + guestCount;
-    const totalAmount = entryFee * totalPeople;
     
     const zellePhone = formatPhoneNumber(orgInfo.zellePhone || '5714811006');
     
@@ -1928,22 +1933,16 @@ export default function EventRegistrationScreen() {
       </div>
       
       ${(() => {
-        const packages = [
-          event.package1Name && event.package1Price ? { name: event.package1Name, price: event.package1Price, description: event.package1Description } : null,
-          event.package2Name && event.package2Price ? { name: event.package2Name, price: event.package2Price, description: event.package2Description } : null,
-          event.package3Name && event.package3Price ? { name: event.package3Name, price: event.package3Price, description: event.package3Description } : null,
-        ].filter(Boolean) as { name: string; price: string; description?: string }[];
-        
-        if (packages.length === 0 && !event.specialNotes) return '';
+        if (paypalLinks.length === 0 && !event.specialNotes) return '';
         
         return `
       <div class="package-section">
         <h3>Package Options</h3>
-        ${packages.map(pkg => `
+        ${paypalLinks.map(pkg => `
         <div class="package-card">
           <div class="package-header">
             <span class="package-name">${pkg.name}</span>
-            <span class="package-price">${Number(pkg.price).toFixed(2)}</span>
+            <span class="package-price">${pkg.baseAmount.toFixed(2)}</span>
           </div>
           ${pkg.description ? `<p class="package-description">${pkg.description}</p>` : ''}
         </div>
@@ -1958,24 +1957,34 @@ export default function EventRegistrationScreen() {
       `;
       })()}
       
-      <div class="amount-box">
-        <p class="amount-label">Total Amount Due</p>
-        <p class="amount-value">${totalAmount.toFixed(2)}</p>
-      </div>
-      
       <div class="payment-section">
         <h3>Payment Options</h3>
         
         <div class="zelle-box">
           <p class="zelle-label">PAY VIA ZELLE</p>
           <p class="zelle-number">${zellePhone}</p>
+          <div style="margin-top: 16px;">
+            ${paypalLinks.map(pkg => `
+            <div style="display: flex; justify-content: space-between; padding: 10px 16px; background-color: rgba(107, 33, 168, 0.1); border-radius: 8px; margin: 8px 0;">
+              <span style="font-size: 14px; color: #6B21A8; font-weight: 600;">${pkg.name}</span>
+              <span style="font-size: 16px; color: #6B21A8; font-weight: 700;">${pkg.baseAmount.toFixed(2)}</span>
+            </div>
+            `).join('')}
+          </div>
         </div>
         
-        <div class="paypal-box">
-          <p class="paypal-label">PAY VIA PAYPAL</p>
-          <p class="paypal-amount">${paypalAmountWithFee.toFixed(2)}</p>
-          <p class="paypal-note">(Includes processing fee)</p>
-          <a href="${paypalApprovalUrl}" class="paypal-button">PAY WITH PAYPAL</a>
+        <div class="paypal-box" style="background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%); border-color: #0070BA;">
+          <p class="paypal-label" style="color: #0070BA;">PAY VIA PAYPAL</p>
+          <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Choose your package below (includes processing fee)</p>
+          ${paypalLinks.map(pkg => `
+          <div style="background-color: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #E0E0E0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 15px; color: #0070BA; font-weight: 600;">${pkg.name}</span>
+              <span style="font-size: 20px; color: #0070BA; font-weight: 700;">${pkg.amountWithFee.toFixed(2)}</span>
+            </div>
+            <a href="${pkg.approvalUrl}" class="paypal-button" style="display: block; text-align: center;">PAY ${pkg.amountWithFee.toFixed(2)} WITH PAYPAL</a>
+          </div>
+          `).join('')}
         </div>
       </div>
       
@@ -2013,27 +2022,51 @@ export default function EventRegistrationScreen() {
     }
 
     try {
-      console.log('[registration] Creating PayPal payment link for player invoice...');
+      console.log('[registration] Creating PayPal payment links for player invoice...');
       
-      const guestCount = playerReg?.numberOfGuests || 0;
-      const totalPeople = 1 + guestCount;
-      const entryFee = Number(event.entryFee);
-      const totalAmount = entryFee * totalPeople;
+      const packages: { name: string; price: number; description?: string }[] = [];
+      
+      if (event.package1Name && event.package1Price) {
+        packages.push({ name: event.package1Name, price: Number(event.package1Price), description: event.package1Description });
+      }
+      if (event.package2Name && event.package2Price) {
+        packages.push({ name: event.package2Name, price: Number(event.package2Price), description: event.package2Description });
+      }
+      if (event.package3Name && event.package3Price) {
+        packages.push({ name: event.package3Name, price: Number(event.package3Price), description: event.package3Description });
+      }
+      
+      if (packages.length === 0) {
+        const entryFee = Number(event.entryFee) || 0;
+        packages.push({ name: 'Registration', price: entryFee });
+      }
 
-      const paypalLink = await createPayPalPaymentLink({
-        amount: totalAmount,
-        eventName: event.name,
-        eventId: event.id,
-        playerEmail: player.email,
-        itemDescription: `${event.name} Registration`,
-        dueDate: getPaymentDeadline(event.date),
-        includeProcessingFee: true,
+      console.log('[registration] Creating PayPal links for', packages.length, 'packages');
+      
+      const paypalLinksPromises = packages.map(async (pkg, index) => {
+        const link = await createPayPalPaymentLink({
+          amount: pkg.price,
+          eventName: `${event.name} - ${pkg.name}`,
+          eventId: `${event.id}-pkg${index + 1}`,
+          playerEmail: player.email!,
+          itemDescription: `${event.name} - ${pkg.name}`,
+          dueDate: getPaymentDeadline(event.date),
+          includeProcessingFee: true,
+        });
+        return {
+          name: pkg.name,
+          baseAmount: pkg.price,
+          approvalUrl: link.approvalUrl,
+          amountWithFee: link.amountWithFee,
+          description: pkg.description,
+        } as PayPalPackageLink;
       });
+      
+      const paypalLinks = await Promise.all(paypalLinksPromises);
 
-      console.log('[registration] PayPal link created successfully');
-      console.log('[registration] Approval URL:', paypalLink.approvalUrl);
+      console.log('[registration] PayPal links created successfully:', paypalLinks.length);
 
-      const htmlContent = generatePlayerInvoiceHtml(player, playerReg, paypalLink.approvalUrl, paypalLink.amountWithFee);
+      const htmlContent = generatePlayerInvoiceHtml(player, playerReg, paypalLinks);
       const subject = `Registration Invoice - ${event.name}`;
 
       const result = await MailComposer.composeAsync({
