@@ -1043,6 +1043,7 @@ export default function ScoringScreen() {
         placeholderButtonSyncReady={shouldUseOfflineMode && hasAnyScoreChanges() && !isSyncing}
         hideTopRowButtons={true}
         hidePlaceholder2Button={true}
+        hidePlaceholder3Button={true}
       />
     </>
   );
