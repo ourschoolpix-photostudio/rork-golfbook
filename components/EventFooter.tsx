@@ -848,17 +848,17 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   placeholderButtonOnline: {
-    backgroundColor: '#FFD54F',
+    backgroundColor: '#FDB813',
     borderColor: '#800020',
   },
   placeholderButtonOffline: {
     backgroundColor: '#800020',
-    borderColor: '#FFD54F',
+    borderColor: '#FDB813',
   },
   placeholderButtonTextOnline: {
     color: '#800020',
   },
   placeholderButtonTextOffline: {
-    color: '#FFD54F',
+    color: '#FDB813',
   },
 });
