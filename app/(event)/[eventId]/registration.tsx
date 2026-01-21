@@ -3715,6 +3715,30 @@ export default function EventRegistrationScreen() {
         </TouchableOpacity>
       )}
       </SafeAreaView>
+      {/* Independent test button row for registration screen */}
+      <View style={styles.registrationTestButtonRow}>
+        <TouchableOpacity
+          style={styles.registrationTestButton}
+          onPress={() => console.log('[Registration] Test Button 1 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.registrationTestButtonText}>Test Button 1</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.registrationTestButton}
+          onPress={() => console.log('[Registration] Test Button 2 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.registrationTestButtonText}>Test Button 2</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.registrationTestButton}
+          onPress={() => console.log('[Registration] Test Button 3 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.registrationTestButtonText}>Test Button 3</Text>
+        </TouchableOpacity>
+      </View>
       <EventFooter 
         showStartButton={!!event && canStartEvent(currentUser)}
         eventStatus={(event?.status as EventStatus) || 'upcoming'}
@@ -5273,5 +5297,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700' as const,
     color: '#fff',
+  },
+  registrationTestButtonRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    backgroundColor: '#5A0015',
+  },
+  registrationTestButton: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#FDB813',
+    borderWidth: 2,
+    borderColor: '#800020',
+  },
+  registrationTestButtonText: {
+    color: '#800020',
+    fontSize: 12,
+    fontWeight: '700' as const,
   },
 });
