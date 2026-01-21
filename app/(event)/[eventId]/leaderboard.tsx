@@ -3,7 +3,7 @@ import { Award } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { EventScreenHeader } from '@/components/EventScreenHeader';
 import { Alert } from '@/utils/alertPolyfill';
-import { EventFooter } from '@/components/EventFooter';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseService } from '@/utils/supabaseService';
 import { getDisplayHandicap, calculateTournamentFlight } from '@/utils/handicapHelper';
@@ -709,14 +709,6 @@ export default function LeaderboardScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
-      <EventFooter 
-        showRolexButtons={selectedDay === 'rolex' && currentUser?.isAdmin}
-        onDistributePoints={handleDistributePoints}
-        onClearPoints={handleClearPoints}
-        isDistributing={distributeMutation.isPending}
-        isClearing={clearMutation.isPending}
-        pointsDistributed={!!event?.rolexPointsDistributed}
-      />
     </>
   );
 }
