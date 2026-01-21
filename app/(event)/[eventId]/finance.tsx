@@ -166,7 +166,7 @@ export default function FinanceScreen() {
           </View>
           <TouchableOpacity
             style={styles.tempButton}
-            onPress={() => router.push('/eventtestscreen')}
+            onPress={() => router.push(`/(event)/${eventId}/eventtestscreen`)}
           >
             <Text style={styles.tempButtonText}>Go to Test Screen</Text>
           </TouchableOpacity>
@@ -420,7 +420,7 @@ export default function FinanceScreen() {
         </Modal>
         <TouchableOpacity
           style={styles.tempButton}
-          onPress={() => router.push('/eventtestscreen')}
+          onPress={() => router.push(`/(event)/${eventId}/eventtestscreen`)}
         >
           <Text style={styles.tempButtonText}>Go to Test Screen</Text>
         </TouchableOpacity>
