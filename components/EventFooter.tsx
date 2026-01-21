@@ -32,6 +32,9 @@ type EventFooterProps = {
   showGroupingButtons?: boolean;
   onLoadByHDC?: () => void;
   onLoadByNetScores?: () => void;
+  showSubmitButton?: boolean;
+  onSubmit?: () => void | Promise<void>;
+  isSubmitting?: boolean;
 };
 
 export function EventFooter({
@@ -50,6 +53,9 @@ export function EventFooter({
   showGroupingButtons = false,
   onLoadByHDC,
   onLoadByNetScores,
+  showSubmitButton = false,
+  onSubmit,
+  isSubmitting = false,
 }: EventFooterProps = {}) {
   const { shouldUseOfflineMode } = useOfflineMode();
   const router = useRouter();
@@ -454,6 +460,20 @@ export function EventFooter({
           </TouchableOpacity>
         </View>
       )}
+      {showSubmitButton && onSubmit && (
+        <View style={styles.topRow}>
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            onPress={onSubmit}
+            disabled={isSubmitting}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.submitButtonText}>
+              {isSubmitting ? 'Submitting...' : 'SUBMIT SCORES'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {currentUser?.isAdmin && !hideTopRowButtons && (
         <View style={styles.topRow}>
           {showRolexButtons ? (
@@ -693,5 +713,26 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
+  },
+  submitButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#FDB813',
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#9E9E9E',
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
