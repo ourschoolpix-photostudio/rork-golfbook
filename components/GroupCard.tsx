@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 8,
-    minHeight: 100,
+    height: 100,
     position: 'relative',
   },
   headerRow: {
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 100,
+    height: 100,
   },
   addButtonEmptyText: {
     fontSize: 14,
