@@ -513,10 +513,10 @@ export function EventFooter({
             disabled={placeholderButtonDisabled}
           >
             {placeholderButtonLabel === 'Online' && (
-              <Cloud size={16} color="#1B5E20" style={{ marginRight: 6 }} />
+              <Cloud size={16} color="#22C55E" style={{ marginRight: 6 }} />
             )}
             {placeholderButtonLabel === 'Offline' && (
-              <CloudOff size={16} color="#C62828" style={{ marginRight: 6 }} />
+              <CloudOff size={16} color="#EF4444" style={{ marginRight: 6 }} />
             )}
             <Text style={[
               styles.placeholderButtonText,
@@ -844,17 +844,17 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   placeholderButtonOnline: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#1B5E20',
+    backgroundColor: '#800020',
+    borderColor: '#FFD54F',
   },
   placeholderButtonOffline: {
-    backgroundColor: '#FFEBEE',
-    borderColor: '#C62828',
+    backgroundColor: '#800020',
+    borderColor: '#FFD54F',
   },
   placeholderButtonTextOnline: {
-    color: '#1B5E20',
+    color: '#FFD54F',
   },
   placeholderButtonTextOffline: {
-    color: '#C62828',
+    color: '#FFD54F',
   },
 });
