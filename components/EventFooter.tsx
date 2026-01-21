@@ -461,7 +461,7 @@ export function EventFooter({
         </View>
       )}
       {showSubmitButton && onSubmit && (
-        <View style={styles.topRow}>
+        <View style={styles.submitRow}>
           <TouchableOpacity
             style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
             onPress={onSubmit}
@@ -586,6 +586,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 8,
+    gap: 6,
+  },
+  submitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
     gap: 6,
   },
   toggleButtonWrapper: {
