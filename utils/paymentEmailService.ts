@@ -137,14 +137,15 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
     .payment-name { font-size: 20px; font-weight: 700; color: #333333; }
     .payment-info { font-size: 16px; font-weight: 600; text-align: center; padding: 16px; background-color: #F8F9FA; border-radius: 8px; margin-top: 12px; }
     .payment-info.zelle { color: #6B21A8; }
-    .zelle-option { display: flex; justify-content: space-between; padding: 12px 16px; background-color: #F3E8FF; border-radius: 8px; margin: 8px 0; }
-    .zelle-option-name { font-size: 15px; color: #6B21A8; font-weight: 600; }
-    .zelle-option-amount { font-size: 18px; color: #6B21A8; font-weight: 700; }
+    .zelle-options-list { background-color: #F3E8FF; border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+    .zelle-options-list ul { margin: 0; padding-left: 20px; }
+    .zelle-options-list li { font-size: 15px; color: #6B21A8; font-weight: 600; margin: 8px 0; line-height: 1.5; }
     .paypal-options { margin-top: 16px; }
     .paypal-option-box { background-color: #E3F2FD; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-    .paypal-option-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .paypal-option-name { font-size: 15px; color: #0070BA; font-weight: 600; }
-    .paypal-option-amount { font-size: 20px; color: #0070BA; font-weight: 700; }
+    .paypal-option-title { font-size: 16px; color: #0070BA; font-weight: 700; margin-bottom: 8px; }
+    .paypal-option-details { margin-bottom: 12px; }
+    .paypal-option-details ul { margin: 0; padding-left: 20px; }
+    .paypal-option-details li { font-size: 14px; color: #0070BA; font-weight: 500; margin: 6px 0; line-height: 1.5; }
     .paypal-fee-note { font-size: 12px; color: #666666; text-align: center; margin-bottom: 8px; }
     .paypal-button { display: inline-block; background-color: #0070BA; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 700; text-align: center; width: 100%; box-sizing: border-box; transition: background-color 0.2s; }
     .paypal-button:hover { background-color: #005A9C; }
@@ -209,15 +210,11 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
           </div>
           <p style="font-size: 14px; color: #666666; margin: 0 0 12px 0; text-align: center;">Send payment via Zelle to:</p>
           <div class="payment-info zelle">${zellePhone}</div>
-          <div style="margin-top: 16px;">
-            <div class="zelle-option">
-              <span class="zelle-option-name">${config.option1Name}</span>
-              <span class="zelle-option-amount">${option1Value}</span>
-            </div>
-            <div class="zelle-option">
-              <span class="zelle-option-name">${config.option2Name}</span>
-              <span class="zelle-option-amount">${option2Value}</span>
-            </div>
+          <div class="zelle-options-list">
+            <ul>
+              <li>${config.option1Name}: <strong>${option1Value}</strong></li>
+              <li>${config.option2Name}: <strong>${option2Value}</strong></li>
+            </ul>
           </div>
         </div>
         
@@ -230,17 +227,23 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
           
           <div class="paypal-options">
             <div class="paypal-option-box">
-              <div class="paypal-option-header">
-                <span class="paypal-option-name">${config.option1Name}</span>
-                <span class="paypal-option-amount">${paypalAmount1Value}</span>
+              <div class="paypal-option-title">Option 1</div>
+              <div class="paypal-option-details">
+                <ul>
+                  <li>${config.option1Name}</li>
+                  <li>Amount (with processing fee): <strong>${paypalAmount1Value}</strong></li>
+                </ul>
               </div>
               <a href="${config.paypalApprovalUrl1}" class="paypal-button">PAY ${paypalAmount1Value} WITH PAYPAL</a>
             </div>
             
             <div class="paypal-option-box">
-              <div class="paypal-option-header">
-                <span class="paypal-option-name">${config.option2Name}</span>
-                <span class="paypal-option-amount">${paypalAmount2Value}</span>
+              <div class="paypal-option-title">Option 2</div>
+              <div class="paypal-option-details">
+                <ul>
+                  <li>${config.option2Name}</li>
+                  <li>Amount (with processing fee): <strong>${paypalAmount2Value}</strong></li>
+                </ul>
               </div>
               <a href="${config.paypalApprovalUrl2}" class="paypal-button">PAY ${paypalAmount2Value} WITH PAYPAL</a>
             </div>
