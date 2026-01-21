@@ -3715,6 +3715,30 @@ export default function EventRegistrationScreen() {
         </TouchableOpacity>
       )}
       </SafeAreaView>
+      {/* Test button row copied from eventtestscreen.tsx */}
+      <View style={styles.testButtonRow}>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[Registration] Test Button 1 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 1</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[Registration] Test Button 2 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 2</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[Registration] Test Button 3 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 3</Text>
+        </TouchableOpacity>
+      </View>
       {/* Independent test button row for registration screen */}
       <View style={styles.registrationTestButtonRow}>
         {/* Button 1: Online/Offline toggle */}
@@ -5273,6 +5297,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700' as const,
     color: '#fff',
+  },
+  testButtonRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    backgroundColor: '#5A0015',
+  },
+  testButton: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#FDB813',
+    borderWidth: 2,
+    borderColor: '#800020',
+  },
+  testButtonText: {
+    color: '#800020',
+    fontSize: 12,
+    fontWeight: '700' as const,
   },
   registrationTestButtonRow: {
     flexDirection: 'row' as const,
