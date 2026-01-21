@@ -1198,6 +1198,7 @@ export default function GroupingsScreen() {
         onPlaceholderPress={handleSortByHandicap}
         placeholder2ButtonLabel="LOAD BY NET SCORE"
         onPlaceholder2Press={handleSortByNetScore}
+        hidePlaceholder3Button={true}
       />
     </>
   );

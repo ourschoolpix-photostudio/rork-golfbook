@@ -47,6 +47,7 @@ type EventFooterProps = {
   onPlaceholder3Press?: () => void;
   placeholder3ButtonLabel?: string;
   placeholder3ButtonDisabled?: boolean;
+  hidePlaceholder3Button?: boolean;
 };
 
 export function EventFooter({
@@ -80,6 +81,7 @@ export function EventFooter({
   onPlaceholder3Press,
   placeholder3ButtonLabel = 'Placeholder 3',
   placeholder3ButtonDisabled = false,
+  hidePlaceholder3Button = false,
 }: EventFooterProps = {}) {
   const { shouldUseOfflineMode } = useOfflineMode();
   const router = useRouter();
@@ -535,14 +537,16 @@ export function EventFooter({
               <Text style={styles.placeholderButtonText}>{placeholder2ButtonLabel}</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            style={[styles.placeholderButton, placeholder3ButtonDisabled && styles.placeholderButtonDisabled]}
-            onPress={onPlaceholder3Press}
-            activeOpacity={0.8}
-            disabled={placeholder3ButtonDisabled}
-          >
-            <Text style={styles.placeholderButtonText}>{placeholder3ButtonLabel}</Text>
-          </TouchableOpacity>
+          {!hidePlaceholder3Button && (
+            <TouchableOpacity
+              style={[styles.placeholderButton, placeholder3ButtonDisabled && styles.placeholderButtonDisabled]}
+              onPress={onPlaceholder3Press}
+              activeOpacity={0.8}
+              disabled={placeholder3ButtonDisabled}
+            >
+              <Text style={styles.placeholderButtonText}>{placeholder3ButtonLabel}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
       {currentUser?.isAdmin && !hideTopRowButtons && !showPlaceholderButton && (
