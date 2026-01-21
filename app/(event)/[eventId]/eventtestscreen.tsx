@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { EventFooter } from '@/components/EventFooter';
+import { SingleFooterButton } from '@/components/SingleFooterButton';
 
 export default function EventTestScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -14,6 +15,13 @@ export default function EventTestScreen() {
         <Text style={styles.description}>
           Use this screen to preview and test components before adding them to actual screens.
         </Text>
+        
+        <View style={styles.buttonPreview}>
+          <SingleFooterButton
+            label="Button Label"
+            onPress={() => console.log('[EventTestScreen] SingleFooterButton pressed')}
+          />
+        </View>
       </View>
       <EventFooter 
         showPlaceholderButton={true}
@@ -51,5 +59,9 @@ const styles = StyleSheet.create({
     color: '#aaa',
     textAlign: 'center',
     paddingHorizontal: 20,
+  },
+  buttonPreview: {
+    marginTop: 40,
+    width: '60%',
   },
 });
