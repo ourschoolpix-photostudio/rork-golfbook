@@ -136,7 +136,7 @@ export default function EventRegistrationScreen() {
   const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
   const [criticalAlertShown, setCriticalAlertShown] = useState<boolean>(false);
   const { getCriticalUndismissedAlerts } = useAlerts();
-  const { shouldUseOfflineMode } = useOfflineMode();
+  const { shouldUseOfflineMode, isOfflineMode, enableOfflineMode, disableOfflineMode } = useOfflineMode();
   const [useCourseHandicapLocal, setUseCourseHandicapLocal] = useState<boolean>(false);
 
   useFocusEffect(
@@ -3839,10 +3839,14 @@ export default function EventRegistrationScreen() {
         isAdmin={currentUser?.isAdmin || false}
         hideTopRowButtons={true}
         showPlaceholderButton={true}
-        onPlaceholderPress={() => {
-          console.log('[registration] Placeholder 1 pressed');
+        onPlaceholderPress={async () => {
+          if (isOfflineMode) {
+            await disableOfflineMode();
+          } else {
+            await enableOfflineMode();
+          }
         }}
-        placeholderButtonLabel="Placeholder 1"
+        placeholderButtonLabel={isOfflineMode ? "Offline" : "Online"}
         onPlaceholder2Press={() => {
           console.log('[registration] Placeholder 2 pressed');
         }}
