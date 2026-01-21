@@ -681,9 +681,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#FFD54F',
     borderWidth: 2,
-    borderColor: '#FFD54F',
+    borderColor: '#800020',
   },
   groupingButtonText: {
     color: '#fff',
