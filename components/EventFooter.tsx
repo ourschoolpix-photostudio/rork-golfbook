@@ -35,6 +35,8 @@ type EventFooterProps = {
   showSubmitButton?: boolean;
   onSubmit?: () => void | Promise<void>;
   isSubmitting?: boolean;
+  showPlaceholderButton?: boolean;
+  onPlaceholderPress?: () => void;
 };
 
 export function EventFooter({
@@ -56,6 +58,8 @@ export function EventFooter({
   showSubmitButton = false,
   onSubmit,
   isSubmitting = false,
+  showPlaceholderButton = false,
+  onPlaceholderPress,
 }: EventFooterProps = {}) {
   const { shouldUseOfflineMode } = useOfflineMode();
   const router = useRouter();
@@ -474,7 +478,18 @@ export function EventFooter({
           </TouchableOpacity>
         </View>
       )}
-      {currentUser?.isAdmin && !hideTopRowButtons && (
+      {showPlaceholderButton && (
+        <View style={styles.topRow}>
+          <TouchableOpacity
+            style={styles.placeholderButton}
+            onPress={onPlaceholderPress}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.placeholderButtonText}>Placeholder Button</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {currentUser?.isAdmin && !hideTopRowButtons && !showPlaceholderButton && (
         <View style={styles.topRow}>
           {showRolexButtons ? (
             <>
@@ -744,5 +759,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  placeholderButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#8B2E4A',
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+  },
+  placeholderButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

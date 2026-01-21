@@ -15,7 +15,11 @@ export default function EventTestScreen() {
           Use this screen to preview and test components before adding them to actual screens.
         </Text>
       </View>
-      <EventFooter />
+      <EventFooter 
+        showPlaceholderButton={true}
+        onPlaceholderPress={() => console.log('[EventTestScreen] Placeholder button pressed')}
+        hideTopRowButtons={true}
+      />
     </View>
   );
 }
