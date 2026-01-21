@@ -166,7 +166,7 @@ export function generatePaymentReminderHTML(config: GeneratePaymentEmailHTMLConf
     <div class="content">
       <p class="greeting">
         Hi ${config.playerName},<br><br>
-        This is a friendly reminder for you to make a payment for something you registered for. See details below.
+        This is a payment reminder for an event you registered through our club app. Please take a look and make your payment before the deadline posted at the bottom of the email.
       </p>
       
       <div class="event-card">
