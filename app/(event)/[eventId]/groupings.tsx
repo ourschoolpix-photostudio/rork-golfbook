@@ -1190,6 +1190,31 @@ export default function GroupingsScreen() {
         </View>
       </Modal>
 
+      {/* Independent test button row - changes here won't affect EventFooter on other screens */}
+      <View style={styles.testButtonRow}>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[Groupings] Test Button 1 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 1</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[Groupings] Test Button 2 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 2</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[Groupings] Test Button 3 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 3</Text>
+        </TouchableOpacity>
+      </View>
+
       <EventFooter 
         hideTopRowButtons={true}
         showGroupingButtons={false}
@@ -1572,5 +1597,30 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-
+  testButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    backgroundColor: '#5A0015',
+  },
+  testButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#FDB813',
+    borderWidth: 2,
+    borderColor: '#800020',
+  },
+  testButtonText: {
+    color: '#800020',
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
 });
