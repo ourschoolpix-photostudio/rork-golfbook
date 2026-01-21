@@ -5322,5 +5322,6 @@ const styles = StyleSheet.create({
   },
   registrationTestStartButtonWrapper: {
     flex: 1,
+    height: 36,
   },
 });
