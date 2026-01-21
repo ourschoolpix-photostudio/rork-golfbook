@@ -46,6 +46,9 @@ import { AdminMarkedPaymentModal } from '@/components/AdminMarkedPaymentModal';
 import { EventStatus } from '@/components/EventStatusButton';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import { EventFooter } from '@/components/EventFooter';
+import { OfflineModeToggle } from '@/components/OfflineModeToggle';
+import { EventStatusButton, EventStatus as FooterEventStatus } from '@/components/EventStatusButton';
+import { useOfflineMode } from '@/contexts/OfflineModeContext';
 import { EventScreenHeader } from '@/components/EventScreenHeader';
 import { AlertsModal } from '@/components/AlertsModal';
 import { useAlerts } from '@/contexts/AlertsContext';
@@ -133,6 +136,8 @@ export default function EventRegistrationScreen() {
   const [alertsModalVisible, setAlertsModalVisible] = useState<boolean>(false);
   const [criticalAlertShown, setCriticalAlertShown] = useState<boolean>(false);
   const { getCriticalUndismissedAlerts } = useAlerts();
+  const { shouldUseOfflineMode } = useOfflineMode();
+  const [useCourseHandicapLocal, setUseCourseHandicapLocal] = useState<boolean>(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -2712,6 +2717,65 @@ export default function EventRegistrationScreen() {
         )}
       </View>
 
+      {/* Temporary Footer Buttons Section */}
+      {currentUser?.isAdmin && (
+        <View style={styles.tempFooterButtonsSection}>
+          <View style={styles.tempButtonWrapper}>
+            <OfflineModeToggle eventId={eventId} position="footer" />
+          </View>
+          {event && canStartEvent(currentUser) && (
+            <View style={styles.tempButtonWrapper}>
+              <EventStatusButton
+                status={(event?.status as FooterEventStatus) || 'upcoming'}
+                onStatusChange={async (newStatus) => {
+                  if (event) {
+                    await updateEventMutation.mutateAsync({
+                      eventId: event.id,
+                      updates: { status: newStatus },
+                    });
+                    setEvent({ ...event, status: newStatus });
+                  }
+                }}
+                isAdmin={currentUser?.isAdmin || false}
+              />
+            </View>
+          )}
+          <TouchableOpacity
+            style={[
+              styles.tempCourseHandicapToggle,
+              useCourseHandicap && styles.tempCourseHandicapToggleActive,
+            ]}
+            onPress={async () => {
+              if (eventId) {
+                const newValue = !useCourseHandicap;
+                setUseCourseHandicap(newValue);
+                queryClient.setQueryData(['events', eventId], (oldData: any) => {
+                  if (oldData) {
+                    return { ...oldData, useCourseHandicap: newValue };
+                  }
+                  return oldData;
+                });
+                const key = `useCourseHandicap_${eventId}`;
+                await AsyncStorage.setItem(key, newValue.toString());
+                try {
+                  await supabaseService.events.update(eventId, {
+                    useCourseHandicap: newValue,
+                  });
+                  queryClient.invalidateQueries({ queryKey: ['events'] });
+                } catch (error) {
+                  console.error('[registration] Error saving course handicap:', error);
+                  setUseCourseHandicap(!newValue);
+                }
+              }
+            }}
+          >
+            <Text style={styles.tempCourseHandicapToggleText}>
+              {useCourseHandicap ? 'Play GHIN HDC' : 'Play Course HDC'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <View style={styles.playersTitleContainer}>
         <View style={styles.playersTitleRow}>
           <Text style={styles.playersTitle}>
@@ -3773,6 +3837,7 @@ export default function EventRegistrationScreen() {
           }
         }}
         isAdmin={currentUser?.isAdmin || false}
+        hideTopRowButtons={true}
       />
     </>
   );
@@ -5194,5 +5259,43 @@ const styles = StyleSheet.create({
   },
   pinButtonTextDisabled: {
     opacity: 0.5,
+  },
+  tempFooterButtonsSection: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#5A0015',
+    gap: 6,
+  },
+  tempButtonWrapper: {
+    flex: 1,
+    height: 36,
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+    borderRadius: 8,
+    overflow: 'hidden' as const,
+  },
+  tempCourseHandicapToggle: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 0,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#8B2E4A',
+    height: 36,
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+  },
+  tempCourseHandicapToggleActive: {
+    backgroundColor: '#2196F3',
+  },
+  tempCourseHandicapToggleText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700' as const,
   },
 });
