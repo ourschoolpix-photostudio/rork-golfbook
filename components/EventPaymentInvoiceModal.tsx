@@ -88,12 +88,22 @@ export function EventPaymentInvoiceModal({
         paymentData.package_selected = packageId;
       }
       
-      const { error } = await supabase.from('event_payments').insert(paymentData);
+      console.log('[EventPaymentInvoiceModal] Creating payment history record...');
+      console.log('[EventPaymentInvoiceModal] Payment data:', JSON.stringify(paymentData, null, 2));
+      
+      const { data: paymentRecord, error: paymentError } = await supabase
+        .from('event_payments')
+        .insert(paymentData)
+        .select();
 
-      if (error) {
-        console.log('[EventPaymentInvoiceModal] event_payments table may not exist, skipping historical record:', error.message);
+      if (paymentError) {
+        console.error('[EventPaymentInvoiceModal] ❌ Error creating payment history:', paymentError.message);
+        console.error('[EventPaymentInvoiceModal] Error details:', paymentError.details);
+        console.error('[EventPaymentInvoiceModal] Error hint:', paymentError.hint);
+      } else if (paymentRecord && paymentRecord.length > 0) {
+        console.log('[EventPaymentInvoiceModal] ✅ Payment history record created:', paymentRecord[0].id);
       } else {
-        console.log('[EventPaymentInvoiceModal] ✅ Event payment record created successfully');
+        console.warn('[EventPaymentInvoiceModal] ⚠️ Payment history insert returned no data');
       }
 
       await onPaymentComplete(method);
