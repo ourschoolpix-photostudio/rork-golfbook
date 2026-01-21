@@ -1035,10 +1035,10 @@ export default function ScoringScreen() {
       <View style={styles.testButtonRow}>
         <TouchableOpacity
           style={styles.testButton}
-          onPress={() => console.log('[ScoringScreen] Test Button 1 pressed')}
+          onPress={handleSubmitScores}
           activeOpacity={0.8}
         >
-          <Text style={styles.testButtonText}>Test Button 1</Text>
+          <Text style={styles.testButtonText}>Submit Scores</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.testButton}
