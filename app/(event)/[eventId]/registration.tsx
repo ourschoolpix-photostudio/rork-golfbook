@@ -5322,8 +5322,5 @@ const styles = StyleSheet.create({
   },
   registrationTestStartButtonWrapper: {
     flex: 1,
-    height: 38,
-    borderRadius: 8,
-    overflow: 'hidden' as const,
   },
 });

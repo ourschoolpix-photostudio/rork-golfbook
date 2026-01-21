@@ -18,7 +18,7 @@ const statusCycle: Record<EventStatus, EventStatus> = {
 };
 
 const statusColors: Record<EventStatus, { bg: string; text: string; border?: string }> = {
-  upcoming: { bg: '#FFD700', text: '#8B2E4A', border: '#8B2E4A' },
+  upcoming: { bg: '#FDB813', text: '#800020', border: '#800020' },
   active: { bg: '#34C759', text: '#fff' },
   locked: { bg: '#FFA500', text: '#fff' },
   complete: { bg: '#007AFF', text: '#fff' },
@@ -79,16 +79,15 @@ export function EventStatusButton({ status, onStatusChange, isAdmin }: EventStat
 
 const styles = StyleSheet.create({
   button: {
-    paddingHorizontal: 10,
-    paddingVertical: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    height: 36,
   },
   text: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700' as const,
     letterSpacing: 0.5,
   },
