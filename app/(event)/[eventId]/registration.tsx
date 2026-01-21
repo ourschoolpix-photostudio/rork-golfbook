@@ -112,6 +112,7 @@ export default function EventRegistrationScreen() {
   const [textResultContent, setTextResultContent] = useState('');
   const [pinVerificationModalVisible, setPinVerificationModalVisible] = useState(false);
   const [pinInput, setPinInput] = useState('');
+  const [offlineModalVisible, setOfflineModalVisible] = useState(false);
 
   useEffect(() => {
     if (eventId) {
@@ -3657,6 +3658,103 @@ export default function EventRegistrationScreen() {
         );
       })()}
 
+      {offlineModalVisible && (
+        <View style={styles.pdfModalOverlay}>
+          <View style={styles.pdfModal}>
+            <View style={styles.pdfModalHeader}>
+              <Text style={styles.pdfModalTitle}>Offline Mode</Text>
+              <TouchableOpacity onPress={() => setOfflineModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.pdfModalContent}>
+              <View style={styles.offlineInfoSection}>
+                <Text style={styles.offlineInfoTitle}>Current Status</Text>
+                <Text style={styles.offlineInfoText}>
+                  {isOfflineMode ? 'Offline Mode Enabled' : 'Online Mode'}
+                </Text>
+              </View>
+
+              <View style={styles.offlineInfoSection}>
+                <Text style={styles.offlineInfoTitle}>Connection</Text>
+                <Text style={styles.offlineInfoText}>
+                  {shouldUseOfflineMode ? '✓ Connected to Internet' : '✗ No Internet Connection'}
+                </Text>
+              </View>
+
+              {isOfflineMode && (
+                <View style={styles.offlineWarningBox}>
+                  <Ionicons name="information-circle" size={20} color="#FF9500" />
+                  <Text style={styles.offlineWarningText}>
+                    Changes made in offline mode will be queued and synced when you go back online.
+                  </Text>
+                </View>
+              )}
+
+              {!isOfflineMode && (
+                <View style={styles.offlineInfoBox}>
+                  <Text style={styles.offlineInfoBoxText}>
+                    Offline mode allows you to work without internet connection. All changes will be queued and synced when you go back online.
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.offlineActions}>
+                <TouchableOpacity
+                  style={[
+                    styles.offlineActionButton,
+                    { backgroundColor: isOfflineMode ? '#34C759' : '#FF9500' },
+                  ]}
+                  onPress={async () => {
+                    setOfflineModalVisible(false);
+                    if (isOfflineMode) {
+                      Alert.alert(
+                        'Go Online',
+                        'Switch to online mode?',
+                        [
+                          {
+                            text: 'Cancel',
+                            style: 'cancel',
+                          },
+                          {
+                            text: 'Go Online',
+                            onPress: async () => {
+                              await disableOfflineMode();
+                            },
+                          },
+                        ]
+                      );
+                    } else {
+                      Alert.alert(
+                        'Enable Offline Mode',
+                        'This will allow you to work without internet connection. All changes will be queued and synced when you go back online.',
+                        [
+                          {
+                            text: 'Cancel',
+                            style: 'cancel',
+                          },
+                          {
+                            text: 'Enable',
+                            onPress: async () => {
+                              await enableOfflineMode();
+                            },
+                          },
+                        ]
+                      );
+                    }
+                  }}
+                >
+                  <Text style={styles.offlineActionButtonText}>
+                    {isOfflineMode ? 'Go Online' : 'Go Offline'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
       {paymentMethodModalVisible && (
         <View style={styles.paymentModalOverlay}>
           <View style={styles.paymentModal}>
@@ -3839,12 +3937,8 @@ export default function EventRegistrationScreen() {
         isAdmin={currentUser?.isAdmin || false}
         hideTopRowButtons={true}
         showPlaceholderButton={true}
-        onPlaceholderPress={async () => {
-          if (isOfflineMode) {
-            await disableOfflineMode();
-          } else {
-            await enableOfflineMode();
-          }
+        onPlaceholderPress={() => {
+          setOfflineModalVisible(true);
         }}
         placeholderButtonLabel={isOfflineMode ? "Offline" : "Online"}
         onPlaceholder2Press={() => {
@@ -5276,6 +5370,62 @@ const styles = StyleSheet.create({
   },
   pinButtonTextDisabled: {
     opacity: 0.5,
+  },
+  offlineInfoSection: {
+    marginBottom: 16,
+  },
+  offlineInfoTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#666',
+    marginBottom: 4,
+  },
+  offlineInfoText: {
+    fontSize: 15,
+    color: '#1a1a1a',
+  },
+  offlineWarningBox: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    gap: 8,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  offlineWarningText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#E65100',
+    lineHeight: 18,
+  },
+  offlineInfoBox: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  offlineInfoBoxText: {
+    fontSize: 13,
+    color: '#1565C0',
+    lineHeight: 18,
+  },
+  offlineActions: {
+    gap: 12,
+  },
+  offlineActionButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  offlineActionButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#fff',
   },
   tempFooterButtonsSection: {
     flexDirection: 'row' as const,
