@@ -33,6 +33,7 @@ export default function ScoringScreen() {
   const [holeScores, setHoleScores] = useState<{ [playerId: string]: { [hole: number]: number } }>({});
   const [scoreMeOnly, setScoreMeOnly] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [isDayLocked, setIsDayLocked] = useState<boolean>(false);
   const [lastDayTap, setLastDayTap] = useState<{ day: number; time: number } | null>(null);
   
@@ -519,6 +520,98 @@ export default function ScoringScreen() {
     return scoredHoles.length === 18;
   };
 
+  const handleSyncOfflineScores = async () => {
+    if (!eventId || !currentUser) {
+      console.log('[scoring] Missing eventId or currentUser for sync');
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      console.log('[scoring] 🔄 Starting offline scores sync for event:', eventId);
+      
+      let successCount = 0;
+      let failCount = 0;
+      const storageKeysToDelete: string[] = [];
+
+      const allKeys = await AsyncStorage.getAllKeys();
+      const scoreKeys = allKeys.filter(key => 
+        key.startsWith(`@golf_offline_scores_${eventId}_`)
+      );
+
+      console.log('[scoring] Found', scoreKeys.length, 'offline score entries');
+
+      for (const key of scoreKeys) {
+        try {
+          const dayMatch = key.match(/_day(\d+)$/);
+          if (!dayMatch) continue;
+
+          const day = parseInt(dayMatch[1], 10);
+          const scoresJson = await AsyncStorage.getItem(key);
+          
+          if (!scoresJson) continue;
+
+          const scores = JSON.parse(scoresJson);
+          console.log('[scoring] Syncing scores for day', day, ':', Object.keys(scores).length, 'players');
+
+          for (const [memberId, playerScores] of Object.entries(scores as Record<string, Record<number, number>>)) {
+            const holesArray = Array(18).fill(null);
+            let totalScore = 0;
+
+            Object.entries(playerScores).forEach(([hole, score]) => {
+              const holeNum = parseInt(hole, 10);
+              if (holeNum >= 1 && holeNum <= 18) {
+                holesArray[holeNum - 1] = score;
+                totalScore += score;
+              }
+            });
+
+            if (totalScore > 0) {
+              await supabaseService.scores.submit(
+                eventId,
+                memberId,
+                day,
+                holesArray,
+                totalScore,
+                currentUser.id
+              );
+              console.log('[scoring] ✅ Synced scores for member:', memberId, 'day:', day, 'total:', totalScore);
+              successCount++;
+            }
+          }
+
+          storageKeysToDelete.push(key);
+        } catch (error) {
+          console.error('[scoring] Failed to sync scores from key:', key, error);
+          failCount++;
+        }
+      }
+
+      for (const key of storageKeysToDelete) {
+        await AsyncStorage.removeItem(key);
+        console.log('[scoring] 🗑️ Cleared synced scores:', key);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['scores', eventId] });
+      await refetchScores();
+      
+      console.log('[scoring] ✅ Sync complete:', successCount, 'player scores synced,', failCount, 'failed');
+      
+      if (failCount === 0 && successCount > 0) {
+        Alert.alert('Sync Complete', `Successfully synced ${successCount} player score(s) to the server!`);
+      } else if (successCount > 0) {
+        Alert.alert('Sync Partially Complete', `${successCount} synced, ${failCount} failed`);
+      } else {
+        Alert.alert('No Scores to Sync', 'No offline scores found for this event.');
+      }
+    } catch (error) {
+      console.error('[scoring] Sync error:', error);
+      Alert.alert('Sync Failed', 'Unable to sync scores. Please try again.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const handleSubmitScores = async () => {
     if (!eventId || !currentUser) return;
 
@@ -930,10 +1023,10 @@ export default function ScoringScreen() {
 
       </SafeAreaView>
       <EventFooter 
-        showPlaceholderButton={!shouldUseOfflineMode}
-        onPlaceholderPress={handleSubmitScores}
-        placeholderButtonLabel={isSubmitting ? 'Submitting...' : 'Submit Scores'}
-        placeholderButtonDisabled={isSubmitting}
+        showPlaceholderButton={true}
+        onPlaceholderPress={shouldUseOfflineMode ? handleSyncOfflineScores : handleSubmitScores}
+        placeholderButtonLabel={shouldUseOfflineMode ? (isSyncing ? 'Syncing...' : 'Sync Scores') : (isSubmitting ? 'Submitting...' : 'Submit Scores')}
+        placeholderButtonDisabled={shouldUseOfflineMode ? isSyncing : isSubmitting}
         hideTopRowButtons={true}
         hidePlaceholder2Button={true}
       />
