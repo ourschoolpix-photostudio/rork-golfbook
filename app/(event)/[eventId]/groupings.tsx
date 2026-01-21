@@ -1194,17 +1194,17 @@ export default function GroupingsScreen() {
       <View style={styles.testButtonRow}>
         <TouchableOpacity
           style={styles.testButton}
-          onPress={() => console.log('[Groupings] Test Button 1 pressed')}
+          onPress={handleSortByHandicap}
           activeOpacity={0.8}
         >
-          <Text style={styles.testButtonText}>Test Button 1</Text>
+          <Text style={styles.testButtonText}>LOAD BY HDC</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.testButton}
-          onPress={() => console.log('[Groupings] Test Button 2 pressed')}
+          onPress={handleSortByNetScore}
           activeOpacity={0.8}
         >
-          <Text style={styles.testButtonText}>Test Button 2</Text>
+          <Text style={styles.testButtonText}>LOAD BY NET SCORE</Text>
         </TouchableOpacity>
       </View>
 
