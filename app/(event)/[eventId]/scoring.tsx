@@ -1033,20 +1033,31 @@ export default function ScoringScreen() {
       </SafeAreaView>
       {/* Independent test button row - changes here won't affect other screens */}
       <View style={styles.testButtonRow}>
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={handleSubmitScores}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.testButtonText}>Submit Scores</Text>
-        </TouchableOpacity>
-        {shouldUseOfflineMode && (
+        {!shouldUseOfflineMode && (
           <TouchableOpacity
             style={styles.testButton}
-            onPress={handleSyncOfflineScores}
+            onPress={handleSubmitScores}
             activeOpacity={0.8}
           >
-            <Text style={styles.testButtonText}>Sync Scores</Text>
+            <Text style={styles.testButtonText}>Submit Scores</Text>
+          </TouchableOpacity>
+        )}
+        {shouldUseOfflineMode && (
+          <TouchableOpacity
+            style={[
+              styles.testButton,
+              hasAnyScoreChanges() ? styles.syncButtonReady : styles.syncButtonDisabled
+            ]}
+            onPress={hasAnyScoreChanges() ? handleSyncOfflineScores : undefined}
+            activeOpacity={hasAnyScoreChanges() ? 0.8 : 1}
+            disabled={!hasAnyScoreChanges() || isSyncing}
+          >
+            <Text style={[
+              styles.testButtonText,
+              hasAnyScoreChanges() ? styles.syncButtonTextReady : styles.syncButtonTextDisabled
+            ]}>
+              {isSyncing ? 'Syncing...' : (hasAnyScoreChanges() ? 'Sync Scores When Internet Is Available' : 'Sync Not Necessary')}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -1362,5 +1373,19 @@ const styles = StyleSheet.create({
     color: '#800020',
     fontSize: 12,
     fontWeight: '700' as const,
+  },
+  syncButtonReady: {
+    backgroundColor: '#2196F3',
+    borderColor: '#1565C0',
+  },
+  syncButtonDisabled: {
+    backgroundColor: '#9e9e9e',
+    borderColor: '#757575',
+  },
+  syncButtonTextReady: {
+    color: '#fff',
+  },
+  syncButtonTextDisabled: {
+    color: '#e0e0e0',
   },
 });
