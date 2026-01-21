@@ -3716,28 +3716,30 @@ export default function EventRegistrationScreen() {
       )}
       </SafeAreaView>
       <View style={styles.registrationTestButtonRow}>
-        {/* Button 1: Online/Offline toggle */}
-        <TouchableOpacity
-          style={[
-            styles.registrationTestButton,
-            isOfflineMode ? styles.registrationTestButtonOffline : styles.registrationTestButtonOnline,
-          ]}
-          onPress={() => setOfflineModalVisible(true)}
-          activeOpacity={0.8}
-        >
-          <Ionicons 
-            name={isOfflineMode ? "cloud-offline" : "cloud"} 
-            size={16} 
-            color={isOfflineMode ? "#FDB813" : "#22C55E"} 
-            style={{ marginRight: 4 }}
-          />
-          <Text style={[
-            styles.registrationTestButtonText,
-            isOfflineMode ? styles.registrationTestButtonTextOffline : styles.registrationTestButtonTextOnline,
-          ]}>
-            {isOfflineMode ? "Offline" : "Online"}
-          </Text>
-        </TouchableOpacity>
+        {/* Button 1: Online/Offline toggle - Admin only */}
+        {currentUser?.isAdmin && (
+          <TouchableOpacity
+            style={[
+              styles.registrationTestButton,
+              isOfflineMode ? styles.registrationTestButtonOffline : styles.registrationTestButtonOnline,
+            ]}
+            onPress={() => setOfflineModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons 
+              name={isOfflineMode ? "cloud-offline" : "cloud"} 
+              size={16} 
+              color={isOfflineMode ? "#FDB813" : "#22C55E"} 
+              style={{ marginRight: 4 }}
+            />
+            <Text style={[
+              styles.registrationTestButtonText,
+              isOfflineMode ? styles.registrationTestButtonTextOffline : styles.registrationTestButtonTextOnline,
+            ]}>
+              {isOfflineMode ? "Offline" : "Online"}
+            </Text>
+          </TouchableOpacity>
+        )}
         {/* Button 2: Start/Event Status */}
         {event && canStartEvent(currentUser) && (
           <View style={styles.registrationTestStartButtonWrapper}>
