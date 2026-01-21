@@ -2015,12 +2015,6 @@ export default function EventRegistrationScreen() {
       return;
     }
 
-    const isAvailable = await MailComposer.isAvailableAsync();
-    if (!isAvailable) {
-      Alert.alert('Email Not Available', 'Please configure an email account on your device.');
-      return;
-    }
-
     try {
       console.log('[registration] Creating PayPal payment links for player invoice...');
       
@@ -2068,6 +2062,36 @@ export default function EventRegistrationScreen() {
 
       const htmlContent = generatePlayerInvoiceHtml(player, playerReg, paypalLinks);
       const subject = `Registration Invoice - ${event.name}`;
+
+      const isAvailable = await MailComposer.isAvailableAsync();
+      
+      if (!isAvailable) {
+        const zellePhone = formatPhoneNumber(orgInfo.zellePhone || '5714811006');
+        const packageDetails = paypalLinks.map(pkg => 
+          `${pkg.name}: ${pkg.baseAmount.toFixed(2)} (PayPal: ${pkg.amountWithFee.toFixed(2)})`
+        ).join('\n');
+        
+        const paypalLinksText = paypalLinks.map(pkg => 
+          `${pkg.name} - ${pkg.amountWithFee.toFixed(2)}: ${pkg.approvalUrl}`
+        ).join('\n');
+        
+        const plainTextBody = `Registration Invoice - ${event.name}\n\nHello ${player.name},\n\nEvent: ${event.name}\nVenue: ${event.venue || event.location}\nDate: ${formatDateAsFullDay(event.date, event.numberOfDays, 1)}\n\nPackage Options:\n${packageDetails}\n\nPayment Options:\n\nZelle: ${zellePhone}\n\nPayPal Links (includes processing fee):\n${paypalLinksText}\n\nPayment Deadline: ${getPaymentDeadline(event.date)}\n\nThank you for registering!`;
+        
+        const mailtoUrl = `mailto:${player.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainTextBody)}`;
+        
+        const supported = await Linking.canOpenURL(mailtoUrl);
+        if (supported) {
+          await Linking.openURL(mailtoUrl);
+          Alert.alert(
+            'Email Opened',
+            'Your default email app has been opened with the invoice.',
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert('Error', 'Unable to open email client. Please copy the invoice details manually.');
+        }
+        return;
+      }
 
       const result = await MailComposer.composeAsync({
         recipients: [player.email],
