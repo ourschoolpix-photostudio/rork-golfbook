@@ -13,6 +13,7 @@ export interface OrganizationInfo {
   zipCode: string;
   phone: string;
   zellePhone: string;
+  zelleName?: string;
   paypalEmail: string;
   logoUrl: string;
   paypalClientId: string;
@@ -38,6 +39,7 @@ const DEFAULT_ORG_INFO: OrganizationInfo = {
   zipCode: '',
   phone: '',
   zellePhone: '',
+  zelleName: '',
   paypalEmail: '',
   logoUrl: '',
   paypalClientId: '',

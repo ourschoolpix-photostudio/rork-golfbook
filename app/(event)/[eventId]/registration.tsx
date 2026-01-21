@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Platform,
   Clipboard,
+  Linking,
 } from 'react-native';
 import * as MailComposer from 'expo-mail-composer';
 import * as Print from 'expo-print';
