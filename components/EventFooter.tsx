@@ -37,6 +37,8 @@ type EventFooterProps = {
   isSubmitting?: boolean;
   showPlaceholderButton?: boolean;
   onPlaceholderPress?: () => void;
+  placeholderButtonLabel?: string;
+  placeholderButtonDisabled?: boolean;
 };
 
 export function EventFooter({
@@ -60,6 +62,8 @@ export function EventFooter({
   isSubmitting = false,
   showPlaceholderButton = false,
   onPlaceholderPress,
+  placeholderButtonLabel = 'Placeholder Button',
+  placeholderButtonDisabled = false,
 }: EventFooterProps = {}) {
   const { shouldUseOfflineMode } = useOfflineMode();
   const router = useRouter();
@@ -481,11 +485,12 @@ export function EventFooter({
       {showPlaceholderButton && (
         <View style={styles.topRow}>
           <TouchableOpacity
-            style={styles.placeholderButton}
+            style={[styles.placeholderButton, placeholderButtonDisabled && styles.placeholderButtonDisabled]}
             onPress={onPlaceholderPress}
             activeOpacity={0.8}
+            disabled={placeholderButtonDisabled}
           >
-            <Text style={styles.placeholderButtonText}>Placeholder Button</Text>
+            <Text style={styles.placeholderButtonText}>{placeholderButtonLabel}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -776,5 +781,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
+  },
+  placeholderButtonDisabled: {
+    backgroundColor: '#9E9E9E',
   },
 });

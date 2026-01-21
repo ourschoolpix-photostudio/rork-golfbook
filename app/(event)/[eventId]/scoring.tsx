@@ -672,8 +672,7 @@ export default function ScoringScreen() {
           </View>
         </SafeAreaView>
         <EventFooter 
-        showPlaceholderButton={true}
-        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        showPlaceholderButton={false}
         hideTopRowButtons={true}
       />
       </>
@@ -690,8 +689,7 @@ export default function ScoringScreen() {
           </View>
         </SafeAreaView>
         <EventFooter 
-        showPlaceholderButton={true}
-        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        showPlaceholderButton={false}
         hideTopRowButtons={true}
       />
       </>
@@ -723,8 +721,7 @@ export default function ScoringScreen() {
           </View>
         </SafeAreaView>
         <EventFooter 
-        showPlaceholderButton={true}
-        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        showPlaceholderButton={false}
         hideTopRowButtons={true}
       />
       </>
@@ -753,8 +750,7 @@ export default function ScoringScreen() {
           </View>
         </SafeAreaView>
         <EventFooter 
-        showPlaceholderButton={true}
-        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        showPlaceholderButton={false}
         hideTopRowButtons={true}
       />
       </>
@@ -932,25 +928,12 @@ export default function ScoringScreen() {
           })}
         </ScrollView>
 
-        {!shouldUseOfflineMode && (
-          <View style={styles.tempSubmitContainer}>
-            <TouchableOpacity
-              style={[styles.tempSubmitButton, isSubmitting && styles.tempSubmitButtonDisabled]}
-              onPress={handleSubmitScores}
-              disabled={isSubmitting}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.tempSubmitButtonText}>
-                {isSubmitting ? 'Submitting...' : 'SUBMIT SCORES'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
       </SafeAreaView>
       <EventFooter 
-        showPlaceholderButton={true}
-        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        showPlaceholderButton={!shouldUseOfflineMode}
+        onPlaceholderPress={handleSubmitScores}
+        placeholderButtonLabel={isSubmitting ? 'Submitting...' : 'Submit Scores'}
+        placeholderButtonDisabled={isSubmitting}
         hideTopRowButtons={true}
       />
     </>
@@ -1226,27 +1209,5 @@ const styles = StyleSheet.create({
   scoreMeOnlyTextActive: {
     color: '#800020',
   },
-  tempSubmitContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#f5f5f5',
-  },
-  tempSubmitButton: {
-    backgroundColor: '#FDB813',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFD54F',
-  },
-  tempSubmitButtonDisabled: {
-    backgroundColor: '#9E9E9E',
-  },
-  tempSubmitButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
+
 });
