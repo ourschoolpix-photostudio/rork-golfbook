@@ -1031,6 +1031,23 @@ export default function ScoringScreen() {
         </ScrollView>
 
       </SafeAreaView>
+      {/* Independent test button row - changes here won't affect other screens */}
+      <View style={styles.testButtonRow}>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[ScoringScreen] Test Button 1 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 1</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[ScoringScreen] Test Button 2 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 2</Text>
+        </TouchableOpacity>
+      </View>
       <EventFooter 
         showPlaceholderButton={true}
         onPlaceholderPress={shouldUseOfflineMode ? handleSyncOfflineScores : handleSubmitScores}
@@ -1318,5 +1335,30 @@ const styles = StyleSheet.create({
   scoreMeOnlyTextActive: {
     color: '#800020',
   },
-
+  testButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    backgroundColor: '#5A0015',
+  },
+  testButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#FDB813',
+    borderWidth: 2,
+    borderColor: '#800020',
+  },
+  testButtonText: {
+    color: '#800020',
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
 });
