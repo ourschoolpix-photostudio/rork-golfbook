@@ -603,6 +603,46 @@ export default function GroupingsScreen() {
     console.log('[groupings] ✅ Unassigned event players auto-grouped by net score');
   };
 
+  const handleSortByHandicap = () => {
+    if (ungroupedPlayers.length === 0) {
+      console.log('[groupings] ⚠️ No unassigned players!');
+      return;
+    }
+
+    console.log('[groupings] 📊 LOAD BY HDC button tapped! Active day:', activeDay);
+    console.log('[groupings] Unassigned event players:', ungroupedPlayers.map(p => p.name));
+
+    const sortedPlayers = [...ungroupedPlayers].sort((a, b) => {
+      const playerRegA = registrations[a.name];
+      const playerRegB = registrations[b.name];
+      const handicapA = getDisplayHandicap(a, playerRegA, event || undefined, useCourseHandicap, activeDay);
+      const handicapB = getDisplayHandicap(b, playerRegB, event || undefined, useCourseHandicap, activeDay);
+      return handicapA - handicapB;
+    });
+
+    console.log('[groupings] 🔄 Sorted by handicap:', sortedPlayers.map(p => {
+      const playerReg = registrations[p.name];
+      const handicap = getDisplayHandicap(p, playerReg, event || undefined, useCourseHandicap, activeDay);
+      return { name: p.name, handicap };
+    }));
+
+    const newGroups = JSON.parse(JSON.stringify(groups)) as Group[];
+    let playerIdx = 0;
+
+    for (let groupIdx = 0; groupIdx < newGroups.length && playerIdx < sortedPlayers.length; groupIdx++) {
+      for (let slotIdx = 0; slotIdx < 4 && playerIdx < sortedPlayers.length; slotIdx++) {
+        if (!newGroups[groupIdx].slots[slotIdx]) {
+          newGroups[groupIdx].slots[slotIdx] = sortedPlayers[playerIdx];
+          console.log(`[groupings] Assigning ${sortedPlayers[playerIdx].name} to Group ${groupIdx + 1}, Slot ${slotIdx + 1}`);
+          playerIdx++;
+        }
+      }
+    }
+
+    setGroups(newGroups);
+    console.log('[groupings] ✅ Unassigned event players auto-grouped by handicap');
+  };
+
   const updateMemberMutation = useMutation({
     mutationFn: ({ memberId, updates }: { memberId: string; updates: Partial<Member> }) => 
       supabaseService.members.update(memberId, updates),
@@ -1157,7 +1197,12 @@ export default function GroupingsScreen() {
         </View>
       </Modal>
 
-      <EventFooter hideTopRowButtons={true} />
+      <EventFooter 
+        hideTopRowButtons={true}
+        showGroupingButtons={true}
+        onLoadByHDC={handleSortByHandicap}
+        onLoadByNetScores={handleSortByNetScore}
+      />
     </>
   );
 }

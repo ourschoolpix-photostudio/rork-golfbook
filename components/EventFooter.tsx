@@ -29,6 +29,9 @@ type EventFooterProps = {
   pointsDistributed?: boolean;
   showSyncButton?: boolean;
   hideTopRowButtons?: boolean;
+  showGroupingButtons?: boolean;
+  onLoadByHDC?: () => void;
+  onLoadByNetScores?: () => void;
 };
 
 export function EventFooter({
@@ -44,6 +47,9 @@ export function EventFooter({
   pointsDistributed = false,
   showSyncButton = false,
   hideTopRowButtons = false,
+  showGroupingButtons = false,
+  onLoadByHDC,
+  onLoadByNetScores,
 }: EventFooterProps = {}) {
   const { shouldUseOfflineMode } = useOfflineMode();
   const router = useRouter();
@@ -432,6 +438,22 @@ export function EventFooter({
 
   return (
     <View style={styles.footerContainer}>
+      {currentUser?.isAdmin && showGroupingButtons && (
+        <View style={styles.topRow}>
+          <TouchableOpacity
+            style={styles.groupingButton}
+            onPress={onLoadByHDC}
+          >
+            <Text style={styles.groupingButtonText}>Load by HDC</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.groupingButton}
+            onPress={onLoadByNetScores}
+          >
+            <Text style={styles.groupingButtonText}>Load by Net Scores</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {currentUser?.isAdmin && !hideTopRowButtons && (
         <View style={styles.topRow}>
           {showRolexButtons ? (
@@ -648,6 +670,22 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   syncButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  groupingButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#1B5E20',
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+  },
+  groupingButtonText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
