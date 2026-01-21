@@ -710,7 +710,16 @@ export default function LeaderboardScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
-      <EventFooter hideTopRowButtons={true} />
+      <EventFooter 
+        hideTopRowButtons={!(selectedDay === 'rolex' && currentUser?.isAdmin)}
+        showRolexButtons={selectedDay === 'rolex' && currentUser?.isAdmin}
+        onDistributePoints={handleDistributePoints}
+        onClearPoints={handleClearPoints}
+        isDistributing={distributeMutation.isPending}
+        isClearing={clearMutation.isPending}
+        pointsDistributed={event?.rolexPointsDistributed || false}
+        isAdmin={currentUser?.isAdmin || false}
+      />
     </>
   );
 }
