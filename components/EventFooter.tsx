@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 4,
+    paddingBottom: 2,
     gap: 6,
   },
   toggleButtonWrapper: {
