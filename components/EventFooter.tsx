@@ -28,6 +28,7 @@ type EventFooterProps = {
   isClearing?: boolean;
   pointsDistributed?: boolean;
   showSyncButton?: boolean;
+  hideTopRowButtons?: boolean;
 };
 
 export function EventFooter({
@@ -42,6 +43,7 @@ export function EventFooter({
   isClearing = false,
   pointsDistributed = false,
   showSyncButton = false,
+  hideTopRowButtons = false,
 }: EventFooterProps = {}) {
   const { shouldUseOfflineMode } = useOfflineMode();
   const router = useRouter();
@@ -430,7 +432,7 @@ export function EventFooter({
 
   return (
     <View style={styles.footerContainer}>
-      {currentUser?.isAdmin && (
+      {currentUser?.isAdmin && !hideTopRowButtons && (
         <View style={styles.topRow}>
           {showRolexButtons ? (
             <>

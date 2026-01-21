@@ -1157,7 +1157,7 @@ export default function GroupingsScreen() {
         </View>
       </Modal>
 
-      <EventFooter />
+      <EventFooter hideTopRowButtons={true} />
     </>
   );
 }
