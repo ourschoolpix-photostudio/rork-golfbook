@@ -1932,7 +1932,10 @@ export default function EventRegistrationScreen() {
     </div>
     
     <div class="content">
-      <p class="greeting">Hello <strong>${player.name}</strong>,</p>
+      <p class="greeting">
+        Hello <strong>${player.name}</strong>,<br><br>
+        This is a payment reminder for an upcoming event you registered for. Please make your payment before the deadline date found at the bottom of this email.
+      </p>
       
       <div class="event-card">
         <h2>${event.name}</h2>
