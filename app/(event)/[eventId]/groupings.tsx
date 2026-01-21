@@ -1206,6 +1206,9 @@ export default function GroupingsScreen() {
       <EventFooter 
         hideTopRowButtons={true}
         showGroupingButtons={false}
+        showPlaceholderButton={true}
+        placeholderButtonLabel="Placeholder Button"
+        onPlaceholderPress={() => console.log('[groupings] Placeholder button pressed')}
       />
     </>
   );
