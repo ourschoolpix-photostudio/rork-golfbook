@@ -574,7 +574,7 @@ export function EventFooter({
               onPress={toggleCourseHandicap}
             >
               <Text style={styles.courseHandicapToggleText}>
-                {useCourseHandicap ? 'Play GHIN HDC' : 'Play Course HDC'}
+                {useCourseHandicap ? 'GHIN HDC' : 'Course HDC'}
               </Text>
             </TouchableOpacity>
           )}
@@ -651,7 +651,7 @@ export function EventFooter({
                 onPress={toggleCourseHandicap}
               >
                 <Text style={styles.courseHandicapToggleText}>
-                  {useCourseHandicap ? 'Play GHIN HDC' : 'Play Course HDC'}
+                  {useCourseHandicap ? 'GHIN HDC' : 'Course HDC'}
                 </Text>
               </TouchableOpacity>
             </>
