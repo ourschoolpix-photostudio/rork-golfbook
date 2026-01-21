@@ -3724,13 +3724,31 @@ export default function EventRegistrationScreen() {
         >
           <Text style={styles.testButtonText}>Test Button 1</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={() => console.log('[Registration] Test Button 2 pressed')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.testButtonText}>Test Button 2</Text>
-        </TouchableOpacity>
+        {event && canStartEvent(currentUser) ? (
+          <View style={styles.testButtonStartWrapper}>
+            <EventStatusButton
+              status={(event?.status as EventStatus) || 'upcoming'}
+              onStatusChange={async (newStatus) => {
+                if (event) {
+                  await updateEventMutation.mutateAsync({
+                    eventId: event.id,
+                    updates: { status: newStatus },
+                  });
+                  setEvent({ ...event, status: newStatus });
+                }
+              }}
+              isAdmin={currentUser?.isAdmin || false}
+            />
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={() => console.log('[Registration] Test Button 2 pressed')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.testButtonText}>Test Button 2</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={styles.testButton}
           onPress={() => console.log('[Registration] Test Button 3 pressed')}
@@ -5318,6 +5336,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FDB813',
     borderWidth: 2,
     borderColor: '#800020',
+  },
+  testButtonStartWrapper: {
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
+    overflow: 'hidden' as const,
   },
   testButtonText: {
     color: '#800020',
