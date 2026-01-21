@@ -49,6 +49,7 @@ type EventFooterProps = {
   placeholder3ButtonLabel?: string;
   placeholder3ButtonDisabled?: boolean;
   hidePlaceholder3Button?: boolean;
+  showCourseHandicapToggle?: boolean;
 };
 
 export function EventFooter({
@@ -84,6 +85,7 @@ export function EventFooter({
   placeholder3ButtonLabel = 'Placeholder 3',
   placeholder3ButtonDisabled = false,
   hidePlaceholder3Button = false,
+  showCourseHandicapToggle = false,
 }: EventFooterProps = {}) {
   const { shouldUseOfflineMode } = useOfflineMode();
   const router = useRouter();
@@ -553,7 +555,7 @@ export function EventFooter({
               />
             </View>
           )}
-          {!hidePlaceholder3Button && (
+          {!hidePlaceholder3Button && !showCourseHandicapToggle && (
             <TouchableOpacity
               style={[styles.placeholderButton, placeholder3ButtonDisabled && styles.placeholderButtonDisabled]}
               onPress={onPlaceholder3Press}
@@ -561,6 +563,19 @@ export function EventFooter({
               disabled={placeholder3ButtonDisabled}
             >
               <Text style={styles.placeholderButtonText}>{placeholder3ButtonLabel}</Text>
+            </TouchableOpacity>
+          )}
+          {showCourseHandicapToggle && currentUser?.isAdmin && (
+            <TouchableOpacity
+              style={[
+                styles.courseHandicapToggle,
+                useCourseHandicap && styles.courseHandicapToggleActive,
+              ]}
+              onPress={toggleCourseHandicap}
+            >
+              <Text style={styles.courseHandicapToggleText}>
+                {useCourseHandicap ? 'Play GHIN HDC' : 'Play Course HDC'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>

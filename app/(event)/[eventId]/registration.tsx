@@ -3794,10 +3794,8 @@ export default function EventRegistrationScreen() {
         }}
         placeholderButtonLabel={isOfflineMode ? "Offline" : "Online"}
         showStartInPlaceholder2={true}
-        onPlaceholder3Press={() => {
-          console.log('[registration] Placeholder 3 pressed');
-        }}
-        placeholder3ButtonLabel="Placeholder 3"
+        hidePlaceholder3Button={true}
+        showCourseHandicapToggle={true}
       />
     </>
   );
