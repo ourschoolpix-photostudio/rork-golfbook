@@ -3838,6 +3838,15 @@ export default function EventRegistrationScreen() {
         }}
         isAdmin={currentUser?.isAdmin || false}
         hideTopRowButtons={true}
+        showPlaceholderButton={true}
+        onPlaceholderPress={() => {
+          console.log('[registration] Placeholder 1 pressed');
+        }}
+        placeholderButtonLabel="Placeholder 1"
+        onPlaceholder2Press={() => {
+          console.log('[registration] Placeholder 2 pressed');
+        }}
+        placeholder2ButtonLabel="Placeholder 2"
       />
     </>
   );
