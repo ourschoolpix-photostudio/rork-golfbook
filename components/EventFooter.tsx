@@ -676,6 +676,7 @@ const styles = StyleSheet.create({
   },
   groupingButton: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
@@ -684,6 +685,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#8B2E4A',
     borderWidth: 2,
     borderColor: '#FFD54F',
+    marginHorizontal: 4,
   },
   groupingButtonText: {
     color: '#fff',
