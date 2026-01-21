@@ -35,21 +35,6 @@ type EventFooterProps = {
   showSubmitButton?: boolean;
   onSubmit?: () => void | Promise<void>;
   isSubmitting?: boolean;
-  showPlaceholderButton?: boolean;
-  onPlaceholderPress?: () => void;
-  placeholderButtonLabel?: string;
-  placeholderButtonDisabled?: boolean;
-  onPlaceholder2Press?: () => void;
-  placeholder2ButtonLabel?: string;
-  placeholder2ButtonDisabled?: boolean;
-  hidePlaceholder2Button?: boolean;
-  showStartInPlaceholder2?: boolean;
-  placeholderButtonSyncReady?: boolean;
-  onPlaceholder3Press?: () => void;
-  placeholder3ButtonLabel?: string;
-  placeholder3ButtonDisabled?: boolean;
-  hidePlaceholder3Button?: boolean;
-  showCourseHandicapToggle?: boolean;
 };
 
 export function EventFooter({
@@ -71,21 +56,6 @@ export function EventFooter({
   showSubmitButton = false,
   onSubmit,
   isSubmitting = false,
-  showPlaceholderButton = false,
-  onPlaceholderPress,
-  placeholderButtonLabel = 'Placeholder 1',
-  placeholderButtonDisabled = false,
-  onPlaceholder2Press,
-  placeholder2ButtonLabel = 'Placeholder 2',
-  placeholder2ButtonDisabled = false,
-  hidePlaceholder2Button = false,
-  showStartInPlaceholder2 = false,
-  placeholderButtonSyncReady = false,
-  onPlaceholder3Press,
-  placeholder3ButtonLabel = 'Placeholder 3',
-  placeholder3ButtonDisabled = false,
-  hidePlaceholder3Button = false,
-  showCourseHandicapToggle = false,
 }: EventFooterProps = {}) {
   const { shouldUseOfflineMode } = useOfflineMode();
   const router = useRouter();
@@ -504,83 +474,7 @@ export function EventFooter({
           </TouchableOpacity>
         </View>
       )}
-      {showPlaceholderButton && (
-        <View style={styles.topRow}>
-          <TouchableOpacity
-            style={[
-              styles.placeholderButton,
-              placeholderButtonDisabled && styles.placeholderButtonDisabled,
-              placeholderButtonSyncReady && styles.placeholderButtonSyncReady,
-              placeholderButtonLabel === 'Online' && styles.placeholderButtonOnline,
-              placeholderButtonLabel === 'Offline' && styles.placeholderButtonOffline,
-            ]}
-            onPress={onPlaceholderPress}
-            activeOpacity={0.8}
-            disabled={placeholderButtonDisabled}
-          >
-            {placeholderButtonLabel === 'Online' && (
-              <Cloud size={16} color="#22C55E" fill="#22C55E" style={{ marginRight: 6 }} />
-            )}
-            {placeholderButtonLabel === 'Offline' && (
-              <CloudOff size={16} color="#EF4444" style={{ marginRight: 6 }} />
-            )}
-            <Text style={[
-              styles.placeholderButtonText,
-              placeholderButtonSyncReady && styles.placeholderButtonTextSyncReady,
-              placeholderButtonLabel === 'Online' && styles.placeholderButtonTextOnline,
-              placeholderButtonLabel === 'Offline' && styles.placeholderButtonTextOffline,
-            ]}>{placeholderButtonLabel}</Text>
-          </TouchableOpacity>
-          {!hidePlaceholder2Button && !showStartInPlaceholder2 && (
-            <TouchableOpacity
-              style={[styles.placeholderButton, placeholder2ButtonDisabled && styles.placeholderButtonDisabled]}
-              onPress={onPlaceholder2Press}
-              activeOpacity={0.8}
-              disabled={placeholder2ButtonDisabled}
-            >
-              <Text style={styles.placeholderButtonText}>{placeholder2ButtonLabel}</Text>
-            </TouchableOpacity>
-          )}
-          {showStartInPlaceholder2 && showStartButton && onStatusChange && (
-            <View style={styles.startButtonInPlaceholderWrapper}>
-              <EventStatusButton
-                status={eventStatus!}
-                onStatusChange={async (newStatus) => {
-                  await onStatusChange(newStatus);
-                  if (newStatus === 'complete' && eventId) {
-                    await calculateAndStoreTournamentHandicaps(eventId);
-                  }
-                }}
-                isAdmin={isAdmin}
-              />
-            </View>
-          )}
-          {!hidePlaceholder3Button && !showCourseHandicapToggle && (
-            <TouchableOpacity
-              style={[styles.placeholderButton, placeholder3ButtonDisabled && styles.placeholderButtonDisabled]}
-              onPress={onPlaceholder3Press}
-              activeOpacity={0.8}
-              disabled={placeholder3ButtonDisabled}
-            >
-              <Text style={styles.placeholderButtonText}>{placeholder3ButtonLabel}</Text>
-            </TouchableOpacity>
-          )}
-          {showCourseHandicapToggle && currentUser?.isAdmin && (
-            <TouchableOpacity
-              style={[
-                styles.courseHandicapToggle,
-                useCourseHandicap && styles.courseHandicapToggleActive,
-              ]}
-              onPress={toggleCourseHandicap}
-            >
-              <Text style={styles.courseHandicapToggleText}>
-                {useCourseHandicap ? 'GHIN HDC' : 'Course HDC'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-      {currentUser?.isAdmin && !hideTopRowButtons && !showPlaceholderButton && (
+      {currentUser?.isAdmin && !hideTopRowButtons && (
         <View style={styles.topRow}>
           {showRolexButtons ? (
             <>
@@ -851,53 +745,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-  placeholderButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#FDB813',
-    borderWidth: 2,
-    borderColor: '#800020',
-  },
-  placeholderButtonText: {
-    color: '#800020',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  placeholderButtonDisabled: {
-    backgroundColor: '#9E9E9E',
-  },
-  placeholderButtonSyncReady: {
-    backgroundColor: '#2196F3',
-    borderColor: '#1976D2',
-  },
-  placeholderButtonTextSyncReady: {
-    color: '#fff',
-  },
-  placeholderButtonOnline: {
-    backgroundColor: '#FDB813',
-    borderColor: '#800020',
-  },
-  placeholderButtonOffline: {
-    backgroundColor: '#800020',
-    borderColor: '#FDB813',
-  },
-  placeholderButtonTextOnline: {
-    color: '#800020',
-  },
-  placeholderButtonTextOffline: {
-    color: '#FDB813',
-  },
-  startButtonInPlaceholderWrapper: {
-    flex: 1,
-    height: 36,
-    borderWidth: 2,
-    borderColor: '#FFD54F',
-    borderRadius: 8,
-    overflow: 'hidden' as const,
-  },
+
 });
