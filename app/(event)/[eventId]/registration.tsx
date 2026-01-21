@@ -3717,27 +3717,84 @@ export default function EventRegistrationScreen() {
       </SafeAreaView>
       {/* Independent test button row for registration screen */}
       <View style={styles.registrationTestButtonRow}>
+        {/* Button 1: Online/Offline toggle */}
         <TouchableOpacity
-          style={styles.registrationTestButton}
-          onPress={() => console.log('[Registration] Test Button 1 pressed')}
+          style={[
+            styles.registrationTestButton,
+            isOfflineMode ? styles.registrationTestButtonOffline : styles.registrationTestButtonOnline,
+          ]}
+          onPress={() => setOfflineModalVisible(true)}
           activeOpacity={0.8}
         >
-          <Text style={styles.registrationTestButtonText}>Test Button 1</Text>
+          <Ionicons 
+            name={isOfflineMode ? "cloud-offline" : "cloud"} 
+            size={16} 
+            color={isOfflineMode ? "#FDB813" : "#800020"} 
+            style={{ marginRight: 4 }}
+          />
+          <Text style={[
+            styles.registrationTestButtonText,
+            isOfflineMode ? styles.registrationTestButtonTextOffline : styles.registrationTestButtonTextOnline,
+          ]}>
+            {isOfflineMode ? "Offline" : "Online"}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.registrationTestButton}
-          onPress={() => console.log('[Registration] Test Button 2 pressed')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.registrationTestButtonText}>Test Button 2</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.registrationTestButton}
-          onPress={() => console.log('[Registration] Test Button 3 pressed')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.registrationTestButtonText}>Test Button 3</Text>
-        </TouchableOpacity>
+        {/* Button 2: Start/Event Status */}
+        {event && canStartEvent(currentUser) && (
+          <View style={styles.registrationTestStartButtonWrapper}>
+            <EventStatusButton
+              status={(event?.status as EventStatus) || 'upcoming'}
+              onStatusChange={async (newStatus) => {
+                if (event) {
+                  await updateEventMutation.mutateAsync({
+                    eventId: event.id,
+                    updates: { status: newStatus },
+                  });
+                  setEvent({ ...event, status: newStatus });
+                }
+              }}
+              isAdmin={currentUser?.isAdmin || false}
+            />
+          </View>
+        )}
+        {/* Button 3: Course HDC toggle */}
+        {currentUser?.isAdmin && (
+          <TouchableOpacity
+            style={[
+              styles.registrationTestButton,
+              useCourseHandicap && styles.registrationTestButtonCourseActive,
+            ]}
+            onPress={async () => {
+              if (eventId) {
+                const newValue = !useCourseHandicap;
+                setUseCourseHandicap(newValue);
+                queryClient.setQueryData(['events', eventId], (oldData: any) => {
+                  if (oldData) {
+                    return { ...oldData, useCourseHandicap: newValue };
+                  }
+                  return oldData;
+                });
+                const key = `useCourseHandicap_${eventId}`;
+                await AsyncStorage.setItem(key, newValue.toString());
+                try {
+                  await supabaseService.events.update(eventId, { useCourseHandicap: newValue });
+                  queryClient.invalidateQueries({ queryKey: ['events'] });
+                } catch (error) {
+                  console.error('[registration] Error saving course handicap:', error);
+                  setUseCourseHandicap(!newValue);
+                }
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[
+              styles.registrationTestButtonText,
+              useCourseHandicap && styles.registrationTestButtonTextCourse,
+            ]}>
+              {useCourseHandicap ? 'Course HDC' : 'GHIN HDC'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
       <EventFooter 
         showStartButton={!!event && canStartEvent(currentUser)}
@@ -5323,5 +5380,32 @@ const styles = StyleSheet.create({
     color: '#800020',
     fontSize: 12,
     fontWeight: '700' as const,
+  },
+  registrationTestButtonOnline: {
+    backgroundColor: '#FDB813',
+    borderColor: '#800020',
+  },
+  registrationTestButtonOffline: {
+    backgroundColor: '#800020',
+    borderColor: '#FDB813',
+  },
+  registrationTestButtonTextOnline: {
+    color: '#800020',
+  },
+  registrationTestButtonTextOffline: {
+    color: '#FDB813',
+  },
+  registrationTestButtonCourseActive: {
+    backgroundColor: '#2196F3',
+    borderColor: '#1976D2',
+  },
+  registrationTestButtonTextCourse: {
+    color: '#fff',
+  },
+  registrationTestStartButtonWrapper: {
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
+    overflow: 'hidden' as const,
   },
 });
