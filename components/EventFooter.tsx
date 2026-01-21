@@ -613,6 +613,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FFD54F',
     marginHorizontal: 4,
   },
   distributeButton: {
