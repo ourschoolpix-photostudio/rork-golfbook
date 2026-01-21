@@ -1191,22 +1191,28 @@ export default function GroupingsScreen() {
       </Modal>
 
       {/* Independent test button row - changes here won't affect EventFooter on other screens */}
-      <View style={styles.testButtonRow}>
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={handleSortByHandicap}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.testButtonText}>LOAD BY HDC</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={handleSortByNetScore}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.testButtonText}>LOAD BY NET SCORE</Text>
-        </TouchableOpacity>
-      </View>
+      {(currentMember?.isAdmin || user?.isAdmin || 
+        currentMember?.boardMemberRoles?.includes('President') ||
+        currentMember?.boardMemberRoles?.includes('Vice President') ||
+        currentMember?.boardMemberRoles?.includes('Tournament Director') ||
+        currentMember?.boardMemberRoles?.includes('Handicap Director')) && (
+        <View style={styles.testButtonRow}>
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={handleSortByHandicap}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.testButtonText}>LOAD BY HDC</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={handleSortByNetScore}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.testButtonText}>LOAD BY NET SCORE</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <EventFooter 
         hideTopRowButtons={true}
