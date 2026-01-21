@@ -2133,6 +2133,15 @@ export default function EventRegistrationScreen() {
       });
 
       if (playerReg?.id) {
+        // Optimistically update local state immediately
+        setRegistrations(prev => ({
+          ...prev,
+          [player.name]: {
+            ...prev[player.name],
+            emailSent: true,
+          },
+        }));
+        
         await updateRegistrationMutation.mutateAsync({
           registrationId: playerReg.id,
           updates: { emailSent: true },
