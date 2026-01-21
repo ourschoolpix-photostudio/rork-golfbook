@@ -12,6 +12,7 @@ import { Member, Event } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
+import { EventFooter } from '@/components/EventFooter';
 
 const formatScore = (score: number): string => {
   const rounded = Math.round(score * 10) / 10;
@@ -709,6 +710,7 @@ export default function LeaderboardScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
+      <EventFooter hideTopRowButtons={true} />
     </>
   );
 }
