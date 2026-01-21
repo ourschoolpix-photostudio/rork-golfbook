@@ -66,7 +66,7 @@ export function SingleFooterButton({
 
 const styles = StyleSheet.create({
   button: {
-    flex: 1,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
