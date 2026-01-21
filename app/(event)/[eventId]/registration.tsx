@@ -3728,7 +3728,7 @@ export default function EventRegistrationScreen() {
           <Ionicons 
             name={isOfflineMode ? "cloud-offline" : "cloud"} 
             size={16} 
-            color={isOfflineMode ? "#FDB813" : "#800020"} 
+            color={isOfflineMode ? "#FDB813" : "#22C55E"} 
             style={{ marginRight: 4 }}
           />
           <Text style={[
