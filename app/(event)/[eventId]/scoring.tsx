@@ -1152,13 +1152,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: '#1B5E20',
+    borderColor: '#800020',
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayButtonActive: {
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#FDB813',
+    borderColor: '#800020',
   },
   dayButtonLocked: {
     backgroundColor: '#FF6B00',
@@ -1172,11 +1173,11 @@ const styles = StyleSheet.create({
   dayButtonText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#1B5E20',
+    color: '#800020',
     textAlign: 'center',
   },
   dayButtonTextActive: {
-    color: '#fff',
+    color: '#800020',
   },
   lockIcon: {
     marginLeft: 2,
