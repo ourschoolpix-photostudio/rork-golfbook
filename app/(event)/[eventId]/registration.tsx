@@ -2718,61 +2718,6 @@ export default function EventRegistrationScreen() {
         )}
       </View>
 
-      {/* Temporary Footer Buttons Section */}
-      {currentUser?.isAdmin && (
-        <View style={styles.tempFooterButtonsSection}>
-          {event && canStartEvent(currentUser) && (
-            <View style={styles.tempButtonWrapper}>
-              <EventStatusButton
-                status={(event?.status as FooterEventStatus) || 'upcoming'}
-                onStatusChange={async (newStatus) => {
-                  if (event) {
-                    await updateEventMutation.mutateAsync({
-                      eventId: event.id,
-                      updates: { status: newStatus },
-                    });
-                    setEvent({ ...event, status: newStatus });
-                  }
-                }}
-                isAdmin={currentUser?.isAdmin || false}
-              />
-            </View>
-          )}
-          <TouchableOpacity
-            style={[
-              styles.tempCourseHandicapToggle,
-              useCourseHandicap && styles.tempCourseHandicapToggleActive,
-            ]}
-            onPress={async () => {
-              if (eventId) {
-                const newValue = !useCourseHandicap;
-                setUseCourseHandicap(newValue);
-                queryClient.setQueryData(['events', eventId], (oldData: any) => {
-                  if (oldData) {
-                    return { ...oldData, useCourseHandicap: newValue };
-                  }
-                  return oldData;
-                });
-                const key = `useCourseHandicap_${eventId}`;
-                await AsyncStorage.setItem(key, newValue.toString());
-                try {
-                  await supabaseService.events.update(eventId, {
-                    useCourseHandicap: newValue,
-                  });
-                  queryClient.invalidateQueries({ queryKey: ['events'] });
-                } catch (error) {
-                  console.error('[registration] Error saving course handicap:', error);
-                  setUseCourseHandicap(!newValue);
-                }
-              }
-            }}
-          >
-            <Text style={styles.tempCourseHandicapToggleText}>
-              {useCourseHandicap ? 'Play GHIN HDC' : 'Play Course HDC'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       <View style={styles.playersTitleContainer}>
         <View style={styles.playersTitleRow}>
@@ -3848,10 +3793,7 @@ export default function EventRegistrationScreen() {
           setOfflineModalVisible(true);
         }}
         placeholderButtonLabel={isOfflineMode ? "Offline" : "Online"}
-        onPlaceholder2Press={() => {
-          console.log('[registration] Placeholder 2 pressed');
-        }}
-        placeholder2ButtonLabel="Placeholder 2"
+        showStartInPlaceholder2={true}
         onPlaceholder3Press={() => {
           console.log('[registration] Placeholder 3 pressed');
         }}
@@ -5333,43 +5275,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700' as const,
     color: '#fff',
-  },
-  tempFooterButtonsSection: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#5A0015',
-    gap: 6,
-  },
-  tempButtonWrapper: {
-    flex: 1,
-    height: 36,
-    borderWidth: 2,
-    borderColor: '#FFD54F',
-    borderRadius: 8,
-    overflow: 'hidden' as const,
-  },
-  tempCourseHandicapToggle: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    paddingVertical: 0,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#8B2E4A',
-    height: 36,
-    borderWidth: 2,
-    borderColor: '#FFD54F',
-  },
-  tempCourseHandicapToggleActive: {
-    backgroundColor: '#2196F3',
-  },
-  tempCourseHandicapToggleText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700' as const,
   },
 });

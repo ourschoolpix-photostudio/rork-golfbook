@@ -43,6 +43,7 @@ type EventFooterProps = {
   placeholder2ButtonLabel?: string;
   placeholder2ButtonDisabled?: boolean;
   hidePlaceholder2Button?: boolean;
+  showStartInPlaceholder2?: boolean;
   placeholderButtonSyncReady?: boolean;
   onPlaceholder3Press?: () => void;
   placeholder3ButtonLabel?: string;
@@ -77,6 +78,7 @@ export function EventFooter({
   placeholder2ButtonLabel = 'Placeholder 2',
   placeholder2ButtonDisabled = false,
   hidePlaceholder2Button = false,
+  showStartInPlaceholder2 = false,
   placeholderButtonSyncReady = false,
   onPlaceholder3Press,
   placeholder3ButtonLabel = 'Placeholder 3',
@@ -527,7 +529,7 @@ export function EventFooter({
               placeholderButtonLabel === 'Offline' && styles.placeholderButtonTextOffline,
             ]}>{placeholderButtonLabel}</Text>
           </TouchableOpacity>
-          {!hidePlaceholder2Button && (
+          {!hidePlaceholder2Button && !showStartInPlaceholder2 && (
             <TouchableOpacity
               style={[styles.placeholderButton, placeholder2ButtonDisabled && styles.placeholderButtonDisabled]}
               onPress={onPlaceholder2Press}
@@ -536,6 +538,20 @@ export function EventFooter({
             >
               <Text style={styles.placeholderButtonText}>{placeholder2ButtonLabel}</Text>
             </TouchableOpacity>
+          )}
+          {showStartInPlaceholder2 && showStartButton && onStatusChange && (
+            <View style={styles.startButtonInPlaceholderWrapper}>
+              <EventStatusButton
+                status={eventStatus!}
+                onStatusChange={async (newStatus) => {
+                  await onStatusChange(newStatus);
+                  if (newStatus === 'complete' && eventId) {
+                    await calculateAndStoreTournamentHandicaps(eventId);
+                  }
+                }}
+                isAdmin={isAdmin}
+              />
+            </View>
           )}
           {!hidePlaceholder3Button && (
             <TouchableOpacity
@@ -860,5 +876,13 @@ const styles = StyleSheet.create({
   },
   placeholderButtonTextOffline: {
     color: '#FDB813',
+  },
+  startButtonInPlaceholderWrapper: {
+    flex: 1,
+    height: 36,
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+    borderRadius: 8,
+    overflow: 'hidden' as const,
   },
 });
