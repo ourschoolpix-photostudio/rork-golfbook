@@ -2721,9 +2721,6 @@ export default function EventRegistrationScreen() {
       {/* Temporary Footer Buttons Section */}
       {currentUser?.isAdmin && (
         <View style={styles.tempFooterButtonsSection}>
-          <View style={styles.tempButtonWrapper}>
-            <OfflineModeToggle eventId={eventId} position="footer" />
-          </View>
           {event && canStartEvent(currentUser) && (
             <View style={styles.tempButtonWrapper}>
               <EventStatusButton

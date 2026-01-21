@@ -3,7 +3,7 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Alert } from '@/utils/alertPolyfill';
 import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Users, Grid3x3, Target, Award, DollarSign, LayoutGrid, Upload } from 'lucide-react-native';
+import { Home, Users, Grid3x3, Target, Award, DollarSign, LayoutGrid, Upload, Cloud, CloudOff } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { OfflineModeToggle } from '@/components/OfflineModeToggle';
@@ -505,14 +505,24 @@ export function EventFooter({
               styles.placeholderButton,
               placeholderButtonDisabled && styles.placeholderButtonDisabled,
               placeholderButtonSyncReady && styles.placeholderButtonSyncReady,
+              placeholderButtonLabel === 'Online' && styles.placeholderButtonOnline,
+              placeholderButtonLabel === 'Offline' && styles.placeholderButtonOffline,
             ]}
             onPress={onPlaceholderPress}
             activeOpacity={0.8}
             disabled={placeholderButtonDisabled}
           >
+            {placeholderButtonLabel === 'Online' && (
+              <Cloud size={16} color="#1B5E20" style={{ marginRight: 6 }} />
+            )}
+            {placeholderButtonLabel === 'Offline' && (
+              <CloudOff size={16} color="#C62828" style={{ marginRight: 6 }} />
+            )}
             <Text style={[
               styles.placeholderButtonText,
               placeholderButtonSyncReady && styles.placeholderButtonTextSyncReady,
+              placeholderButtonLabel === 'Online' && styles.placeholderButtonTextOnline,
+              placeholderButtonLabel === 'Offline' && styles.placeholderButtonTextOffline,
             ]}>{placeholderButtonLabel}</Text>
           </TouchableOpacity>
           {!hidePlaceholder2Button && (
@@ -832,5 +842,19 @@ const styles = StyleSheet.create({
   },
   placeholderButtonTextSyncReady: {
     color: '#fff',
+  },
+  placeholderButtonOnline: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#1B5E20',
+  },
+  placeholderButtonOffline: {
+    backgroundColor: '#FFEBEE',
+    borderColor: '#C62828',
+  },
+  placeholderButtonTextOnline: {
+    color: '#1B5E20',
+  },
+  placeholderButtonTextOffline: {
+    color: '#C62828',
   },
 });
