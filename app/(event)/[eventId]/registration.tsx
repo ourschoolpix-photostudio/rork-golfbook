@@ -3796,6 +3796,7 @@ export default function EventRegistrationScreen() {
           </TouchableOpacity>
         )}
       </View>
+      <EventFooter hideTopRowButtons />
     </>
   );
 }
