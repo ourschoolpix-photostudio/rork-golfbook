@@ -671,7 +671,11 @@ export default function ScoringScreen() {
             )}
           </View>
         </SafeAreaView>
-        <EventFooter showSyncButton={true} />
+        <EventFooter 
+        showPlaceholderButton={true}
+        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        hideTopRowButtons={true}
+      />
       </>
     );
   }
@@ -685,7 +689,11 @@ export default function ScoringScreen() {
             <Text style={{ fontSize: 16, color: '#666' }}>Event not found</Text>
           </View>
         </SafeAreaView>
-        <EventFooter showSyncButton={true} />
+        <EventFooter 
+        showPlaceholderButton={true}
+        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        hideTopRowButtons={true}
+      />
       </>
     );
   }
@@ -714,7 +722,11 @@ export default function ScoringScreen() {
             </Text>
           </View>
         </SafeAreaView>
-        <EventFooter showSyncButton={true} />
+        <EventFooter 
+        showPlaceholderButton={true}
+        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        hideTopRowButtons={true}
+      />
       </>
     );
   }
@@ -740,7 +752,11 @@ export default function ScoringScreen() {
             </Text>
           </View>
         </SafeAreaView>
-        <EventFooter showSyncButton={true} />
+        <EventFooter 
+        showPlaceholderButton={true}
+        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        hideTopRowButtons={true}
+      />
       </>
     );
   }
@@ -933,7 +949,9 @@ export default function ScoringScreen() {
 
       </SafeAreaView>
       <EventFooter 
-        showSyncButton={true} 
+        showPlaceholderButton={true}
+        onPlaceholderPress={() => console.log('[ScoringScreen] Placeholder button pressed')}
+        hideTopRowButtons={true}
       />
     </>
   );
