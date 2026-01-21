@@ -1206,13 +1206,6 @@ export default function GroupingsScreen() {
         >
           <Text style={styles.testButtonText}>Test Button 2</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={() => console.log('[Groupings] Test Button 3 pressed')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.testButtonText}>Test Button 3</Text>
-        </TouchableOpacity>
       </View>
 
       <EventFooter 
