@@ -515,7 +515,7 @@ export function EventFooter({
             disabled={placeholderButtonDisabled}
           >
             {placeholderButtonLabel === 'Online' && (
-              <Cloud size={16} color="#22C55E" style={{ marginRight: 6 }} />
+              <Cloud size={16} color="#22C55E" fill="#22C55E" style={{ marginRight: 6 }} />
             )}
             {placeholderButtonLabel === 'Offline' && (
               <CloudOff size={16} color="#EF4444" style={{ marginRight: 6 }} />
