@@ -916,22 +916,22 @@ export default function ScoringScreen() {
           })}
         </ScrollView>
 
-        {!shouldUseOfflineMode && (
-          <View style={styles.submitContainer}>
-            <TouchableOpacity 
-              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-              onPress={handleSubmitScores}
-              disabled={isSubmitting}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.submitButtonText}>
-                {isSubmitting ? 'Submitting...' : 'SUBMIT SCORES'}
-              </Text>
-              {!isSubmitting && <Ionicons name="checkmark-circle" size={24} color="#fff" />}
-            </TouchableOpacity>
-          </View>
-        )}
       </SafeAreaView>
+      {!shouldUseOfflineMode && (
+        <View style={styles.submitContainer}>
+          <TouchableOpacity 
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            onPress={handleSubmitScores}
+            disabled={isSubmitting}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.submitButtonText}>
+              {isSubmitting ? 'Submitting...' : 'SUBMIT SCORES'}
+            </Text>
+            {!isSubmitting && <Ionicons name="checkmark-circle" size={20} color="#fff" />}
+          </TouchableOpacity>
+        </View>
+      )}
       <EventFooter showSyncButton={true} />
     </>
   );
@@ -1208,7 +1208,7 @@ const styles = StyleSheet.create({
   },
   submitContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
@@ -1218,8 +1218,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FDB813',
-    paddingVertical: 16,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 8,
     gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
