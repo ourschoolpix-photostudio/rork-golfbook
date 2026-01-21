@@ -1152,8 +1152,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: '#800020',
-    backgroundColor: '#fff',
+    borderColor: '#FDB813',
+    backgroundColor: '#800020',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1173,7 +1173,7 @@ const styles = StyleSheet.create({
   dayButtonText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#800020',
+    color: '#FDB813',
     textAlign: 'center',
   },
   dayButtonTextActive: {
