@@ -17,8 +17,8 @@ const statusCycle: Record<EventStatus, EventStatus> = {
   complete: 'upcoming',
 };
 
-const statusColors: Record<EventStatus, { bg: string; text: string }> = {
-  upcoming: { bg: '#8B2E4A', text: '#fff' },
+const statusColors: Record<EventStatus, { bg: string; text: string; border?: string }> = {
+  upcoming: { bg: '#FFD700', text: '#8B2E4A', border: '#8B2E4A' },
   active: { bg: '#34C759', text: '#fff' },
   locked: { bg: '#FFA500', text: '#fff' },
   complete: { bg: '#007AFF', text: '#fff' },
@@ -64,6 +64,8 @@ export function EventStatusButton({ status, onStatusChange, isAdmin }: EventStat
         {
           backgroundColor: colors.bg,
           opacity: isAdmin ? 1 : 0.6,
+          borderWidth: colors.border ? 2 : 0,
+          borderColor: colors.border || 'transparent',
         },
       ]}
       onPress={handlePress}
