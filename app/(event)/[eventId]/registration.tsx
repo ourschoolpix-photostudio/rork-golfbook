@@ -384,7 +384,7 @@ export default function EventRegistrationScreen() {
     const foundEvent = eventQuery.data;
     const regs = registrationsQuery.data || [];
     
-    const dataKey = `${foundEvent.id}-${regs.length}-${regs.map(r => r.id).join(',')}-${foundEvent.registrationOpen}`;
+    const dataKey = `${foundEvent.id}-${regs.length}-${regs.map(r => `${r.id}-${r.emailSent}-${r.paymentStatus}`).join(',')}-${foundEvent.registrationOpen}`;
     if (dataKey === lastProcessedKeyRef.current) {
       return;
     }
