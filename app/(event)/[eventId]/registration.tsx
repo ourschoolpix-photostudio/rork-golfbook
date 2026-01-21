@@ -106,6 +106,8 @@ export default function EventRegistrationScreen() {
   const [selectedPdfOption, setSelectedPdfOption] = useState<'checkin' | 'weelist' | 'text' | null>(null);
   const [textResultModalVisible, setTextResultModalVisible] = useState(false);
   const [textResultContent, setTextResultContent] = useState('');
+  const [pinVerificationModalVisible, setPinVerificationModalVisible] = useState(false);
+  const [pinInput, setPinInput] = useState('');
 
   useEffect(() => {
     if (eventId) {
@@ -758,6 +760,27 @@ export default function EventRegistrationScreen() {
   };
 
   const handleRemoveAllPlayers = async () => {
+    if (!currentUser?.isAdmin) {
+      Alert.alert('Access Denied', 'Only admins can remove all players.');
+      return;
+    }
+    setPinVerificationModalVisible(true);
+  };
+
+  const confirmRemoveAllPlayers = async () => {
+    if (!currentUser?.isAdmin) {
+      Alert.alert('Access Denied', 'Only admins can remove all players.');
+      return;
+    }
+
+    if (pinInput !== currentUser.pin) {
+      Alert.alert('Invalid PIN', 'The PIN you entered is incorrect.');
+      return;
+    }
+
+    setPinVerificationModalVisible(false);
+    setPinInput('');
+
     if (event) {
       try {
         for (const player of selectedPlayers) {
@@ -769,8 +792,10 @@ export default function EventRegistrationScreen() {
         setSelectedPlayers([]);
         await registrationsQuery.refetch();
         setRegistrations({});
+        Alert.alert('Success', 'All players have been removed from the event.');
       } catch (error) {
         console.error('Error removing all players:', error);
+        Alert.alert('Error', 'Failed to remove all players. Please try again.');
       }
     }
   };
@@ -3334,6 +3359,60 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
+      {pinVerificationModalVisible && (
+        <View style={styles.pdfModalOverlay}>
+          <View style={styles.pdfModal}>
+            <View style={styles.pdfModalHeader}>
+              <Text style={styles.pdfModalTitle}>Verify PIN</Text>
+              <TouchableOpacity onPress={() => {
+                setPinVerificationModalVisible(false);
+                setPinInput('');
+              }}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.pinVerificationContent}>
+              <Text style={styles.pinVerificationText}>
+                Enter your admin PIN to remove all players from this event.
+              </Text>
+              <Text style={styles.pinWarningText}>
+                ⚠️ This action cannot be undone.
+              </Text>
+              <TextInput
+                style={styles.pinInput}
+                value={pinInput}
+                onChangeText={setPinInput}
+                placeholder="Enter PIN"
+                keyboardType="number-pad"
+                secureTextEntry
+                maxLength={4}
+                autoFocus
+              />
+            </View>
+
+            <View style={styles.pinVerificationFooter}>
+              <TouchableOpacity
+                style={[styles.pinButton, styles.pinButtonCancel]}
+                onPress={() => {
+                  setPinVerificationModalVisible(false);
+                  setPinInput('');
+                }}
+              >
+                <Text style={styles.pinButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.pinButton, styles.pinButtonConfirm]}
+                onPress={confirmRemoveAllPlayers}
+                disabled={pinInput.length === 0}
+              >
+                <Text style={[styles.pinButtonText, pinInput.length === 0 && styles.pinButtonTextDisabled]}>Remove All</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
       {textResultModalVisible && (
         <View style={styles.pdfModalOverlay}>
           <View style={styles.textResultModal}>
@@ -5045,5 +5124,62 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700' as const,
     color: '#fff',
+  },
+  pinVerificationContent: {
+    padding: 20,
+    gap: 16,
+  },
+  pinVerificationText: {
+    fontSize: 15,
+    color: '#333',
+    textAlign: 'center' as const,
+    lineHeight: 22,
+  },
+  pinWarningText: {
+    fontSize: 14,
+    color: '#DC2626',
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+  },
+  pinInput: {
+    borderWidth: 2,
+    borderColor: '#1B5E20',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 18,
+    color: '#1a1a1a',
+    textAlign: 'center' as const,
+    fontWeight: '600' as const,
+    letterSpacing: 4,
+  },
+  pinVerificationFooter: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  pinButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  pinButtonCancel: {
+    backgroundColor: '#666',
+  },
+  pinButtonConfirm: {
+    backgroundColor: '#DC2626',
+  },
+  pinButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
+  },
+  pinButtonTextDisabled: {
+    opacity: 0.5,
   },
 });
