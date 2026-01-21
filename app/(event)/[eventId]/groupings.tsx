@@ -1280,8 +1280,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#9E9E9E',
-    backgroundColor: '#9E9E9E',
+    borderColor: '#424242',
+    backgroundColor: '#424242',
   },
   playerCardSelected: {
     backgroundColor: '#1B5E20',
@@ -1305,7 +1305,7 @@ const styles = StyleSheet.create({
   },
   playerNetScore: {
     fontSize: 11,
-    color: '#dc2626',
+    color: '#FFD54F',
     fontWeight: '700' as const,
     marginTop: 4,
   },
@@ -1320,7 +1320,7 @@ const styles = StyleSheet.create({
   },
   playerScore: {
     fontSize: 11,
-    color: '#1B5E20',
+    color: '#fff',
     fontWeight: '700' as const,
     marginTop: 4,
   },
