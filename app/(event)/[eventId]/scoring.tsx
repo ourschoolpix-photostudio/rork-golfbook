@@ -1042,10 +1042,10 @@ export default function ScoringScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.testButton}
-          onPress={() => console.log('[ScoringScreen] Test Button 2 pressed')}
+          onPress={handleSyncOfflineScores}
           activeOpacity={0.8}
         >
-          <Text style={styles.testButtonText}>Test Button 2</Text>
+          <Text style={styles.testButtonText}>Sync Scores</Text>
         </TouchableOpacity>
       </View>
       <EventFooter 
