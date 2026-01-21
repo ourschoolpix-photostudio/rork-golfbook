@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { RefreshCw, FileText } from 'lucide-react-native';
 import { EventHeader } from '@/components/EventHeader';
 import { Event } from '@/types';
+import { formatDateForDisplay } from '@/utils/dateUtils';
 
 interface HeaderAction {
   icon: 'refresh' | 'pdf' | 'custom';
@@ -82,8 +83,8 @@ export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
           <View style={styles.bottomInfoOverlay}>
             <Text style={styles.eventLocationOverlay}>{event.location}</Text>
             <Text style={styles.eventDateOverlay}>
-              {event.date}
-              {event.endDate && event.endDate !== event.date ? ` - ${event.endDate}` : ''}
+              {formatDateForDisplay(event.date)}
+              {event.endDate && event.endDate !== event.date ? ` - ${formatDateForDisplay(event.endDate)}` : ''}
             </Text>
           </View>
         </View>
