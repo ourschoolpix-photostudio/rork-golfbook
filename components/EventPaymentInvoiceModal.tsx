@@ -29,6 +29,11 @@ interface EventPaymentInvoiceModalProps {
 const PAYPAL_FEE_PERCENT = 0.03;
 const PAYPAL_FEE_FIXED = 0.30;
 
+const calculatePayPalTotal = (baseAmount: number) => {
+  const serviceFee = (baseAmount * PAYPAL_FEE_PERCENT) + PAYPAL_FEE_FIXED;
+  return { serviceFee, total: baseAmount + serviceFee };
+};
+
 export function EventPaymentInvoiceModal({
   visible,
   member,
@@ -39,8 +44,7 @@ export function EventPaymentInvoiceModal({
 }: EventPaymentInvoiceModalProps) {
   const { orgInfo } = useSettings();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<'cash' | 'zelle' | 'paypal' | null>(null);
-  const [selectedPackage, setSelectedPackage] = useState<1 | 2 | 3 | null>(null);
+  const [processingPackage, setProcessingPackage] = useState<number | null>(null);
 
   if (!member || !event) return null;
 
@@ -48,34 +52,25 @@ export function EventPaymentInvoiceModal({
   const totalPeople = 1 + guestCount;
   
   const availablePackages = [
-    event.package1Name && event.package1Price ? { id: 1 as const, name: event.package1Name, price: event.package1Price, description: event.package1Description } : null,
-    event.package2Name && event.package2Price ? { id: 2 as const, name: event.package2Name, price: event.package2Price, description: event.package2Description } : null,
-    event.package3Name && event.package3Price ? { id: 3 as const, name: event.package3Name, price: event.package3Price, description: event.package3Description } : null,
-  ].filter(Boolean) as { id: 1 | 2 | 3; name: string; price: string; description?: string }[];
+    event.package1Name && event.package1Price ? { id: 1 as const, name: event.package1Name, price: Number(event.package1Price), description: event.package1Description } : null,
+    event.package2Name && event.package2Price ? { id: 2 as const, name: event.package2Name, price: Number(event.package2Price), description: event.package2Description } : null,
+    event.package3Name && event.package3Price ? { id: 3 as const, name: event.package3Name, price: Number(event.package3Price), description: event.package3Description } : null,
+  ].filter(Boolean) as { id: 1 | 2 | 3; name: string; price: number; description?: string }[];
   
-  const getPackagePrice = () => {
-    if (selectedPackage === 1 && event.package1Price) return Number(event.package1Price);
-    if (selectedPackage === 2 && event.package2Price) return Number(event.package2Price);
-    if (selectedPackage === 3 && event.package3Price) return Number(event.package3Price);
-    return Number(event.entryFee || 0);
-  };
-  
-  const entryFee = availablePackages.length > 0 ? getPackagePrice() : (Number(event.entryFee) || 0);
-  const baseAmount = entryFee * totalPeople;
-  const serviceFeeAmount = (baseAmount * PAYPAL_FEE_PERCENT) + PAYPAL_FEE_FIXED;
-  const paypalTotalAmount = baseAmount + serviceFeeAmount;
+  const defaultEntryFee = Number(event.entryFee) || 0;
 
-  const handleConfirmPayment = async () => {
-    if (!selectedMethod || isSubmitting) return;
-    
-    if (availablePackages.length > 0 && !selectedPackage) {
-      Alert.alert('Package Required', 'Please select a package option before confirming payment.');
-      return;
-    }
+  const handlePayment = async (method: 'zelle' | 'paypal', packageId?: number) => {
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
+    setProcessingPackage(packageId || null);
+    
     try {
-      const amount = selectedMethod === 'paypal' ? paypalTotalAmount : baseAmount;
+      const packagePrice = packageId 
+        ? availablePackages.find(p => p.id === packageId)?.price || defaultEntryFee
+        : defaultEntryFee;
+      const baseAmount = packagePrice * totalPeople;
+      const amount = method === 'paypal' ? calculatePayPalTotal(baseAmount).total : baseAmount;
 
       const paymentData: any = {
         event_id: event.id,
@@ -83,14 +78,14 @@ export function EventPaymentInvoiceModal({
         member_name: member.name,
         event_name: event.name,
         amount: amount.toFixed(2),
-        payment_method: selectedMethod,
+        payment_method: method,
         payment_status: 'completed',
         number_of_guests: guestCount,
         created_at: new Date().toISOString(),
       };
       
-      if (selectedPackage) {
-        paymentData.package_selected = selectedPackage;
+      if (packageId) {
+        paymentData.package_selected = packageId;
       }
       
       const { error } = await supabase.from('event_payments').insert(paymentData);
@@ -101,14 +96,13 @@ export function EventPaymentInvoiceModal({
         console.log('[EventPaymentInvoiceModal] ✅ Event payment record created successfully');
       }
 
-      await onPaymentComplete(selectedMethod);
+      await onPaymentComplete(method);
       
       onClose();
-      setSelectedMethod(null);
       
       Alert.alert(
         'Payment Recorded',
-        `${member.name} has been marked as paid via ${selectedMethod === 'paypal' ? 'PayPal' : selectedMethod === 'zelle' ? 'Zelle' : 'Cash'}.`,
+        `${member.name} has been marked as paid via ${method === 'paypal' ? 'PayPal' : 'Zelle'}.`,
         [{ text: 'OK' }]
       );
     } catch (error) {
@@ -116,14 +110,7 @@ export function EventPaymentInvoiceModal({
       Alert.alert('Error', 'Failed to process payment. Please try again.');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const getMethodColor = (method: 'cash' | 'zelle' | 'paypal') => {
-    switch (method) {
-      case 'cash': return '#4CAF50';
-      case 'zelle': return '#6B21A8';
-      case 'paypal': return '#0070BA';
+      setProcessingPackage(null);
     }
   };
 
@@ -146,43 +133,6 @@ export function EventPaymentInvoiceModal({
             contentContainerStyle={styles.scrollContentContainer}
             showsVerticalScrollIndicator={false}
           >
-            {availablePackages.length > 0 && (
-              <View style={styles.packageSection}>
-                <Text style={styles.sectionTitle}>Select Your Package</Text>
-                <Text style={styles.packageSubtitle}>Choose one package option</Text>
-                {availablePackages.map((pkg) => (
-                  <TouchableOpacity
-                    key={pkg.id}
-                    style={[
-                      styles.packageCard,
-                      selectedPackage === pkg.id && styles.packageCardSelected,
-                    ]}
-                    onPress={() => setSelectedPackage(pkg.id)}
-                    disabled={isSubmitting}
-                  >
-                    <View style={styles.packageHeader}>
-                      <View style={styles.packageNameContainer}>
-                        <Text style={styles.packageName}>{pkg.name}</Text>
-                        <Text style={styles.packagePrice}>${Number(pkg.price).toFixed(2)}</Text>
-                      </View>
-                      {selectedPackage === pkg.id && (
-                        <Ionicons name="checkmark-circle" size={24} color="#1B5E20" />
-                      )}
-                    </View>
-                    {pkg.description && (
-                      <Text style={styles.packageDescription}>{pkg.description}</Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
-                {event.specialNotes && (
-                  <View style={styles.specialNotesBox}>
-                    <Text style={styles.specialNotesTitle}>Special Notes</Text>
-                    <Text style={styles.specialNotesText}>{event.specialNotes}</Text>
-                  </View>
-                )}
-              </View>
-            )}
-
             <View style={styles.invoiceCard}>
               <View style={styles.invoiceHeader}>
                 <Ionicons name="receipt" size={32} color="#1B5E20" />
@@ -207,122 +157,186 @@ export function EventPaymentInvoiceModal({
                     <Text style={styles.detailValue}>+{guestCount}</Text>
                   </View>
                 )}
-                {selectedPackage && availablePackages.length > 0 && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Package:</Text>
-                    <Text style={styles.detailValue}>
-                      {availablePackages.find(p => p.id === selectedPackage)?.name}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Entry Fee:</Text>
-                  <Text style={styles.detailValue}>${entryFee.toFixed(2)} × {totalPeople}</Text>
-                </View>
               </View>
             </View>
 
-            <View style={styles.amountCard}>
-              <Text style={styles.amountLabel}>Total Amount Due</Text>
-              <Text style={styles.amountValue}>${baseAmount.toFixed(2)}</Text>
-            </View>
-
-            <View style={styles.paymentSection}>
-              <Text style={styles.sectionTitle}>Select Payment Method</Text>
-
-              <TouchableOpacity
-                style={[
-                  styles.paymentMethodCard,
-                  selectedMethod === 'cash' && { borderColor: getMethodColor('cash'), borderWidth: 2 },
-                ]}
-                onPress={() => setSelectedMethod('cash')}
-                disabled={isSubmitting}
-              >
-                <View style={[styles.methodIcon, { backgroundColor: '#E8F5E9' }]}>
-                  <Ionicons name="cash" size={24} color="#4CAF50" />
-                </View>
-                <View style={styles.methodInfo}>
-                  <Text style={styles.methodName}>Cash</Text>
-                  <Text style={styles.methodAmount}>${baseAmount.toFixed(2)}</Text>
-                </View>
-                {selectedMethod === 'cash' && (
-                  <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.paymentMethodCard,
-                  selectedMethod === 'zelle' && { borderColor: getMethodColor('zelle'), borderWidth: 2 },
-                ]}
-                onPress={() => setSelectedMethod('zelle')}
-                disabled={isSubmitting}
-              >
+            {/* Zelle Payment Box */}
+            <View style={styles.zelleBox}>
+              <View style={styles.paymentBoxHeader}>
                 <View style={[styles.methodIcon, { backgroundColor: '#F3E8FF' }]}>
                   <Ionicons name="phone-portrait" size={24} color="#6B21A8" />
                 </View>
-                <View style={styles.methodInfo}>
-                  <Text style={styles.methodName}>Zelle</Text>
-                  <Text style={styles.methodAmount}>${baseAmount.toFixed(2)}</Text>
-                  {orgInfo.zellePhone && (
-                    <Text style={styles.methodNote}>
-                      Send to: {formatPhoneNumber(orgInfo.zellePhone)}
+                <Text style={styles.paymentBoxTitle}>Zelle Payment</Text>
+              </View>
+
+              {availablePackages.length > 0 ? (
+                <View style={styles.optionsContainer}>
+                  {availablePackages.map((pkg, index) => {
+                    const pkgTotal = pkg.price * totalPeople;
+                    return (
+                      <View key={pkg.id} style={styles.optionItem}>
+                        <Text style={styles.optionLabel}>Option {index + 1}: {pkg.name}</Text>
+                        <Text style={styles.optionPrice}>
+                          ${pkg.price.toFixed(2)} × {totalPeople} = ${pkgTotal.toFixed(2)}
+                        </Text>
+                        {pkg.description && (
+                          <Text style={styles.optionDescription}>{pkg.description}</Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View style={styles.optionItem}>
+                  <Text style={styles.optionPrice}>
+                    Entry Fee: ${defaultEntryFee.toFixed(2)} × {totalPeople} = ${(defaultEntryFee * totalPeople).toFixed(2)}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.zelleInfoBox}>
+                <Text style={styles.zelleInfoTitle}>Zelle Payment Information</Text>
+                {orgInfo.zellePhone && (
+                  <Text style={styles.zelleInfoText}>Send to: {formatPhoneNumber(orgInfo.zellePhone)}</Text>
+                )}
+                {orgInfo.zelleName && (
+                  <Text style={styles.zelleInfoText}>Name: {orgInfo.zelleName}</Text>
+                )}
+              </View>
+
+              {availablePackages.length > 0 ? (
+                <View style={styles.zelleButtonsContainer}>
+                  {availablePackages.map((pkg, index) => {
+                    const pkgTotal = pkg.price * totalPeople;
+                    return (
+                      <TouchableOpacity
+                        key={pkg.id}
+                        style={styles.zelleButton}
+                        onPress={() => handlePayment('zelle', pkg.id)}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting && processingPackage === pkg.id ? (
+                          <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                          <Text style={styles.zelleButtonText}>
+                            Mark Paid - Option {index + 1} (${pkgTotal.toFixed(2)})
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.zelleButton}
+                  onPress={() => handlePayment('zelle')}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting && processingPackage === null ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.zelleButtonText}>
+                      Mark Paid via Zelle (${(defaultEntryFee * totalPeople).toFixed(2)})
                     </Text>
                   )}
-                </View>
-                {selectedMethod === 'zelle' && (
-                  <Ionicons name="checkmark-circle" size={24} color="#6B21A8" />
-                )}
-              </TouchableOpacity>
+                </TouchableOpacity>
+              )}
+            </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.paymentMethodCard,
-                  selectedMethod === 'paypal' && { borderColor: getMethodColor('paypal'), borderWidth: 2 },
-                ]}
-                onPress={() => setSelectedMethod('paypal')}
-                disabled={isSubmitting}
-              >
+            {/* PayPal Payment Box */}
+            <View style={styles.paypalBox}>
+              <View style={styles.paymentBoxHeader}>
                 <View style={[styles.methodIcon, { backgroundColor: '#E3F2FD' }]}>
                   <Ionicons name="logo-paypal" size={24} color="#0070BA" />
                 </View>
-                <View style={styles.methodInfo}>
-                  <Text style={styles.methodName}>PayPal</Text>
-                  <View style={styles.paypalBreakdown}>
-                    <Text style={styles.paypalFeeText}>
-                      Base: ${baseAmount.toFixed(2)} + Fee: ${serviceFeeAmount.toFixed(2)}
-                    </Text>
-                    <Text style={styles.methodAmountPaypal}>${paypalTotalAmount.toFixed(2)}</Text>
-                  </View>
+                <Text style={styles.paymentBoxTitle}>PayPal Payment</Text>
+              </View>
+
+              {availablePackages.length > 0 ? (
+                <View style={styles.optionsContainer}>
+                  {availablePackages.map((pkg, index) => {
+                    const pkgTotal = pkg.price * totalPeople;
+                    const { serviceFee, total } = calculatePayPalTotal(pkgTotal);
+                    return (
+                      <View key={pkg.id} style={styles.paypalOptionItem}>
+                        <Text style={styles.optionLabel}>Option {index + 1}: {pkg.name}</Text>
+                        <Text style={styles.optionPrice}>
+                          ${pkg.price.toFixed(2)} × {totalPeople} = ${pkgTotal.toFixed(2)}
+                        </Text>
+                        <Text style={styles.paypalFeeText}>
+                          + PayPal Fee: ${serviceFee.toFixed(2)}
+                        </Text>
+                        <Text style={styles.paypalTotalText}>
+                          Total: ${total.toFixed(2)}
+                        </Text>
+                        {pkg.description && (
+                          <Text style={styles.optionDescription}>{pkg.description}</Text>
+                        )}
+                        <TouchableOpacity
+                          style={styles.paypalButton}
+                          onPress={() => handlePayment('paypal', pkg.id)}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting && processingPackage === pkg.id ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                          ) : (
+                            <>
+                              <Ionicons name="logo-paypal" size={18} color="#fff" />
+                              <Text style={styles.paypalButtonText}>
+                                Pay ${total.toFixed(2)} with PayPal
+                              </Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
                 </View>
-                {selectedMethod === 'paypal' && (
-                  <Ionicons name="checkmark-circle" size={24} color="#0070BA" />
-                )}
-              </TouchableOpacity>
+              ) : (
+                <View style={styles.paypalOptionItem}>
+                  {(() => {
+                    const baseTotal = defaultEntryFee * totalPeople;
+                    const { serviceFee, total } = calculatePayPalTotal(baseTotal);
+                    return (
+                      <>
+                        <Text style={styles.optionPrice}>
+                          Entry Fee: ${defaultEntryFee.toFixed(2)} × {totalPeople} = ${baseTotal.toFixed(2)}
+                        </Text>
+                        <Text style={styles.paypalFeeText}>
+                          + PayPal Fee: ${serviceFee.toFixed(2)}
+                        </Text>
+                        <Text style={styles.paypalTotalText}>
+                          Total: ${total.toFixed(2)}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.paypalButton}
+                          onPress={() => handlePayment('paypal')}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting && processingPackage === null ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                          ) : (
+                            <>
+                              <Ionicons name="logo-paypal" size={18} color="#fff" />
+                              <Text style={styles.paypalButtonText}>
+                                Pay ${total.toFixed(2)} with PayPal
+                              </Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      </>
+                    );
+                  })()}
+                </View>
+              )}
             </View>
 
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.confirmButton,
-                  !selectedMethod && styles.confirmButtonDisabled,
-                  selectedMethod && { backgroundColor: getMethodColor(selectedMethod) },
-                ]}
-                onPress={handleConfirmPayment}
-                disabled={!selectedMethod || isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text style={styles.confirmButtonText}>
-                      CONFIRM PAYMENT
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+            {event.specialNotes && (
+              <View style={styles.specialNotesBox}>
+                <Text style={styles.specialNotesTitle}>Special Notes</Text>
+                <Text style={styles.specialNotesText}>{event.specialNotes}</Text>
+              </View>
+            )}
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -420,154 +434,130 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
   },
-  amountCard: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#1B5E20',
-    alignItems: 'center',
-  },
-  amountLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#2E7D32',
-    marginBottom: 8,
-  },
-  amountValue: {
-    fontSize: 36,
-    fontWeight: '700' as const,
-    color: '#1B5E20',
-  },
-  paymentSection: {
-    marginBottom: 20,
-  },
-  paymentMethodCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
   methodIcon: {
     width: 48,
     height: 48,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
   },
-  methodInfo: {
-    flex: 1,
+  zelleBox: {
+    backgroundColor: '#FAF5FF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#6B21A8',
   },
-  methodName: {
-    fontSize: 16,
+  paypalBox: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#0070BA',
+  },
+  paymentBoxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  paymentBoxTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#1a1a1a',
+  },
+  optionsContainer: {
+    gap: 12,
+  },
+  optionItem: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  optionLabel: {
+    fontSize: 15,
     fontWeight: '700' as const,
     color: '#1a1a1a',
     marginBottom: 4,
   },
-  methodAmount: {
-    fontSize: 18,
-    fontWeight: '700' as const,
+  optionPrice: {
+    fontSize: 14,
+    fontWeight: '600' as const,
     color: '#1B5E20',
   },
-  methodNote: {
-    fontSize: 12,
+  optionDescription: {
+    fontSize: 13,
     color: '#666',
-    marginTop: 4,
+    marginTop: 6,
+    lineHeight: 18,
   },
-  paypalBreakdown: {
-    gap: 2,
+  zelleInfoBox: {
+    backgroundColor: '#E9D5FF',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  zelleInfoTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#6B21A8',
+    marginBottom: 6,
+  },
+  zelleInfoText: {
+    fontSize: 14,
+    color: '#581C87',
+    fontWeight: '600' as const,
+  },
+  zelleButtonsContainer: {
+    gap: 8,
+  },
+  zelleButton: {
+    backgroundColor: '#6B21A8',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zelleButtonText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  paypalOptionItem: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
   },
   paypalFeeText: {
     fontSize: 12,
     color: '#666',
+    marginTop: 4,
   },
-  methodAmountPaypal: {
-    fontSize: 18,
+  paypalTotalText: {
+    fontSize: 16,
     fontWeight: '700' as const,
     color: '#0070BA',
+    marginTop: 4,
   },
-  buttonContainer: {
-    marginTop: 8,
-  },
-  confirmButton: {
+  paypalButton: {
     flexDirection: 'row',
+    backgroundColor: '#0070BA',
+    borderRadius: 8,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
     gap: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    marginTop: 12,
   },
-  confirmButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  confirmButtonText: {
-    fontSize: 16,
+  paypalButtonText: {
+    fontSize: 14,
     fontWeight: '700' as const,
     color: '#fff',
-    letterSpacing: 1,
-  },
-  packageSection: {
-    marginBottom: 16,
-  },
-  packageSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
-  packageCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-  },
-  packageCardSelected: {
-    borderColor: '#1B5E20',
-    backgroundColor: '#F1F8F4',
-  },
-  packageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  packageNameContainer: {
-    flex: 1,
-  },
-  packageName: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  packagePrice: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: '#1B5E20',
-  },
-  packageDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
-    lineHeight: 20,
   },
   specialNotesBox: {
     backgroundColor: '#FFF9E6',
