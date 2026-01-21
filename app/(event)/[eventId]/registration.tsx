@@ -2132,15 +2132,18 @@ export default function EventRegistrationScreen() {
         isHtml: true,
       });
 
+      if (playerReg?.id) {
+        await updateRegistrationMutation.mutateAsync({
+          registrationId: playerReg.id,
+          updates: { emailSent: true },
+        });
+        await registrationsQuery.refetch();
+      }
+      
       if (result.status === MailComposer.MailComposerStatus.SENT) {
-        if (playerReg?.id) {
-          await updateRegistrationMutation.mutateAsync({
-            registrationId: playerReg.id,
-            updates: { emailSent: true },
-          });
-          await registrationsQuery.refetch();
-        }
         Alert.alert('Success', `Invoice sent to ${player.email}`);
+      } else {
+        Alert.alert('Email Opened', `Invoice email opened for ${player.email}`);
       }
     } catch (error) {
       console.error('[registration] Error sending invoice email:', error);
