@@ -3658,102 +3658,12 @@ export default function EventRegistrationScreen() {
         );
       })()}
 
-      {offlineModalVisible && (
-        <View style={styles.pdfModalOverlay}>
-          <View style={styles.pdfModal}>
-            <View style={styles.pdfModalHeader}>
-              <Text style={styles.pdfModalTitle}>Offline Mode</Text>
-              <TouchableOpacity onPress={() => setOfflineModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#1a1a1a" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.pdfModalContent}>
-              <View style={styles.offlineInfoSection}>
-                <Text style={styles.offlineInfoTitle}>Current Status</Text>
-                <Text style={styles.offlineInfoText}>
-                  {isOfflineMode ? 'Offline Mode Enabled' : 'Online Mode'}
-                </Text>
-              </View>
-
-              <View style={styles.offlineInfoSection}>
-                <Text style={styles.offlineInfoTitle}>Connection</Text>
-                <Text style={styles.offlineInfoText}>
-                  {shouldUseOfflineMode ? '✓ Connected to Internet' : '✗ No Internet Connection'}
-                </Text>
-              </View>
-
-              {isOfflineMode && (
-                <View style={styles.offlineWarningBox}>
-                  <Ionicons name="information-circle" size={20} color="#FF9500" />
-                  <Text style={styles.offlineWarningText}>
-                    Changes made in offline mode will be queued and synced when you go back online.
-                  </Text>
-                </View>
-              )}
-
-              {!isOfflineMode && (
-                <View style={styles.offlineInfoBox}>
-                  <Text style={styles.offlineInfoBoxText}>
-                    Offline mode allows you to work without internet connection. All changes will be queued and synced when you go back online.
-                  </Text>
-                </View>
-              )}
-
-              <View style={styles.offlineActions}>
-                <TouchableOpacity
-                  style={[
-                    styles.offlineActionButton,
-                    { backgroundColor: isOfflineMode ? '#34C759' : '#FF9500' },
-                  ]}
-                  onPress={async () => {
-                    setOfflineModalVisible(false);
-                    if (isOfflineMode) {
-                      Alert.alert(
-                        'Go Online',
-                        'Switch to online mode?',
-                        [
-                          {
-                            text: 'Cancel',
-                            style: 'cancel',
-                          },
-                          {
-                            text: 'Go Online',
-                            onPress: async () => {
-                              await disableOfflineMode();
-                            },
-                          },
-                        ]
-                      );
-                    } else {
-                      Alert.alert(
-                        'Enable Offline Mode',
-                        'This will allow you to work without internet connection. All changes will be queued and synced when you go back online.',
-                        [
-                          {
-                            text: 'Cancel',
-                            style: 'cancel',
-                          },
-                          {
-                            text: 'Enable',
-                            onPress: async () => {
-                              await enableOfflineMode();
-                            },
-                          },
-                        ]
-                      );
-                    }
-                  }}
-                >
-                  <Text style={styles.offlineActionButtonText}>
-                    {isOfflineMode ? 'Go Online' : 'Go Offline'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
+      <OfflineModeToggle
+        eventId={eventId}
+        position="modal-only"
+        externalModalVisible={offlineModalVisible}
+        onExternalModalClose={() => setOfflineModalVisible(false)}
+      />
 
       {paymentMethodModalVisible && (
         <View style={styles.paymentModalOverlay}>

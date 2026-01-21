@@ -6,10 +6,12 @@ import { syncPendingOperations } from '@/utils/offlineSync';
 
 interface OfflineModeToggleProps {
   eventId?: string;
-  position?: 'header' | 'footer';
+  position?: 'header' | 'footer' | 'modal-only';
+  externalModalVisible?: boolean;
+  onExternalModalClose?: () => void;
 }
 
-export function OfflineModeToggle({ eventId, position = 'header' }: OfflineModeToggleProps) {
+export function OfflineModeToggle({ eventId, position = 'header', externalModalVisible, onExternalModalClose }: OfflineModeToggleProps) {
   const {
     isOfflineMode,
     isConnected,
@@ -23,7 +25,15 @@ export function OfflineModeToggle({ eventId, position = 'header' }: OfflineModeT
     setPendingSyncTime,
   } = useOfflineMode();
   
-  const [showModal, setShowModal] = useState(false);
+  const [internalShowModal, setInternalShowModal] = useState(false);
+  const showModal = externalModalVisible !== undefined ? externalModalVisible : internalShowModal;
+  const setShowModal = (value: boolean) => {
+    if (externalModalVisible !== undefined && onExternalModalClose && !value) {
+      onExternalModalClose();
+    } else {
+      setInternalShowModal(value);
+    }
+  };
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
 
   const eventOperations = eventId 
@@ -154,6 +164,96 @@ export function OfflineModeToggle({ eventId, position = 'header' }: OfflineModeT
     if (isOfflineMode) return '#fff';
     return '#34C759';
   };
+
+  if (position === 'modal-only') {
+    return (
+      <Modal visible={showModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Offline Mode</Text>
+              <TouchableOpacity onPress={() => setShowModal(false)}>
+                <Ionicons name="close" size={24} color="#1a1a1a" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <View style={[styles.statusCard, { backgroundColor: getStatusColor() }]}>
+                <Ionicons name={getStatusIcon() as any} size={32} color={getIconColor()} />
+                <Text style={styles.statusCardTitle}>{getStatusText()}</Text>
+              </View>
+
+              <View style={styles.infoSection}>
+                <Text style={styles.infoTitle}>Connection Status</Text>
+                <Text style={styles.infoText}>
+                  {isConnected ? '✓ Connected to Internet' : '✗ No Internet Connection'}
+                </Text>
+              </View>
+
+              <View style={styles.infoSection}>
+                <Text style={styles.infoTitle}>Pending Changes</Text>
+                <Text style={styles.infoText}>
+                  {eventOperations.length > 0
+                    ? `${eventOperations.length} change${eventOperations.length !== 1 ? 's' : ''} waiting to sync`
+                    : 'No pending changes'}
+                </Text>
+              </View>
+
+              {eventOperations.length > 0 && (
+                <View style={styles.operationsList}>
+                  <Text style={styles.operationsTitle}>Pending Operations:</Text>
+                  {eventOperations.slice(0, 5).map(op => (
+                    <View key={op.id} style={styles.operationItem}>
+                      <Text style={styles.operationType}>{op.type.replace('_', ' ')}</Text>
+                      <Text style={styles.operationTime}>
+                        {new Date(op.timestamp).toLocaleTimeString()}
+                      </Text>
+                    </View>
+                  ))}
+                  {eventOperations.length > 5 && (
+                    <Text style={styles.moreText}>
+                      +{eventOperations.length - 5} more
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    { backgroundColor: isOfflineMode ? '#34C759' : '#FF9500' },
+                  ]}
+                  onPress={() => {
+                    setShowModal(false);
+                    handleToggleOfflineMode();
+                  }}
+                >
+                  <Text style={styles.actionButtonText}>
+                    {isOfflineMode ? 'Go Online' : 'Go Offline'}
+                  </Text>
+                </TouchableOpacity>
+
+                {hasPendingChanges && isConnected && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: '#1976D2' }]}
+                    onPress={() => {
+                      setShowModal(false);
+                      handleSync();
+                    }}
+                    disabled={isSyncing}
+                  >
+                    <Ionicons name="sync" size={18} color="#fff" />
+                    <Text style={styles.actionButtonText}>Sync Now</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
 
   if (position === 'footer') {
     return (
