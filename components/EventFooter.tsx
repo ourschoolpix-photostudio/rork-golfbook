@@ -461,7 +461,7 @@ export function EventFooter({
         </View>
       )}
       {showSubmitButton && onSubmit && (
-        <View style={[styles.topRow, { paddingTop: 4, paddingBottom: 0 }]}>
+        <View style={styles.topRow}>
           <TouchableOpacity
             style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
             onPress={onSubmit}
@@ -660,7 +660,8 @@ const styles = StyleSheet.create({
   tabItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingTop: 4,
+    paddingBottom: 8,
     paddingHorizontal: 4,
   },
   tabLabel: {
