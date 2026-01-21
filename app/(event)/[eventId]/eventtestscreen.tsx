@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { EventFooter } from '@/components/EventFooter';
 import { SingleFooterButton } from '@/components/SingleFooterButton';
@@ -23,9 +23,31 @@ export default function EventTestScreen() {
           />
         </View>
       </View>
+      {/* Independent test button row - changes here won't affect EventFooter on other screens */}
+      <View style={styles.testButtonRow}>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[EventTestScreen] Test Button 1 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 1</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[EventTestScreen] Test Button 2 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 2</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.testButton}
+          onPress={() => console.log('[EventTestScreen] Test Button 3 pressed')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.testButtonText}>Test Button 3</Text>
+        </TouchableOpacity>
+      </View>
       <EventFooter 
-        showPlaceholderButton={true}
-        onPlaceholderPress={() => console.log('[EventTestScreen] Placeholder button pressed')}
         hideTopRowButtons={true}
       />
     </View>
@@ -63,5 +85,31 @@ const styles = StyleSheet.create({
   buttonPreview: {
     marginTop: 40,
     width: '60%',
+  },
+  testButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    backgroundColor: '#5A0015',
+  },
+  testButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#FDB813',
+    borderWidth: 2,
+    borderColor: '#800020',
+  },
+  testButtonText: {
+    color: '#800020',
+    fontSize: 12,
+    fontWeight: '700' as const,
   },
 });
