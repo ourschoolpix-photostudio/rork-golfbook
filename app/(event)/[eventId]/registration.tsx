@@ -41,7 +41,7 @@ import { ZelleInvoiceModal } from '@/components/ZelleInvoiceModal';
 import { PayPalInvoiceModal } from '@/components/PayPalInvoiceModal';
 import { MembershipRenewalModal } from '@/components/MembershipRenewalModal';
 import { EventDetailsModal } from '@/components/EventDetailsModal';
-import { EventPaymentInvoiceModal } from '@/components/EventPaymentInvoiceModal';
+import { AdminMarkedPaymentModal } from '@/components/AdminMarkedPaymentModal';
 import { EventStatus } from '@/components/EventStatusButton';
 import { calculateTournamentHandicap, addTournamentHandicapRecord } from '@/utils/tournamentHandicapHelper';
 import { EventFooter } from '@/components/EventFooter';
@@ -3541,7 +3541,7 @@ export default function EventRegistrationScreen() {
         </View>
       )}
 
-      <EventPaymentInvoiceModal
+      <AdminMarkedPaymentModal
         visible={paymentStatusModalVisible}
         member={selectedPlayerForPayment ? selectedPlayers.find(p => p.name === selectedPlayerForPayment.name) || null : null}
         event={event}

@@ -17,7 +17,7 @@ import { formatPhoneNumber } from '@/utils/phoneFormatter';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert } from '@/utils/alertPolyfill';
 
-interface EventPaymentInvoiceModalProps {
+interface AdminMarkedPaymentModalProps {
   visible: boolean;
   member: Member | null;
   event: Event | null;
@@ -34,14 +34,14 @@ const calculatePayPalTotal = (baseAmount: number) => {
   return { serviceFee, total: baseAmount + serviceFee };
 };
 
-export function EventPaymentInvoiceModal({
+export function AdminMarkedPaymentModal({
   visible,
   member,
   event,
   registration,
   onClose,
   onPaymentComplete,
-}: EventPaymentInvoiceModalProps) {
+}: AdminMarkedPaymentModalProps) {
   const { orgInfo } = useSettings();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
@@ -114,8 +114,8 @@ export function EventPaymentInvoiceModal({
         paymentData.package_selected = selectedPackage;
       }
       
-      console.log('[EventPaymentInvoiceModal] Creating payment history record...');
-      console.log('[EventPaymentInvoiceModal] Payment data:', JSON.stringify(paymentData, null, 2));
+      console.log('[AdminMarkedPaymentModal] Creating payment history record...');
+      console.log('[AdminMarkedPaymentModal] Payment data:', JSON.stringify(paymentData, null, 2));
       
       const { data: paymentRecord, error: paymentError } = await supabase
         .from('event_payments')
@@ -123,14 +123,14 @@ export function EventPaymentInvoiceModal({
         .select();
 
       if (paymentError) {
-        console.error('[EventPaymentInvoiceModal] ❌ Error creating payment history:', paymentError.message);
-        console.error('[EventPaymentInvoiceModal] Error details:', paymentError.details);
-        console.error('[EventPaymentInvoiceModal] Error hint:', paymentError.hint);
+        console.error('[AdminMarkedPaymentModal] ❌ Error creating payment history:', paymentError.message);
+        console.error('[AdminMarkedPaymentModal] Error details:', paymentError.details);
+        console.error('[AdminMarkedPaymentModal] Error hint:', paymentError.hint);
         throw paymentError;
       } else if (paymentRecord && paymentRecord.length > 0) {
-        console.log('[EventPaymentInvoiceModal] ✅ Payment history record created:', paymentRecord[0].id);
+        console.log('[AdminMarkedPaymentModal] ✅ Payment history record created:', paymentRecord[0].id);
       } else {
-        console.warn('[EventPaymentInvoiceModal] ⚠️ Payment history insert returned no data');
+        console.warn('[AdminMarkedPaymentModal] ⚠️ Payment history insert returned no data');
       }
 
       await onPaymentComplete(selectedPaymentMethod);
@@ -144,7 +144,7 @@ export function EventPaymentInvoiceModal({
         [{ text: 'OK' }]
       );
     } catch (error) {
-      console.error('[EventPaymentInvoiceModal] Error processing payment:', error);
+      console.error('[AdminMarkedPaymentModal] Error processing payment:', error);
       Alert.alert('Error', 'Failed to process payment. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -199,7 +199,6 @@ export function EventPaymentInvoiceModal({
               </View>
             </View>
 
-            {/* Package Selection */}
             {availablePackages.length > 0 && (
               <View style={styles.packageBox}>
                 <Text style={styles.sectionTitle}>Select Package Option</Text>
@@ -230,7 +229,6 @@ export function EventPaymentInvoiceModal({
               </View>
             )}
 
-            {/* Entry Fee Display */}
             <View style={styles.entryFeeBox}>
               <Text style={styles.sectionTitle}>Entry Fee</Text>
               <View style={styles.feeBreakdown}>
@@ -256,7 +254,6 @@ export function EventPaymentInvoiceModal({
               </View>
             </View>
 
-            {/* Payment Method Selection */}
             <View style={styles.paymentMethodBox}>
               <Text style={styles.sectionTitle}>Payment Method</Text>
               <View style={styles.paymentMethodsContainer}>
@@ -325,7 +322,6 @@ export function EventPaymentInvoiceModal({
               )}
             </View>
 
-            {/* Save Button */}
             <TouchableOpacity
               style={[
                 styles.saveButton,
