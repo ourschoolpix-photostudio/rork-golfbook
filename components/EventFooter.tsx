@@ -461,7 +461,7 @@ export function EventFooter({
         </View>
       )}
       {showSubmitButton && onSubmit && (
-        <View style={styles.topRow}>
+        <View style={[styles.topRow, { paddingBottom: 4 }]}>
           <TouchableOpacity
             style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
             onPress={onSubmit}
