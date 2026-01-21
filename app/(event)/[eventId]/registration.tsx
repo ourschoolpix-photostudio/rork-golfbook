@@ -1950,31 +1950,6 @@ export default function EventRegistrationScreen() {
         </div>
       </div>
       
-      ${(() => {
-        if (paypalLinks.length === 0 && !event.specialNotes) return '';
-        
-        return `
-      <div class="package-section">
-        <h3>Package Options</h3>
-        ${paypalLinks.map(pkg => `
-        <div class="package-card">
-          <div class="package-header">
-            <span class="package-name">${pkg.name}</span>
-            <span class="package-price">${pkg.baseAmount.toFixed(2)}</span>
-          </div>
-          ${pkg.description ? `<p class="package-description">${pkg.description}</p>` : ''}
-        </div>
-        `).join('')}
-        ${event.specialNotes ? `
-        <div class="special-notes-box">
-          <p class="special-notes-title">Special Notes</p>
-          <p class="special-notes-text">${event.specialNotes}</p>
-        </div>
-        ` : ''}
-      </div>
-      `;
-      })()}
-      
       <div class="payment-section">
         <h3>Payment Options</h3>
         
@@ -1983,9 +1958,12 @@ export default function EventRegistrationScreen() {
           <p class="zelle-number">${zellePhone}</p>
           <div style="margin-top: 16px;">
             ${paypalLinks.map(pkg => `
-            <div style="display: flex; justify-content: space-between; padding: 10px 16px; background-color: rgba(107, 33, 168, 0.1); border-radius: 8px; margin: 8px 0;">
-              <span style="font-size: 14px; color: #6B21A8; font-weight: 600;">${pkg.name}</span>
-              <span style="font-size: 16px; color: #6B21A8; font-weight: 700;">${pkg.baseAmount.toFixed(2)}</span>
+            <div style="background-color: rgba(107, 33, 168, 0.15); border-radius: 8px; padding: 12px 16px; margin: 8px 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 15px; color: #6B21A8; font-weight: 700;">${pkg.name}</span>
+                <span style="font-size: 18px; color: #6B21A8; font-weight: 700;">${pkg.baseAmount.toFixed(2)}</span>
+              </div>
+              ${pkg.description ? `<p style="font-size: 13px; color: #6B21A8; margin: 8px 0 0 0; line-height: 1.4;">${pkg.description}</p>` : ''}
             </div>
             `).join('')}
           </div>
@@ -1993,18 +1971,26 @@ export default function EventRegistrationScreen() {
         
         <div class="paypal-box" style="background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%); border-color: #0070BA;">
           <p class="paypal-label" style="color: #0070BA;">PAY VIA PAYPAL</p>
-          <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Choose your package below (includes processing fee)</p>
+          <p style="color: #666; font-size: 13px; margin-bottom: 16px;">Choose your package below (includes 3% processing fee)</p>
           ${paypalLinks.map(pkg => `
           <div style="background-color: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #E0E0E0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span style="font-size: 15px; color: #0070BA; font-weight: 600;">${pkg.name}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 15px; color: #0070BA; font-weight: 700;">${pkg.name}</span>
               <span style="font-size: 20px; color: #0070BA; font-weight: 700;">${pkg.amountWithFee.toFixed(2)}</span>
             </div>
+            ${pkg.description ? `<p style="font-size: 13px; color: #666; margin: 0 0 12px 0; line-height: 1.4;">${pkg.description}</p>` : ''}
             <a href="${pkg.approvalUrl}" class="paypal-button" style="display: block; text-align: center;">PAY ${pkg.amountWithFee.toFixed(2)} WITH PAYPAL</a>
           </div>
           `).join('')}
         </div>
       </div>
+      
+      ${event.specialNotes ? `
+      <div class="special-notes-box">
+        <p class="special-notes-title">Special Notes</p>
+        <p class="special-notes-text">${event.specialNotes}</p>
+      </div>
+      ` : ''}
       
       <div class="deadline-box">
         <p>⏰ Payment must be received by <strong>${getPaymentDeadline(event.date)}</strong></p>
