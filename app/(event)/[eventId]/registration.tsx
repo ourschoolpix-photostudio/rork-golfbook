@@ -3847,6 +3847,10 @@ export default function EventRegistrationScreen() {
           console.log('[registration] Placeholder 2 pressed');
         }}
         placeholder2ButtonLabel="Placeholder 2"
+        onPlaceholder3Press={() => {
+          console.log('[registration] Placeholder 3 pressed');
+        }}
+        placeholder3ButtonLabel="Placeholder 3"
       />
     </>
   );
