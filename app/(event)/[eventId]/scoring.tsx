@@ -1040,13 +1040,15 @@ export default function ScoringScreen() {
         >
           <Text style={styles.testButtonText}>Submit Scores</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={handleSyncOfflineScores}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.testButtonText}>Sync Scores</Text>
-        </TouchableOpacity>
+        {shouldUseOfflineMode && (
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={handleSyncOfflineScores}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.testButtonText}>Sync Scores</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <EventFooter 
         showPlaceholderButton={true}
