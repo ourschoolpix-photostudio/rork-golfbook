@@ -985,15 +985,6 @@ export default function GroupingsScreen() {
                 SHOTGUN
               </Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.netScoreBtn}
-              onPress={handleSortByNetScore}
-            >
-              <Text style={styles.netScoreBtnText}>
-                NET SCORE
-              </Text>
-            </TouchableOpacity>
           </View>
 
           <View style={styles.unassignAllBtnContainer}>
@@ -1246,21 +1237,6 @@ const styles = StyleSheet.create({
   },
   filterBtnTextActive: {
     color: '#333',
-  },
-  netScoreBtn: {
-    flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    backgroundColor: '#800020',
-    borderColor: '#800020',
-    alignItems: 'center',
-  },
-  netScoreBtnText: {
-    fontSize: 9,
-    fontWeight: '600' as const,
-    color: '#fff',
   },
   groupContainer: {
     borderWidth: 1,
