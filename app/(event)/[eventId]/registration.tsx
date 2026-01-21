@@ -3719,7 +3719,7 @@ export default function EventRegistrationScreen() {
       <View style={styles.testButtonRow}>
         <TouchableOpacity
           style={styles.testButton}
-          onPress={() => console.log('[Registration] Test Button 1 pressed')}
+          onPress={() => setOfflineModalVisible(true)}
           activeOpacity={0.8}
         >
           <Text style={styles.testButtonText}>Test Button 1</Text>
