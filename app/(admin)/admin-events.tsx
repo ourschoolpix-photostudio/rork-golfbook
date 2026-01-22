@@ -418,6 +418,13 @@ export default function AdminEventsScreen() {
     }
 
     try {
+      const teamCaptainsArray = form.type === 'team' ? [
+        form.teamCaptain1 || '',
+        form.teamCaptain2 || '',
+        form.teamCaptain3 || '',
+        form.teamCaptain4 || '',
+      ].filter(name => name.trim() !== '') : [];
+
       if (editingId) {
         await supabaseService.events.update(editingId, {
             id: editingId,
@@ -518,8 +525,7 @@ export default function AdminEventsScreen() {
             package3Price: form.package3Price,
             package3Description: form.package3Description,
             specialNotes: form.specialNotes,
-            numberOfTeams: form.numberOfTeams,
-            teamCaptains: form.teamCaptains,
+            teamCaptains: teamCaptainsArray,
         });
       } else {
         const eventId = generateUUID();
@@ -623,8 +629,7 @@ export default function AdminEventsScreen() {
           package3Price: form.package3Price,
           package3Description: form.package3Description,
           specialNotes: form.specialNotes,
-          numberOfTeams: form.numberOfTeams,
-          teamCaptains: form.teamCaptains,
+          teamCaptains: teamCaptainsArray,
           createdAt: new Date().toISOString(),
         };
         await supabaseService.events.create(newEvent);
@@ -787,8 +792,10 @@ export default function AdminEventsScreen() {
       package3Price: event.package3Price || '',
       package3Description: event.package3Description || '',
       specialNotes: event.specialNotes || '',
-      numberOfTeams: event.numberOfTeams || '',
-      teamCaptains: event.teamCaptains || [],
+      teamCaptain1: event.teamCaptains?.[0] || '',
+      teamCaptain2: event.teamCaptains?.[1] || '',
+      teamCaptain3: event.teamCaptains?.[2] || '',
+      teamCaptain4: event.teamCaptains?.[3] || '',
     });
     setModalVisible(true);
   };
