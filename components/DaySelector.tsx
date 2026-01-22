@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   dayButton: {
     flex: 1,
-    height: 40,
+    height: 30,
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1.5,
