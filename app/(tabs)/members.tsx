@@ -531,6 +531,7 @@ export default function MembersScreen() {
                   isCurrentUser={true}
                   currentUser={authUser}
                   onEdit={handleEditProfileTap}
+                  onRenew={handleRenewMembership}
                   onHistoryPress={() => handleHistoryPress(currentUser)}
                 />
               </TouchableOpacity>

@@ -14,6 +14,7 @@ interface PlayerCardProps {
   onDelete?: () => void;
   onEdit?: () => void;
   onEditPress?: () => void;
+  onRenew?: () => void;
   showCheckbox?: boolean;
   isSelected?: boolean;
   onCheckboxPress?: () => void;
@@ -29,6 +30,7 @@ export const PlayerCard = memo(function PlayerCard({
   onDelete,
   onEdit,
   onEditPress,
+  onRenew,
   showCheckbox,
   isSelected,
   onCheckboxPress,
@@ -168,8 +170,8 @@ export const PlayerCard = memo(function PlayerCard({
             {member.email && <Text style={styles.memberDetail}>{member.email}</Text>}
           </View>
 
-          {isCurrentUser && member.membershipType === 'in-active' && onEdit && (
-            <TouchableOpacity style={styles.renewButton} onPress={onEdit}>
+          {isCurrentUser && member.membershipType === 'in-active' && onRenew && (
+            <TouchableOpacity style={styles.renewButton} onPress={onRenew}>
               <Text style={styles.renewButtonText}>Renew Membership</Text>
             </TouchableOpacity>
           )}
