@@ -108,8 +108,10 @@ const eventSchema = z.object({
   lowGrossTrophy: z.boolean().optional().nullable(),
   lowGrossCashPrize: z.string().optional().nullable(),
   closestToPin: z.string().optional().nullable(),
-  numberOfTeams: z.string().optional().nullable(),
-  teamCaptains: z.array(z.string()).optional().nullable(),
+  teamCaptain1: z.string().optional().nullable(),
+  teamCaptain2: z.string().optional().nullable(),
+  teamCaptain3: z.string().optional().nullable(),
+  teamCaptain4: z.string().optional().nullable(),
 });
 
 function mapEventToDb(event: z.infer<typeof eventSchema>) {
@@ -218,8 +220,10 @@ function mapEventToDb(event: z.infer<typeof eventSchema>) {
     low_gross_trophy: event.lowGrossTrophy,
     low_gross_cash_prize: event.lowGrossCashPrize,
     closest_to_pin: event.closestToPin,
-    number_of_teams: event.numberOfTeams,
-    team_captains: event.teamCaptains,
+    team_captain_1: event.teamCaptain1,
+    team_captain_2: event.teamCaptain2,
+    team_captain_3: event.teamCaptain3,
+    team_captain_4: event.teamCaptain4,
     updated_at: new Date().toISOString(),
   };
 }
@@ -331,8 +335,10 @@ function mapDbToEvent(e: any, registeredPlayers: string[] = []): Event {
     lowGrossTrophy: e.low_gross_trophy,
     lowGrossCashPrize: e.low_gross_cash_prize,
     closestToPin: e.closest_to_pin,
-    numberOfTeams: e.number_of_teams,
-    teamCaptains: e.team_captains,
+    teamCaptain1: e.team_captain_1,
+    teamCaptain2: e.team_captain_2,
+    teamCaptain3: e.team_captain_3,
+    teamCaptain4: e.team_captain_4,
   };
 }
 

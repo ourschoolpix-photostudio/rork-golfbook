@@ -164,8 +164,10 @@ export interface Event {
   archivedAt?: string;
   registrationOpen?: boolean;
   groupsPublished?: boolean;
-  numberOfTeams?: string;
-  teamCaptains?: string[];
+  teamCaptain1?: string;
+  teamCaptain2?: string;
+  teamCaptain3?: string;
+  teamCaptain4?: string;
 }
 
 export interface EventRegistration {
