@@ -675,6 +675,35 @@ export default function GroupingsScreen() {
     console.log('[groupings] ✅ Ungrouped players sorted by flight then handicap');
   };
 
+  const handleSortAllByHandicap = () => {
+    if (ungroupedPlayers.length === 0) {
+      console.log('[groupings] ⚠️ No unassigned players!');
+      return;
+    }
+
+    console.log('[groupings] 📊 ALL HDC button tapped! Active day:', activeDay);
+    console.log('[groupings] Ungrouped players:', ungroupedPlayers.map(p => p.name));
+
+    // Sort all players by handicap regardless of flight
+    const sortedPlayers = [...ungroupedPlayers].sort((a, b) => {
+      const playerRegA = registrations[a.name];
+      const playerRegB = registrations[b.name];
+      const handicapA = getDisplayHandicap(a, playerRegA, event || undefined, useCourseHandicap, activeDay);
+      const handicapB = getDisplayHandicap(b, playerRegB, event || undefined, useCourseHandicap, activeDay);
+      return handicapA - handicapB;
+    });
+
+    console.log('[groupings] 🔄 Sorted all by handicap:', sortedPlayers.map(p => {
+      const playerReg = registrations[p.name];
+      const handicap = getDisplayHandicap(p, playerReg, event || undefined, useCourseHandicap, activeDay);
+      return { name: p.name, handicap };
+    }));
+
+    // Update the enriched ungrouped players with the sorted order
+    setEnrichedUngroupedPlayers(sortedPlayers);
+    console.log('[groupings] ✅ Ungrouped players sorted by handicap (all flights combined)');
+  };
+
   const handleSortByHandicap = () => {
     if (ungroupedPlayers.length === 0) {
       console.log('[groupings] ⚠️ No unassigned players!');
@@ -1148,11 +1177,9 @@ export default function GroupingsScreen() {
 
               <TouchableOpacity
                 style={styles.adminActionBtn}
-                onPress={() => {
-                  console.log('[groupings] Admin button 2 pressed');
-                }}
+                onPress={handleSortAllByHandicap}
               >
-                <Text style={styles.adminActionBtnText}>BTN 2</Text>
+                <Text style={styles.adminActionBtnText}>ALL HDC</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
