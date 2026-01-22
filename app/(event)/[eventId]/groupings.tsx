@@ -616,6 +616,37 @@ export default function GroupingsScreen() {
     console.log('[groupings] ✅ Unassigned event players auto-grouped by net score');
   };
 
+  const handleSortUngroupedByNetScore = () => {
+    if (ungroupedPlayers.length === 0) {
+      console.log('[groupings] ⚠️ No unassigned players!');
+      return;
+    }
+
+    console.log('[groupings] 📊 NET SCORE sort button tapped! Active day:', activeDay);
+    console.log('[groupings] Ungrouped players:', ungroupedPlayers.map(p => p.name));
+
+    // Sort all players by net score
+    const sortedPlayers = [...ungroupedPlayers].sort((a, b) => {
+      const playerRegA = registrations[a.name];
+      const playerRegB = registrations[b.name];
+      const handicapA = getDisplayHandicap(a, playerRegA, event || undefined, useCourseHandicap, activeDay);
+      const handicapB = getDisplayHandicap(b, playerRegB, event || undefined, useCourseHandicap, activeDay);
+      const netScoreA = (a.scoreTotal ?? 0) - handicapA;
+      const netScoreB = (b.scoreTotal ?? 0) - handicapB;
+      return netScoreA - netScoreB;
+    });
+
+    console.log('[groupings] 🔄 Sorted by net score:', sortedPlayers.map(p => {
+      const playerReg = registrations[p.name];
+      const handicap = getDisplayHandicap(p, playerReg, event || undefined, useCourseHandicap, activeDay);
+      return { name: p.name, gross: p.scoreTotal || 0, handicap, net: (p.scoreTotal ?? 0) - handicap };
+    }));
+
+    // Update the enriched ungrouped players with the sorted order
+    setEnrichedUngroupedPlayers(sortedPlayers);
+    console.log('[groupings] ✅ Ungrouped players sorted by net score');
+  };
+
   const handleSortByFlightHandicap = () => {
     if (ungroupedPlayers.length === 0) {
       console.log('[groupings] ⚠️ No unassigned players!');
@@ -1172,7 +1203,7 @@ export default function GroupingsScreen() {
                 style={styles.adminActionBtn}
                 onPress={handleSortByFlightHandicap}
               >
-                <Text style={styles.adminActionBtnText}>SORT FLT</Text>
+                <Text style={styles.adminActionBtnText}>FLT HDC</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1184,11 +1215,9 @@ export default function GroupingsScreen() {
 
               <TouchableOpacity
                 style={styles.adminActionBtn}
-                onPress={() => {
-                  console.log('[groupings] Admin button 3 pressed');
-                }}
+                onPress={handleSortUngroupedByNetScore}
               >
-                <Text style={styles.adminActionBtnText}>BTN 3</Text>
+                <Text style={styles.adminActionBtnText}>NET SCORE</Text>
               </TouchableOpacity>
             </View>
           </View>
