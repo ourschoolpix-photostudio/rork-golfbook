@@ -797,6 +797,11 @@ export default function GroupingsScreen() {
       console.log('[groupings] 🔄 Updating registration:', registration.id, 'with adjustedHandicap:', adjustedHandicap);
       return supabaseService.registrations.update(registration.id, { adjustedHandicap });
     },
+    onSuccess: async () => {
+      console.log('[groupings] 🔄 Registration mutation success - invalidating queries...');
+      await queryClient.invalidateQueries({ queryKey: ['registrations', id] });
+      await refetchRegistrations();
+    },
   });
 
   const handleUpdateMember = async (updatedMember: Member) => {
@@ -823,7 +828,10 @@ export default function GroupingsScreen() {
       // Invalidate and refetch registrations to ensure UI is updated
       console.log('[groupings] 🔄 Invalidating and refetching registrations after member update...');
       await queryClient.invalidateQueries({ queryKey: ['registrations', id] });
+      // Add small delay to ensure database has committed the changes
+      await new Promise(resolve => setTimeout(resolve, 100));
       const { data: freshRegistrations } = await refetchRegistrations();
+      console.log('[groupings] 📊 Fresh registrations data:', freshRegistrations?.map((r: any) => ({ memberId: r.memberId, adjustedHandicap: r.adjustedHandicap })));
       
       // Manually update local registrations state for immediate UI update
       if (freshRegistrations && allMembers) {
@@ -846,6 +854,9 @@ export default function GroupingsScreen() {
         });
         setRegistrations(regMap);
         console.log('[groupings] ✅ Local registrations state updated immediately');
+        
+        // Trigger a full refresh to ensure UI updates
+        triggerGroupRefresh();
       }
       
       console.log('[groupings] ✅ Member updated and saved:', updatedMember.name, { 
