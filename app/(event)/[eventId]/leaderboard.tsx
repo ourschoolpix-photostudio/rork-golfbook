@@ -820,14 +820,14 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    height: 48,
+    height: 36,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     borderRadius: 0,
-    backgroundColor: '#fff',
+    backgroundColor: '#800020',
     borderTopWidth: 2,
     borderBottomWidth: 2,
-    borderColor: '#ddd',
+    borderColor: '#FFD54F',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -843,9 +843,9 @@ const styles = StyleSheet.create({
     borderRightWidth: 2,
   },
   tabButtonActive: {
-    backgroundColor: '#1B5E20',
-    borderColor: '#1B5E20',
-    shadowColor: '#1B5E20',
+    backgroundColor: '#FFD54F',
+    borderColor: '#800020',
+    shadowColor: '#800020',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -854,10 +854,10 @@ const styles = StyleSheet.create({
   tabButtonText: {
     fontSize: 15,
     fontWeight: '600' as const,
-    color: '#666',
+    color: '#fff',
   },
   tabButtonTextActive: {
-    color: '#fff',
+    color: '#800020',
     fontWeight: '700' as const,
   },
   daySelector: {
