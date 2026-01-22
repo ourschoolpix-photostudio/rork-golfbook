@@ -1039,7 +1039,7 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   flightSeparator: {
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#424242',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
