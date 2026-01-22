@@ -105,7 +105,7 @@ export default function TabLayout() {
           options={{
             title: "Admin",
             tabBarIcon: ({ color }) => <ShieldCheck size={24} color={color} />,
-            href: (currentUser?.isAdmin || hasAnyRole(currentUser, ['President', 'VP', 'Tournament Director', 'Handicap Director', 'Member Relations', 'Financer', 'Operations'])) ? undefined : null,
+            href: (currentUser?.isAdmin || hasAnyRole(currentUser, ['President', 'Vice-President', 'Tournament Director', 'Handicap Director', 'Member Relations', 'Financer', 'Operations'])) ? undefined : null,
             headerRight: () => null,
           }}
         />
