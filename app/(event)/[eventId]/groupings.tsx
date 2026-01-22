@@ -91,6 +91,7 @@ export default function GroupingsScreen() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const [registrations, setRegistrations] = useState<Record<string, any>>({});
   const [lastTapTime, setLastTapTime] = useState<{ teeTime: number; shotgun: number }>({ teeTime: 0, shotgun: 0 });
+  const [showFlightSeparators, setShowFlightSeparators] = useState<boolean>(false);
   
   const queryClient = useQueryClient();
   const { members: allMembers } = useAuth();
@@ -644,6 +645,7 @@ export default function GroupingsScreen() {
 
     // Update the enriched ungrouped players with the sorted order
     setEnrichedUngroupedPlayers(sortedPlayers);
+    setShowFlightSeparators(false);
     console.log('[groupings] ✅ Ungrouped players sorted by net score');
   };
 
@@ -703,6 +705,7 @@ export default function GroupingsScreen() {
 
     // Update the enriched ungrouped players with the sorted order
     setEnrichedUngroupedPlayers(sortedPlayers);
+    setShowFlightSeparators(true);
     console.log('[groupings] ✅ Ungrouped players sorted by flight then handicap');
   };
 
@@ -732,6 +735,7 @@ export default function GroupingsScreen() {
 
     // Update the enriched ungrouped players with the sorted order
     setEnrichedUngroupedPlayers(sortedPlayers);
+    setShowFlightSeparators(false);
     console.log('[groupings] ✅ Ungrouped players sorted by handicap (all flights combined)');
   };
 
@@ -1235,34 +1239,59 @@ export default function GroupingsScreen() {
             </View>
 
             <ScrollView style={styles.ungroupedList} showsVerticalScrollIndicator={false}>
-              {ungroupedPlayers.map(player => {
+              {ungroupedPlayers.map((player, index) => {
                 const isSelected = selectedUngroupedIds.has(player.id);
                 const playerReg = registrations[player.name];
                 const handicap = getDisplayHandicap(player, playerReg, event || undefined, useCourseHandicap, activeDay);
                 const scoreNet = (player.scoreTotal ?? 0) - handicap;
                 const flight = calculateTournamentFlight(player, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, playerReg, event || undefined, useCourseHandicap, activeDay);
+                
+                // Check if we need to show a flight separator
+                let showSeparator = false;
+                let separatorFlight = '';
+                if (showFlightSeparators && index > 0) {
+                  const prevPlayer = ungroupedPlayers[index - 1];
+                  const prevPlayerReg = registrations[prevPlayer.name];
+                  const prevFlight = calculateTournamentFlight(prevPlayer, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, prevPlayerReg, event || undefined, useCourseHandicap, activeDay);
+                  if (flight !== prevFlight) {
+                    showSeparator = true;
+                    separatorFlight = flight || 'Unassigned';
+                  }
+                } else if (showFlightSeparators && index === 0) {
+                  showSeparator = true;
+                  separatorFlight = flight || 'Unassigned';
+                }
+                
                 return (
-                  <TouchableOpacity
-                    key={player.id}
-                    style={[styles.playerCard, isSelected && styles.playerCardSelected]}
-                    onPress={() => {
-                      const newSelected = new Set(selectedUngroupedIds);
-                      if (isSelected) {
-                        newSelected.delete(player.id);
-                      } else {
-                        newSelected.add(player.id);
-                      }
-                      setSelectedUngroupedIds(newSelected);
-                    }}
-                  >
-                    <Text style={[styles.playerName, isSelected && styles.playerNameSelected]}>{player.name}</Text>
-                    <Text style={[styles.playerHdc, isSelected && styles.playerTextSelected]}>{getHandicapLabel(player, playerReg, useCourseHandicap, event || undefined, activeDay)} {handicap}</Text>
-                    {flight && flight !== '—' && <Text style={[styles.playerFlight, isSelected && styles.playerTextSelected]}>Flight: {flight}</Text>}
-                    <Text style={[styles.playerNetScore, isSelected && styles.playerNetScoreSelected]}>NET: {player.scoreTotal === undefined || player.scoreTotal === null ? '0.00' : truncateToTwoDecimals(scoreNet)}</Text>
-                    {player.scoreTotal !== undefined && player.scoreTotal !== null && (
-                      <Text style={[styles.playerScore, isSelected && styles.playerScoreSelected]}>Total: {player.scoreTotal}</Text>
+                  <React.Fragment key={player.id}>
+                    {showSeparator && (
+                      <View style={styles.flightSeparator}>
+                        <View style={styles.flightSeparatorLine} />
+                        <Text style={styles.flightSeparatorText}>Flight {separatorFlight}</Text>
+                        <View style={styles.flightSeparatorLine} />
+                      </View>
                     )}
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.playerCard, isSelected && styles.playerCardSelected]}
+                      onPress={() => {
+                        const newSelected = new Set(selectedUngroupedIds);
+                        if (isSelected) {
+                          newSelected.delete(player.id);
+                        } else {
+                          newSelected.add(player.id);
+                        }
+                        setSelectedUngroupedIds(newSelected);
+                      }}
+                    >
+                      <Text style={[styles.playerName, isSelected && styles.playerNameSelected]}>{player.name}</Text>
+                      <Text style={[styles.playerHdc, isSelected && styles.playerTextSelected]}>{getHandicapLabel(player, playerReg, useCourseHandicap, event || undefined, activeDay)} {handicap}</Text>
+                      {flight && flight !== '—' && <Text style={[styles.playerFlight, isSelected && styles.playerTextSelected]}>Flight: {flight}</Text>}
+                      <Text style={[styles.playerNetScore, isSelected && styles.playerNetScoreSelected]}>NET: {player.scoreTotal === undefined || player.scoreTotal === null ? '0.00' : truncateToTwoDecimals(scoreNet)}</Text>
+                      {player.scoreTotal !== undefined && player.scoreTotal !== null && (
+                        <Text style={[styles.playerScore, isSelected && styles.playerScoreSelected]}>Total: {player.scoreTotal}</Text>
+                      )}
+                    </TouchableOpacity>
+                  </React.Fragment>
                 );
               })}
             </ScrollView>
@@ -1555,6 +1584,24 @@ const styles = StyleSheet.create({
   },
   playerScoreSelected: {
     color: '#FFE082',
+  },
+  flightSeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+    paddingHorizontal: 4,
+  },
+  flightSeparatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#1B5E20',
+  },
+  flightSeparatorText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#1B5E20',
+    paddingHorizontal: 8,
+    backgroundColor: '#fff',
   },
   groupsSection: {
     flex: 1,
