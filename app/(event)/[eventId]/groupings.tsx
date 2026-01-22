@@ -1612,7 +1612,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4A5568',
   },
   adminActionBtnText: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '700' as const,
     color: '#fff',
   },
