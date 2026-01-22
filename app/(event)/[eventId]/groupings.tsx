@@ -794,10 +794,8 @@ export default function GroupingsScreen() {
         console.log('[groupings] ⚠️ No registration found for member:', memberId);
         return Promise.resolve();
       }
+      console.log('[groupings] 🔄 Updating registration:', registration.id, 'with adjustedHandicap:', adjustedHandicap);
       return supabaseService.registrations.update(registration.id, { adjustedHandicap });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['registrations', id] });
     },
   });
 
@@ -810,18 +808,45 @@ export default function GroupingsScreen() {
         updates: updatedMember 
       });
       
-      // If adjustedHandicap is provided, update the registration as well
+      // If adjustedHandicap is provided (including explicit null/empty for removal), update the registration
       if (updatedMember.adjustedHandicap !== undefined) {
-        console.log('[groupings] 🔄 Updating registration with adjusted handicap:', updatedMember.adjustedHandicap);
+        const adjustedValue = updatedMember.adjustedHandicap === '' || updatedMember.adjustedHandicap === null 
+          ? null 
+          : Number(updatedMember.adjustedHandicap);
+        console.log('[groupings] 🔄 Updating registration with adjusted handicap:', adjustedValue);
         await updateRegistrationMutation.mutateAsync({
           memberId: updatedMember.id,
-          adjustedHandicap: updatedMember.adjustedHandicap ? Number(updatedMember.adjustedHandicap) : null,
+          adjustedHandicap: adjustedValue,
         });
       }
       
-      // Refetch registrations to ensure UI is updated
-      console.log('[groupings] 🔄 Refetching registrations after member update...');
-      await refetchRegistrations();
+      // Invalidate and refetch registrations to ensure UI is updated
+      console.log('[groupings] 🔄 Invalidating and refetching registrations after member update...');
+      await queryClient.invalidateQueries({ queryKey: ['registrations', id] });
+      const { data: freshRegistrations } = await refetchRegistrations();
+      
+      // Manually update local registrations state for immediate UI update
+      if (freshRegistrations && allMembers) {
+        console.log('[groupings] 🔄 Manually updating local registrations state...');
+        const regMap: Record<string, any> = {};
+        freshRegistrations.forEach((reg: any) => {
+          const member = allMembers.find((m: any) => m.id === reg.memberId);
+          if (member) {
+            regMap[member.name] = {
+              id: reg.id,
+              eventId: reg.eventId,
+              playerName: member.name,
+              playerPhone: reg.playerPhone,
+              paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
+              paymentMethod: 'zelle',
+              adjustedHandicap: reg.adjustedHandicap,
+              numberOfGuests: reg.numberOfGuests || 0,
+            };
+          }
+        });
+        setRegistrations(regMap);
+        console.log('[groupings] ✅ Local registrations state updated immediately');
+      }
       
       console.log('[groupings] ✅ Member updated and saved:', updatedMember.name, { 
         adjustedHandicap: updatedMember.adjustedHandicap,
