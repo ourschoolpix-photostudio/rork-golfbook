@@ -616,6 +616,65 @@ export default function GroupingsScreen() {
     console.log('[groupings] ✅ Unassigned event players auto-grouped by net score');
   };
 
+  const handleSortByFlightHandicap = () => {
+    if (ungroupedPlayers.length === 0) {
+      console.log('[groupings] ⚠️ No unassigned players!');
+      return;
+    }
+
+    console.log('[groupings] 📊 SORT BY FLIGHT/HDC button tapped! Active day:', activeDay);
+    console.log('[groupings] Ungrouped players:', ungroupedPlayers.map(p => p.name));
+
+    // Group players by flight, then sort each flight by handicap
+    const flightGroups: Record<string, Member[]> = {};
+    
+    ungroupedPlayers.forEach(player => {
+      const playerReg = registrations[player.name];
+      const flight = calculateTournamentFlight(
+        player, 
+        Number(event?.flightACutoff) || undefined, 
+        Number(event?.flightBCutoff) || undefined, 
+        playerReg, 
+        event || undefined, 
+        useCourseHandicap, 
+        activeDay
+      ) || 'Z'; // Use 'Z' for players without a flight so they sort last
+      
+      if (!flightGroups[flight]) {
+        flightGroups[flight] = [];
+      }
+      flightGroups[flight].push(player);
+    });
+
+    // Sort each flight group by handicap
+    Object.keys(flightGroups).forEach(flight => {
+      flightGroups[flight].sort((a, b) => {
+        const playerRegA = registrations[a.name];
+        const playerRegB = registrations[b.name];
+        const handicapA = getDisplayHandicap(a, playerRegA, event || undefined, useCourseHandicap, activeDay);
+        const handicapB = getDisplayHandicap(b, playerRegB, event || undefined, useCourseHandicap, activeDay);
+        return handicapA - handicapB;
+      });
+    });
+
+    // Combine flights in order: A, B, C, etc.
+    const sortedFlights = Object.keys(flightGroups).sort();
+    const sortedPlayers: Member[] = [];
+    
+    sortedFlights.forEach(flight => {
+      sortedPlayers.push(...flightGroups[flight]);
+      console.log(`[groupings] Flight ${flight}:`, flightGroups[flight].map(p => {
+        const playerReg = registrations[p.name];
+        const handicap = getDisplayHandicap(p, playerReg, event || undefined, useCourseHandicap, activeDay);
+        return { name: p.name, handicap };
+      }));
+    });
+
+    // Update the enriched ungrouped players with the sorted order
+    setEnrichedUngroupedPlayers(sortedPlayers);
+    console.log('[groupings] ✅ Ungrouped players sorted by flight then handicap');
+  };
+
   const handleSortByHandicap = () => {
     if (ungroupedPlayers.length === 0) {
       console.log('[groupings] ⚠️ No unassigned players!');
@@ -1082,11 +1141,9 @@ export default function GroupingsScreen() {
 
               <TouchableOpacity
                 style={styles.adminActionBtn}
-                onPress={() => {
-                  console.log('[groupings] Admin button 1 pressed');
-                }}
+                onPress={handleSortByFlightHandicap}
               >
-                <Text style={styles.adminActionBtnText}>BTN 1</Text>
+                <Text style={styles.adminActionBtnText}>SORT FLT</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
