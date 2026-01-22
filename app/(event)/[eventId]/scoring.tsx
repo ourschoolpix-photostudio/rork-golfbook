@@ -933,7 +933,7 @@ export default function ScoringScreen() {
 
         <View style={styles.holeNavigator}>
           <TouchableOpacity style={styles.holeNavBtn} onPress={handlePreviousHole}>
-            <Ionicons name="chevron-back" size={24} color="#fff" />
+            <Ionicons name="chevron-back" size={20} color="#fff" />
           </TouchableOpacity>
 
           <View style={styles.holeIndicator}>
@@ -942,7 +942,7 @@ export default function ScoringScreen() {
           </View>
 
           <TouchableOpacity style={styles.holeNavBtn} onPress={handleNextHole}>
-            <Ionicons name="chevron-forward" size={24} color="#fff" />
+            <Ionicons name="chevron-forward" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -1089,16 +1089,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 17,
+    paddingVertical: 10,
     backgroundColor: '#ADD8E6',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   holeNavBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#2196F3',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1107,13 +1107,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   holeLabel: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '600',
     color: '#666',
     marginBottom: 2,
   },
   holeNumber: {
-    fontSize: 32,
+    fontSize: 27,
     fontWeight: '700',
     color: '#1B5E20',
   },
