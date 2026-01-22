@@ -267,7 +267,7 @@ export default function FinanceScreen() {
           </View>
         </ScrollView>
 
-        <EventFooter />
+        <EventFooter hideTopRowButtons />
 
         <Modal
           visible={expenseModalVisible}
