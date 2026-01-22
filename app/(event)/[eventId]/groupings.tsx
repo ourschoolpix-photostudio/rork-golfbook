@@ -89,7 +89,7 @@ export default function GroupingsScreen() {
   const [showPinModal, setShowPinModal] = useState<boolean>(false);
   const [pinInput, setPinInput] = useState<string>('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
-  const [registrations, setRegistrations] = useState<Record<string, any>>({});
+  // registrations is now derived from backendRegistrations via useMemo (like useCourseHandicap pattern)
   const [lastTapTime, setLastTapTime] = useState<{ teeTime: number; shotgun: number }>({ teeTime: 0, shotgun: 0 });
   const [showFlightSeparators, setShowFlightSeparators] = useState<boolean>(false);
   
@@ -205,10 +205,12 @@ export default function GroupingsScreen() {
     }
   }, [allMembers]);
 
-  useEffect(() => {
-    if (!event || !allMembers || backendRegistrations.length === 0) return;
+  // Derive registrations directly from backendRegistrations (like useCourseHandicap pattern)
+  // This ensures immediate updates when the query data changes
+  const registrations = useMemo(() => {
+    if (!event || !allMembers || backendRegistrations.length === 0) return {};
     
-    console.log('[groupings] 🔄 Loading registrations from backend...');
+    console.log('[groupings] 🔄 Computing registrations from backend data...');
     const regMap: Record<string, any> = {};
     
     backendRegistrations.forEach((reg: any) => {
@@ -227,12 +229,13 @@ export default function GroupingsScreen() {
       }
     });
     
-    setRegistrations(regMap);
-    console.log('[groupings] ✅ Loaded registrations from backend:', Object.keys(regMap).length);
+    console.log('[groupings] ✅ Computed registrations:', Object.keys(regMap).length);
     console.log('[groupings] 📊 Sample registrations:', Object.entries(regMap).slice(0, 3).map(([name, reg]: [string, any]) => ({
       name,
       adjustedHandicap: reg.adjustedHandicap,
     })));
+    
+    return regMap;
   }, [event, allMembers, backendRegistrations]);
 
   // Track previous value to detect changes and trigger refresh
@@ -798,9 +801,9 @@ export default function GroupingsScreen() {
       return supabaseService.registrations.update(registration.id, { adjustedHandicap });
     },
     onSuccess: async () => {
-      console.log('[groupings] 🔄 Registration mutation success - invalidating queries...');
+      console.log('[groupings] 🔄 Registration mutation success - invalidating and refetching...');
+      // Invalidate and refetch - the useMemo will automatically recompute registrations
       await queryClient.invalidateQueries({ queryKey: ['registrations', id] });
-      await refetchRegistrations();
     },
   });
 
@@ -825,42 +828,10 @@ export default function GroupingsScreen() {
         });
       }
       
-      // Invalidate and refetch registrations to ensure UI is updated
-      console.log('[groupings] 🔄 Invalidating and refetching registrations after member update...');
-      await queryClient.invalidateQueries({ queryKey: ['registrations', id] });
-      // Add small delay to ensure database has committed the changes
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const { data: freshRegistrations } = await refetchRegistrations();
-      console.log('[groupings] 📊 Fresh registrations data:', freshRegistrations?.map((r: any) => ({ memberId: r.memberId, adjustedHandicap: r.adjustedHandicap })));
-      
-      // Manually update local registrations state for immediate UI update
-      if (freshRegistrations && allMembers) {
-        console.log('[groupings] 🔄 Manually updating local registrations state...');
-        const regMap: Record<string, any> = {};
-        freshRegistrations.forEach((reg: any) => {
-          const member = allMembers.find((m: any) => m.id === reg.memberId);
-          if (member) {
-            regMap[member.name] = {
-              id: reg.id,
-              eventId: reg.eventId,
-              playerName: member.name,
-              playerPhone: reg.playerPhone,
-              paymentStatus: reg.paymentStatus === 'paid' ? 'paid' : 'unpaid',
-              paymentMethod: 'zelle',
-              adjustedHandicap: reg.adjustedHandicap,
-              numberOfGuests: reg.numberOfGuests || 0,
-            };
-          }
-        });
-        setRegistrations(regMap);
-        console.log('[groupings] ✅ Local registrations state updated immediately');
-        
-        // Delay the refresh to ensure state update is applied first
-        setTimeout(() => {
-          console.log('[groupings] 🔄 Triggering delayed refresh after state update...');
-          triggerGroupRefresh();
-        }, 150);
-      }
+      // Refetch registrations - the useMemo will automatically recompute and React will re-render
+      // This mirrors how useCourseHandicap achieves immediate updates
+      console.log('[groupings] 🔄 Refetching registrations after member update...');
+      await refetchRegistrations();
       
       console.log('[groupings] ✅ Member updated and saved:', updatedMember.name, { 
         adjustedHandicap: updatedMember.adjustedHandicap,
