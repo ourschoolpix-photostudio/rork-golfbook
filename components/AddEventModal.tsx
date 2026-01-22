@@ -119,6 +119,8 @@ interface AddEventModalProps {
     closestToPin?: string;
     memo?: string;
     holePars?: string[];
+    numberOfTeams?: string;
+    teamCaptains?: string[];
   };
   onFormChange: (field: string, value: any) => void;
   onClose: () => void;
@@ -359,6 +361,59 @@ export function AddEventModal({
                 </TouchableOpacity>
               </View>
             </View>
+
+            {form.type === 'team' && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>TEAM DETAILS</Text>
+                <View style={styles.fieldColumn}>
+                  <Text style={styles.fieldLabel}>Number of Teams</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter number of teams"
+                    placeholderTextColor="#666"
+                    keyboardType="number-pad"
+                    value={form.numberOfTeams || ''}
+                    onChangeText={(text) => {
+                      const numericValue = text.replace(/[^0-9]/g, '');
+                      onFormChange('numberOfTeams', numericValue);
+                      const numTeams = parseInt(numericValue) || 0;
+                      const currentCaptains = form.teamCaptains || [];
+                      if (numTeams > currentCaptains.length) {
+                        const newCaptains = [...currentCaptains];
+                        for (let i = currentCaptains.length; i < numTeams; i++) {
+                          newCaptains.push('');
+                        }
+                        onFormChange('teamCaptains', newCaptains);
+                      } else if (numTeams < currentCaptains.length) {
+                        onFormChange('teamCaptains', currentCaptains.slice(0, numTeams));
+                      }
+                    }}
+                  />
+                </View>
+                {form.numberOfTeams && parseInt(form.numberOfTeams) > 0 && (
+                  <View style={styles.teamCaptainsContainer}>
+                    <Text style={styles.teamCaptainsLabel}>Team Captains</Text>
+                    {Array.from({ length: parseInt(form.numberOfTeams) || 0 }).map((_, index) => (
+                      <View key={index} style={styles.teamCaptainRow}>
+                        <Text style={styles.teamCaptainLabel}>Team {index + 1}:</Text>
+                        <TextInput
+                          style={styles.teamCaptainInput}
+                          placeholder="Captain's name"
+                          placeholderTextColor="#999"
+                          autoCapitalize="words"
+                          value={(form.teamCaptains && form.teamCaptains[index]) || ''}
+                          onChangeText={(text) => {
+                            const newCaptains = [...(form.teamCaptains || [])];
+                            newCaptains[index] = text;
+                            onFormChange('teamCaptains', newCaptains);
+                          }}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>VENUE</Text>
@@ -2225,5 +2280,36 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     marginBottom: 10,
     textAlign: 'center',
+  },
+  teamCaptainsContainer: {
+    marginTop: 8,
+  },
+  teamCaptainsLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 12,
+  },
+  teamCaptainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 12,
+  },
+  teamCaptainLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    width: 70,
+  },
+  teamCaptainInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
   },
 });
