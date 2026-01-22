@@ -761,7 +761,7 @@ export default function GameScoringScreen() {
 
       <View style={styles.holeNavigator}>
         <TouchableOpacity style={styles.holeNavBtn} onPress={handlePreviousHole}>
-          <ChevronLeft size={16} color="#fff" />
+          <ChevronLeft size={14} color="#fff" />
         </TouchableOpacity>
 
         <View style={styles.holeIndicator}>
@@ -775,7 +775,7 @@ export default function GameScoringScreen() {
         </View>
 
         <TouchableOpacity style={styles.holeNavBtn} onPress={handleNextHole}>
-          <ChevronRight size={16} color="#fff" />
+          <ChevronRight size={14} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -1291,9 +1291,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
   },
   holeNavBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#2196F3',
     alignItems: 'center',
     justifyContent: 'center',
