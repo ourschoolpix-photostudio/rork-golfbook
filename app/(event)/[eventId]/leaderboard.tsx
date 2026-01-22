@@ -882,7 +882,7 @@ const styles = StyleSheet.create({
   },
   dayButtonActive: {
     backgroundColor: '#FFD54F',
-    borderColor: '#FFD54F',
+    borderColor: '#800020',
   },
   dayButtonText: {
     fontSize: 11,
