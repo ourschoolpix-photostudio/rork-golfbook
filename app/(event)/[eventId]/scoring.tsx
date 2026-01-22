@@ -933,7 +933,7 @@ export default function ScoringScreen() {
 
         <View style={styles.holeNavigator}>
           <TouchableOpacity style={styles.holeNavBtn} onPress={handlePreviousHole}>
-            <Ionicons name="chevron-back" size={20} color="#fff" />
+            <Ionicons name="chevron-back" size={18} color="#fff" />
           </TouchableOpacity>
 
           <View style={styles.holeIndicator}>
@@ -942,7 +942,7 @@ export default function ScoringScreen() {
           </View>
 
           <TouchableOpacity style={styles.holeNavBtn} onPress={handleNextHole}>
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
+            <Ionicons name="chevron-forward" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -1090,15 +1090,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
-    paddingVertical: 9,
+    paddingVertical: 7,
     backgroundColor: '#ADD8E6',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   holeNavBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 31,
+    height: 31,
+    borderRadius: 16,
     backgroundColor: '#2196F3',
     alignItems: 'center',
     justifyContent: 'center',
