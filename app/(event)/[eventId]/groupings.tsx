@@ -787,6 +787,20 @@ export default function GroupingsScreen() {
     },
   });
 
+  const updateRegistrationMutation = useMutation({
+    mutationFn: ({ memberId, adjustedHandicap }: { memberId: string; adjustedHandicap: number | null }) => {
+      const registration = backendRegistrations.find((r: any) => r.memberId === memberId);
+      if (!registration) {
+        console.log('[groupings] ⚠️ No registration found for member:', memberId);
+        return Promise.resolve();
+      }
+      return supabaseService.registrations.update(registration.id, { adjustedHandicap });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['registrations', id] });
+    },
+  });
+
   const handleUpdateMember = async (updatedMember: Member) => {
     try {
       if (!event) return;
@@ -795,6 +809,20 @@ export default function GroupingsScreen() {
         memberId: updatedMember.id, 
         updates: updatedMember 
       });
+      
+      // If adjustedHandicap is provided, update the registration as well
+      if (updatedMember.adjustedHandicap !== undefined) {
+        console.log('[groupings] 🔄 Updating registration with adjusted handicap:', updatedMember.adjustedHandicap);
+        await updateRegistrationMutation.mutateAsync({
+          memberId: updatedMember.id,
+          adjustedHandicap: updatedMember.adjustedHandicap ? Number(updatedMember.adjustedHandicap) : null,
+        });
+      }
+      
+      // Refetch registrations to ensure UI is updated
+      console.log('[groupings] 🔄 Refetching registrations after member update...');
+      await refetchRegistrations();
+      
       console.log('[groupings] ✅ Member updated and saved:', updatedMember.name, { 
         adjustedHandicap: updatedMember.adjustedHandicap,
         handicap: updatedMember.handicap 
