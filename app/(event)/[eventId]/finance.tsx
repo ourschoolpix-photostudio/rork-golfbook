@@ -164,12 +164,6 @@ export default function FinanceScreen() {
           <View style={styles.noAccessContainer}>
             <Text style={styles.noAccessText}>You don&apos;t have permission to view this page</Text>
           </View>
-          <TouchableOpacity
-            style={styles.tempButton}
-            onPress={() => router.push(`/(event)/${eventId}/eventtestscreen`)}
-          >
-            <Text style={styles.tempButtonText}>Go to Test Screen</Text>
-          </TouchableOpacity>
         </SafeAreaView>
       </>
     );
@@ -418,12 +412,6 @@ export default function FinanceScreen() {
             </View>
           </View>
         </Modal>
-        <TouchableOpacity
-          style={styles.tempButton}
-          onPress={() => router.push(`/(event)/${eventId}/eventtestscreen`)}
-        >
-          <Text style={styles.tempButtonText}>Go to Test Screen</Text>
-        </TouchableOpacity>
       </SafeAreaView>
     </>
   );
@@ -705,17 +693,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#6b7280',
   },
-  tempButton: {
-    backgroundColor: '#1B5E20',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    alignItems: 'center',
-    margin: 16,
-  },
-  tempButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600' as const,
-  },
+
 });
