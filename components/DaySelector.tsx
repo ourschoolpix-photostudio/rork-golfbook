@@ -56,13 +56,13 @@ export function DaySelector({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 5,
-    paddingBottom: 5,
+    paddingHorizontal: 8,
+    paddingTop: 2,
+    paddingBottom: 2,
     backgroundColor: '#9E9E9E',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-    gap: 8,
+    gap: 4,
   },
   dayButton: {
     flex: 1,
