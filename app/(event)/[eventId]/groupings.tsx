@@ -1071,11 +1071,6 @@ export default function GroupingsScreen() {
                 }}
                 disabled={toggleGroupsPublishedMutation.isPending}
               >
-                <Ionicons 
-                  name={eventData?.groupsPublished ? 'eye' : 'eye-off'} 
-                  size={16} 
-                  color="#fff" 
-                />
                 <Text style={styles.publishBtnText}>
                   {toggleGroupsPublishedMutation.isPending 
                     ? 'UPDATING...' 
@@ -1603,7 +1598,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#757575',
   },
   publishBtnText: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '700' as const,
     color: '#fff',
   },
