@@ -164,6 +164,8 @@ export interface Event {
   archivedAt?: string;
   registrationOpen?: boolean;
   groupsPublished?: boolean;
+  numberOfTeams?: string;
+  teamCaptains?: string[];
 }
 
 export interface EventRegistration {

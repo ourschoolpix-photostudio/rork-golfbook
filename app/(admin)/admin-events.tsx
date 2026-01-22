@@ -138,6 +138,8 @@ type EventFormType = {
   package3Price: string;
   package3Description: string;
   specialNotes: string;
+  numberOfTeams?: string;
+  teamCaptains?: string[];
 };
 
 export default function AdminEventsScreen() {
@@ -249,6 +251,8 @@ export default function AdminEventsScreen() {
     package3Price: '',
     package3Description: '',
     specialNotes: '',
+    numberOfTeams: '',
+    teamCaptains: [],
   });
 
   const registrationsQuery = useQuery({
@@ -514,6 +518,8 @@ export default function AdminEventsScreen() {
             package3Price: form.package3Price,
             package3Description: form.package3Description,
             specialNotes: form.specialNotes,
+            numberOfTeams: form.numberOfTeams,
+            teamCaptains: form.teamCaptains,
         });
       } else {
         const eventId = generateUUID();
@@ -617,6 +623,8 @@ export default function AdminEventsScreen() {
           package3Price: form.package3Price,
           package3Description: form.package3Description,
           specialNotes: form.specialNotes,
+          numberOfTeams: form.numberOfTeams,
+          teamCaptains: form.teamCaptains,
           createdAt: new Date().toISOString(),
         };
         await supabaseService.events.create(newEvent);
@@ -779,6 +787,8 @@ export default function AdminEventsScreen() {
       package3Price: event.package3Price || '',
       package3Description: event.package3Description || '',
       specialNotes: event.specialNotes || '',
+      numberOfTeams: event.numberOfTeams || '',
+      teamCaptains: event.teamCaptains || [],
     });
     setModalVisible(true);
   };
