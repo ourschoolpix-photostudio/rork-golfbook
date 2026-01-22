@@ -24,7 +24,7 @@ interface AddEventModalProps {
   isEditing: boolean;
   form: {
     status: 'upcoming' | 'active' | 'complete';
-    type: 'tournament' | 'social';
+    type: 'tournament' | 'team' | 'social';
     eventName: string;
     entryFee: string;
     course: string;
@@ -339,6 +339,14 @@ export function AddEventModal({
                 >
                   <Text style={[styles.typeButtonText, form.type === 'tournament' && styles.typeButtonTextActive]}>
                     TOURNAMENT
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.typeButton, form.type === 'team' && styles.typeButtonActive]}
+                  onPress={() => onFormChange('type', 'team')}
+                >
+                  <Text style={[styles.typeButtonText, form.type === 'team' && styles.typeButtonTextActive]}>
+                    TEAM
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity

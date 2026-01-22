@@ -67,7 +67,7 @@ export interface Event {
   maxParticipants?: number;
   createdAt: string;
   createdBy?: string;
-  type?: 'tournament' | 'social';
+  type?: 'tournament' | 'team' | 'social';
   photoUrl?: string;
   entryFee?: string;
   package1Name?: string;

@@ -43,7 +43,7 @@ const generateUUID = (): string => {
 
 type EventFormType = {
   status: 'upcoming' | 'active' | 'complete';
-  type: 'tournament' | 'social';
+  type: 'tournament' | 'team' | 'social';
   eventName: string;
   entryFee: string;
   course: string;
@@ -154,7 +154,7 @@ export default function AdminEventsScreen() {
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [form, setForm] = useState<EventFormType>({
     status: 'upcoming' as 'upcoming' | 'active' | 'complete',
-    type: 'tournament' as 'tournament' | 'social',
+    type: 'tournament' as 'tournament' | 'team' | 'social',
     eventName: '',
     entryFee: '',
     course: '',
@@ -684,7 +684,7 @@ export default function AdminEventsScreen() {
     setEditingId(event.id);
     setForm({
       status: (event.status || 'upcoming') as 'upcoming' | 'active' | 'complete',
-      type: (event.type || 'tournament') as 'tournament' | 'social',
+      type: (event.type || 'tournament') as 'tournament' | 'team' | 'social',
       eventName: event.eventName || event.name || '',
       entryFee: String(event.entryFee || ''),
       course: event.course || event.location || '',
