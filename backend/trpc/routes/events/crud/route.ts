@@ -19,7 +19,7 @@ const eventSchema = z.object({
   maxParticipants: z.number().optional().nullable(),
   createdAt: z.string(),
   createdBy: z.string().optional().nullable(),
-  type: z.enum(['tournament', 'social']).optional().nullable(),
+  type: z.enum(['tournament', 'team', 'social']).optional().nullable(),
   photoUrl: z.string().optional().nullable(),
   entryFee: z.string().optional().nullable(),
   package1Name: z.string().optional().nullable(),
@@ -108,6 +108,8 @@ const eventSchema = z.object({
   lowGrossTrophy: z.boolean().optional().nullable(),
   lowGrossCashPrize: z.string().optional().nullable(),
   closestToPin: z.string().optional().nullable(),
+  numberOfTeams: z.string().optional().nullable(),
+  teamCaptains: z.array(z.string()).optional().nullable(),
 });
 
 function mapEventToDb(event: z.infer<typeof eventSchema>) {
@@ -216,6 +218,8 @@ function mapEventToDb(event: z.infer<typeof eventSchema>) {
     low_gross_trophy: event.lowGrossTrophy,
     low_gross_cash_prize: event.lowGrossCashPrize,
     closest_to_pin: event.closestToPin,
+    number_of_teams: event.numberOfTeams,
+    team_captains: event.teamCaptains,
     updated_at: new Date().toISOString(),
   };
 }
@@ -327,6 +331,8 @@ function mapDbToEvent(e: any, registeredPlayers: string[] = []): Event {
     lowGrossTrophy: e.low_gross_trophy,
     lowGrossCashPrize: e.low_gross_cash_prize,
     closestToPin: e.closest_to_pin,
+    numberOfTeams: e.number_of_teams,
+    teamCaptains: e.team_captains,
   };
 }
 
