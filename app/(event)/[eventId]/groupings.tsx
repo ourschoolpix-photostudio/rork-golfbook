@@ -1756,7 +1756,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   publishBtnActive: {
-    backgroundColor: '#1B5E20',
+    backgroundColor: '#1976D2',
   },
   publishBtnInactive: {
     backgroundColor: '#757575',
