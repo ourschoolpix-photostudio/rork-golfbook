@@ -4172,7 +4172,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#9e9e9e',
     elevation: 1,
     shadowColor: '#000',
     shadowOpacity: 0.05,
