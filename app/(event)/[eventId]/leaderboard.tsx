@@ -844,7 +844,7 @@ const styles = StyleSheet.create({
   },
   tabButtonActive: {
     backgroundColor: '#FFD54F',
-    borderColor: '#FFD54F',
+    borderColor: '#800020',
     shadowColor: '#800020',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
