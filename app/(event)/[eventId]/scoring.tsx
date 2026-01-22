@@ -1128,8 +1128,8 @@ const styles = StyleSheet.create({
   playerCard: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
+    padding: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
@@ -1137,7 +1137,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   playerInfo: {
     flex: 1,
