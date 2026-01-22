@@ -1058,31 +1058,60 @@ export default function GroupingsScreen() {
           </View>
 
           <View style={styles.publishContainer}>
-            <TouchableOpacity
-              style={[
-                styles.publishBtn,
-                eventData?.groupsPublished ? styles.publishBtnActive : styles.publishBtnInactive
-              ]}
-              onPress={() => {
-                const newPublished = !eventData?.groupsPublished;
-                console.log('[groupings] 🔄 Toggling groups published:', newPublished);
-                toggleGroupsPublishedMutation.mutate({ eventId: id, published: newPublished });
-              }}
-              disabled={toggleGroupsPublishedMutation.isPending}
-            >
-              <Ionicons 
-                name={eventData?.groupsPublished ? 'eye' : 'eye-off'} 
-                size={16} 
-                color="#fff" 
-              />
-              <Text style={styles.publishBtnText}>
-                {toggleGroupsPublishedMutation.isPending 
-                  ? 'UPDATING...' 
-                  : eventData?.groupsPublished 
-                    ? 'PUBLISHED' 
-                    : 'UNPUBLISHED'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.publishRow}>
+              <TouchableOpacity
+                style={[
+                  styles.publishBtn,
+                  eventData?.groupsPublished ? styles.publishBtnActive : styles.publishBtnInactive
+                ]}
+                onPress={() => {
+                  const newPublished = !eventData?.groupsPublished;
+                  console.log('[groupings] 🔄 Toggling groups published:', newPublished);
+                  toggleGroupsPublishedMutation.mutate({ eventId: id, published: newPublished });
+                }}
+                disabled={toggleGroupsPublishedMutation.isPending}
+              >
+                <Ionicons 
+                  name={eventData?.groupsPublished ? 'eye' : 'eye-off'} 
+                  size={16} 
+                  color="#fff" 
+                />
+                <Text style={styles.publishBtnText}>
+                  {toggleGroupsPublishedMutation.isPending 
+                    ? 'UPDATING...' 
+                    : eventData?.groupsPublished 
+                      ? 'PUBLISHED' 
+                      : 'UNPUBLISHED'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.adminActionBtn}
+                onPress={() => {
+                  console.log('[groupings] Admin button 1 pressed');
+                }}
+              >
+                <Text style={styles.adminActionBtnText}>BTN 1</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.adminActionBtn}
+                onPress={() => {
+                  console.log('[groupings] Admin button 2 pressed');
+                }}
+              >
+                <Text style={styles.adminActionBtnText}>BTN 2</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.adminActionBtn}
+                onPress={() => {
+                  console.log('[groupings] Admin button 3 pressed');
+                }}
+              >
+                <Text style={styles.adminActionBtnText}>BTN 3</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
 
@@ -1553,13 +1582,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 8,
   },
+  publishRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   publishBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
     borderRadius: 8,
-    gap: 8,
+    gap: 6,
   },
   publishBtnActive: {
     backgroundColor: '#1B5E20',
@@ -1568,7 +1603,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#757575',
   },
   publishBtnText: {
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  adminActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#4A5568',
+  },
+  adminActionBtnText: {
+    fontSize: 11,
     fontWeight: '700' as const,
     color: '#fff',
   },
