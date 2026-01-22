@@ -138,8 +138,10 @@ type EventFormType = {
   package3Price: string;
   package3Description: string;
   specialNotes: string;
-  numberOfTeams?: string;
-  teamCaptains?: string[];
+  teamCaptain1?: string;
+  teamCaptain2?: string;
+  teamCaptain3?: string;
+  teamCaptain4?: string;
 };
 
 export default function AdminEventsScreen() {
@@ -251,8 +253,10 @@ export default function AdminEventsScreen() {
     package3Price: '',
     package3Description: '',
     specialNotes: '',
-    numberOfTeams: '',
-    teamCaptains: [],
+    teamCaptain1: '',
+    teamCaptain2: '',
+    teamCaptain3: '',
+    teamCaptain4: '',
   });
 
   const registrationsQuery = useQuery({
@@ -418,13 +422,6 @@ export default function AdminEventsScreen() {
     }
 
     try {
-      const teamCaptainsArray = form.type === 'team' ? [
-        form.teamCaptain1 || '',
-        form.teamCaptain2 || '',
-        form.teamCaptain3 || '',
-        form.teamCaptain4 || '',
-      ].filter(name => name.trim() !== '') : [];
-
       if (editingId) {
         await supabaseService.events.update(editingId, {
             id: editingId,
@@ -525,7 +522,10 @@ export default function AdminEventsScreen() {
             package3Price: form.package3Price,
             package3Description: form.package3Description,
             specialNotes: form.specialNotes,
-            teamCaptains: teamCaptainsArray,
+            teamCaptain1: form.teamCaptain1,
+            teamCaptain2: form.teamCaptain2,
+            teamCaptain3: form.teamCaptain3,
+            teamCaptain4: form.teamCaptain4,
         });
       } else {
         const eventId = generateUUID();
@@ -629,7 +629,10 @@ export default function AdminEventsScreen() {
           package3Price: form.package3Price,
           package3Description: form.package3Description,
           specialNotes: form.specialNotes,
-          teamCaptains: teamCaptainsArray,
+          teamCaptain1: form.teamCaptain1,
+          teamCaptain2: form.teamCaptain2,
+          teamCaptain3: form.teamCaptain3,
+          teamCaptain4: form.teamCaptain4,
           createdAt: new Date().toISOString(),
         };
         await supabaseService.events.create(newEvent);
@@ -792,10 +795,10 @@ export default function AdminEventsScreen() {
       package3Price: event.package3Price || '',
       package3Description: event.package3Description || '',
       specialNotes: event.specialNotes || '',
-      teamCaptain1: event.teamCaptains?.[0] || '',
-      teamCaptain2: event.teamCaptains?.[1] || '',
-      teamCaptain3: event.teamCaptains?.[2] || '',
-      teamCaptain4: event.teamCaptains?.[3] || '',
+      teamCaptain1: event.teamCaptain1 || '',
+      teamCaptain2: event.teamCaptain2 || '',
+      teamCaptain3: event.teamCaptain3 || '',
+      teamCaptain4: event.teamCaptain4 || '',
     });
     setModalVisible(true);
   };
