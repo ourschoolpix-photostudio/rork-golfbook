@@ -4,6 +4,7 @@ import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { Plus, X } from 'lucide-react-native';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { EventScreenHeader } from '@/components/EventScreenHeader';
+import { EventFooter } from '@/components/EventFooter';
 import { useState, useMemo, useCallback } from 'react';
 import { useEvents } from '@/contexts/EventsContext';
 import { FinancialRecord } from '@/types';
@@ -266,6 +267,8 @@ export default function FinanceScreen() {
           </View>
         </ScrollView>
 
+        <EventFooter />
+
         <Modal
           visible={expenseModalVisible}
           transparent
@@ -445,7 +448,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 100,
   },
   mainCard: {
     backgroundColor: '#1B5E20',
