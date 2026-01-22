@@ -855,8 +855,11 @@ export default function GroupingsScreen() {
         setRegistrations(regMap);
         console.log('[groupings] ✅ Local registrations state updated immediately');
         
-        // Trigger a full refresh to ensure UI updates
-        triggerGroupRefresh();
+        // Delay the refresh to ensure state update is applied first
+        setTimeout(() => {
+          console.log('[groupings] 🔄 Triggering delayed refresh after state update...');
+          triggerGroupRefresh();
+        }, 150);
       }
       
       console.log('[groupings] ✅ Member updated and saved:', updatedMember.name, { 
