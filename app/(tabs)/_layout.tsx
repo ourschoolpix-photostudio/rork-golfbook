@@ -95,7 +95,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="rolex-points"
           options={{
-            title: "Global Rolex Points",
+            title: "Global Rolex",
             tabBarIcon: ({ color }) => <Trophy size={24} color={color} />,
             headerRight: () => null,
           }}
