@@ -35,6 +35,15 @@ type EventFooterProps = {
   showSubmitButton?: boolean;
   onSubmit?: () => void | Promise<void>;
   isSubmitting?: boolean;
+  showPlaceholderButton?: boolean;
+  placeholderButtonLabel?: string;
+  onPlaceholderPress?: () => void | Promise<void>;
+  placeholderButtonDisabled?: boolean;
+  placeholderButtonSyncReady?: boolean;
+  placeholder2ButtonLabel?: string;
+  onPlaceholder2Press?: () => void | Promise<void>;
+  hidePlaceholder2Button?: boolean;
+  hidePlaceholder3Button?: boolean;
 };
 
 export function EventFooter({
