@@ -171,7 +171,7 @@ export default function FinanceScreen() {
   }
 
   return (
-    <>
+    <View style={styles.wrapper}>
       <SafeAreaView style={styles.container}>
         <EventScreenHeader title="FINANCE" event={event as any} />
 
@@ -415,11 +415,15 @@ export default function FinanceScreen() {
         </Modal>
       </SafeAreaView>
       <EventFooter hideTopRowButtons />
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#5A0015',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
