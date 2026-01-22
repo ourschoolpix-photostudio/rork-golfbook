@@ -20,7 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { EventScreenHeader } from '@/components/EventScreenHeader';
 import { authService } from '@/utils/auth';
 import { Member, User, Grouping, Event } from '@/types';
-import { calculateTournamentFlight, getDisplayHandicap, getHandicapLabel } from '@/utils/handicapHelper';
+import { calculateTournamentFlight, getDisplayHandicap, getHandicapLabel, hasAdjustedHandicap } from '@/utils/handicapHelper';
 import GroupCard from '@/components/GroupCard';
 import { DaySelector } from '@/components/DaySelector';
 import { type LabelOverride } from '@/utils/groupingsHelper';
@@ -1284,7 +1284,7 @@ export default function GroupingsScreen() {
                       }}
                     >
                       <Text style={[styles.playerName, isSelected && styles.playerNameSelected]}>{player.name}</Text>
-                      <Text style={[styles.playerHdc, isSelected && styles.playerTextSelected]}>{getHandicapLabel(player, playerReg, useCourseHandicap, event || undefined, activeDay)} {handicap}</Text>
+                      <Text style={[styles.playerHdc, isSelected && styles.playerTextSelected, hasAdjustedHandicap(player, playerReg) && styles.playerHdcAdjusted]}>{getHandicapLabel(player, playerReg, useCourseHandicap, event || undefined, activeDay)} {handicap}</Text>
                       {flight && flight !== '—' && <Text style={[styles.playerFlight, isSelected && styles.playerTextSelected]}>Flight: {flight}</Text>}
                       <Text style={[styles.playerNetScore, isSelected && styles.playerNetScoreSelected]}>NET: {player.scoreTotal === undefined || player.scoreTotal === null ? '0.00' : truncateToTwoDecimals(scoreNet)}</Text>
                       {player.scoreTotal !== undefined && player.scoreTotal !== null && (
@@ -1554,6 +1554,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#fff',
     marginTop: 2,
+  },
+  playerHdcAdjusted: {
+    color: '#FFD54F',
+    fontWeight: '700' as const,
   },
   playerFlight: {
     fontSize: 10,

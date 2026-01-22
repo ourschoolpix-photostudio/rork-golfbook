@@ -244,7 +244,7 @@ function GroupCard({
                 </View>
                 <View style={styles.scoresRow}>
                   <Text style={styles.scoreTotalItem}>Total: {slots[0].scoreTotal ?? 0}</Text>
-                  <Text style={styles.scoreItem}>{(() => {
+                  <Text style={[styles.scoreItem, hasAdjustedHandicap(slots[0], registrations?.[slots[0].name]) && styles.scoreItemAdjusted]}>{(() => {
                     const playerReg = registrations?.[slots[0].name];
                     const handicap = getDisplayHandicap(slots[0], playerReg, event, useCourseHandicap, activeDay);
                     const isAdjusted = hasAdjustedHandicap(slots[0], playerReg);
@@ -317,7 +317,7 @@ function GroupCard({
                 </View>
                 <View style={styles.scoresRow}>
                   <Text style={styles.scoreTotalItem}>Total: {slots[2].scoreTotal ?? 0}</Text>
-                  <Text style={styles.scoreItem}>{(() => {
+                  <Text style={[styles.scoreItem, hasAdjustedHandicap(slots[2], registrations?.[slots[2].name]) && styles.scoreItemAdjusted]}>{(() => {
                     const playerReg = registrations?.[slots[2].name];
                     const handicap = getDisplayHandicap(slots[2], playerReg, event, useCourseHandicap, activeDay);
                     const isAdjusted = hasAdjustedHandicap(slots[2], playerReg);
@@ -389,7 +389,7 @@ function GroupCard({
                 </View>
                 <View style={styles.scoresRow}>
                   <Text style={styles.scoreTotalItem}>Total: {slots[1].scoreTotal ?? 0}</Text>
-                  <Text style={styles.scoreItem}>{(() => {
+                  <Text style={[styles.scoreItem, hasAdjustedHandicap(slots[1], registrations?.[slots[1].name]) && styles.scoreItemAdjusted]}>{(() => {
                     const playerReg = registrations?.[slots[1].name];
                     const handicap = getDisplayHandicap(slots[1], playerReg, event, useCourseHandicap, activeDay);
                     const isAdjusted = hasAdjustedHandicap(slots[1], playerReg);
@@ -459,7 +459,7 @@ function GroupCard({
                 </View>
                 <View style={styles.scoresRow}>
                   <Text style={styles.scoreTotalItem}>Total: {slots[3].scoreTotal ?? 0}</Text>
-                  <Text style={styles.scoreItem}>{(() => {
+                  <Text style={[styles.scoreItem, hasAdjustedHandicap(slots[3], registrations?.[slots[3].name]) && styles.scoreItemAdjusted]}>{(() => {
                     const playerReg = registrations?.[slots[3].name];
                     const handicap = getDisplayHandicap(slots[3], playerReg, event, useCourseHandicap, activeDay);
                     const isAdjusted = hasAdjustedHandicap(slots[3], playerReg);
@@ -631,6 +631,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: '#000',
+  },
+  scoreItemAdjusted: {
+    color: '#D84315',
+    fontWeight: '700',
   },
   scoreTotalItem: {
     fontSize: 12,
