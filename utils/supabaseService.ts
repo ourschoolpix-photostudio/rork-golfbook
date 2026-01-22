@@ -115,6 +115,10 @@ const mapEventFromDB = (e: any) => ({
   package3Price: e.package3_price,
   package3Description: e.package3_description,
   specialNotes: e.special_notes,
+  teamCaptain1: e.team_captain_1,
+  teamCaptain2: e.team_captain_2,
+  teamCaptain3: e.team_captain_3,
+  teamCaptain4: e.team_captain_4,
 });
 
 export const supabaseService = {
@@ -278,6 +282,10 @@ export const supabaseService = {
         package3_price: event.package3Price,
         package3_description: event.package3Description,
         special_notes: event.specialNotes,
+        team_captain_1: event.teamCaptain1,
+        team_captain_2: event.teamCaptain2,
+        team_captain_3: event.teamCaptain3,
+        team_captain_4: event.teamCaptain4,
       });
       
       if (error) throw error;
@@ -390,6 +398,10 @@ export const supabaseService = {
       if (updates.package3Description !== undefined) supabaseUpdates.package3_description = updates.package3Description;
       if (updates.specialNotes !== undefined) supabaseUpdates.special_notes = updates.specialNotes;
       if (updates.groupsPublished !== undefined) supabaseUpdates.groups_published = updates.groupsPublished;
+      if (updates.teamCaptain1 !== undefined) supabaseUpdates.team_captain_1 = updates.teamCaptain1;
+      if (updates.teamCaptain2 !== undefined) supabaseUpdates.team_captain_2 = updates.teamCaptain2;
+      if (updates.teamCaptain3 !== undefined) supabaseUpdates.team_captain_3 = updates.teamCaptain3;
+      if (updates.teamCaptain4 !== undefined) supabaseUpdates.team_captain_4 = updates.teamCaptain4;
 
       console.log('[supabaseService.events.update] Updating event:', eventId);
       console.log('[supabaseService.events.update] Updates:', JSON.stringify(supabaseUpdates, null, 2));
