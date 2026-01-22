@@ -995,7 +995,7 @@ export default function ScoringScreen() {
                     style={styles.minusButton}
                     onPress={() => handleScoreChange(player.id, -1)}
                   >
-                    <Ionicons name="remove" size={28} color="#fff" />
+                    <Ionicons name="remove" size={22} color="#fff" />
                   </TouchableOpacity>
 
                   <TouchableOpacity 
@@ -1022,7 +1022,7 @@ export default function ScoringScreen() {
                     style={styles.plusButton}
                     onPress={() => handleScoreChange(player.id, 1)}
                   >
-                    <Ionicons name="add" size={28} color="#fff" />
+                    <Ionicons name="add" size={22} color="#fff" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1128,8 +1128,8 @@ const styles = StyleSheet.create({
   playerCard: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
+    padding: 8,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
@@ -1137,7 +1137,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   playerInfo: {
     flex: 1,
@@ -1180,18 +1180,18 @@ const styles = StyleSheet.create({
   totalScoreBox: {
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 6,
   },
   totalLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
     color: '#666',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   totalScore: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1B5E20',
   },
@@ -1199,30 +1199,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 15,
+    gap: 12,
   },
   minusButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#d32f2f',
     alignItems: 'center',
     justifyContent: 'center',
   },
   plusButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#1B5E20',
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreDisplay: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#f0f0f0',
-    borderWidth: 2.5,
+    borderWidth: 2,
     borderColor: '#1B5E20',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1233,7 +1233,7 @@ const styles = StyleSheet.create({
     borderColor: '#ff9800',
   },
   scoreValue: {
-    fontSize: 29,
+    fontSize: 22,
     fontWeight: '700',
     color: '#ccc',
   },
