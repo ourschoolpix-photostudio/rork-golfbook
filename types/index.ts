@@ -163,6 +163,7 @@ export interface Event {
   archived?: boolean;
   archivedAt?: string;
   registrationOpen?: boolean;
+  groupsPublished?: boolean;
 }
 
 export interface EventRegistration {

@@ -148,6 +148,19 @@ export default function GroupingsScreen() {
     },
   });
   
+  const toggleGroupsPublishedMutation = useMutation({
+    mutationFn: ({ eventId, published }: { eventId: string; published: boolean }) => 
+      supabaseService.events.update(eventId, { groupsPublished: published }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events', id] });
+      console.log('[groupings] ✅ Groups published status updated');
+    },
+    onError: (error) => {
+      console.error('[groupings] ❌ Error updating groups published status:', error);
+      Alert.alert('Error', 'Failed to update publish status. Please try again.');
+    },
+  });
+  
   const deleteScoresMutation = useMutation({
     mutationFn: ({ eventId }: { eventId: string }) => 
       supabaseService.scores.deleteAll(eventId),
@@ -1044,6 +1057,34 @@ export default function GroupingsScreen() {
             )}
           </View>
 
+          <View style={styles.publishContainer}>
+            <TouchableOpacity
+              style={[
+                styles.publishBtn,
+                eventData?.groupsPublished ? styles.publishBtnActive : styles.publishBtnInactive
+              ]}
+              onPress={() => {
+                const newPublished = !eventData?.groupsPublished;
+                console.log('[groupings] 🔄 Toggling groups published:', newPublished);
+                toggleGroupsPublishedMutation.mutate({ eventId: id, published: newPublished });
+              }}
+              disabled={toggleGroupsPublishedMutation.isPending}
+            >
+              <Ionicons 
+                name={eventData?.groupsPublished ? 'eye' : 'eye-off'} 
+                size={16} 
+                color="#fff" 
+              />
+              <Text style={styles.publishBtnText}>
+                {toggleGroupsPublishedMutation.isPending 
+                  ? 'UPDATING...' 
+                  : eventData?.groupsPublished 
+                    ? 'PUBLISHED' 
+                    : 'UNPUBLISHED'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
 
         </View>
       )}
@@ -1092,10 +1133,10 @@ export default function GroupingsScreen() {
         )}
 
         <View style={styles.groupsSection}>
-          {!canManageGroupings(currentMember) && groups.every(g => g.slots.every(s => s === null)) ? (
+          {!canManageGroupings(currentMember) && (!eventData?.groupsPublished || groups.every(g => g.slots.every(s => s === null))) ? (
             <View style={styles.noGroupingsContainer}>
               <Ionicons name="people" size={64} color="#ccc" />
-              <Text style={styles.noGroupingsTitle}>Groupings Not Formed</Text>
+              <Text style={styles.noGroupingsTitle}>{!eventData?.groupsPublished ? 'Groupings Not Published' : 'Groupings Not Formed'}</Text>
               <Text style={styles.noGroupingsSubtitle}>Come Back Later</Text>
             </View>
           ) : (
@@ -1507,6 +1548,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700' as const,
     color: '#333',
+  },
+  publishContainer: {
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  publishBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  publishBtnActive: {
+    backgroundColor: '#1B5E20',
+  },
+  publishBtnInactive: {
+    backgroundColor: '#757575',
+  },
+  publishBtnText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#fff',
   },
   
   modalOverlay: {
