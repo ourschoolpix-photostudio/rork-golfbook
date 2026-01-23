@@ -1048,6 +1048,135 @@ export default function GroupingsScreen() {
     }
   };
 
+  const handleGenerateHtml = async () => {
+    if (!event || groups.length === 0) {
+      Alert.alert('No Data', 'No groupings to generate HTML.');
+      return;
+    }
+
+    console.log('[groupings] 📄 Generating groupings HTML...');
+
+    try {
+      const groupsHtml = groups.map((group, idx) => {
+        const label = generateGroupLabel(idx, event, activeDay, labelOverride, doubleMode);
+        const playerCount = group.slots.filter(s => s).length;
+
+        const renderPlayerBox = (player: Member | null, slotIdx: number) => {
+          if (!player) {
+            return `
+              <div style="background-color: #D0D0D0; border: 2px solid #333; border-radius: 4px; height: 60px; display: flex; align-items: center; justify-content: center; padding: 8px 6px; margin-bottom: 4px;">
+                <span style="font-size: 9px; color: #333; font-weight: 500;">Empty</span>
+              </div>
+            `;
+          }
+          const playerReg = registrations[player.name];
+          const handicap = getDisplayHandicap(player, playerReg, event, useCourseHandicap, activeDay);
+          const flight = calculateTournamentFlight(player, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, playerReg, event, useCourseHandicap, activeDay);
+          return `
+            <div style="background-color: #D0D0D0; border: 2px solid #333; border-radius: 4px; padding: 8px 10px; height: 60px; margin-bottom: 4px;">
+              <div style="font-size: 9px; font-weight: 700; color: #000; margin-bottom: 4px;">${player.name}</div>
+              <div style="font-size: 7px; color: #000; margin-bottom: 2px;">HDC: ${handicap}</div>
+              <div style="font-size: 7px; color: #000;">Flight: ${flight || '—'}</div>
+            </div>
+          `;
+        };
+
+        return `
+          <div style="border: 1px solid #999; margin-bottom: 8px; padding: 8px; background: #fff;">
+            <div style="font-size: 9px; font-weight: 600; color: #1B5E20; margin-bottom: 6px;">${label} • ${playerCount} players</div>
+            <div style="display: flex; gap: 6px;">
+              <div style="flex: 1; display: flex; flex-direction: column;">
+                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; text-align: center;">
+                  <span style="font-size: 8px; font-weight: 700; color: #fff;">CART 1</span>
+                </div>
+                ${renderPlayerBox(group.slots[0], 0)}
+                ${renderPlayerBox(group.slots[1], 1)}
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column;">
+                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; text-align: center;">
+                  <span style="font-size: 8px; font-weight: 700; color: #fff;">CART 2</span>
+                </div>
+                ${renderPlayerBox(group.slots[2], 2)}
+                ${renderPlayerBox(group.slots[3], 3)}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                margin: 20px;
+                padding: 0;
+                background: #f5f5f5;
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+                border-bottom: 2px solid #1B5E20;
+              }
+              .event-name {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1B5E20;
+                margin-bottom: 4px;
+              }
+              .event-date {
+                font-size: 12px;
+                color: #666;
+              }
+              .day-label {
+                font-size: 14px;
+                font-weight: 600;
+                color: #333;
+                margin-top: 8px;
+              }
+              .groups-container {
+                max-width: 600px;
+                margin: 0 auto;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div class="event-name">${event.name}</div>
+              <div class="event-date">${event.location}</div>
+              <div class="day-label">Day ${activeDay} Groupings${(event as any)[`day${activeDay}Course`] ? ` • ${(event as any)[`day${activeDay}Course`]}` : ''}</div>
+            </div>
+            <div class="groups-container">
+              ${groupsHtml}
+            </div>
+          </body>
+        </html>
+      `;
+
+      if (Platform.OS === 'web') {
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(html);
+          newWindow.document.close();
+        }
+      } else {
+        const { uri } = await Print.printToFileAsync({ html, base64: false });
+        console.log('[groupings] HTML file generated at:', uri);
+        await Sharing.shareAsync(uri, {
+          mimeType: 'text/html',
+        });
+      }
+      console.log('[groupings] ✅ HTML generated successfully');
+    } catch (error) {
+      console.error('[groupings] ❌ Error generating HTML:', error);
+      Alert.alert('Error', 'Failed to generate HTML. Please try again.');
+    }
+  };
+
   const handleResetScores = async () => {
     if (!event || !user) return;
     
@@ -1121,6 +1250,11 @@ export default function GroupingsScreen() {
             label: 'Refresh',
             onPress: handleRefresh,
           },
+          ...((currentMember?.isAdmin || user?.isAdmin) ? [{
+            icon: 'html' as const,
+            label: 'HTML',
+            onPress: handleGenerateHtml,
+          }] : []),
           ...((currentMember?.isAdmin || user?.isAdmin) ? [{
             icon: 'pdf' as const,
             label: 'PDF',

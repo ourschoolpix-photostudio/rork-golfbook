@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { RefreshCw, FileText } from 'lucide-react-native';
+import { RefreshCw, FileText, Code } from 'lucide-react-native';
 import { EventHeader } from '@/components/EventHeader';
 import { Event } from '@/types';
 import { formatDateForDisplay } from '@/utils/dateUtils';
 
 interface HeaderAction {
-  icon: 'refresh' | 'pdf' | 'custom';
+  icon: 'refresh' | 'pdf' | 'html' | 'custom';
   label: string;
   onPress: () => void;
   disabled?: boolean;
@@ -38,6 +38,8 @@ export const EventScreenHeader: React.FC<EventScreenHeaderProps> = ({
         return <RefreshCw size={16} color="#333" style={action.disabled ? styles.iconDisabled : undefined} />;
       case 'pdf':
         return <FileText size={16} color="#333" style={action.disabled ? styles.iconDisabled : undefined} />;
+      case 'html':
+        return <Code size={16} color="#333" style={action.disabled ? styles.iconDisabled : undefined} />;
       default:
         return null;
     }
