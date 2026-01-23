@@ -10,9 +10,11 @@ import {
   Modal,
   TextInput,
   Platform,
+  Linking,
 } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as MailComposer from 'expo-mail-composer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearScoresForEvent } from '@/utils/scorePeristence';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -1050,11 +1052,11 @@ export default function GroupingsScreen() {
 
   const handleGenerateHtml = async () => {
     if (!event || groups.length === 0) {
-      Alert.alert('No Data', 'No groupings to generate HTML.');
+      Alert.alert('No Data', 'No groupings to email.');
       return;
     }
 
-    console.log('[groupings] 📄 Generating groupings HTML...');
+    console.log('[groupings] 📄 Generating groupings email...');
 
     try {
       const groupsHtml = groups.map((group, idx) => {
@@ -1131,7 +1133,7 @@ export default function GroupingsScreen() {
         `;
       }).join('');
 
-      const html = `
+      const htmlContent = `
         <!DOCTYPE html>
         <html lang="en">
           <head>
@@ -1261,23 +1263,51 @@ export default function GroupingsScreen() {
         </html>
       `;
 
-      if (Platform.OS === 'web') {
-        const newWindow = window.open('', '_blank');
-        if (newWindow) {
-          newWindow.document.write(html);
-          newWindow.document.close();
+      const subject = `${event.name} - Day ${activeDay} Groupings`;
+      
+      const isAvailable = await MailComposer.isAvailableAsync();
+      
+      if (!isAvailable) {
+        const plainTextBody = `${event.name} - Day ${activeDay} Groupings\n\n` +
+          groups.map((group, idx) => {
+            const label = generateGroupLabel(idx, event, activeDay, labelOverride, doubleMode);
+            const cart1 = group.slots.slice(0, 2).filter(Boolean).map(p => p?.name).join(', ') || 'Empty';
+            const cart2 = group.slots.slice(2, 4).filter(Boolean).map(p => p?.name).join(', ') || 'Empty';
+            return `${label}\n  Cart 1: ${cart1}\n  Cart 2: ${cart2}`;
+          }).join('\n\n');
+        
+        const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainTextBody)}`;
+        
+        const supported = await Linking.canOpenURL(mailtoUrl);
+        if (supported) {
+          await Linking.openURL(mailtoUrl);
+          Alert.alert(
+            'Email Opened',
+            'Your default email app has been opened with the groupings.',
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert('Error', 'Unable to open email client. Please copy the groupings manually.');
         }
-      } else {
-        const { uri } = await Print.printToFileAsync({ html, base64: false });
-        console.log('[groupings] HTML file generated at:', uri);
-        await Sharing.shareAsync(uri, {
-          mimeType: 'text/html',
-        });
+        return;
       }
-      console.log('[groupings] ✅ HTML generated successfully');
+
+      const result = await MailComposer.composeAsync({
+        subject,
+        body: htmlContent,
+        isHtml: true,
+      });
+      
+      if (result.status === MailComposer.MailComposerStatus.SENT) {
+        Alert.alert('Success', 'Groupings email sent successfully');
+      } else {
+        console.log('[groupings] Email composer opened, status:', result.status);
+      }
+      
+      console.log('[groupings] ✅ Email opened successfully');
     } catch (error) {
-      console.error('[groupings] ❌ Error generating HTML:', error);
-      Alert.alert('Error', 'Failed to generate HTML. Please try again.');
+      console.error('[groupings] ❌ Error opening email:', error);
+      Alert.alert('Error', 'Failed to open email. Please try again.');
     }
   };
 
