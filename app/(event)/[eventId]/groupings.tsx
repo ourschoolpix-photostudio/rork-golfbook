@@ -1064,94 +1064,198 @@ export default function GroupingsScreen() {
         const renderPlayerBox = (player: Member | null, slotIdx: number) => {
           if (!player) {
             return `
-              <div style="background-color: #D0D0D0; border: 2px solid #333; border-radius: 4px; height: 60px; display: flex; align-items: center; justify-content: center; padding: 8px 6px; margin-bottom: 4px;">
-                <span style="font-size: 9px; color: #333; font-weight: 500;">Empty</span>
+              <div style="background: linear-gradient(135deg, #e8e8e8 0%, #d0d0d0 100%); border: 2px dashed #999; border-radius: 8px; padding: 16px 12px; margin-bottom: 8px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 13px; color: #999; font-weight: 600; font-style: italic;">Empty Slot</span>
               </div>
             `;
           }
           const playerReg = registrations[player.name];
           const handicap = getDisplayHandicap(player, playerReg, event, useCourseHandicap, activeDay);
           const flight = calculateTournamentFlight(player, Number(event?.flightACutoff) || undefined, Number(event?.flightBCutoff) || undefined, playerReg, event, useCourseHandicap, activeDay);
+          const netScore = (player.scoreTotal ?? 0) - handicap;
+          
           return `
-            <div style="background-color: #D0D0D0; border: 2px solid #333; border-radius: 4px; padding: 8px 10px; height: 60px; margin-bottom: 4px;">
-              <div style="font-size: 9px; font-weight: 700; color: #000; margin-bottom: 4px;">${player.name}</div>
-              <div style="font-size: 7px; color: #000; margin-bottom: 2px;">HDC: ${handicap}</div>
-              <div style="font-size: 7px; color: #000;">Flight: ${flight || '—'}</div>
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%); border: 2px solid #1B5E20; border-radius: 8px; padding: 14px 12px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 80px;">
+              <div style="font-size: 16px; font-weight: 700; color: #1B5E20; margin-bottom: 8px; line-height: 1.2;">${player.name}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; color: #666; font-weight: 600;">Handicap:</span>
+                <span style="font-size: 13px; color: #333; font-weight: 700;">${handicap}</span>
+              </div>
+              ${flight ? `
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; color: #666; font-weight: 600;">Flight:</span>
+                <span style="font-size: 13px; color: #1B5E20; font-weight: 700;">${flight}</span>
+              </div>
+              ` : ''}
+              ${player.scoreTotal !== undefined && player.scoreTotal !== null ? `
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e0e0e0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                  <span style="font-size: 11px; color: #666; font-weight: 600;">Gross:</span>
+                  <span style="font-size: 12px; color: #333; font-weight: 600;">${player.scoreTotal}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; color: #666; font-weight: 600;">Net:</span>
+                  <span style="font-size: 13px; color: #1B5E20; font-weight: 700;">${truncateToTwoDecimals(netScore)}</span>
+                </div>
+              </div>
+              ` : ''}
             </div>
           `;
         };
 
         return `
-          <div style="border: 1px solid #999; margin-bottom: 8px; padding: 8px; background: #fff;">
-            <div style="font-size: 9px; font-weight: 600; color: #1B5E20; margin-bottom: 6px;">${label} • ${playerCount} players</div>
-            <div style="display: flex; gap: 6px;">
-              <div style="flex: 1; display: flex; flex-direction: column;">
-                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; text-align: center;">
-                  <span style="font-size: 8px; font-weight: 700; color: #fff;">CART 1</span>
-                </div>
-                ${renderPlayerBox(group.slots[0], 0)}
-                ${renderPlayerBox(group.slots[1], 1)}
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column;">
-                <div style="background-color: #1B5E20; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; text-align: center;">
-                  <span style="font-size: 8px; font-weight: 700; color: #fff;">CART 2</span>
-                </div>
-                ${renderPlayerBox(group.slots[2], 2)}
-                ${renderPlayerBox(group.slots[3], 3)}
-              </div>
+          <div style="border: 3px solid #1B5E20; border-radius: 12px; margin-bottom: 20px; padding: 16px; background: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); page-break-inside: avoid;">
+            <div style="background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; text-align: center;">
+              <div style="font-size: 18px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">${label}</div>
+              <div style="font-size: 13px; color: #E8F5E9; font-weight: 600;">${playerCount} Player${playerCount !== 1 ? 's' : ''}</div>
             </div>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="width: 50%; padding-right: 8px; vertical-align: top;">
+                  <div style="background: #1B5E20; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; text-align: center;">
+                    <span style="font-size: 14px; font-weight: 700; color: #FFD54F; text-transform: uppercase; letter-spacing: 1px;">Cart 1</span>
+                  </div>
+                  ${renderPlayerBox(group.slots[0], 0)}
+                  ${renderPlayerBox(group.slots[1], 1)}
+                </td>
+                <td style="width: 50%; padding-left: 8px; vertical-align: top;">
+                  <div style="background: #1B5E20; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; text-align: center;">
+                    <span style="font-size: 14px; font-weight: 700; color: #FFD54F; text-transform: uppercase; letter-spacing: 1px;">Cart 2</span>
+                  </div>
+                  ${renderPlayerBox(group.slots[2], 2)}
+                  ${renderPlayerBox(group.slots[3], 3)}
+                </td>
+              </tr>
+            </table>
           </div>
         `;
       }).join('');
 
       const html = `
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
           <head>
             <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>${event.name} - Day ${activeDay} Groupings</title>
             <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                margin: 20px;
+              * {
+                margin: 0;
                 padding: 0;
-                background: #f5f5f5;
+                box-sizing: border-box;
+              }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+                padding: 20px 10px;
+                min-height: 100vh;
+              }
+              .container {
+                max-width: 800px;
+                margin: 0 auto;
+                background: #ffffff;
+                border-radius: 16px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+                overflow: hidden;
               }
               .header {
+                background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+                color: #ffffff;
+                padding: 30px 20px;
                 text-align: center;
-                margin-bottom: 16px;
-                padding-bottom: 12px;
-                border-bottom: 2px solid #1B5E20;
+                border-bottom: 4px solid #FFD54F;
               }
               .event-name {
-                font-size: 18px;
-                font-weight: 700;
-                color: #1B5E20;
-                margin-bottom: 4px;
+                font-size: 28px;
+                font-weight: 800;
+                margin-bottom: 8px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
               }
-              .event-date {
-                font-size: 12px;
-                color: #666;
+              .event-location {
+                font-size: 16px;
+                color: #E8F5E9;
+                margin-bottom: 12px;
+                font-weight: 500;
               }
               .day-label {
-                font-size: 14px;
-                font-weight: 600;
-                color: #333;
+                font-size: 18px;
+                font-weight: 700;
+                background: rgba(255, 255, 255, 0.2);
+                display: inline-block;
+                padding: 8px 20px;
+                border-radius: 20px;
                 margin-top: 8px;
+                border: 2px solid #FFD54F;
               }
-              .groups-container {
-                max-width: 600px;
-                margin: 0 auto;
+              .content {
+                padding: 24px;
+              }
+              .footer {
+                background: #f5f5f5;
+                padding: 20px;
+                text-align: center;
+                border-top: 2px solid #e0e0e0;
+                margin-top: 20px;
+              }
+              .footer-text {
+                font-size: 12px;
+                color: #666;
+                font-style: italic;
+              }
+              @media only screen and (max-width: 600px) {
+                body {
+                  padding: 10px 5px;
+                }
+                .event-name {
+                  font-size: 22px;
+                }
+                .event-location {
+                  font-size: 14px;
+                }
+                .day-label {
+                  font-size: 16px;
+                  padding: 6px 16px;
+                }
+                .content {
+                  padding: 16px;
+                }
+                table td {
+                  display: block;
+                  width: 100% !important;
+                  padding: 0 !important;
+                  margin-bottom: 16px;
+                }
+              }
+              @media print {
+                body {
+                  background: white;
+                  padding: 0;
+                }
+                .container {
+                  box-shadow: none;
+                  border-radius: 0;
+                }
               }
             </style>
           </head>
           <body>
-            <div class="header">
-              <div class="event-name">${event.name}</div>
-              <div class="event-date">${event.location}</div>
-              <div class="day-label">Day ${activeDay} Groupings${(event as any)[`day${activeDay}Course`] ? ` • ${(event as any)[`day${activeDay}Course`]}` : ''}</div>
-            </div>
-            <div class="groups-container">
-              ${groupsHtml}
+            <div class="container">
+              <div class="header">
+                <div class="event-name">${event.name}</div>
+                <div class="event-location">${event.location}</div>
+                <div class="day-label">Day ${activeDay} Groupings${(event as any)[`day${activeDay}Course`] ? ` • ${(event as any)[`day${activeDay}Course`]}` : ''}</div>
+              </div>
+              <div class="content">
+                ${groupsHtml}
+              </div>
+              <div class="footer">
+                <div class="footer-text">Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+              </div>
             </div>
           </body>
         </html>
